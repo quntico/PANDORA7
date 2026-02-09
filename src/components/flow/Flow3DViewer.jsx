@@ -7,8 +7,31 @@ import Connection3DArrow from './Connection3DArrow';
 import LayoutControls, { LayoutModel } from './LayoutLoader';
 import * as THREE from 'three';
 import { process3DFile } from '@/utils/fileProcessor';
+import { supabase } from '@/supabase';
 
 // Componente para controlar la cámara (Vistas Predefinidas)
+function ControlLimiter({ controlsRef }) {
+    useFrame(() => {
+        if (controlsRef.current) {
+            const controls = controlsRef.current;
+            const target = controls.target;
+
+            // 1. Limitar el desplazamiento del Pan (Ancla)
+            const maxPan = 50;
+            const distSq = target.x * target.x + target.z * target.z;
+            if (distSq > maxPan * maxPan) {
+                const scale = maxPan / Math.sqrt(distSq);
+                target.x *= scale;
+                target.z *= scale;
+            }
+
+            // 2. Limitar verticalmente para no perder el suelo
+            target.y = THREE.MathUtils.clamp(target.y, -5, 20);
+        }
+    });
+    return null;
+}
+
 function CameraManager({ resetTrigger }) {
     const { camera } = useThree();
     const bounds = useBounds(); // Hook bounds para Reset inteligente
@@ -223,6 +246,26 @@ function LayoutWrapper({ layout, scale, elevation, fxEnabled, isSelected, onUpda
     return (
         <>
             <group ref={groupRef}>
+                {/* Grid secundario que se mueve con el modelo */}
+                <Grid
+                    position={[0, -0.02, 0]}
+                    args={[50, 50]}
+                    cellSize={1}
+                    cellThickness={0.5}
+                    cellColor="#1a4d4d"
+                    sectionSize={5}
+                    sectionThickness={1}
+                    sectionColor="#00F0FF"
+                    fadeDistance={60}
+                    fadeStrength={1}
+                />
+
+                {/* Indicador visual de área del layout */}
+                <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}>
+                    <ringGeometry args={[8, 8.2, 64]} />
+                    <meshBasicMaterial color="#00F0FF" transparent opacity={0.3} side={THREE.DoubleSide} />
+                </mesh>
+
                 <LayoutModel layout={layout} scale={scale} elevation={elevation} fxEnabled={fxEnabled} />
             </group>
 
@@ -248,12 +291,26 @@ function LayoutWrapper({ layout, scale, elevation, fxEnabled, isSelected, onUpda
     );
 }
 
-function Flow3DViewer({ nodes = [], edges = [], onNodeClick, onNodeUpdate, fxEnabled: propFxEnabled, onFxChange, isControlsOpen, onControlsOpenChange, onNodeDrop, placingEquipment, onEquipmentPlaced, pickingAnchorNodeId, onPickingAnchorChange, onConnect, resetCameraTrigger }) {
-    const [layout, setLayout] = useState(null);
-    const [layoutScale, setLayoutScale] = useState(1);
-    const [layoutElevation, setLayoutElevation] = useState(0);
+function Flow3DViewer({ nodes = [], edges = [], onNodeClick, onNodeUpdate, fxEnabled: propFxEnabled, onFxChange, isControlsOpen, onControlsOpenChange, onNodeDrop, placingEquipment, onEquipmentPlaced, pickingAnchorNodeId, onPickingAnchorChange, onConnect, resetCameraTrigger, labelsCollapsed = false, labelHeightOffset = 0, layout: propLayout = null, onLayoutChange }) {
+    // Use prop layout if provided, otherwise internal state
+    const [internalLayout, setInternalLayout] = useState(propLayout);
+    const layout = propLayout !== undefined ? propLayout : internalLayout;
+    const setLayout = onLayoutChange || setInternalLayout;
+
+    const [layoutScale, setLayoutScale] = useState(propLayout?.scale || 1);
+    const [layoutElevation, setLayoutElevation] = useState(propLayout?.elevation || 0);
     const [layoutFx, setLayoutFx] = useState(propFxEnabled || false);
     const [cameraMode, setCameraMode] = useState('rotate');
+
+    // Sync propLayout when it changes (e.g., loading a saved design)
+    React.useEffect(() => {
+        if (propLayout !== undefined) {
+            setInternalLayout(propLayout);
+            if (propLayout?.scale) setLayoutScale(propLayout.scale);
+            if (propLayout?.elevation !== undefined) setLayoutElevation(propLayout.elevation);
+            console.log('[Flow3D] Layout synced from props:', propLayout);
+        }
+    }, [propLayout]);
 
 
     const [isDraggingFile, setIsDraggingFile] = useState(false);
@@ -372,8 +429,40 @@ function Flow3DViewer({ nodes = [], edges = [], onNodeClick, onNodeUpdate, fxEna
         if (!file) return;
         try {
             setError(null);
+
+            // First, process the file for immediate preview
             const layoutData = await process3DFile(file);
-            handleLayoutChange(layoutData, 1, 0);
+
+            // Upload to Supabase Storage for persistence
+            const fileName = `layouts/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+            const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('assets')
+                .upload(fileName, file, {
+                    cacheControl: '3600',
+                    upsert: false
+                });
+
+            if (uploadError) {
+                console.warn('Could not upload to Supabase, using local blob:', uploadError);
+                // Still use the local blob for preview
+                handleLayoutChange(layoutData, 1, 0);
+            } else {
+                // Get the public URL for the uploaded file
+                const { data: { publicUrl } } = supabase.storage
+                    .from('assets')
+                    .getPublicUrl(fileName);
+
+                // Create layout data with permanent URL
+                const persistentLayout = {
+                    ...layoutData,
+                    url: publicUrl,
+                    storagePath: fileName,
+                    fileName: file.name
+                };
+
+                handleLayoutChange(persistentLayout, 1, 0);
+                console.log('[Flow3D] Layout uploaded to Supabase:', publicUrl);
+            }
         } catch (err) {
             console.error("Error cargando archivo:", err);
             setError(err.message);
@@ -485,8 +574,8 @@ function Flow3DViewer({ nodes = [], edges = [], onNodeClick, onNodeUpdate, fxEna
                 <Grid
                     position={[0, -0.01, 0]}
                     args={[100, 100]}
-                    cellColor="#004d4d"
-                    sectionColor="#00F0FF"
+                    cellColor="#444444"
+                    sectionColor="#888888"
                     fadeDistance={100}
                     infiniteGrid
                 />
@@ -499,7 +588,7 @@ function Flow3DViewer({ nodes = [], edges = [], onNodeClick, onNodeUpdate, fxEna
                     {/* Anillo Guía Central */}
                     <mesh rotation={[-Math.PI / 2, 0, 0]}>
                         <ringGeometry args={[0.8, 1, 32]} />
-                        <meshBasicMaterial color="#00F0FF" opacity={0.3} transparent side={THREE.DoubleSide} />
+                        <meshBasicMaterial color="#888888" opacity={0.3} transparent side={THREE.DoubleSide} />
                     </mesh>
 
                     {/* Punto Cero */}
@@ -567,11 +656,15 @@ function Flow3DViewer({ nodes = [], edges = [], onNodeClick, onNodeUpdate, fxEna
                             onUpdate={handleNodeUpdate}
                             onSetAnchorStart={() => onPickingAnchorChange(node.id)}
                             isPickingAnchor={pickingAnchorNodeId === node.id}
+                            isCollapsed={labelsCollapsed}
+                            heightOffset={labelHeightOffset}
                         />
                     ))}
                 </Bounds>
 
                 {edges.map(conn => <Connection3DArrow key={conn.id} edge={conn} nodes={nodes} connectionStyle={connectionStyle} />)}
+
+
 
                 <OrbitControls
                     ref={orbitRef}
@@ -579,12 +672,16 @@ function Flow3DViewer({ nodes = [], edges = [], onNodeClick, onNodeUpdate, fxEna
                     enableDamping
                     dampingFactor={0.05}
                     maxPolarAngle={Math.PI / 2 - 0.05}
+                    minDistance={5}
+                    maxDistance={120}
                     mouseButtons={{
                         LEFT: cameraMode === 'pan' ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE,
                         MIDDLE: THREE.MOUSE.DOLLY,
                         RIGHT: cameraMode === 'pan' ? THREE.MOUSE.ROTATE : THREE.MOUSE.PAN
                     }}
                 />
+
+                <ControlLimiter controlsRef={orbitRef} />
             </Canvas>
 
             <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none">

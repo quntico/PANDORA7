@@ -10,7 +10,7 @@ import ReactFlow, {
     useEdgesState,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { Trash2, Plus, Scan, Box, RotateCcw, RotateCw } from 'lucide-react';
+import { Trash2, Plus, Scan, Box, RotateCcw, RotateCw, FolderOpen, Save, Minimize2, ArrowUp, ArrowDown, Maximize2 } from 'lucide-react';
 import EquipmentLibrary from '@/components/flow/EquipmentLibrary';
 import MetricsPanel from '@/components/flow/MetricsPanel';
 import CustomNode from '@/components/flow/CustomNode';
@@ -19,8 +19,11 @@ import NodePropertiesModal from '@/components/flow/NodePropertiesModal';
 import CreateEquipmentModal from '@/components/flow/CreateEquipmentModal';
 import EdgeToolbar from '@/components/flow/EdgeToolbar';
 import Flow3DViewer from '@/components/flow/Flow3DViewer';
+import FlowDesignsLibrary from '@/components/flow/FlowDesignsLibrary';
+import SaveDesignModal from '@/components/flow/SaveDesignModal';
 import { useFlowSimulation } from '@/hooks/useFlowSimulation';
 import { useFlowHistory } from '@/hooks/useFlowHistory';
+import { useFlowDesigns } from '@/hooks/useFlowDesigns';
 
 const nodeTypes = {
     custom: CustomNode,
@@ -48,16 +51,24 @@ function FlowDesignerPage() {
         type: 'animated',
         animated: true,
     });
-    const [viewMode, setViewMode] = useState(() => {
-        // Cargar modo de vista desde localStorage
-        return localStorage.getItem('flowDesigner_viewMode') || '2d';
-    });
+    const [viewMode, setViewMode] = useState('2d');
     const [isFxEnabled, setIsFxEnabled] = useState(false); // Estado FX Global
     const [isLayoutControlsOpen, setIsLayoutControlsOpen] = useState(false); // Panel Entorno
     const [placingEquipment, setPlacingEquipment] = useState(null); // Estado para placement manual
 
     const [pickingAnchorNodeId, setPickingAnchorNodeId] = useState(null); // Estado para picking de anclaje
     const [resetCameraTrigger, setResetCameraTrigger] = useState(0); // Trigger para reset cámara
+
+    // Estados para librería de diseños
+    const [isLibraryOpen, setIsLibraryOpen] = useState(false);
+    const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+    const [currentDesignId, setCurrentDesignId] = useState(null);
+    const [currentDesignName, setCurrentDesignName] = useState('');
+    const { loadDesign: loadDesignFromDb, saveDesign: saveDesignToDb, updateDesign: updateDesignInDb } = useFlowDesigns();
+    const [labelsCollapsed, setLabelsCollapsed] = useState(false); // Estado para colapsar fichas
+    const [currentLayout, setCurrentLayout] = useState(null); // Estado para el layout 3D (GLB)
+    const [labelHeightOffset, setLabelHeightOffset] = useState(0); // Offset global de altura de fichas
+    const [isFullScreen, setIsFullScreen] = useState(false); // Estado para pantalla completa 3D
 
     // Historial Undo/Redo
     const { takeSnapshot, undo, redo, canUndo, canRedo } = useFlowHistory();
@@ -232,15 +243,19 @@ function FlowDesignerPage() {
 
             // Escape
             if (event.key === 'Escape') {
-                setSelectedNode(null);
-                setIsPropertiesOpen(false);
-                setIsCreateEquipmentOpen(false);
+                if (isFullScreen) {
+                    setIsFullScreen(false);
+                } else {
+                    setSelectedNode(null);
+                    setIsPropertiesOpen(false);
+                    setIsCreateEquipmentOpen(false);
+                }
             }
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [deleteSelectedNodes, onUndo, onRedo, takeSnapshot, nodes, edges]);
+    }, [deleteSelectedNodes, onUndo, onRedo, takeSnapshot, nodes, edges, isFullScreen]);
 
     // Limpiar canvas
     const clearCanvas = useCallback(() => {
@@ -262,34 +277,79 @@ function FlowDesignerPage() {
         setIsCreateEquipmentOpen(false);
     }, []);
 
-    // Guardar diseño completo
-    const saveDesign = useCallback(() => {
-        const design = {
-            nodes,
-            edges,
-            customEquipments,
-            timestamp: new Date().toISOString(),
+    // Guardar diseño a Supabase
+    const handleSaveDesign = useCallback(async (name, description) => {
+        // Empaquetar configuraciones de vista junto con el layout o como parte del layout
+        const viewSettings = {
+            viewMode,
+            isFxEnabled,
+            labelsCollapsed,
+            labelHeightOffset
         };
-        localStorage.setItem('flowDesigner_lastDesign', JSON.stringify(design));
-        alert('✅ Diseño guardado exitosamente');
-    }, [nodes, edges, customEquipments]);
 
-    // Cargar diseño guardado
-    const loadDesign = useCallback(() => {
-        const saved = localStorage.getItem('flowDesigner_lastDesign');
-        if (saved) {
-            const design = JSON.parse(saved);
+        // Construct layout payload, merging currentLayout (if any) with viewSettings
+        const layoutPayload = {
+            ...(currentLayout || {}),
+            settings: viewSettings
+        };
+
+        if (currentDesignId) {
+            // Actualizar existente
+            const result = await updateDesignInDb(currentDesignId, name, nodes, edges, customEquipments, description, layoutPayload);
+            if (result) {
+                setCurrentDesignName(name);
+                alert('✅ Diseño actualizado con éxito');
+            }
+        } else {
+            // Crear nuevo
+            const result = await saveDesignToDb(name, nodes, edges, customEquipments, description, layoutPayload);
+            if (result) {
+                setCurrentDesignId(result.id);
+                setCurrentDesignName(name);
+                alert('✅ Diseño guardado con éxito');
+            }
+        }
+    }, [currentDesignId, nodes, edges, customEquipments, currentLayout, saveDesignToDb, updateDesignInDb, viewMode, isFxEnabled, labelsCollapsed, labelHeightOffset]);
+
+    // Cargar diseño desde librería
+    const handleLoadDesign = useCallback(async (designId) => {
+        const design = await loadDesignFromDb(designId);
+        if (design) {
             setNodes(design.nodes || []);
             setEdges(design.edges || []);
-            if (design.customEquipments) {
-                setCustomEquipments(design.customEquipments);
-                localStorage.setItem('flowDesigner_customEquipments', JSON.stringify(design.customEquipments));
+            setCustomEquipments(design.custom_equipments || []);
+
+            // Restaurar layout y configuraciones
+            if (design.layout) {
+                setCurrentLayout(design.layout);
+                if (design.layout.settings) {
+                    const s = design.layout.settings;
+                    if (s.viewMode) setViewMode(s.viewMode);
+                    if (s.isFxEnabled !== undefined) setIsFxEnabled(s.isFxEnabled);
+                    if (s.labelsCollapsed !== undefined) setLabelsCollapsed(s.labelsCollapsed);
+                    if (s.labelHeightOffset !== undefined) setLabelHeightOffset(s.labelHeightOffset);
+                }
+            } else {
+                setCurrentLayout(null);
             }
-            alert('✅ Diseño cargado exitosamente');
-        } else {
-            alert('⚠️ No hay diseño guardado');
+
+            setCurrentDesignId(design.id);
+            setCurrentDesignName(design.name);
+            setIsLibraryOpen(false);
+            alert(`✅ Diseño "${design.name}" cargado`);
         }
-    }, [setNodes, setEdges]);
+    }, [loadDesignFromDb, setNodes, setEdges]);
+
+    // Nuevo diseño (limpiar canvas)
+    const handleNewDesign = useCallback(() => {
+        if (nodes.length > 0 && !window.confirm('¿Descartar el diseño actual y crear uno nuevo?')) return;
+        setNodes([]);
+        setEdges([]);
+        setCurrentLayout(null); // Limpiar layout
+        setCurrentDesignId(null);
+        setCurrentDesignName('');
+        setIsLibraryOpen(false);
+    }, [nodes, setNodes, setEdges]);
 
     // Actualizar posición 3D de nodos
     const onNodeUpdate3D = useCallback((nodeId, newData) => {
@@ -381,6 +441,48 @@ function FlowDesignerPage() {
                                     <span className="hidden sm:inline">FX</span>
                                 </button>
 
+                                <button
+                                    onClick={() => setLabelsCollapsed(!labelsCollapsed)}
+                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all text-sm font-medium ${labelsCollapsed
+                                        ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50 shadow-[0_0_10px_rgba(234,179,8,0.3)]'
+                                        : 'bg-glass-light border-glass-border text-gray-400 hover:text-white hover:border-gray-500'
+                                        }`}
+                                    title={labelsCollapsed ? 'Mostrar Fichas Completas' : 'Minimizar Fichas'}
+                                >
+                                    <Minimize2 className="w-4 h-4" />
+                                    <span className="hidden sm:inline">{labelsCollapsed ? 'Fichas' : 'Mini'}</span>
+                                </button>
+
+                                {/* Control de altura de fichas */}
+                                <div className="flex items-center gap-1 bg-glass-light border border-glass-border rounded-lg px-2 py-1">
+                                    <button
+                                        onClick={() => setLabelHeightOffset(prev => prev + 1)}
+                                        className="p-1 rounded hover:bg-white/10 text-gray-400 hover:text-green-400 transition-colors"
+                                        title="Subir Fichas"
+                                    >
+                                        <ArrowUp className="w-3 h-3" />
+                                    </button>
+                                    <span className="text-xs text-gray-400 min-w-[24px] text-center">{labelHeightOffset}</span>
+                                    <button
+                                        onClick={() => setLabelHeightOffset(prev => prev - 1)}
+                                        className="p-1 rounded hover:bg-white/10 text-gray-400 hover:text-red-400 transition-colors"
+                                        title="Bajar Fichas"
+                                    >
+                                        <ArrowDown className="w-3 h-3" />
+                                    </button>
+                                </div>
+
+                                <button
+                                    onClick={() => setIsFullScreen(!isFullScreen)}
+                                    className={`p-1.5 rounded-lg border transition-all ${isFullScreen
+                                        ? 'bg-neon-cyan/20 text-neon-cyan border-neon-cyan/50 shadow-[0_0_10px_rgba(0,240,255,0.3)]'
+                                        : 'bg-glass-light border-glass-border text-gray-300 hover:text-white hover:border-gray-500'
+                                        }`}
+                                    title={isFullScreen ? "Salir de Pantalla Completa (ESC)" : "Pantalla Completa"}
+                                >
+                                    {isFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                                </button>
+
                                 <div className="w-px h-6 bg-glass-border" />
 
                                 {/* Botón HOME (Reset Camera) */}
@@ -431,16 +533,18 @@ function FlowDesignerPage() {
                             Limpiar
                         </button>
                         <button
-                            onClick={saveDesign}
-                            className="px-3 py-1.5 rounded-lg bg-glass-light border border-glass-border text-gray-300 hover:text-white hover:border-neon-cyan/30 text-sm transition-all"
+                            onClick={() => setIsSaveModalOpen(true)}
+                            className="px-3 py-1.5 rounded-lg bg-glass-light border border-glass-border text-gray-300 hover:text-white hover:border-neon-cyan/30 text-sm transition-all flex items-center gap-2"
                         >
-                            Guardar
+                            <Save className="w-4 h-4" />
+                            {currentDesignName || 'Guardar'}
                         </button>
                         <button
-                            onClick={loadDesign}
-                            className="px-3 py-1.5 rounded-lg bg-glass-light border border-glass-border text-gray-300 hover:text-white hover:border-neon-cyan/30 text-sm transition-all"
+                            onClick={() => setIsLibraryOpen(true)}
+                            className="px-3 py-1.5 rounded-lg bg-neon-purple/10 border border-neon-purple/30 text-neon-purple hover:bg-neon-purple/20 text-sm font-medium transition-all flex items-center gap-2"
                         >
-                            Cargar
+                            <FolderOpen className="w-4 h-4" />
+                            Librería
                         </button>
                         <button className="px-3 py-1.5 rounded-lg bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan hover:bg-neon-cyan/20 text-sm font-medium transition-all">
                             Exportar
@@ -461,7 +565,7 @@ function FlowDesignerPage() {
                     </div>
 
                     {/* Canvas - Centro */}
-                    <div className="col-span-7 relative">
+                    <div className={isFullScreen && viewMode === '3d' ? "fixed inset-0 z-[100] bg-deep" : "col-span-7 relative"}>
                         {viewMode === '2d' ? (
                             <>
                                 <ReactFlow
@@ -527,6 +631,10 @@ function FlowDesignerPage() {
                                 onPickingAnchorChange={setPickingAnchorNodeId}
                                 onConnect={onConnect}
                                 resetCameraTrigger={resetCameraTrigger}
+                                labelsCollapsed={labelsCollapsed}
+                                labelHeightOffset={labelHeightOffset}
+                                layout={currentLayout}
+                                onLayoutChange={setCurrentLayout}
                             />
                         )}
                     </div>
@@ -560,6 +668,28 @@ function FlowDesignerPage() {
                 <CreateEquipmentModal
                     onClose={() => setIsCreateEquipmentOpen(false)}
                     onSave={addCustomEquipment}
+                />,
+                document.body
+            )}
+
+            {isLibraryOpen && createPortal(
+                <FlowDesignsLibrary
+                    isOpen={isLibraryOpen}
+                    onClose={() => setIsLibraryOpen(false)}
+                    onLoad={handleLoadDesign}
+                    onNewDesign={handleNewDesign}
+                    currentDesignId={currentDesignId}
+                />,
+                document.body
+            )}
+
+            {isSaveModalOpen && createPortal(
+                <SaveDesignModal
+                    isOpen={isSaveModalOpen}
+                    onClose={() => setIsSaveModalOpen(false)}
+                    onSave={handleSaveDesign}
+                    defaultName={currentDesignName}
+                    isUpdate={!!currentDesignId}
                 />,
                 document.body
             )}

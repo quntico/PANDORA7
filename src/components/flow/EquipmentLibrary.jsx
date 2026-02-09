@@ -7,8 +7,25 @@ import {
     Package,
     MoveRight,
     Plus,
-    Star
+    Star,
+    Zap,
+    Droplet,
+    Flame,
+    Box
 } from 'lucide-react';
+
+const ICON_MAP = {
+    'Engranaje': Cog,
+    'Mezclador': Blend,
+    'Martillo': Hammer,
+    'Viento': Wind,
+    'Paquete': Package,
+    'Flecha': MoveRight,
+    'Rayo': Zap,
+    'Gota': Droplet,
+    'Fuego': Flame,
+    'Caja': Box
+};
 
 const equipmentTypes = [
     {
@@ -81,9 +98,11 @@ const equipmentTypes = [
 
 function EquipmentLibrary({ customEquipments = [], onCreateEquipment, onSelectEquipment, selectedEquipmentType }) {
     const onDragStart = (event, equipment) => {
+        // Strip icon component before drag to avoid serialization issues
+        const { icon, ...safeEquipment } = equipment;
         event.dataTransfer.setData(
             'application/reactflow',
-            JSON.stringify(equipment)
+            JSON.stringify(safeEquipment)
         );
         event.dataTransfer.effectAllowed = 'move';
     };
@@ -117,7 +136,26 @@ function EquipmentLibrary({ customEquipments = [], onCreateEquipment, onSelectEq
                     </div>
                     <div className="space-y-3 mb-4">
                         {customEquipments.map((equipment, index) => {
-                            const Icon = equipment.icon || Cog;
+                            // Resolve Icon safely
+                            let Icon = Cog; // Default
+
+                            // 1. Try by name (preferred)
+                            if (equipment.iconName && typeof equipment.iconName === 'string' && ICON_MAP[equipment.iconName]) {
+                                Icon = ICON_MAP[equipment.iconName];
+                            }
+                            // 2. Try legacy: only use if it's actually a valid function component
+                            else if (equipment.icon && typeof equipment.icon === 'function') {
+                                Icon = equipment.icon;
+                            }
+
+                            // FINAL SAFETY CHECK: If Icon is not a function (component), force Cog
+                            // This catches edge cases where an object might slip through or imports fail
+                            if (typeof Icon !== 'function') {
+                                console.warn('EquipmentLibrary: Icon corrupted, using fallback', equipment);
+                                Icon = Cog;
+                            }
+                            // Any other case (object, null, undefined): use default Cog
+
                             const isSelected = selectedEquipmentType?.type === equipment.type;
                             return (
                                 <div

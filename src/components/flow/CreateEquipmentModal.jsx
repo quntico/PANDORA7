@@ -62,6 +62,9 @@ function CreateEquipmentModal({ onClose, onSave }) {
 
         const newEquipment = {
             ...formData,
+            // Guardamos el nombre del ícono para poder serializarlo (JSON)
+            iconName: iconOptions[formData.iconIndex].name,
+            // Mantenemos el componente en memoria si es necesario, pero iconName es el que persiste
             icon: iconOptions[formData.iconIndex].icon,
         };
 

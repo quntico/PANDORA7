@@ -111,24 +111,18 @@ function Connection3DArrow({ edge, nodes, connectionStyle = 'curved' }) {
         if (arrowsGroupRef.current) {
             arrowsGroupRef.current.children.forEach((child, i) => {
                 const arrowData = arrows[i];
-                const t = ((time * arrowData.speed + arrowData.offset) % 1);
+                const t = (time * arrowData.speed + arrowData.offset) % 1;
 
                 const point = curve.getPoint(t);
                 const tangent = curve.getTangent(t).normalize();
 
                 child.position.copy(point);
+                child.lookAt(point.clone().add(tangent));
 
-                // Orientación: LookAt la dirección de la tangente.
-                const lookTarget = point.clone().add(tangent);
-                child.lookAt(lookTarget);
-
-                // CORRECCIÓN FINAL DE ROTACIÓN (SOLICITUD: 90 GRADOS A LA DERECHA):
-                // 1. -Math.PI / 2 en X apunta la punta hacia ADELANTE (Z positivo, hacia target).
-                // 2. Antes teníamos rotateZ(PI/2) para hacerla vertical.
-                // 3. Al quitar esa rotación, la flecha "cae" 90 grados a la derecha (vuelve a horizontal).
-
+                // Alineación correcta de flechas (invertida 180 grados a petición)
                 child.rotateX(Math.PI / 2);
-                // child.rotateZ(0); 
+                // Rotar sobre su eje para que las aletas queden verticales
+                child.rotateY(Math.PI / 2);
             });
         }
     });

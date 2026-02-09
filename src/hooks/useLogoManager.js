@@ -1,9 +1,11 @@
-
 import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/supabase';
 
-const LOGO_STORAGE_KEY = 'pandora_custom_logo';
+const LOGO_STORAGE_KEY = 'pandora_custom_logo'; // Fallback / Cache local
 const LOGO_SIZE_KEY = 'pandora_logo_size';
 const EVENT_KEY = 'pandora_logo_update';
+const BUCKET_NAME = 'assets'; // Nombre del Bucket en Supabase
+const LOGO_FILE_PATH = 'public/logo.png'; // Ruta fija para sobrescribir el logo
 
 export function useLogoManager() {
   const [logo, setLogo] = useState(null);
@@ -20,24 +22,37 @@ export function useLogoManager() {
   };
 
   useEffect(() => {
-    // Initial load
-    const storedLogo = getFromStorage(LOGO_STORAGE_KEY);
-    const storedSize = getFromStorage(LOGO_SIZE_KEY);
+    // Initial load: Try Supabase first, then local cache
+    const loadLogo = async () => {
+      // 1. Check local size
+      const storedSize = getFromStorage(LOGO_SIZE_KEY);
+      if (storedSize) setLogoSize(parseInt(storedSize, 10));
 
-    if (storedLogo) setLogo(storedLogo);
-    if (storedSize) setLogoSize(parseInt(storedSize, 10));
+      // 2. Build Public URL
+      const { data } = supabase.storage.from(BUCKET_NAME).getPublicUrl(LOGO_FILE_PATH);
+      if (data && data.publicUrl) {
+        // Check if it actually exists (hacky check usually not needed if we trust it exists, 
+        // bu we can just set it. If it 404s, user sees fallback 'P')
+        // To avoid caching issues with same URL, append timestamp
+        setLogo(`${data.publicUrl}?t=${new Date().getTime()}`);
+      } else {
+        // Fallback to local
+        const storedLogo = getFromStorage(LOGO_STORAGE_KEY);
+        if (storedLogo) setLogo(storedLogo);
+      }
+    };
+
+    loadLogo();
 
     // Listen for changes
     const handleStorageChange = (e) => {
-      if (e.key === LOGO_STORAGE_KEY) setLogo(e.newValue);
       if (e.key === LOGO_SIZE_KEY && e.newValue) setLogoSize(parseInt(e.newValue, 10));
     };
 
     const handleLocalChange = () => {
-      const storedLogo = getFromStorage(LOGO_STORAGE_KEY);
       const storedSize = getFromStorage(LOGO_SIZE_KEY);
-      if (storedLogo !== logo) setLogo(storedLogo);
       if (storedSize) setLogoSize(parseInt(storedSize, 10));
+      // Logo URL update logic is handled by uploadLogo mostly
     };
 
     window.addEventListener('storage', handleStorageChange);
@@ -60,46 +75,51 @@ export function useLogoManager() {
   };
 
   const uploadLogo = async (file) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       if (!file) {
         reject(new Error('No file provided'));
         return;
       }
 
-      console.log(`[LogoManager] Processing file: ${file.name}, Size: ${file.size} bytes`);
+      console.log(`[LogoManager] Uploading file to Supabase: ${file.name}`);
 
-      const reader = new FileReader();
+      try {
+        // 1. Upload to Supabase (Overwrite)
+        const { data, error } = await supabase.storage
+          .from(BUCKET_NAME)
+          .upload(LOGO_FILE_PATH, file, {
+            cacheControl: '3600',
+            upsert: true
+          });
 
-      reader.onloadend = () => {
-        const base64String = reader.result;
+        if (error) throw error;
 
-        if (!base64String || !base64String.startsWith('data:image')) {
-          console.error('[LogoManager] Invalid base64 result');
-          reject(new Error('Failed to process image data'));
-          return;
-        }
+        // 2. Get Public URL
+        const { data: urlData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(LOGO_FILE_PATH);
+        const publicUrl = `${urlData.publicUrl}?t=${new Date().getTime()}`; // Bust cache
 
-        try {
-          localStorage.setItem(LOGO_STORAGE_KEY, base64String);
-          setLogo(base64String);
-          window.dispatchEvent(new Event(EVENT_KEY));
-          resolve(base64String);
-        } catch (error) {
-          console.error('[LogoManager] Error saving to storage:', error);
-          if (error.name === 'QuotaExceededError' || error.message.includes('Quota')) {
-            reject(new Error('Imagen demasiado grande.'));
-          } else {
-            reject(new Error('Error al guardar.'));
-          }
-        }
-      };
+        // 3. Update State
+        setLogo(publicUrl);
 
-      reader.readAsDataURL(file);
+        // 4. (Opzional) Cache locally as base64 for offline? No, better relying on URL.
+        // But we might want to trigger event for headers
+        window.dispatchEvent(new Event(EVENT_KEY));
+
+        resolve(publicUrl);
+
+      } catch (err) {
+        console.error('[LogoManager] Error uploading to Supabase:', err);
+        reject(err);
+      }
     });
   };
 
-  const resetLogo = () => {
+  const resetLogo = async () => {
     try {
+      // Delete from Supabase
+      const { error } = await supabase.storage.from(BUCKET_NAME).remove([LOGO_FILE_PATH]);
+      if (error) console.error("Error removing from Supabase", error);
+
       localStorage.removeItem(LOGO_STORAGE_KEY);
       localStorage.removeItem(LOGO_SIZE_KEY);
       setLogo(null);

@@ -1,0 +1,11 @@
+{
+    "name": "pandora7-2026",
+    "scope": "alx-quanticos-projects",
+    "framework": "vite",
+    "rewrites": [
+        {
+            "source": "/(.*)",
+            "destination": "/index.html"
+        }
+    ]
+}

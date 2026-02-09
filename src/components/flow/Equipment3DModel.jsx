@@ -4,7 +4,7 @@ import { TransformControls, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { Zap, Activity, Gauge, Cpu, Anchor } from 'lucide-react';
 
-function Equipment3DModel({ node, index, onClick, onTransformEnd, isSelected, onSetAnchorStart, isPickingAnchor, labelRef }) {
+function Equipment3DModel({ node, index, onClick, onTransformEnd, isSelected, onSetAnchorStart, isPickingAnchor, labelRef, isCollapsed = false }) {
     const meshRef = useRef();
     const lineRef = useRef();
     const [hovered, setHovered] = useState(false);
@@ -166,9 +166,9 @@ function Equipment3DModel({ node, index, onClick, onTransformEnd, isSelected, on
 
             {/* GRUPO DE ETIQUETA MOVIBLE */}
             <group ref={labelRef} position={labelPos}>
-                {/* Cubo "Contenedor" 3D Detrás de la UI (Ajustado a nueva UI) */}
+                {/* Cubo "Contenedor" 3D Detrás de la UI (Ajustado según modo colapsado) */}
                 <mesh position={[0, 0, -0.11]} castShadow receiveShadow>
-                    <boxGeometry args={[3.4, 2.2, 0.2]} />
+                    <boxGeometry args={isCollapsed ? [3.4, 0.8, 0.2] : [3.4, 2.2, 0.2]} />
                     <meshStandardMaterial
                         color="#05080F"
                         roughness={0.2}
@@ -177,7 +177,7 @@ function Equipment3DModel({ node, index, onClick, onTransformEnd, isSelected, on
                         emissiveIntensity={isSelected ? 0.1 : 0}
                     />
                     <lineSegments>
-                        <edgesGeometry args={[new THREE.BoxGeometry(3.4, 2.2, 0.2)]} />
+                        <edgesGeometry args={[new THREE.BoxGeometry(3.4, isCollapsed ? 0.8 : 2.2, 0.2)]} />
                         <lineBasicMaterial color={isSelected ? color : '#374151'} transparent opacity={isSelected ? 1 : 0.3} />
                     </lineSegments>
                 </mesh>
@@ -185,7 +185,7 @@ function Equipment3DModel({ node, index, onClick, onTransformEnd, isSelected, on
                 {/* Tarjeta Flotante UI Rediseñada */}
                 <Html position={[0, 0, 0]} transform center distanceFactor={10} style={{ pointerEvents: 'auto' }} zIndexRange={[100, 0]}>
                     <div
-                        className={`relative w-[340px] bg-[#0A0D14]/95 rounded-2xl border border-gray-700/50 backdrop-blur-xl font-sans select-none overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.6)] flex flex-col transform transition-transform duration-200 ${hovered ? 'scale-105' : ''}`}
+                        className={`relative w-[340px] bg-[#0A0D14]/95 rounded-2xl border border-gray-700/50 backdrop-blur-xl font-sans select-none overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.6)] flex flex-col transform transition-all duration-300 ${hovered ? 'scale-105' : ''}`}
                         onPointerDown={handlePointerDown}
                         onClick={handleClick}
                         style={{
@@ -218,36 +218,38 @@ function Equipment3DModel({ node, index, onClick, onTransformEnd, isSelected, on
                             )}
                         </div>
 
-                        {/* Body: Specs GRID Grande */}
-                        <div className="grid grid-cols-2 divide-x divide-gray-800 bg-[#0F1218]/50">
-                            {/* Capacidad */}
-                            <div className="p-4 flex flex-col justify-center relative group/cap hover:bg-white/5 transition-colors">
-                                <div className="flex items-center gap-2 mb-0.5 opacity-60 group-hover/cap:opacity-100 transition-opacity">
-                                    <Gauge className="w-3 h-3 text-gray-400" />
-                                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Capacidad</span>
+                        {/* Body: Specs GRID Grande - Solo visible si NO está colapsado */}
+                        {!isCollapsed && (
+                            <div className="grid grid-cols-2 divide-x divide-gray-800 bg-[#0F1218]/50">
+                                {/* Capacidad */}
+                                <div className="p-4 flex flex-col justify-center relative group/cap hover:bg-white/5 transition-colors">
+                                    <div className="flex items-center gap-2 mb-0.5 opacity-60 group-hover/cap:opacity-100 transition-opacity">
+                                        <Gauge className="w-3 h-3 text-gray-400" />
+                                        <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Capacidad</span>
+                                    </div>
+                                    <div className="flex items-baseline gap-1">
+                                        <span className="text-4xl font-black text-white leading-none tracking-tighter drop-shadow-lg w-full truncate">
+                                            {node.data.capacity || '0'}
+                                        </span>
+                                        <span className="text-[10px] font-bold text-gray-500 absolute bottom-4 right-4">kg/h</span>
+                                    </div>
                                 </div>
-                                <div className="flex items-baseline gap-1">
-                                    <span className="text-4xl font-black text-white leading-none tracking-tighter drop-shadow-lg w-full truncate">
-                                        {node.data.capacity || '0'}
-                                    </span>
-                                    <span className="text-[10px] font-bold text-gray-500 absolute bottom-4 right-4">kg/h</span>
-                                </div>
-                            </div>
 
-                            {/* Consumo */}
-                            <div className="p-4 flex flex-col justify-center relative group/pow hover:bg-white/5 transition-colors">
-                                <div className="flex items-center gap-2 mb-0.5 opacity-60 group-hover/pow:opacity-100 transition-opacity">
-                                    <Zap className="w-3 h-3 text-yellow-500" />
-                                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Potencia</span>
-                                </div>
-                                <div className="flex items-baseline gap-1">
-                                    <span className="text-4xl font-black text-white leading-none tracking-tighter drop-shadow-lg w-full truncate">
-                                        {node.data.power || '0'}
-                                    </span>
-                                    <span className="text-[10px] font-bold text-gray-500 absolute bottom-4 right-4">kW</span>
+                                {/* Consumo */}
+                                <div className="p-4 flex flex-col justify-center relative group/pow hover:bg-white/5 transition-colors">
+                                    <div className="flex items-center gap-2 mb-0.5 opacity-60 group-hover/pow:opacity-100 transition-opacity">
+                                        <Zap className="w-3 h-3 text-yellow-500" />
+                                        <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Potencia</span>
+                                    </div>
+                                    <div className="flex items-baseline gap-1">
+                                        <span className="text-4xl font-black text-white leading-none tracking-tighter drop-shadow-lg w-full truncate">
+                                            {node.data.power || '0'}
+                                        </span>
+                                        <span className="text-[10px] font-bold text-gray-500 absolute bottom-4 right-4">kW</span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* Footer bar decorative */}
                         <div className="h-1 w-full relative overflow-hidden bg-gray-900">
@@ -261,7 +263,7 @@ function Equipment3DModel({ node, index, onClick, onTransformEnd, isSelected, on
     );
 }
 
-function EquipmentWrapper({ node, index, isSelected, onClick, onUpdate, onSetAnchorStart, isPickingAnchor }) {
+function EquipmentWrapper({ node, index, isSelected, onClick, onUpdate, onSetAnchorStart, isPickingAnchor, isCollapsed = false, heightOffset = 0 }) {
     const groupRef = useRef();
     const labelRef = useRef();
     const { controls } = useThree();
@@ -272,7 +274,7 @@ function EquipmentWrapper({ node, index, isSelected, onClick, onUpdate, onSetAnc
                 ref={groupRef}
                 position={[
                     node.data.position3D?.x ?? ((index % 5) * 3 - 6),
-                    node.data.position3D?.y ?? 0,
+                    (node.data.position3D?.y ?? 0) + heightOffset,
                     node.data.position3D?.z ?? (Math.floor(index / 5) * 3 - 3)
                 ]}
                 rotation={node.data.rotation3D || [0, 0, 0]}
@@ -286,6 +288,7 @@ function EquipmentWrapper({ node, index, isSelected, onClick, onUpdate, onSetAnc
                     onSetAnchorStart={onSetAnchorStart}
                     isPickingAnchor={isPickingAnchor}
                     labelRef={labelRef}
+                    isCollapsed={isCollapsed}
                 />
             </group>
 
