@@ -71,7 +71,7 @@ function Header() {
                 PANDORA
               </span>
               <span className="text-[10px] font-semibold text-neon-purple bg-neon-purple/15 px-1.5 py-0.5 rounded-md border border-neon-purple/30 tracking-wider">
-                VER 7.05
+                VER 7.07
               </span>
             </div>
           </Link>

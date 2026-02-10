@@ -10,7 +10,9 @@ import ReactFlow, {
     useEdgesState,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { Trash2, Plus, Scan, Box, RotateCcw, RotateCw, FolderOpen, Save, Minimize2, ArrowUp, ArrowDown, Maximize2 } from 'lucide-react';
+import { Trash2, Plus, Scan, Box, RotateCcw, RotateCw, FolderOpen, Save, Minimize2, ArrowUp, ArrowDown, Maximize2, HardDrive } from 'lucide-react';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import EquipmentLibrary from '@/components/flow/EquipmentLibrary';
 import MetricsPanel from '@/components/flow/MetricsPanel';
 import CustomNode from '@/components/flow/CustomNode';
@@ -21,9 +23,11 @@ import EdgeToolbar from '@/components/flow/EdgeToolbar';
 import Flow3DViewer from '@/components/flow/Flow3DViewer';
 import FlowDesignsLibrary from '@/components/flow/FlowDesignsLibrary';
 import SaveDesignModal from '@/components/flow/SaveDesignModal';
+import SimulationSettingsModal from '@/components/flow/SimulationSettingsModal';
 import { useFlowSimulation } from '@/hooks/useFlowSimulation';
 import { useFlowHistory } from '@/hooks/useFlowHistory';
 import { useFlowDesigns } from '@/hooks/useFlowDesigns';
+import { useProject } from '@/context/ProjectContext';
 
 const nodeTypes = {
     custom: CustomNode,
@@ -34,6 +38,7 @@ const edgeTypes = {
 };
 
 function FlowDesignerPage() {
+    const { updateCalculatorMetrics, setAnalysisResults, saveProjectToSupabase, projectData } = useProject();
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
     const [selectedNode, setSelectedNode] = useState(null);
@@ -51,7 +56,9 @@ function FlowDesignerPage() {
         type: 'animated',
         animated: true,
     });
-    const [viewMode, setViewMode] = useState('2d');
+    const [viewMode, setViewMode] = useState(() => {
+        return localStorage.getItem('flowDesigner_viewMode') || '2d';
+    });
     const [isFxEnabled, setIsFxEnabled] = useState(false); // Estado FX Global
     const [isLayoutControlsOpen, setIsLayoutControlsOpen] = useState(false); // Panel Entorno
     const [placingEquipment, setPlacingEquipment] = useState(null); // Estado para placement manual
@@ -67,8 +74,61 @@ function FlowDesignerPage() {
     const { loadDesign: loadDesignFromDb, saveDesign: saveDesignToDb, updateDesign: updateDesignInDb } = useFlowDesigns();
     const [labelsCollapsed, setLabelsCollapsed] = useState(false); // Estado para colapsar fichas
     const [currentLayout, setCurrentLayout] = useState(null); // Estado para el layout 3D (GLB)
-    const [labelHeightOffset, setLabelHeightOffset] = useState(0); // Offset global de altura de fichas
+    const [labelHeightOffset, setLabelHeightOffset] = useState(() => {
+        const saved = localStorage.getItem('flowDesigner_labelHeightOffset');
+        return saved ? Number(saved) : 0;
+    }); // Offset global de altura de fichas
     const [isFullScreen, setIsFullScreen] = useState(false); // Estado para pantalla completa 3D
+
+    // Estados para Configuración de Simulación
+    const [simulationConfig, setSimulationConfig] = useState({});
+    const [isSimulationSettingsOpen, setIsSimulationSettingsOpen] = useState(false);
+
+    // PERSISTENCIA AUTOMÁTICA (Auto-Save)
+    // Cargar estado al iniciar
+    useEffect(() => {
+        try {
+            const savedNodes = localStorage.getItem('flowDesigner_nodes');
+            const savedEdges = localStorage.getItem('flowDesigner_edges');
+            const savedDesignId = localStorage.getItem('flowDesigner_currentDesignId');
+            const savedDesignName = localStorage.getItem('flowDesigner_currentDesignName');
+            const savedConfig = localStorage.getItem('flowDesigner_simulationConfig');
+            const savedLayout = localStorage.getItem('flowDesigner_currentLayout');
+            const savedLabelOffset = localStorage.getItem('flowDesigner_labelHeightOffset');
+
+            if (savedNodes) {
+                const parsedNodes = JSON.parse(savedNodes);
+                if (parsedNodes.length > 0) setNodes(parsedNodes);
+            }
+            if (savedEdges) {
+                const parsedEdges = JSON.parse(savedEdges);
+                if (parsedEdges.length > 0) setEdges(parsedEdges);
+            }
+            if (savedDesignId) setCurrentDesignId(savedDesignId);
+            if (savedDesignName) setCurrentDesignName(savedDesignName);
+            if (savedConfig) setSimulationConfig(JSON.parse(savedConfig));
+            if (savedLayout) setCurrentLayout(JSON.parse(savedLayout));
+            if (savedLabelOffset) setLabelHeightOffset(Number(savedLabelOffset));
+        } catch (e) {
+            console.error("Error loading saved state", e);
+        }
+    }, [setNodes, setEdges]); // Escalar dependence array
+
+    // Guardar estado al cambiar (con debounce implícito por render o efecto)
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            if (nodes.length > 0) localStorage.setItem('flowDesigner_nodes', JSON.stringify(nodes));
+            if (edges.length > 0) localStorage.setItem('flowDesigner_edges', JSON.stringify(edges));
+            localStorage.setItem('flowDesigner_simulationConfig', JSON.stringify(simulationConfig));
+            if (currentLayout) localStorage.setItem('flowDesigner_currentLayout', JSON.stringify(currentLayout));
+            localStorage.setItem('flowDesigner_labelHeightOffset', String(labelHeightOffset));
+
+            if (currentDesignId) localStorage.setItem('flowDesigner_currentDesignId', currentDesignId);
+            if (currentDesignName) localStorage.setItem('flowDesigner_currentDesignName', currentDesignName);
+        }, 1000); // Guardar 1 segundo después del último cambio para no saturar
+
+        return () => clearTimeout(timeoutId);
+    }, [nodes, edges, currentDesignId, currentDesignName, simulationConfig, currentLayout, labelHeightOffset]);
 
     // Historial Undo/Redo
     const { takeSnapshot, undo, redo, canUndo, canRedo } = useFlowHistory();
@@ -89,12 +149,23 @@ function FlowDesignerPage() {
         }
     }, [redo, nodes, edges, setNodes, setEdges]);
 
+
+
     const handle3DNodeDrop = useCallback((equipmentData, position3D) => {
         takeSnapshot(nodes, edges);
+
+        // Convert 3D position (meters) to 2D ReactFlow position (pixels)
+        // Scale factor: 50 pixels per meter
+        // 3D X -> 2D X
+        // 3D Z -> 2D Y
+        const scale = 80;
+        const x2d = position3D.x * scale;
+        const y2d = position3D.z * scale;
+
         const newNode = {
             id: `eq_${Date.now()}`,
             type: 'custom',
-            position: { x: 0, y: 0 }, // Posición 2D dummy
+            position: { x: x2d, y: y2d },
             data: {
                 ...equipmentData,
                 label: `${equipmentData.type} ${nodes.length + 1}`,
@@ -108,10 +179,14 @@ function FlowDesignerPage() {
         if (!placingEquipment) return;
         takeSnapshot(nodes, edges);
 
+        const scale = 80;
+        const x2d = position3D.x * scale;
+        const y2d = position3D.z * scale;
+
         const newNode = {
             id: `eq_${Date.now()}`,
             type: 'custom',
-            position: { x: 0, y: 0 },
+            position: { x: x2d, y: y2d },
             data: {
                 ...placingEquipment,
                 label: `${placingEquipment.type} ${nodes.length + 1}`,
@@ -122,25 +197,47 @@ function FlowDesignerPage() {
         setPlacingEquipment(null);
     }, [placingEquipment, nodes, setNodes]);
 
-    // Calcular métricas en tiempo real
-    const metrics = useFlowSimulation(nodes, edges);
+    // Calcular métricas en tiempo real con configuración dinámica
+    const metrics = useFlowSimulation(nodes, edges, simulationConfig);
+
+    // Helper para determinar color del flujo según origen
+    const getFlowColor = useCallback((sourceId) => {
+        const sourceNode = nodes.find(n => n.id === sourceId);
+        if (!sourceNode) return '#00F0FF';
+
+        const colorMap = {
+            'Mezcladora': '#00F0FF', // Cyan
+            'Extrusora': '#8B5CF6', // Purple
+            'Molino': '#10b981',    // Emerald
+            'Secadora': '#f59e0b',  // Amber
+            'Empacadora': '#ec4899',// Pink
+            'Transportador': '#06b6d4', // Cyan dark
+        };
+
+        const type = sourceNode.data?.type || '';
+        const typeKey = Object.keys(colorMap).find(k => k.toLowerCase() === type.toLowerCase());
+
+        return sourceNode.data?.color || (typeKey ? colorMap[typeKey] : '#00F0FF');
+    }, [nodes]);
 
     // Manejar conexiones
     const onConnect = useCallback(
         (params) => {
             takeSnapshot(nodes, edges);
+            const flowColor = getFlowColor(params.source);
+
             const newEdge = {
                 ...params,
                 type: selectedEdgeType.type === 'animated' ? 'animated' : selectedEdgeType.type,
                 animated: selectedEdgeType.animated,
                 style: {
-                    stroke: selectedEdgeType.color,
+                    stroke: flowColor,
                     strokeWidth: selectedEdgeType.animated ? 3 : 2
                 },
             };
             setEdges((eds) => addEdge(newEdge, eds));
         },
-        [setEdges, selectedEdgeType]
+        [setEdges, selectedEdgeType, getFlowColor, nodes, takeSnapshot, edges]
     );
 
     // Manejar drop desde librería
@@ -214,6 +311,282 @@ function FlowDesignerPage() {
         }));
     }, [setNodes, setEdges, nodes]);
 
+    // Sincronizar con Panel de Análisis
+    const handleSyncToAnalysis = useCallback(async () => {
+        // Calcular inversión total si no viene en métricas
+        const totalInvestment = nodes.reduce((acc, n) => acc + (n.data.cost || 0), 0);
+
+        // Preparar datos para el Dashboard
+        const analysisData = {
+            monthlyRevenue: metrics.revenuePerMonth || 0,
+            monthlyCost: metrics.costPerMonth || 0,
+            investment: totalInvestment,
+            netProfitMonthly: metrics.netProfitPerMonth || 0,
+            roi: metrics.roi || 0,
+            // Estimaciones simples para completar el dashboard
+            paybackYears: metrics.netProfitPerMonth > 0 ? (totalInvestment / (metrics.netProfitPerMonth * 12)) : 0,
+            irr: metrics.roi > 0 ? (metrics.roi / 100) : 0,
+            notes: `Simulación Flow Designer: ${currentDesignName || 'Sin Nombre'}`
+        };
+
+        // Actualizar Contexto Global
+        // Mapeamos a las estructuras que espera el Dashboard (si es necesario ajustar nombres)
+        updateCalculatorMetrics({
+            ...analysisData,
+            revenue: analysisData.monthlyRevenue,
+            expenses: analysisData.monthlyCost,
+            investment_amount: analysisData.investment
+        });
+
+        setAnalysisResults(analysisData);
+
+        // Persistir
+        await saveProjectToSupabase();
+
+        alert("✅ Datos sincronizados correctamente. Ahora están disponibles en el Panel de Análisis.");
+    }, [metrics, nodes, updateCalculatorMetrics, setAnalysisResults, saveProjectToSupabase, currentDesignName]);
+
+    // Exportar Diseño y Métricas a PDF Profesional
+    const handleExport = async () => {
+        try {
+            const canvasElement = document.getElementById('flow-designer-canvas');
+            if (!canvasElement) return;
+
+            // 0. Simulation Defaults
+            const config = {
+                electricityRate: simulationConfig.electricityRate ?? 0.15,
+                pricePerKg: simulationConfig.pricePerKg ?? 2.5,
+                daysPerMonth: simulationConfig.daysPerMonth ?? 30,
+                hoursPerShift: simulationConfig.hoursPerShift ?? 8,
+                shiftsPerDay: simulationConfig.shiftsPerDay ?? 3,
+                rawMaterialCost: simulationConfig.rawMaterialCost ?? 0,
+                operatorCount: simulationConfig.operatorCount ?? 0,
+                operatorCost: simulationConfig.operatorCost ?? 0
+            };
+
+            // 1. Prepare UI for Capture (Hide Overlays)
+            document.body.classList.add('exporting-mode');
+
+            // Add style to hide elements
+            const style = document.createElement('style');
+            style.id = 'export-styles';
+            // Added .react-flow__handle to hide connection handles
+            style.innerHTML = `
+                .exporting-mode .export-hidden { display: none !important; }
+                .exporting-mode .react-flow__controls { display: none !important; }
+                .exporting-mode .react-flow__attribution { display: none !important; }
+                .exporting-mode .react-flow__handle { display: none !important; opacity: 0 !important; visibility: hidden !important; }
+                .exporting-mode .react-flow__panel { display: none !important; }
+            `;
+            document.head.appendChild(style);
+
+            // Wait for render update
+            await new Promise(resolve => setTimeout(resolve, 800));
+
+            // 2. Capture Canvas
+            const canvas = await html2canvas(canvasElement, {
+                useCORS: true,
+                allowTaint: true,
+                scale: 2, // High resolution
+                backgroundColor: '#070A12',
+                ignoreElements: (element) => {
+                    return element.classList.contains('export-hidden');
+                }
+            });
+
+            // 3. Restore UI
+            document.body.classList.remove('exporting-mode');
+            document.head.removeChild(style);
+
+            const imgData = canvas.toDataURL('image/png');
+
+            // 4. Generate PDF
+            const pdf = new jsPDF({
+                orientation: 'landscape',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            const margin = 15;
+
+            // --- Background & Branding ---
+            // Dark Header Bar
+            pdf.setFillColor(7, 10, 18); // #070A12
+            pdf.rect(0, 0, pageWidth, 25, 'F');
+
+            // Logo Text
+            pdf.setTextColor(0, 240, 255); // Neon Cyan
+            pdf.setFontSize(22);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('PANDORA', margin, 17);
+
+            pdf.setTextColor(255, 255, 255);
+            pdf.setFontSize(14);
+            pdf.setFont('helvetica', 'normal');
+
+            // Client Name & Report Title
+            const clientName = projectData?.name || currentDesignName || 'Cliente';
+            pdf.text(`|  Reporte de Simulación - ${clientName}`, margin + 45, 17);
+
+            // Date
+            pdf.setFontSize(10);
+            pdf.setTextColor(150, 150, 150);
+            pdf.text(`${new Date().toLocaleString()}`, pageWidth - margin, 17, { align: 'right' });
+
+            // --- Main Content Grid ---
+            let currentY = 35;
+
+            // --- Section 1: Key Metrics Cards (Top Row) ---
+            const drawMetricCard = (x, y, label, value, unit, color = [0, 240, 255]) => {
+                // Card Background
+                pdf.setFillColor(245, 247, 250);
+                pdf.setDrawColor(220, 220, 220);
+                pdf.roundedRect(x, y, 60, 25, 3, 3, 'FD'); // Increased width slightly
+
+                // Accent Line
+                pdf.setDrawColor(color[0], color[1], color[2]);
+                pdf.setLineWidth(1);
+                pdf.line(x, y + 25, x + 60, y + 25); // Bottom accent
+
+                // Label
+                pdf.setTextColor(100, 100, 100);
+                pdf.setFontSize(8);
+                pdf.setFont('helvetica', 'bold');
+                pdf.text(label.toUpperCase(), x + 4, y + 8);
+
+                // Value and Unit Logic
+                pdf.setTextColor(30, 30, 30);
+                pdf.setFontSize(12); // Slightly smaller value font to avoid overlap
+                pdf.setFont('helvetica', 'bold');
+
+                // Draw Value
+                pdf.text(value, x + 4, y + 18);
+
+                // Draw Unit (Next to it but with space, or below if needed)
+                if (unit) {
+                    const valueWidth = pdf.getTextWidth(value);
+                    pdf.setFontSize(8);
+                    pdf.setTextColor(150, 150, 150);
+                    // Place unit slightly offset Y to align baseline
+                    pdf.text(unit, x + 4 + valueWidth + 2, y + 18);
+                }
+            };
+
+            // Metrics Data
+            drawMetricCard(margin, currentY, 'Capacidad Total', `${metrics.bottleneck || 0}`, 'kg/h', [0, 240, 255]);
+            drawMetricCard(margin + 65, currentY, 'Producción Mensual', `${metrics.productionPerMonth?.toLocaleString() || 0}`, 'kg', [16, 185, 129]);
+            drawMetricCard(margin + 130, currentY, 'Utilidad Neta', `$${metrics.netProfitPerMonth?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || 0}`, '/ mes', [132, 204, 22]);
+            drawMetricCard(margin + 195, currentY, 'ROI Estimado', `${metrics.roi || 0}`, '%', [236, 72, 153]);
+
+            currentY += 35;
+
+            // --- Section 2: 3D Visualization (Large Image) ---
+            // Calculate Aspect Ratio correctly
+            const imgProps = pdf.getImageProperties(imgData);
+            const contentWidth = pageWidth - (margin * 2);
+            const maxContentHeight = 100; // Limit height to leave room for footer
+
+            let imgWidth = contentWidth;
+            let imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+
+            // If height exceeds max, scale down width
+            if (imgHeight > maxContentHeight) {
+                imgHeight = maxContentHeight;
+                imgWidth = (imgProps.width * imgHeight) / imgProps.height;
+            }
+
+            // Centering image if scaled down width
+            const xOffset = margin + (contentWidth - imgWidth) / 2;
+
+            // Image Frame
+            pdf.setDrawColor(230, 230, 230);
+            pdf.rect(xOffset - 1, currentY - 1, imgWidth + 2, imgHeight + 2);
+
+            // Add Image
+            pdf.addImage(imgData, 'PNG', xOffset, currentY, imgWidth, imgHeight);
+
+            // Watermark overlay on image
+            pdf.setTextColor(255, 255, 255);
+            pdf.setFontSize(10);
+            pdf.text('Modelo 3D - Vista de Planta', xOffset + 5, currentY + imgHeight - 5);
+
+            currentY += imgHeight + 10;
+
+            // --- Section 3: Financial & Operational Breakdown (Bottom Row) ---
+
+            // 3.1 Cost Breakdown Header
+            pdf.setFontSize(10);
+            pdf.setTextColor(0, 0, 0);
+            pdf.text('Desglose de Costos Operativos Mensuales y Parámetros:', margin, currentY);
+            currentY += 7;
+
+            // Parameters Grid
+            pdf.setFontSize(9);
+            pdf.setTextColor(80, 80, 80);
+
+            const paramList = [
+                { l: 'Tarifa Eléctrica', v: `$${config.electricityRate}/kWh` },
+                { l: 'Horas Operativas', v: `${config.hoursPerShift}h x ${config.shiftsPerDay} turnos` },
+                { l: 'Días Operativos', v: `${config.daysPerMonth} días/mes` },
+                { l: 'Materia Prima', v: `$${config.rawMaterialCost}/kg` },
+                { l: 'Fuerza Laboral', v: `${config.operatorCount} ops @ $${config.operatorCost}` },
+                { l: 'Consumo Energía', v: `${metrics.totalPower} kW` },
+                { l: 'Costo Operativo', v: `$${metrics.costPerMonth?.toLocaleString(undefined, { maximumFractionDigits: 0 })}` },
+            ];
+
+            const boxHeight = 16;
+            const boxGap = 4;
+            // Calculate width based on 4 columns with gaps
+            const paramBoxWidth = (pageWidth - (margin * 2) - (boxGap * 3)) / 4;
+
+            let pX = margin;
+            let pY = currentY + 2; // Start a bit lower
+
+            paramList.forEach((p, i) => {
+                // Background Box
+                pdf.setFillColor(248, 250, 252);
+                pdf.setDrawColor(226, 232, 240);
+                pdf.roundedRect(pX, pY, paramBoxWidth, boxHeight, 2, 2, 'FD');
+
+                // Label (Top)
+                pdf.setFontSize(7);
+                pdf.setTextColor(100, 116, 139); // Slate 500
+                pdf.setFont('helvetica', 'bold');
+                pdf.text(p.l.toUpperCase(), pX + 3, pY + 6);
+
+                // Value (Bottom)
+                pdf.setFontSize(9);
+                pdf.setTextColor(15, 23, 42); // Slate 900
+                pdf.setFont('helvetica', 'normal');
+                pdf.text(p.v, pX + 3, pY + 13);
+
+                // Move Position
+                pX += paramBoxWidth + boxGap;
+
+                // Row Check (4 cols)
+                if ((i + 1) % 4 === 0) {
+                    pX = margin;
+                    pY += boxHeight + boxGap;
+                }
+            });
+
+            // Footer (Fixed at bottom)
+            pdf.setFontSize(8);
+            pdf.setTextColor(180, 180, 180);
+            pdf.text('Reporte generado automáticamente por PANDORA Platform. Los valores son estimaciones basadas en parámetros de simulación.', pageWidth / 2, pageHeight - 10, { align: 'center' });
+
+            // Save
+            pdf.save(`PANDORA_Report_${currentDesignName || 'Project'}.pdf`);
+
+        } catch (error) {
+            console.error('Error exporting PDF:', error);
+            alert('Hubo un error al generar el reporte PDF. Por favor intenta de nuevo.');
+            document.body.classList.remove('exporting-mode');
+        }
+    };
+
     // Manejar Teclado (Undo/Redo/Delete/Escape)
     useEffect(() => {
         const handleKeyDown = (event) => {
@@ -284,7 +657,8 @@ function FlowDesignerPage() {
             viewMode,
             isFxEnabled,
             labelsCollapsed,
-            labelHeightOffset
+            labelHeightOffset,
+            simulationConfig // Guardar config de simulación
         };
 
         // Construct layout payload, merging currentLayout (if any) with viewSettings
@@ -309,7 +683,7 @@ function FlowDesignerPage() {
                 alert('✅ Diseño guardado con éxito');
             }
         }
-    }, [currentDesignId, nodes, edges, customEquipments, currentLayout, saveDesignToDb, updateDesignInDb, viewMode, isFxEnabled, labelsCollapsed, labelHeightOffset]);
+    }, [currentDesignId, nodes, edges, customEquipments, currentLayout, saveDesignToDb, updateDesignInDb, viewMode, isFxEnabled, labelsCollapsed, labelHeightOffset, simulationConfig]);
 
     // Cargar diseño desde librería
     const handleLoadDesign = useCallback(async (designId) => {
@@ -328,6 +702,7 @@ function FlowDesignerPage() {
                     if (s.isFxEnabled !== undefined) setIsFxEnabled(s.isFxEnabled);
                     if (s.labelsCollapsed !== undefined) setLabelsCollapsed(s.labelsCollapsed);
                     if (s.labelHeightOffset !== undefined) setLabelHeightOffset(s.labelHeightOffset);
+                    if (s.simulationConfig) setSimulationConfig(s.simulationConfig);
                 }
             } else {
                 setCurrentLayout(null);
@@ -366,6 +741,62 @@ function FlowDesignerPage() {
             return node;
         }));
     }, [setNodes]);
+
+    // Guardar TODO (Local + Nube si existe)
+    const handleQuickSave = useCallback(async () => {
+        if (nodes.length === 0) return;
+
+        // 1. Guardado Local (Inmediato/Seguro)
+        localStorage.setItem('flowDesigner_nodes', JSON.stringify(nodes));
+        localStorage.setItem('flowDesigner_edges', JSON.stringify(edges));
+        localStorage.setItem('flowDesigner_simulationConfig', JSON.stringify(simulationConfig));
+        if (currentLayout) localStorage.setItem('flowDesigner_currentLayout', JSON.stringify(currentLayout));
+        localStorage.setItem('flowDesigner_viewMode', viewMode);
+        localStorage.setItem('flowDesigner_labelHeightOffset', String(labelHeightOffset));
+
+        if (currentDesignId) localStorage.setItem('flowDesigner_currentDesignId', currentDesignId);
+        if (currentDesignName) localStorage.setItem('flowDesigner_currentDesignName', currentDesignName);
+
+        // 2. Guardado en Nube (Si es un diseño ya guardado)
+        if (currentDesignId) {
+            const designData = {
+                name: currentDesignName,
+                nodes,
+                edges,
+                layout: {
+                    viewMode,
+                    simulationConfig,
+                    currentLayout, // Entorno 3D
+                    labelHeightOffset
+                },
+                updated_at: new Date()
+            };
+
+            try {
+                // Actualizar en segundo plano sin bloquear
+                updateDesignInDb(currentDesignId, designData).then(() => {
+                    console.log("☁️ Diseño actualizado en nube");
+                });
+            } catch (e) {
+                console.error("Error guardando en nube:", e);
+            }
+        }
+
+        // Feedback visual
+        const btn = document.getElementById('btn-quick-save');
+        if (btn) {
+            const originalContent = btn.innerHTML;
+            btn.classList.remove('bg-glass-light', 'border-glass-border', 'text-gray-300');
+            btn.classList.add('bg-neon-green', 'border-neon-green', 'text-black', 'font-bold');
+            btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><polyline points="20 6 9 17 4 12"></polyline></svg> Guardado!`;
+
+            setTimeout(() => {
+                btn.classList.remove('bg-neon-green', 'border-neon-green', 'text-black', 'font-bold');
+                btn.classList.add('bg-glass-light', 'border-glass-border', 'text-gray-300');
+                btn.innerHTML = originalContent;
+            }, 1500);
+        }
+    }, [nodes, edges, simulationConfig, currentDesignId, currentDesignName, currentLayout, viewMode, updateDesignInDb]);
 
     return (
         <>
@@ -532,12 +963,23 @@ function FlowDesignerPage() {
                         >
                             Limpiar
                         </button>
+
+                        <button
+                            id="btn-quick-save"
+                            onClick={handleQuickSave}
+                            className="px-3 py-1.5 rounded-lg bg-glass-light border border-glass-border text-gray-300 hover:text-white hover:border-neon-cyan/30 text-sm transition-all flex items-center gap-2"
+                            title="Guardar TODO (Local y Nube)"
+                        >
+                            <Save className="w-4 h-4" />
+                            Guardar Todo
+                        </button>
+
                         <button
                             onClick={() => setIsSaveModalOpen(true)}
                             className="px-3 py-1.5 rounded-lg bg-glass-light border border-glass-border text-gray-300 hover:text-white hover:border-neon-cyan/30 text-sm transition-all flex items-center gap-2"
                         >
                             <Save className="w-4 h-4" />
-                            {currentDesignName || 'Guardar'}
+                            {currentDesignName || 'Guardar Proyecto'}
                         </button>
                         <button
                             onClick={() => setIsLibraryOpen(true)}
@@ -546,8 +988,19 @@ function FlowDesignerPage() {
                             <FolderOpen className="w-4 h-4" />
                             Librería
                         </button>
-                        <button className="px-3 py-1.5 rounded-lg bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan hover:bg-neon-cyan/20 text-sm font-medium transition-all">
+                        <button
+                            onClick={handleExport}
+                            className="px-3 py-1.5 rounded-lg bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan hover:bg-neon-cyan/20 text-sm font-medium transition-all"
+                        >
                             Exportar
+                        </button>
+                        <button
+                            onClick={handleSyncToAnalysis}
+                            className="px-3 py-1.5 rounded-lg bg-neon-blue/10 border border-neon-blue/30 text-neon-blue hover:bg-neon-blue/20 text-sm font-medium transition-all flex items-center gap-2"
+                            title="Enviar datos al Panel Financiero"
+                        >
+                            <Box className="w-4 h-4" />
+                            Sincronizar Panel
                         </button>
                     </div>
                 </div>
@@ -565,7 +1018,7 @@ function FlowDesignerPage() {
                     </div>
 
                     {/* Canvas - Centro */}
-                    <div className={isFullScreen && viewMode === '3d' ? "fixed inset-0 z-[100] bg-deep" : "col-span-7 relative"}>
+                    <div id="flow-designer-canvas" className={isFullScreen && viewMode === '3d' ? "fixed inset-0 z-[100] bg-deep" : "col-span-8 relative"}>
                         {viewMode === '2d' ? (
                             <>
                                 <ReactFlow
@@ -639,9 +1092,13 @@ function FlowDesignerPage() {
                         )}
                     </div>
 
-                    {/* Panel de métricas - Derecha */}
-                    <div className="col-span-3 border-l border-glass-border bg-deep/50 backdrop-blur-xl overflow-y-auto">
-                        <MetricsPanel metrics={metrics} nodes={nodes} />
+                    {/* Panel Derecho - Métricas */}
+                    <div className="col-span-2 overflow-y-auto pr-2 custom-scrollbar">
+                        <MetricsPanel
+                            metrics={metrics}
+                            nodes={nodes}
+                            onOpenSettings={() => setIsSimulationSettingsOpen(true)}
+                        />
                     </div>
                 </div>
             </div>
@@ -683,6 +1140,18 @@ function FlowDesignerPage() {
                 document.body
             )}
 
+            {/* Modal de Configuración de Simulación */}
+            {createPortal(
+                <SimulationSettingsModal
+                    isOpen={isSimulationSettingsOpen}
+                    onClose={() => setIsSimulationSettingsOpen(false)}
+                    config={simulationConfig}
+                    onSave={setSimulationConfig}
+                />,
+                document.body
+            )}
+
+            {/* Modal Guardar */}
             {isSaveModalOpen && createPortal(
                 <SaveDesignModal
                     isOpen={isSaveModalOpen}

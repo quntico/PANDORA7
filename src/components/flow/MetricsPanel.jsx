@@ -6,9 +6,10 @@ import {
     Activity,
     AlertTriangle,
     Gauge,
+    Wallet,
 } from 'lucide-react';
 
-function MetricsPanel({ metrics, nodes }) {
+function MetricsPanel({ metrics, nodes, onOpenSettings }) {
     const hasNodes = nodes && nodes.length > 0;
 
     return (
@@ -28,17 +29,20 @@ function MetricsPanel({ metrics, nodes }) {
             ) : (
                 <div className="space-y-3">
                     {/* Capacidad Total */}
-                    <div className="p-3 rounded-xl backdrop-blur-xl bg-glass-light border border-neon-cyan/30 shadow-float">
+                    <div
+                        onClick={onOpenSettings}
+                        className="p-3 rounded-xl backdrop-blur-xl bg-glass-light border border-neon-cyan/30 shadow-float cursor-pointer hover:bg-white/5 transition-all group"
+                    >
                         <div className="flex items-center gap-2 mb-2">
-                            <div className="p-1.5 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/20">
+                            <div className="p-1.5 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/20 group-hover:scale-110 transition-transform">
                                 <Gauge className="w-3 h-3" />
                             </div>
-                            <span className="text-[10px] text-gray-400 uppercase tracking-wide">
+                            <span className="text-[10px] text-gray-400 uppercase tracking-wide group-hover:text-neon-cyan transition-colors">
                                 Capacidad Total
                             </span>
                         </div>
                         <div className="flex items-baseline gap-1">
-                            <span className="text-2xl font-bold text-white">
+                            <span className="text-2xl font-bold text-white group-hover:text-neon-cyan transition-colors">
                                 {metrics.bottleneck || 0}
                             </span>
                             <span className="text-xs text-gray-400">kg/h</span>
@@ -51,17 +55,20 @@ function MetricsPanel({ metrics, nodes }) {
                     </div>
 
                     {/* Consumo Energético */}
-                    <div className="p-3 rounded-xl backdrop-blur-xl bg-glass-light border border-yellow-500/30 shadow-float">
+                    <div
+                        onClick={onOpenSettings}
+                        className="p-3 rounded-xl backdrop-blur-xl bg-glass-light border border-yellow-500/30 shadow-float cursor-pointer hover:bg-white/5 transition-all group"
+                    >
                         <div className="flex items-center gap-2 mb-2">
-                            <div className="p-1.5 rounded-lg bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">
+                            <div className="p-1.5 rounded-lg bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 group-hover:scale-110 transition-transform">
                                 <Zap className="w-3 h-3" />
                             </div>
-                            <span className="text-[10px] text-gray-400 uppercase tracking-wide">
+                            <span className="text-[10px] text-gray-400 uppercase tracking-wide group-hover:text-yellow-400 transition-colors">
                                 Consumo Total
                             </span>
                         </div>
                         <div className="flex items-baseline gap-1">
-                            <span className="text-2xl font-bold text-white">
+                            <span className="text-2xl font-bold text-white group-hover:text-yellow-400 transition-colors">
                                 {metrics.totalPower || 0}
                             </span>
                             <span className="text-xs text-gray-400">kW</span>
@@ -69,12 +76,15 @@ function MetricsPanel({ metrics, nodes }) {
                     </div>
 
                     {/* Costo Operativo */}
-                    <div className="p-3 rounded-xl backdrop-blur-xl bg-glass-light border border-neon-purple/30 shadow-float">
+                    <div
+                        onClick={onOpenSettings}
+                        className="p-3 rounded-xl backdrop-blur-xl bg-glass-light border border-neon-purple/30 shadow-float cursor-pointer hover:bg-white/5 transition-all group"
+                    >
                         <div className="flex items-center gap-2 mb-2">
-                            <div className="p-1.5 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/20">
+                            <div className="p-1.5 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/20 group-hover:scale-110 transition-transform">
                                 <DollarSign className="w-3 h-3" />
                             </div>
-                            <span className="text-[10px] text-gray-400 uppercase tracking-wide">
+                            <span className="text-[10px] text-gray-400 uppercase tracking-wide group-hover:text-neon-purple transition-colors">
                                 Costo Operativo
                             </span>
                         </div>
@@ -82,31 +92,34 @@ function MetricsPanel({ metrics, nodes }) {
                             <div className="flex justify-between text-xs">
                                 <span className="text-gray-400">Por hora:</span>
                                 <span className="text-white font-semibold">
-                                    ${metrics.costPerHour?.toFixed(2) || '0.00'}
+                                    ${metrics.costPerHour?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
                                 </span>
                             </div>
                             <div className="flex justify-between text-xs">
                                 <span className="text-gray-400">Por día:</span>
                                 <span className="text-white font-semibold">
-                                    ${metrics.costPerDay?.toFixed(2) || '0.00'}
+                                    ${metrics.costPerDay?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
                                 </span>
                             </div>
                             <div className="flex justify-between text-xs">
                                 <span className="text-gray-400">Por mes:</span>
                                 <span className="text-white font-semibold">
-                                    ${metrics.costPerMonth?.toFixed(2) || '0.00'}
+                                    ${metrics.costPerMonth?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
                                 </span>
                             </div>
                         </div>
                     </div>
 
                     {/* Producción Estimada */}
-                    <div className="p-3 rounded-xl backdrop-blur-xl bg-glass-light border border-emerald-500/30 shadow-float">
+                    <div
+                        onClick={onOpenSettings}
+                        className="p-3 rounded-xl backdrop-blur-xl bg-glass-light border border-emerald-500/30 shadow-float cursor-pointer hover:bg-white/5 transition-all group"
+                    >
                         <div className="flex items-center gap-2 mb-2">
-                            <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 group-hover:scale-110 transition-transform">
                                 <TrendingUp className="w-3 h-3" />
                             </div>
-                            <span className="text-[10px] text-gray-400 uppercase tracking-wide">
+                            <span className="text-[10px] text-gray-400 uppercase tracking-wide group-hover:text-emerald-400 transition-colors">
                                 Producción Estimada
                             </span>
                         </div>
@@ -132,18 +145,50 @@ function MetricsPanel({ metrics, nodes }) {
                         </div>
                     </div>
 
-                    {/* ROI */}
-                    <div className="p-3 rounded-xl backdrop-blur-xl bg-glass-light border border-neon-pink/30 shadow-float">
+                    {/* Utilidades Estimadas */}
+                    <div
+                        onClick={onOpenSettings}
+                        className="p-3 rounded-xl backdrop-blur-xl bg-glass-light border border-lime-500/30 shadow-float cursor-pointer hover:bg-white/5 transition-all group"
+                    >
                         <div className="flex items-center gap-2 mb-2">
-                            <div className="p-1.5 rounded-lg bg-neon-pink/10 text-neon-pink border border-neon-pink/20">
+                            <div className="p-1.5 rounded-lg bg-lime-500/10 text-lime-400 border border-lime-500/20 group-hover:scale-110 transition-transform">
+                                <Wallet className="w-3 h-3" />
+                            </div>
+                            <span className="text-[10px] text-gray-400 uppercase tracking-wide group-hover:text-lime-400 transition-colors">
+                                Utilidades Estimadas
+                            </span>
+                        </div>
+                        <div className="space-y-1">
+                            <div className="flex justify-between text-xs">
+                                <span className="text-gray-400">Por día:</span>
+                                <span className="text-white font-semibold">
+                                    ${metrics.netProfitPerDay?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+                                </span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                                <span className="text-gray-400">Por mes:</span>
+                                <span className="text-white font-semibold">
+                                    ${metrics.netProfitPerMonth?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ROI */}
+                    <div
+                        onClick={onOpenSettings}
+                        className="p-3 rounded-xl backdrop-blur-xl bg-glass-light border border-neon-pink/30 shadow-float cursor-pointer hover:bg-white/5 transition-all group"
+                    >
+                        <div className="flex items-center gap-2 mb-2">
+                            <div className="p-1.5 rounded-lg bg-neon-pink/10 text-neon-pink border border-neon-pink/20 group-hover:scale-110 transition-transform">
                                 <Activity className="w-3 h-3" />
                             </div>
-                            <span className="text-[10px] text-gray-400 uppercase tracking-wide">
+                            <span className="text-[10px] text-gray-400 uppercase tracking-wide group-hover:text-neon-pink transition-colors">
                                 ROI Estimado
                             </span>
                         </div>
                         <div className="flex items-baseline gap-1">
-                            <span className="text-2xl font-bold text-white">
+                            <span className="text-2xl font-bold text-white group-hover:text-neon-pink transition-colors">
                                 {metrics.roi?.toFixed(1) || '0.0'}
                             </span>
                             <span className="text-xs text-gray-400">%</span>

@@ -4,7 +4,7 @@ import { TransformControls, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { Zap, Activity, Gauge, Cpu, Anchor } from 'lucide-react';
 
-function Equipment3DModel({ node, index, onClick, onTransformEnd, isSelected, onSetAnchorStart, isPickingAnchor, labelRef, isCollapsed = false }) {
+function Equipment3DModel({ node, index, onClick, onTransformEnd, isSelected, onSetAnchorStart, isPickingAnchor, labelRef, isCollapsed = false, heightOffset = 0 }) {
     const meshRef = useRef();
     const lineRef = useRef();
     const [hovered, setHovered] = useState(false);
@@ -53,9 +53,9 @@ function Equipment3DModel({ node, index, onClick, onTransformEnd, isSelected, on
     // Label Position Relative to Group
     const labelPos = useMemo(() => {
         return node.data.labelPosition
-            ? new THREE.Vector3(node.data.labelPosition.x, node.data.labelPosition.y, node.data.labelPosition.z)
-            : new THREE.Vector3(0, 2.2, 0);
-    }, [node.data.labelPosition]);
+            ? new THREE.Vector3(node.data.labelPosition.x, node.data.labelPosition.y + heightOffset, node.data.labelPosition.z)
+            : new THREE.Vector3(0, 2.2 + heightOffset, 0);
+    }, [node.data.labelPosition, heightOffset]);
 
     const groupYPosition = node.data.position3D?.y ?? defaultPos.y;
 
@@ -98,69 +98,53 @@ function Equipment3DModel({ node, index, onClick, onTransformEnd, isSelected, on
 
     return (
         <group>
-            {/* Si hay anclaje, dibujar la "Cuerda" dinámica */}
-            {anchorRel && (
-                <>
-                    <line ref={lineRef}>
-                        <bufferGeometry>
-                            <bufferAttribute
-                                attach="attributes-position"
-                                count={2}
-                                array={new Float32Array(6)} // 2 puntos * 3 coords
-                                itemSize={3}
-                            />
-                        </bufferGeometry>
-                        <lineBasicMaterial color={color} transparent opacity={0.5} linewidth={1} />
-                    </line>
-
-                    {/* Punto exacto de anclaje visual */}
-                    <mesh position={anchorRel}>
-                        <sphereGeometry args={[0.08, 16, 16]} />
-                        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={2} />
-                    </mesh>
-                </>
-            )}
-
-            {/* Esfera Base (Equipo Físico) */}
+            {/* Model (Representation Sphere) */}
             <mesh
                 ref={meshRef}
-                onClick={(e) => {
-                    e.stopPropagation();
-                    onClick(e);
-                }}
+                position={[0, 0.4, 0]}
+                castShadow
+                receiveShadow
                 onPointerOver={() => setHovered(true)}
                 onPointerOut={() => setHovered(false)}
             >
                 <sphereGeometry args={[0.4, 32, 32]} />
                 <meshStandardMaterial
                     color={color}
+                    roughness={0.1}
+                    metalness={0.8}
                     emissive={color}
-                    emissiveIntensity={hovered || isSelected ? 2 : 1}
-                    toneMapped={false}
+                    emissiveIntensity={isSelected ? 1 : 0.4}
                 />
             </mesh>
 
-            {/* Línea de guía vertical si está elevado Y NO tiene anclaje personalizado */}
-            {!anchorRel && groupYPosition > 0.1 && isSelected && (
-                <mesh position={[0, -groupYPosition / 2, 0]}>
-                    <cylinderGeometry args={[0.02, 0.02, groupYPosition, 8]} />
-                    <meshBasicMaterial color={color} transparent opacity={0.3} />
+            {/* Anclaje Visual (Punto de conexión de la etiqueta) - Solo si hay anclaje custom */}
+            {anchorRel && (
+                <mesh position={anchorRel}>
+                    <sphereGeometry args={[0.08, 16, 16]} />
+                    <meshStandardMaterial color={color} emissive={color} emissiveIntensity={2} />
                 </mesh>
+            )}
+
+            {/* Línea conectora (Cuerda) - Solo si hay anclaje custom */}
+            {anchorRel && (
+                <line ref={lineRef}>
+                    <bufferGeometry>
+                        <bufferAttribute
+                            attach="attributes-position"
+                            count={2}
+                            array={new Float32Array(6)}
+                            itemSize={3}
+                        />
+                    </bufferGeometry>
+                    <lineBasicMaterial color={color} opacity={0.5} transparent />
+                </line>
             )}
 
             {/* Anillo de Selección */}
             {isSelected && (
-                <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
+                <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
                     <ringGeometry args={[0.5, 0.6, 64]} />
                     <meshBasicMaterial color={color} transparent opacity={0.6} side={THREE.DoubleSide} />
-                </mesh>
-            )}
-
-            {/* Poste de soporte (Stem) - Solo si NO hay anclaje custom */}
-            {!anchorRel && (
-                <mesh position={[0, 1.1, 0]}>
-                    <cylinderGeometry args={[0.03, 0.03, 2.2, 8]} />
-                    <meshStandardMaterial color={color} transparent opacity={0.6} />
                 </mesh>
             )}
 
@@ -183,7 +167,7 @@ function Equipment3DModel({ node, index, onClick, onTransformEnd, isSelected, on
                 </mesh>
 
                 {/* Tarjeta Flotante UI Rediseñada */}
-                <Html position={[0, 0, 0]} transform center distanceFactor={10} style={{ pointerEvents: 'auto' }} zIndexRange={[100, 0]}>
+                <Html position={[0, 0, 0]} transform center distanceFactor={10} style={{ pointerEvents: 'auto' }} zIndexRange={[100, 0]} className="export-hidden">
                     <div
                         className={`relative w-[340px] bg-[#0A0D14]/95 rounded-2xl border border-gray-700/50 backdrop-blur-xl font-sans select-none overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.6)] flex flex-col transform transition-all duration-300 ${hovered ? 'scale-105' : ''}`}
                         onPointerDown={handlePointerDown}
@@ -274,7 +258,7 @@ function EquipmentWrapper({ node, index, isSelected, onClick, onUpdate, onSetAnc
                 ref={groupRef}
                 position={[
                     node.data.position3D?.x ?? ((index % 5) * 3 - 6),
-                    (node.data.position3D?.y ?? 0) + heightOffset,
+                    (node.data.position3D?.y ?? 0),
                     node.data.position3D?.z ?? (Math.floor(index / 5) * 3 - 3)
                 ]}
                 rotation={node.data.rotation3D || [0, 0, 0]}
@@ -289,6 +273,7 @@ function EquipmentWrapper({ node, index, isSelected, onClick, onUpdate, onSetAnc
                     isPickingAnchor={isPickingAnchor}
                     labelRef={labelRef}
                     isCollapsed={isCollapsed}
+                    heightOffset={heightOffset}
                 />
             </group>
 

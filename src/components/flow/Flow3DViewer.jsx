@@ -1,7 +1,7 @@
 import React, { useState, useRef, Suspense, useCallback, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { TransformControls, OrbitControls, PerspectiveCamera, Bounds, useBounds, Grid, Html } from '@react-three/drei';
-import { Upload, FileUp, Move, RotateCw, Trash2, Maximize2, ZoomIn, ZoomOut, MousePointer2, Grip, Scan, Hand, Lock, Home, Maximize, Box, Layers, Tv, Link2, Activity, Minus } from 'lucide-react';
+import { Upload, FileUp, Move, RotateCw, Trash2, Maximize2, ZoomIn, ZoomOut, MousePointer2, Grip, Scan, Hand, Lock, Home, Maximize, Box, Layers, Tv, Link2, Activity, Minus, Video, Square, Camera, Circle } from 'lucide-react';
 import EquipmentWrapper from './Equipment3DModel';
 import Connection3DArrow from './Connection3DArrow';
 import LayoutControls, { LayoutModel } from './LayoutLoader';
@@ -11,13 +11,13 @@ import { supabase } from '@/supabase';
 
 // Componente para controlar la cámara (Vistas Predefinidas)
 function ControlLimiter({ controlsRef }) {
-    useFrame(() => {
+    useFrame(({ camera }) => {
         if (controlsRef.current) {
             const controls = controlsRef.current;
             const target = controls.target;
 
-            // 1. Limitar el desplazamiento del Pan (Ancla)
-            const maxPan = 50;
+            // 1. Limitar el desplazamiento del Pan (Ancla) - Radio más estricto (30m)
+            const maxPan = 30;
             const distSq = target.x * target.x + target.z * target.z;
             if (distSq > maxPan * maxPan) {
                 const scale = maxPan / Math.sqrt(distSq);
@@ -26,7 +26,18 @@ function ControlLimiter({ controlsRef }) {
             }
 
             // 2. Limitar verticalmente para no perder el suelo
-            target.y = THREE.MathUtils.clamp(target.y, -5, 20);
+            // Evitar ir demasiado abajo (underground) o muy arriba
+            target.y = THREE.MathUtils.clamp(target.y, -2, 10);
+
+            // 3. Seguridad extra: Evitar que la cámara se aleje infinito
+            const maxCamDist = 80;
+            const camDist = camera.position.length();
+            if (camDist > maxCamDist) {
+                camera.position.setLength(maxCamDist);
+            }
+
+            // 4. Piso estricto para la cámara
+            if (camera.position.y < 0.5) camera.position.y = 0.5;
         }
     });
     return null;
@@ -303,12 +314,12 @@ function Flow3DViewer({ nodes = [], edges = [], onNodeClick, onNodeUpdate, fxEna
     const [cameraMode, setCameraMode] = useState('rotate');
 
     // Sync propLayout when it changes (e.g., loading a saved design)
+    // Sync propLayout when it changes (e.g., loading a saved design)
     React.useEffect(() => {
         if (propLayout !== undefined) {
             setInternalLayout(propLayout);
             if (propLayout?.scale) setLayoutScale(propLayout.scale);
             if (propLayout?.elevation !== undefined) setLayoutElevation(propLayout.elevation);
-            console.log('[Flow3D] Layout synced from props:', propLayout);
         }
     }, [propLayout]);
 
@@ -494,6 +505,122 @@ function Flow3DViewer({ nodes = [], edges = [], onNodeClick, onNodeUpdate, fxEna
         }
     }, [handleFileProcess]);
 
+    // Video Recording State
+    const [isRecording, setIsRecording] = useState(false);
+    const [isPreparing, setIsPreparing] = useState(false); // Nuevo estado: Preparando
+    const [isStabilized, setIsStabilized] = useState(false); // Estabilizador (Cinematic Mode)
+    const [recordingTime, setRecordingTime] = useState("00:00");
+    const recordingStartRef = useRef(null);
+    const mediaRecorderRef = useRef(null);
+    const chunksRef = useRef([]);
+
+    // Timer Logic for Recording
+    useEffect(() => {
+        let interval;
+        if (isRecording) {
+            recordingStartRef.current = Date.now();
+            interval = setInterval(() => {
+                const elapsed = Date.now() - recordingStartRef.current;
+                const seconds = Math.floor(elapsed / 1000);
+                const mm = String(Math.floor(seconds / 60)).padStart(2, '0');
+                const ss = String(seconds % 60).padStart(2, '0');
+                setRecordingTime(`${mm}:${ss}`);
+            }, 1000);
+        } else {
+            setRecordingTime("00:00");
+        }
+        return () => clearInterval(interval);
+    }, [isRecording]);
+
+    const handlePrepareRecording = useCallback(async () => {
+        try {
+            // Usar getDisplayMedia para grabar TODO (Canvas + UI HTML Overlays)
+            // Permitir elegir pantalla/ventana para resolución nativa y captura de tarjetas
+            const stream = await navigator.mediaDevices.getDisplayMedia({
+                video: {
+                    displaySurface: "browser", // Preferir pestaña actual
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 },
+                    frameRate: { ideal: 60 }
+                },
+                audio: false // Opcional
+            });
+
+            const mimeType = MediaRecorder.isTypeSupported('video/mp4') ? 'video/mp4' : 'video/webm';
+
+            let recorder;
+            try {
+                // Try high quality first
+                recorder = new MediaRecorder(stream, {
+                    mimeType,
+                    videoBitsPerSecond: 8000000 // 8 Mbps
+                });
+            } catch (err) {
+                console.warn("High quality recording failed, falling back to default:", err);
+                recorder = new MediaRecorder(stream, { mimeType });
+            }
+
+            chunksRef.current = [];
+
+            recorder.ondataavailable = (e) => {
+                if (e.data.size > 0) chunksRef.current.push(e.data);
+            };
+
+            recorder.onstop = () => {
+                if (chunksRef.current.length === 0) return; // Evitar descargas vacías
+
+                const blob = new Blob(chunksRef.current, { type: mimeType });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
+                a.download = `pandora_simulation_${Date.now()}.${ext}`;
+                a.click();
+                URL.revokeObjectURL(url);
+
+                // Detener todos los tracks
+                stream.getTracks().forEach(track => track.stop());
+                setIsRecording(false);
+                setIsPreparing(false);
+                mediaRecorderRef.current = null;
+            };
+
+            // Watch for user manually stopping sharing via browser UI
+            stream.getVideoTracks()[0].onended = () => {
+                if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+                    mediaRecorderRef.current.stop();
+                }
+                setIsRecording(false);
+                setIsPreparing(false);
+                mediaRecorderRef.current = null;
+            };
+
+            mediaRecorderRef.current = recorder;
+            setIsPreparing(true); // Entrar modo "Listo para grabar"
+
+        } catch (e) {
+            console.error("Recording error:", e);
+        }
+    }, []);
+
+    const handleStartRecording = useCallback(() => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'inactive') {
+            mediaRecorderRef.current.start();
+            setIsPreparing(false);
+            setIsRecording(true);
+        }
+    }, []);
+
+    const handleStopRecording = useCallback(() => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+            mediaRecorderRef.current.stop();
+        }
+    }, []);
+
+    // Handle Video Recording
+    const handleToggleRecording = useCallback(async () => {
+    }, [isRecording]);
+
     if (!nodes || !Array.isArray(nodes)) {
         return (
             <div className="w-full h-full bg-deep flex items-center justify-center">
@@ -504,7 +631,7 @@ function Flow3DViewer({ nodes = [], edges = [], onNodeClick, onNodeUpdate, fxEna
 
     return (
         <div
-            className="w-full h-full bg-deep relative"
+            className={`w-full h-full bg-deep relative transition-all duration-300 ${isRecording ? 'border-[6px] border-red-500 shadow-[inset_0_0_50px_rgba(239,68,68,0.5)]' : ''}`}
             onDragEnter={handleDragEnter}
             onDragLeave={handleDragLeave}
             onDragOver={(e) => e.preventDefault()}
@@ -524,6 +651,59 @@ function Flow3DViewer({ nodes = [], edges = [], onNodeClick, onNodeUpdate, fxEna
                     <span className="text-neon-cyan font-bold">Vista 3D</span> • Digital Twin
                 </p>
             </div>
+
+            {/* Recording Indicator & Timer with Stop Control */}
+            {isRecording && (
+                <div className="absolute top-4 right-1/2 translate-x-1/2 z-50 flex items-center gap-3 pointer-events-auto mt-16 bg-black/60 backdrop-blur-md px-4 py-1.5 rounded-full border border-red-500/50 shadow-lg cursor-pointer hover:bg-black/80 transition-colors" onClick={handleStopRecording} title="Click para detener">
+                    <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.8)]" />
+                    <span className="text-red-500 font-bold text-xs tracking-widest shadow-black drop-shadow-md">GRABANDO</span>
+                    <span className="text-white font-mono text-xs border-l border-white/20 pl-3 pr-2">{recordingTime}</span>
+                    <div className="w-px h-3 bg-white/20"></div>
+                    <Square className="w-3 h-3 text-white fill-current hover:text-red-400" />
+                </div>
+            )}
+
+            {/* PREPARING RECORDING OVERLAY */}
+            {isPreparing && (
+                <div className="absolute inset-0 z-[60] bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-8 pointer-events-auto animate-in fade-in duration-300">
+                    <div className="bg-glass-light border border-neon-cyan/50 rounded-2xl p-8 max-w-md w-full text-center shadow-[0_0_50px_rgba(0,240,255,0.2)]">
+                        <div className="w-16 h-16 rounded-full bg-neon-cyan/20 flex items-center justify-center mx-auto mb-6 animate-pulse">
+                            <Video className="w-8 h-8 text-neon-cyan" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-white mb-2">Listo para Grabar</h2>
+                        <p className="text-gray-400 mb-6 text-sm leading-relaxed">
+                            La pantalla está seleccionada. Ajusta tu cámara o posición si es necesario.
+                            <br />
+                            <span className="text-neon-cyan font-bold block mt-2">¿Empezar ahora?</span>
+                        </p>
+
+                        <div className="flex gap-4 justify-center">
+                            <button
+                                onClick={() => {
+                                    setIsPreparing(false);
+                                    if (mediaRecorderRef.current) mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop());
+                                    mediaRecorderRef.current = null;
+                                }}
+                                className="px-6 py-3 rounded-xl border border-gray-600 text-gray-300 hover:bg-white/10 hover:text-white font-medium transition-all"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleStartRecording}
+                                className="px-8 py-3 rounded-xl bg-neon-cyan text-black font-bold hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(0,240,255,0.4)] transition-all flex items-center gap-2"
+                            >
+                                <div className="w-3 h-3 rounded-full bg-red-600 animate-pulse" />
+                                COMENZAR VIDEO
+                            </button>
+                        </div>
+                    </div>
+                    <p className="mt-8 text-gray-500 text-xs max-w-lg text-center">
+                        Tip: Para mejor calidad y limitar el área, asegúrate de haber seleccionado
+                        <span className="text-gray-300 font-bold"> "Pestaña actual" </span>
+                        en el selector del navegador.
+                    </p>
+                </div>
+            )}
 
             {isDraggingFile && (
                 <div className="absolute inset-0 z-50 bg-neon-cyan/10 backdrop-blur-sm border-2 border-dashed border-neon-cyan flex flex-col items-center justify-center pointer-events-none">
@@ -558,6 +738,15 @@ function Flow3DViewer({ nodes = [], edges = [], onNodeClick, onNodeUpdate, fxEna
 
             <Canvas
                 shadows
+                gl={{
+                    preserveDrawingBuffer: true,
+                    powerPreference: "high-performance",
+                    alpha: false,
+                    antialias: true,
+                    stencil: false,
+                    depth: true
+                }}
+                dpr={[1, 1.5]}
                 camera={{ position: [20, 20, 20], fov: 50 }}
                 style={{ background: '#070A12' }}
                 onPointerMissed={() => setSelectedNodeId(null)}
@@ -571,13 +760,10 @@ function Flow3DViewer({ nodes = [], edges = [], onNodeClick, onNodeUpdate, fxEna
                 <directionalLight position={[10, 20, 10]} intensity={1} castShadow shadow-mapSize={[2048, 2048]} />
                 <pointLight position={[-10, 10, -10]} intensity={0.5} color="#00F0FF" />
 
-                <Grid
+                {/* Grid Helper Nativo (Sin parpadeo) */}
+                <primitive
+                    object={new THREE.GridHelper(300, 300, 0x444444, 0x1a1a1a)}
                     position={[0, -0.01, 0]}
-                    args={[100, 100]}
-                    cellColor="#444444"
-                    sectionColor="#888888"
-                    fadeDistance={100}
-                    infiniteGrid
                 />
 
                 {/* Marcadores de Origen y Orientación Visual */}
@@ -598,18 +784,39 @@ function Flow3DViewer({ nodes = [], edges = [], onNodeClick, onNodeUpdate, fxEna
                     </mesh>
                 </group>
 
-                <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} onClick={(e) => {
+                <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]} onClick={(e) => {
                     e.stopPropagation();
                     if (placingEquipment && onEquipmentPlaced) {
                         onEquipmentPlaced({ x: e.point.x, y: 0, z: e.point.z });
                         return;
                     }
+
+                    // Lógica de picking de anclaje
+                    if (pickingAnchorNodeId) {
+                        const point = e.point; // World coords
+                        handleNodeUpdate(pickingAnchorNodeId, {
+                            anchorPoint: { x: point.x, y: point.y, z: point.z }
+                        });
+                        onPickingAnchorChange(null);
+                        return;
+                    }
+
+                    setIsLayoutSelected(true);
                     setSelectedNodeId(null);
-                    setIsLayoutSelected(false);
                 }}>
                     <planeGeometry args={[500, 500]} />
                     <meshStandardMaterial color="#070A12" opacity={0.0} transparent />
                 </mesh>
+
+                <LayoutWrapper
+                    layout={layout}
+                    scale={layoutScale}
+                    elevation={layoutElevation}
+                    fxEnabled={layoutFx}
+                    isSelected={isLayoutSelected}
+                    mode={transformMode}
+                    onUpdate={(changes) => setLayout(prev => ({ ...prev, ...changes }))}
+                />
 
                 <Bounds fit clip observe margin={1.2}>
                     <CameraManager resetTrigger={resetCameraTrigger} />
@@ -635,31 +842,22 @@ function Flow3DViewer({ nodes = [], edges = [], onNodeClick, onNodeUpdate, fxEna
                             setIsLayoutSelected(true);
                             setSelectedNodeId(null);
                         }}>
-                            <LayoutWrapper
-                                layout={layout}
-                                scale={layoutScale}
-                                elevation={layoutElevation}
-                                fxEnabled={layoutFx}
-                                isSelected={isLayoutSelected}
-                                mode={transformMode}
-                                onUpdate={(changes) => setLayout(prev => ({ ...prev, ...changes }))}
-                            />
+                            {nodes.map((node, index) => (
+                                <EquipmentWrapper
+                                    key={node.id}
+                                    node={node}
+                                    index={index}
+                                    isSelected={selectedNodeId === node.id}
+                                    onClick={(e) => handleNodeClick(e, node)}
+                                    onUpdate={handleNodeUpdate}
+                                    onSetAnchorStart={() => onPickingAnchorChange(node.id)}
+                                    isPickingAnchor={pickingAnchorNodeId === node.id}
+                                    isCollapsed={labelsCollapsed}
+                                    heightOffset={labelHeightOffset} // <<< HEIGHT OFFSET PROP
+                                />
+                            ))}
                         </group>
                     </Suspense>
-
-                    {nodes.map((node) => (
-                        <EquipmentWrapper
-                            key={node.id}
-                            node={node}
-                            isSelected={selectedNodeId === node.id}
-                            onClick={(e) => handleNodeClick(e, node)}
-                            onUpdate={handleNodeUpdate}
-                            onSetAnchorStart={() => onPickingAnchorChange(node.id)}
-                            isPickingAnchor={pickingAnchorNodeId === node.id}
-                            isCollapsed={labelsCollapsed}
-                            heightOffset={labelHeightOffset}
-                        />
-                    ))}
                 </Bounds>
 
                 {edges.map(conn => <Connection3DArrow key={conn.id} edge={conn} nodes={nodes} connectionStyle={connectionStyle} />)}
@@ -669,8 +867,13 @@ function Flow3DViewer({ nodes = [], edges = [], onNodeClick, onNodeUpdate, fxEna
                 <OrbitControls
                     ref={orbitRef}
                     makeDefault
-                    enableDamping
-                    dampingFactor={0.05}
+                    enableDamping={true}
+                    dampingFactor={isStabilized ? 0.005 : 0.05} // Ultra smooth if stabilized
+                    rotateSpeed={isStabilized ? 0.2 : 0.5} // Slower rotation
+                    zoomSpeed={isStabilized ? 0.2 : 1.0}
+                    panSpeed={isStabilized ? 0.2 : 1.0}
+                    autoRotate={isStabilized && !isRecording} // Auto rotate preview if stabilized but not recording (optional, removed for now to just be manual smooth)
+                    autoRotateSpeed={0.5}
                     maxPolarAngle={Math.PI / 2 - 0.05}
                     minDistance={5}
                     maxDistance={120}
@@ -684,17 +887,28 @@ function Flow3DViewer({ nodes = [], edges = [], onNodeClick, onNodeUpdate, fxEna
                 <ControlLimiter controlsRef={orbitRef} />
             </Canvas>
 
-            <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none">
+            <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none export-hidden">
                 <div className="bg-glass-light border border-glass-border rounded-xl p-2 pointer-events-auto flex flex-col gap-2 animate-in slide-in-from-top shadow-lg backdrop-blur-md">
                     <div className="flex gap-1">
                         <button onClick={() => setCameraMode(prev => prev === 'rotate' ? 'pan' : 'rotate')} className={`px-3 py-1 text-xs rounded ${cameraMode === 'pan' ? 'bg-neon-purple text-white' : 'text-gray-300 hover:bg-white/10'}`} title={cameraMode === 'rotate' ? "Modo Rotación" : "Modo Pan"}><Hand className="w-3 h-3" /></button>
                         <div className="w-[1px] bg-gray-700 mx-1"></div>
                         <button onClick={() => { setIsConnecting(!isConnecting); setConnectionSourceId(null); onPickingAnchorChange(null); }} className={`px-3 py-1 text-xs rounded ${isConnecting ? 'bg-neon-cyan text-black animate-pulse' : 'text-gray-300 hover:bg-white/10'}`} title="Conectar Equipos"><Link2 className="w-3 h-3" /></button>
                         <div className="w-[1px] bg-gray-700 mx-1"></div>
+                        <button onClick={() => setIsStabilized(!isStabilized)} className={`px-3 py-1 text-xs rounded ${isStabilized ? 'bg-yellow-500/20 text-yellow-500 border border-yellow-500/50' : 'text-gray-300 hover:bg-white/10'}`} title={isStabilized ? "Modo Cine: Activado" : "Activar Estabilizador (Cine)"}><Camera className="w-3 h-3" /></button>
+                        <div className="w-[1px] bg-gray-700 mx-1"></div>
                         <button onClick={() => handleFxChange(!layoutFx)} className={`px-3 py-1 text-xs rounded ${layoutFx ? 'bg-neon-cyan text-black' : 'text-gray-300 hover:bg-white/10'}`} title="FX Global"><Scan className="w-3 h-3" /></button>
                         <div className="w-[1px] bg-gray-700 mx-1"></div>
                         <button onClick={() => setConnectionStyle(prev => prev === 'curved' ? 'straight' : 'curved')} className={`px-3 py-1 text-xs rounded ${connectionStyle === 'curved' ? 'text-neon-cyan' : 'text-gray-300 hover:bg-white/10'}`} title={connectionStyle === 'curved' ? "Conexiones Curvas" : "Conexiones Rectas"}>
                             {connectionStyle === 'curved' ? <Activity className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+                        </button>
+                        <div className="w-[1px] bg-gray-700 mx-1"></div>
+                        <button
+                            onClick={isRecording ? handleStopRecording : handlePrepareRecording}
+                            className={`px-3 py-1 text-xs rounded flex items-center gap-2 ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'text-gray-300 hover:bg-white/10'}`}
+                            title={isRecording ? "Detener Grabación" : "Grabar Video 3D"}
+                        >
+                            {isRecording ? <Square className="w-3 h-3 fill-current" /> : <Circle className="w-3 h-3 fill-red-500 text-red-500" />}
+                            {isRecording && <span className="font-bold">PARAR</span>}
                         </button>
                     </div>
 
@@ -708,7 +922,7 @@ function Flow3DViewer({ nodes = [], edges = [], onNodeClick, onNodeUpdate, fxEna
                 </div>
             </div>
 
-            <div className="absolute bottom-20 left-6 pointer-events-none z-20">
+            <div className="absolute bottom-20 left-6 pointer-events-none z-20 export-hidden">
                 <VirtualJoystick onMove={(pos) => window.dispatchEvent(new CustomEvent('joystick-move', { detail: pos }))} />
             </div>
         </div >

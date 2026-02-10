@@ -50,15 +50,35 @@ function AnimatedEdge({
             />
 
             {/* Animated particles */}
-            <circle r="4" fill={style.stroke || '#00F0FF'} className="opacity-80">
-                <animateMotion dur="2s" repeatCount="indefinite" path={edgePath} />
-            </circle>
-            <circle r="4" fill={style.stroke || '#00F0FF'} className="opacity-60">
-                <animateMotion dur="2s" repeatCount="indefinite" path={edgePath} begin="0.5s" />
-            </circle>
-            <circle r="3" fill="white" className="opacity-40">
-                <animateMotion dur="2s" repeatCount="indefinite" path={edgePath} begin="1s" />
-            </circle>
+            {/* Animated particles (Arrows) */}
+            <g>
+                <path
+                    d="M-4,-4 L4,0 L-4,4 z"
+                    fill={style.stroke || '#00F0FF'}
+                >
+                    <animateMotion
+                        dur="1.5s"
+                        repeatCount="indefinite"
+                        path={edgePath}
+                        rotate="auto"
+                    />
+                </path>
+            </g>
+            <g>
+                <path
+                    d="M-3,-3 L3,0 L-3,3 z"
+                    fill={style.stroke || '#00F0FF'}
+                    opacity="0.6"
+                >
+                    <animateMotion
+                        dur="1.5s"
+                        repeatCount="indefinite"
+                        path={edgePath}
+                        begin="0.5s"
+                        rotate="auto"
+                    />
+                </path>
+            </g>
         </>
     );
 }
