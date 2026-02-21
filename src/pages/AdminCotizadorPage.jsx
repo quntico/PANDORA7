@@ -10,6 +10,43 @@ function AdminCotizadorPage() {
     const [activeCotizadorTab, setActiveCotizadorTab] = useState('empresas');
     // State to manage the currently editing company for settings
     const [editingCompany, setEditingCompany] = useState(null);
+    const [editingForm, setEditingForm] = useState({
+        logoUrl: null,
+        primaryColor: '#10B981',
+        accentColor: '#00F0FF',
+        format: 'Plantilla Estándar PANDORA'
+    });
+
+    const handleOpenSettings = (e, company) => {
+        e.stopPropagation();
+        setEditingCompany(company);
+
+        // Define hex color based on the simple color name for the demo
+        let hexColor = '#10B981';
+        if (company.color === 'orange') hexColor = '#F97316';
+        if (company.color === 'blue') hexColor = '#3B82F6';
+        if (company.color === 'purple') hexColor = '#A855F7';
+
+        setEditingForm({
+            logoUrl: company.logoUrl || null,
+            primaryColor: hexColor,
+            accentColor: '#00F0FF',
+            format: 'Plantilla Estándar PANDORA'
+        });
+    };
+
+    const handleLogoUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const url = URL.createObjectURL(file);
+            setEditingForm(prev => ({ ...prev, logoUrl: url }));
+        }
+    };
+
+    const handleSaveSettings = () => {
+        alert("Ajustes guardados para " + editingCompany?.name + "\nColor primario: " + editingForm.primaryColor + "\nArchivo Logo: " + (editingForm.logoUrl ? 'Subido' : 'No subido'));
+        setEditingCompany(null);
+    };
 
     return (
         <div className="min-h-screen bg-deep text-white p-8 animate-fade-in flex flex-col items-center">
@@ -160,10 +197,7 @@ function AdminCotizadorPage() {
                                             </div>
                                             <button
                                                 className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400/70 hover:text-emerald-400 hover:bg-emerald-500/20 border border-transparent hover:border-emerald-500/30 transition-all z-10"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setEditingCompany({ name: 'SOLIFOOD', color: 'emerald' });
-                                                }}
+                                                onClick={(e) => handleOpenSettings(e, { name: 'SOLIFOOD', color: 'emerald' })}
                                                 title="Ajustes de Empresa"
                                             >
                                                 <Settings className="w-4 h-4" />
@@ -188,10 +222,7 @@ function AdminCotizadorPage() {
                                             </div>
                                             <button
                                                 className="p-1.5 rounded-lg bg-orange-500/10 text-orange-400/70 hover:text-orange-400 hover:bg-orange-500/20 border border-transparent hover:border-orange-500/30 transition-all z-10"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setEditingCompany({ name: 'SOLIMAQ', color: 'orange' });
-                                                }}
+                                                onClick={(e) => handleOpenSettings(e, { name: 'SOLIMAQ', color: 'orange' })}
                                                 title="Ajustes de Empresa"
                                             >
                                                 <Settings className="w-4 h-4" />
@@ -216,10 +247,7 @@ function AdminCotizadorPage() {
                                             </div>
                                             <button
                                                 className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400/70 hover:text-blue-400 hover:bg-blue-500/20 border border-transparent hover:border-blue-500/30 transition-all z-10"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setEditingCompany({ name: 'SOLIMED', color: 'blue' });
-                                                }}
+                                                onClick={(e) => handleOpenSettings(e, { name: 'SOLIMED', color: 'blue' })}
                                                 title="Ajustes de Empresa"
                                             >
                                                 <Settings className="w-4 h-4" />
@@ -244,10 +272,7 @@ function AdminCotizadorPage() {
                                             </div>
                                             <button
                                                 className="p-1.5 rounded-lg bg-purple-500/10 text-purple-400/70 hover:text-purple-400 hover:bg-purple-500/20 border border-transparent hover:border-purple-500/30 transition-all z-10"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setEditingCompany({ name: 'SOLIWASTE', color: 'purple' });
-                                                }}
+                                                onClick={(e) => handleOpenSettings(e, { name: 'SOLIWASTE', color: 'purple' })}
                                                 title="Ajustes de Empresa"
                                             >
                                                 <Settings className="w-4 h-4" />
@@ -320,15 +345,29 @@ function AdminCotizadorPage() {
                         {/* Logo Upload Section */}
                         <div className="space-y-3">
                             <label className="text-sm font-medium text-gray-300">Logotipo de la Empresa</label>
-                            <div className="border-2 border-dashed border-glass-border rounded-xl p-6 flex flex-col items-center justify-center gap-3 hover:border-neon-cyan/50 hover:bg-neon-cyan/5 transition-all cursor-pointer group">
-                                <div className="p-3 bg-glass-light rounded-full group-hover:bg-neon-cyan/20 transition-colors">
-                                    <Upload className="w-6 h-6 text-gray-400 group-hover:text-neon-cyan" />
-                                </div>
-                                <div className="text-center">
-                                    <p className="text-sm text-gray-300">Haz clic para subir un nuevo logotipo</p>
-                                    <p className="text-xs text-gray-500 mt-1">PNG, JPG, SVG (Recomendado 500x500px)</p>
-                                </div>
-                            </div>
+                            <label className="border-2 border-dashed border-glass-border rounded-xl p-6 flex flex-col items-center justify-center gap-3 hover:border-neon-cyan/50 hover:bg-neon-cyan/5 transition-all cursor-pointer group relative overflow-hidden">
+                                <input type="file" className="hidden" accept="image/png, image/jpeg, image/svg+xml" onChange={handleLogoUpload} />
+                                {editingForm.logoUrl ? (
+                                    <div className="absolute inset-0 bg-deep/80 backdrop-blur-sm flex items-center justify-center">
+                                        <img src={editingForm.logoUrl} alt="Logo" className="max-h-24 max-w-full object-contain" />
+                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <span className="text-white text-sm font-medium flex items-center gap-2">
+                                                <Upload className="w-4 h-4" /> Cambiar Logo
+                                            </span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="p-3 bg-glass-light rounded-full group-hover:bg-neon-cyan/20 transition-colors">
+                                            <Upload className="w-6 h-6 text-gray-400 group-hover:text-neon-cyan" />
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-sm text-gray-300">Haz clic para subir un nuevo logotipo</p>
+                                            <p className="text-xs text-gray-500 mt-1">PNG, JPG, SVG (Recomendado 500x500px)</p>
+                                        </div>
+                                    </>
+                                )}
+                            </label>
                         </div>
 
                         {/* Theme Colors Section */}
@@ -339,21 +378,38 @@ function AdminCotizadorPage() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1">
                                     <label className="text-xs text-gray-500">Color Primario</label>
-                                    <div className="flex items-center gap-3 p-2 bg-glass border border-glass-border rounded-lg">
+                                    <div className="flex items-center gap-3 p-2 bg-glass border border-glass-border rounded-lg relative overflow-hidden group">
+                                        <input
+                                            type="color"
+                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                            value={editingForm.primaryColor}
+                                            onChange={(e) => setEditingForm(prev => ({ ...prev, primaryColor: e.target.value }))}
+                                        />
                                         <div
-                                            className="w-6 h-6 rounded-md shadow-inner"
-                                            style={{ backgroundColor: editingCompany?.color === 'emerald' ? '#10B981' : editingCompany?.color === 'orange' ? '#F97316' : editingCompany?.color === 'blue' ? '#3B82F6' : '#A855F7' }}
+                                            className="w-6 h-6 rounded-md shadow-inner border border-white/10"
+                                            style={{ backgroundColor: editingForm.primaryColor }}
                                         ></div>
-                                        <span className="text-sm text-gray-300 font-mono">
-                                            {editingCompany?.color === 'emerald' ? '#10B981' : editingCompany?.color === 'orange' ? '#F97316' : editingCompany?.color === 'blue' ? '#3B82F6' : '#A855F7'}
+                                        <span className="text-sm text-gray-300 font-mono uppercase">
+                                            {editingForm.primaryColor}
                                         </span>
                                     </div>
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-xs text-gray-500">Color de Acento</label>
-                                    <div className="flex items-center gap-3 p-2 bg-glass border border-glass-border rounded-lg">
-                                        <div className="w-6 h-6 rounded-md bg-neon-cyan shadow-inner"></div>
-                                        <span className="text-sm text-gray-300 font-mono">#00F0FF</span>
+                                    <div className="flex items-center gap-3 p-2 bg-glass border border-glass-border rounded-lg relative overflow-hidden group">
+                                        <input
+                                            type="color"
+                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                            value={editingForm.accentColor}
+                                            onChange={(e) => setEditingForm(prev => ({ ...prev, accentColor: e.target.value }))}
+                                        />
+                                        <div
+                                            className="w-6 h-6 rounded-md shadow-inner border border-white/10"
+                                            style={{ backgroundColor: editingForm.accentColor }}
+                                        ></div>
+                                        <span className="text-sm text-gray-300 font-mono uppercase">
+                                            {editingForm.accentColor}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -362,7 +418,11 @@ function AdminCotizadorPage() {
                         {/* Document Format Section */}
                         <div className="space-y-3">
                             <label className="text-sm font-medium text-gray-300">Formato PDF Base</label>
-                            <select className="w-full bg-glass border border-glass-border text-white text-sm rounded-lg focus:ring-neon-cyan focus:border-neon-cyan block p-2.5">
+                            <select
+                                className="w-full bg-glass border border-glass-border text-white text-sm rounded-lg focus:ring-neon-cyan focus:border-neon-cyan block p-2.5 outline-none"
+                                value={editingForm.format}
+                                onChange={(e) => setEditingForm(prev => ({ ...prev, format: e.target.value }))}
+                            >
                                 <option>Plantilla Estándar PANDORA</option>
                                 <option>Plantilla Premium Detallada</option>
                                 <option>Plantilla Ejecutiva Simple</option>
@@ -378,7 +438,7 @@ function AdminCotizadorPage() {
                             Cancelar
                         </button>
                         <button
-                            onClick={() => setEditingCompany(null)}
+                            onClick={handleSaveSettings}
                             className="px-4 py-2 rounded-lg text-sm font-medium text-black bg-neon-cyan hover:bg-[#00D0DD] hover:shadow-glow-md transition-all"
                         >
                             Guardar Cambios
