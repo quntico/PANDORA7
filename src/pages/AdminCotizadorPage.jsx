@@ -19,34 +19,56 @@ function AdminCotizadorPage() {
         format: 'Plantilla Estándar PANDORA'
     });
 
+    const [companies, setCompanies] = useState([
+        {
+            id: 'solifood',
+            name: 'SOLIFOOD',
+            description: 'Equipos para la industria alimentaria.',
+            initials: 'SF',
+            theme: { primary: '#3B3B3B', secondary: '#FFFFFF', accent: '#F2B705', support: '#E6E6E6', logoUrl: null },
+            format: 'Plantilla Estándar PANDORA',
+            equiposCount: 84
+        },
+        {
+            id: 'solimaq',
+            name: 'SOLIMAQ',
+            description: 'Maquinaria pesada y construcción.',
+            initials: 'SM',
+            theme: { primary: '#F97316', secondary: '#FFFFFF', accent: '#F97316', support: '#E6E6E6', logoUrl: null },
+            format: 'Plantilla Estándar PANDORA',
+            equiposCount: 112
+        },
+        {
+            id: 'solimed',
+            name: 'SOLIMED',
+            description: 'Equipamiento médico avanzado.',
+            initials: 'MD',
+            theme: { primary: '#3B82F6', secondary: '#FFFFFF', accent: '#3B82F6', support: '#E6E6E6', logoUrl: null },
+            format: 'Plantilla Estándar PANDORA',
+            equiposCount: 45
+        },
+        {
+            id: 'soliwaste',
+            name: 'SOLIWASTE',
+            description: 'Gestión de residuos y reciclaje.',
+            initials: 'SW',
+            theme: { primary: '#A855F7', secondary: '#FFFFFF', accent: '#A855F7', support: '#E6E6E6', logoUrl: null },
+            format: 'Plantilla Estándar PANDORA',
+            equiposCount: 28
+        }
+    ]);
+
     const handleOpenSettings = (e, company) => {
         e.stopPropagation();
         setEditingCompany(company);
 
-        // Define hex color based on the simple color name for the demo
-        let hexColor = '#10B981';
-        let actColor = '#00F0FF';
-        let secColor = '#FFFFFF';
-        let supColor = '#E6E6E6';
-
-        if (company.name === 'SOLIFOOD') {
-            hexColor = '#3B3B3B'; // Gris Antracita Fondo
-            secColor = '#FFFFFF'; // Blanco Corporativo
-            actColor = '#F2B705'; // Amarillo SOLIFOOD
-            supColor = '#E6E6E6'; // Gris Claro
-        } else {
-            if (company.color === 'orange') hexColor = '#F97316';
-            if (company.color === 'blue') hexColor = '#3B82F6';
-            if (company.color === 'purple') hexColor = '#A855F7';
-        }
-
         setEditingForm({
-            logoUrl: company.logoUrl || null,
-            primaryColor: hexColor,
-            secondaryColor: secColor,
-            accentColor: actColor,
-            supportColor: supColor,
-            format: 'Plantilla Estándar PANDORA'
+            logoUrl: company.theme.logoUrl,
+            primaryColor: company.theme.primary,
+            secondaryColor: company.theme.secondary,
+            accentColor: company.theme.accent,
+            supportColor: company.theme.support,
+            format: company.format
         });
     };
 
@@ -59,7 +81,22 @@ function AdminCotizadorPage() {
     };
 
     const handleSaveSettings = () => {
-        alert("Ajustes guardados para " + editingCompany?.name + "\nColor primario: " + editingForm.primaryColor + "\nArchivo Logo: " + (editingForm.logoUrl ? 'Subido' : 'No subido'));
+        setCompanies(prev => prev.map(c => {
+            if (c.id === editingCompany.id) {
+                return {
+                    ...c,
+                    theme: {
+                        primary: editingForm.primaryColor,
+                        secondary: editingForm.secondaryColor,
+                        accent: editingForm.accentColor,
+                        support: editingForm.supportColor,
+                        logoUrl: editingForm.logoUrl
+                    },
+                    format: editingForm.format
+                };
+            }
+            return c;
+        }));
         setEditingCompany(null);
     };
 
@@ -202,105 +239,110 @@ function AdminCotizadorPage() {
                                 </div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                    {/* Company Card: SOLIFOOD */}
-                                    <div className="p-6 bg-glass border border-emerald-500/30 rounded-xl hover:border-emerald-500 transition-colors group relative overflow-hidden flex flex-col cursor-pointer hover:shadow-glow-sm shadow-emerald-500/20">
-                                        <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
+                                    {companies.map(company => (
+                                        <div
+                                            key={company.id}
+                                            className="p-6 bg-glass border rounded-xl transition-all duration-300 group relative overflow-hidden flex flex-col cursor-pointer hover:-translate-y-1"
+                                            style={{
+                                                borderColor: `${company.theme.accent}40`,
+                                                boxShadow: `0 8px 32px ${company.theme.accent}15`,
+                                                backgroundColor: ['#3B3B3B', '#10B981'].includes(company.theme.primary) || company.theme.primary.startsWith('#F') || company.theme.primary.startsWith('#3') || company.theme.primary.startsWith('#A')
+                                                    ? undefined // fallback para no romper el CSS glass inicial muy drastico 
+                                                    : `${company.theme.primary}20`
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.borderColor = company.theme.accent;
+                                                e.currentTarget.style.boxShadow = `0 12px 40px ${company.theme.accent}40`;
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.borderColor = `${company.theme.accent}40`;
+                                                e.currentTarget.style.boxShadow = `0 8px 32px ${company.theme.accent}15`;
+                                            }}
+                                        >
+                                            <div
+                                                className="absolute top-0 right-0 w-24 h-24 rounded-bl-full -z-10 group-hover:scale-110 transition-transform duration-500"
+                                                style={{ backgroundColor: `${company.theme.accent}15` }}
+                                            ></div>
 
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div className="w-12 h-12 bg-emerald-500/20 rounded-lg flex items-center justify-center border border-emerald-500/30">
-                                                <span className="text-emerald-400 font-bold text-xl drop-shadow-[0_0_8px_rgba(16,185,129,0.8)]">SF</span>
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div
+                                                    className="w-12 h-12 rounded-lg flex items-center justify-center border overflow-hidden"
+                                                    style={{
+                                                        backgroundColor: `${company.theme.accent}20`,
+                                                        borderColor: `${company.theme.accent}40`
+                                                    }}
+                                                >
+                                                    {company.theme.logoUrl ? (
+                                                        <img src={company.theme.logoUrl} alt={company.name} className="max-w-[80%] max-h-[80%] object-contain drop-shadow-md" />
+                                                    ) : (
+                                                        <span
+                                                            className="font-bold text-xl"
+                                                            style={{
+                                                                color: company.theme.accent,
+                                                                textShadow: `0 0 10px ${company.theme.accent}`
+                                                            }}
+                                                        >
+                                                            {company.initials}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <button
+                                                    className="p-1.5 rounded-lg border border-transparent transition-all z-10 hover:bg-white/10"
+                                                    style={{ color: `${company.theme.accent}99` }}
+                                                    onMouseEnter={(e) => {
+                                                        e.currentTarget.style.color = company.theme.accent;
+                                                        e.currentTarget.style.borderColor = `${company.theme.accent}50`;
+                                                        e.currentTarget.style.backgroundColor = `${company.theme.accent}20`;
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        e.currentTarget.style.color = `${company.theme.accent}99`;
+                                                        e.currentTarget.style.borderColor = 'transparent';
+                                                        e.currentTarget.style.backgroundColor = 'transparent';
+                                                    }}
+                                                    onClick={(e) => handleOpenSettings(e, company)}
+                                                    title="Ajustes de Empresa"
+                                                >
+                                                    <Settings className="w-4 h-4" />
+                                                </button>
                                             </div>
-                                            <button
-                                                className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400/70 hover:text-emerald-400 hover:bg-emerald-500/20 border border-transparent hover:border-emerald-500/30 transition-all z-10"
-                                                onClick={(e) => handleOpenSettings(e, { name: 'SOLIFOOD', color: 'emerald' })}
-                                                title="Ajustes de Empresa"
+
+                                            <h4
+                                                className="text-xl font-bold mb-1 transition-colors"
+                                                style={{ color: company.theme.secondary }}
+                                                onMouseEnter={(e) => e.currentTarget.style.color = company.theme.accent}
+                                                onMouseLeave={(e) => e.currentTarget.style.color = company.theme.secondary}
                                             >
-                                                <Settings className="w-4 h-4" />
-                                            </button>
-                                        </div>
-
-                                        <h4 className="text-xl font-bold text-white mb-1 group-hover:text-emerald-400 transition-colors">SOLIFOOD</h4>
-                                        <p className="text-sm text-gray-400 mb-4 h-10">Equipos para la industria alimentaria.</p>
-                                        <div className="mt-auto flex gap-2">
-                                            <span className="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded-md border border-emerald-500/20">Activa</span>
-                                            <span className="text-xs bg-glass-light text-gray-300 px-2 py-1 rounded-md">84 Equipos</span>
-                                        </div>
-                                    </div>
-
-                                    {/* Company Card: SOLIMAQ */}
-                                    <div className="p-6 bg-glass border border-orange-500/30 rounded-xl hover:border-orange-500 transition-colors group relative overflow-hidden flex flex-col cursor-pointer hover:shadow-glow-sm shadow-orange-500/20">
-                                        <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/10 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
-
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div className="w-12 h-12 bg-orange-500/20 rounded-lg flex items-center justify-center border border-orange-500/30">
-                                                <span className="text-orange-400 font-bold text-xl drop-shadow-[0_0_8px_rgba(249,115,22,0.8)]">SM</span>
+                                                {company.name}
+                                            </h4>
+                                            <p
+                                                className="text-sm mb-4 h-10"
+                                                style={{ color: company.theme.support }}
+                                            >
+                                                {company.description}
+                                            </p>
+                                            <div className="mt-auto flex gap-2">
+                                                <span
+                                                    className="text-xs px-2 py-1 rounded-md border"
+                                                    style={{
+                                                        backgroundColor: `${company.theme.accent}15`,
+                                                        color: company.theme.accent,
+                                                        borderColor: `${company.theme.accent}30`
+                                                    }}
+                                                >
+                                                    Activa
+                                                </span>
+                                                <span
+                                                    className="text-xs px-2 py-1 rounded-md"
+                                                    style={{
+                                                        backgroundColor: 'rgba(255,255,255,0.05)',
+                                                        color: company.theme.support
+                                                    }}
+                                                >
+                                                    {company.equiposCount} Equipos
+                                                </span>
                                             </div>
-                                            <button
-                                                className="p-1.5 rounded-lg bg-orange-500/10 text-orange-400/70 hover:text-orange-400 hover:bg-orange-500/20 border border-transparent hover:border-orange-500/30 transition-all z-10"
-                                                onClick={(e) => handleOpenSettings(e, { name: 'SOLIMAQ', color: 'orange' })}
-                                                title="Ajustes de Empresa"
-                                            >
-                                                <Settings className="w-4 h-4" />
-                                            </button>
                                         </div>
-
-                                        <h4 className="text-xl font-bold text-white mb-1 group-hover:text-orange-400 transition-colors">SOLIMAQ</h4>
-                                        <p className="text-sm text-gray-400 mb-4 h-10">Maquinaria pesada y construcción.</p>
-                                        <div className="mt-auto flex gap-2">
-                                            <span className="text-xs bg-orange-500/10 text-orange-400 px-2 py-1 rounded-md border border-orange-500/20">Activa</span>
-                                            <span className="text-xs bg-glass-light text-gray-300 px-2 py-1 rounded-md">112 Equipos</span>
-                                        </div>
-                                    </div>
-
-                                    {/* Company Card: SOLIMED */}
-                                    <div className="p-6 bg-glass border border-blue-500/30 rounded-xl hover:border-blue-500 transition-colors group relative overflow-hidden flex flex-col cursor-pointer hover:shadow-glow-sm shadow-blue-500/20">
-                                        <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
-
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center border border-blue-500/30">
-                                                <span className="text-blue-400 font-bold text-xl drop-shadow-[0_0_8px_rgba(59,130,246,0.8)]">MD</span>
-                                            </div>
-                                            <button
-                                                className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400/70 hover:text-blue-400 hover:bg-blue-500/20 border border-transparent hover:border-blue-500/30 transition-all z-10"
-                                                onClick={(e) => handleOpenSettings(e, { name: 'SOLIMED', color: 'blue' })}
-                                                title="Ajustes de Empresa"
-                                            >
-                                                <Settings className="w-4 h-4" />
-                                            </button>
-                                        </div>
-
-                                        <h4 className="text-xl font-bold text-white mb-1 group-hover:text-blue-400 transition-colors">SOLIMED</h4>
-                                        <p className="text-sm text-gray-400 mb-4 h-10">Equipamiento médico avanzado.</p>
-                                        <div className="mt-auto flex gap-2">
-                                            <span className="text-xs bg-blue-500/10 text-blue-400 px-2 py-1 rounded-md border border-blue-500/20">Activa</span>
-                                            <span className="text-xs bg-glass-light text-gray-300 px-2 py-1 rounded-md">45 Equipos</span>
-                                        </div>
-                                    </div>
-
-                                    {/* Company Card: SOLIWASTE */}
-                                    <div className="p-6 bg-glass border border-purple-500/30 rounded-xl hover:border-purple-500 transition-colors group relative overflow-hidden flex flex-col cursor-pointer hover:shadow-glow-sm shadow-purple-500/20">
-                                        <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
-
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center border border-purple-500/30">
-                                                <span className="text-purple-400 font-bold text-xl drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]">SW</span>
-                                            </div>
-                                            <button
-                                                className="p-1.5 rounded-lg bg-purple-500/10 text-purple-400/70 hover:text-purple-400 hover:bg-purple-500/20 border border-transparent hover:border-purple-500/30 transition-all z-10"
-                                                onClick={(e) => handleOpenSettings(e, { name: 'SOLIWASTE', color: 'purple' })}
-                                                title="Ajustes de Empresa"
-                                            >
-                                                <Settings className="w-4 h-4" />
-                                            </button>
-                                        </div>
-
-                                        <h4 className="text-xl font-bold text-white mb-1 group-hover:text-purple-400 transition-colors">SOLIWASTE</h4>
-                                        <p className="text-sm text-gray-400 mb-4 h-10">Gestión de residuos y reciclaje.</p>
-                                        <div className="mt-auto flex gap-2">
-                                            <span className="text-xs bg-purple-500/10 text-purple-400 px-2 py-1 rounded-md border border-purple-500/20">Activa</span>
-                                            <span className="text-xs bg-glass-light text-gray-300 px-2 py-1 rounded-md">28 Equipos</span>
-                                        </div>
-                                    </div>
+                                    ))}
                                 </div>
                             </div>
                         )}
