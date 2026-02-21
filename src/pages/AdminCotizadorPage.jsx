@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ColorThief from 'colorthief';
 import { ShieldAlert, DollarSign, Settings, Calculator, Building2, Package, FileText, Plus, Upload, Palette } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -25,7 +25,7 @@ function AdminCotizadorPage() {
         format: 'Plantilla Estándar PANDORA'
     });
 
-    const [companies, setCompanies] = useState([
+    const defaultCompanies = [
         {
             id: 'solifood',
             name: 'SOLIFOOD',
@@ -62,7 +62,23 @@ function AdminCotizadorPage() {
             format: 'Plantilla Estándar PANDORA',
             equiposCount: 28
         }
-    ]);
+    ];
+
+    const [companies, setCompanies] = useState(() => {
+        const saved = localStorage.getItem('pandora_companies_data');
+        if (saved) {
+            try {
+                return JSON.parse(saved);
+            } catch (e) {
+                console.warn("Failed to load saved companies", e);
+            }
+        }
+        return defaultCompanies;
+    });
+
+    useEffect(() => {
+        localStorage.setItem('pandora_companies_data', JSON.stringify(companies));
+    }, [companies]);
 
     const handleOpenSettings = (e, company) => {
         e.stopPropagation();
@@ -81,38 +97,42 @@ function AdminCotizadorPage() {
     const handleLogoUpload = (e) => {
         const file = e.target.files[0];
         if (file) {
-            const url = URL.createObjectURL(file);
-            setEditingForm(prev => ({ ...prev, logoUrl: url }));
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64Url = reader.result;
+                setEditingForm(prev => ({ ...prev, logoUrl: base64Url }));
 
-            // Extract colors automatically using ColorThief
-            const img = new Image();
-            img.crossOrigin = 'Anonymous';
-            img.src = url;
-            img.onload = () => {
-                try {
-                    const colorThief = new ColorThief();
-                    // Get a palette of 4 colors from the image
-                    const palette = colorThief.getPalette(img, 4);
+                // Extract colors automatically using ColorThief
+                const img = new Image();
+                img.crossOrigin = 'Anonymous';
+                img.src = base64Url;
+                img.onload = () => {
+                    try {
+                        const colorThief = new ColorThief();
+                        // Get a palette of 4 colors from the image
+                        const palette = colorThief.getPalette(img, 4);
 
-                    if (palette && palette.length > 0) {
-                        setEditingForm(prev => {
-                            const newForm = { ...prev };
+                        if (palette && palette.length > 0) {
+                            setEditingForm(prev => {
+                                const newForm = { ...prev };
 
-                            // Asignamos el color más dominante al Acento
-                            newForm.accentColor = rgbToHex(palette[0][0], palette[0][1], palette[0][2]);
+                                // Asignamos el color más dominante al Acento
+                                newForm.accentColor = rgbToHex(palette[0][0], palette[0][1], palette[0][2]);
 
-                            // Si detecta un segundo color útil, lo asignamos al Primario (Fondo de Tarjeta)
-                            if (palette.length >= 2) {
-                                newForm.primaryColor = rgbToHex(palette[1][0], palette[1][1], palette[1][2]);
-                            }
+                                // Si detecta un segundo color útil, lo asignamos al Primario (Fondo de Tarjeta)
+                                if (palette.length >= 2) {
+                                    newForm.primaryColor = rgbToHex(palette[1][0], palette[1][1], palette[1][2]);
+                                }
 
-                            return newForm;
-                        });
+                                return newForm;
+                            });
+                        }
+                    } catch (error) {
+                        console.warn("No se pudieron extraer los colores del logo", error);
                     }
-                } catch (error) {
-                    console.warn("No se pudieron extraer los colores del logo", error);
-                }
+                };
             };
+            reader.readAsDataURL(file);
         }
     };
 
