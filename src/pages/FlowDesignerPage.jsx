@@ -10,7 +10,7 @@ import ReactFlow, {
     useEdgesState,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { Trash2, Plus, Scan, Box, RotateCcw, RotateCw, FolderOpen, Save, Minimize2, ArrowUp, ArrowDown, Maximize2, HardDrive } from 'lucide-react';
+import { Trash2, Plus, Scan, Box, RotateCcw, RotateCw, FolderOpen, Save, Minimize2, ArrowUp, ArrowDown, Maximize2, HardDrive, ChevronLeft, ChevronRight } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import EquipmentLibrary from '@/components/flow/EquipmentLibrary';
@@ -62,6 +62,7 @@ function FlowDesignerPage() {
     const [isFxEnabled, setIsFxEnabled] = useState(false); // Estado FX Global
     const [isLayoutControlsOpen, setIsLayoutControlsOpen] = useState(false); // Panel Entorno
     const [placingEquipment, setPlacingEquipment] = useState(null); // Estado para placement manual
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Estado para colapsar barra lateral
 
     const [pickingAnchorNodeId, setPickingAnchorNodeId] = useState(null); // Estado para picking de anclaje
     const [resetCameraTrigger, setResetCameraTrigger] = useState(0); // Trigger para reset cámara
@@ -1006,19 +1007,31 @@ function FlowDesignerPage() {
                 </div>
 
                 {/* Layout principal */}
-                <div className="flex-1 grid grid-cols-12 gap-0 overflow-hidden">
+                <div className="flex-1 grid grid-cols-12 gap-0 overflow-hidden relative">
                     {/* Librería de equipos - Izquierda */}
-                    <div className="col-span-2 border-r border-glass-border bg-deep/50 backdrop-blur-xl overflow-y-auto">
-                        <EquipmentLibrary
-                            customEquipments={customEquipments}
-                            onCreateEquipment={() => setIsCreateEquipmentOpen(true)}
-                            onSelectEquipment={setPlacingEquipment}
-                            selectedEquipmentType={placingEquipment}
-                        />
-                    </div>
+                    {isSidebarOpen && (
+                        <div className="col-span-2 border-r border-glass-border bg-deep/50 backdrop-blur-xl overflow-y-auto transition-all duration-300">
+                            <EquipmentLibrary
+                                customEquipments={customEquipments}
+                                onCreateEquipment={() => setIsCreateEquipmentOpen(true)}
+                                onSelectEquipment={setPlacingEquipment}
+                                selectedEquipmentType={placingEquipment}
+                            />
+                        </div>
+                    )}
 
                     {/* Canvas - Centro */}
-                    <div id="flow-designer-canvas" className={isFullScreen && viewMode === '3d' ? "fixed inset-0 z-[100] bg-deep" : "col-span-8 relative"}>
+                    <div id="flow-designer-canvas" className={isFullScreen && viewMode === '3d' ? "fixed inset-0 z-[100] bg-deep" : (isSidebarOpen ? "col-span-8 relative transition-all duration-300" : "col-span-10 relative transition-all duration-300")}>
+                        {/* Botón Flotante para Colapsar/Expandir Panel Izquierdo */}
+                        {!isFullScreen && (
+                            <button
+                                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                                className="absolute top-1/2 -translate-y-1/2 left-0 z-50 w-5 h-16 bg-black/50 border-y border-r border-neon-cyan/30 rounded-r-xl flex items-center justify-center text-neon-cyan hover:bg-neon-cyan/20 hover:w-6 transition-all backdrop-blur-md shadow-[0_0_15px_rgba(0,0,0,0.5)]"
+                                title={isSidebarOpen ? "Ocultar Equipos" : "Mostrar Equipos"}
+                            >
+                                {isSidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+                            </button>
+                        )}
                         {viewMode === '2d' ? (
                             <>
                                 <ReactFlow
@@ -1088,6 +1101,8 @@ function FlowDesignerPage() {
                                 labelHeightOffset={labelHeightOffset}
                                 layout={currentLayout}
                                 onLayoutChange={setCurrentLayout}
+                                isFullScreen={isFullScreen}
+                                onFullScreenChange={setIsFullScreen}
                             />
                         )}
                     </div>

@@ -14,6 +14,7 @@ import DashboardPage from '@/pages/DashboardPage';
 import SettingsPage from '@/pages/SettingsPage';
 import ChatPage from '@/pages/ChatPage';
 import FlowDesignerPage from '@/pages/FlowDesignerPage';
+import AdminCotizadorPage from '@/pages/AdminCotizadorPage';
 
 function AppContent() {
   // Initialize theme and logo
@@ -31,6 +32,7 @@ function AppContent() {
         <Route path='settings' element={<SettingsPage />} />
         <Route path='chat' element={<ChatPage />} />
         <Route path='flow-designer' element={<FlowDesignerPage />} />
+        <Route path='admin-cotizador' element={<AdminCotizadorPage />} />
       </Route>
     </Routes>
   );

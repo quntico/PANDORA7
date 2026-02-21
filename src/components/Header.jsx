@@ -70,7 +70,19 @@ function Header() {
               <span className="text-2xl font-bold text-[#00F0FF] tracking-tight drop-shadow-[0_0_10px_rgba(0,240,255,0.5)]">
                 PANDORA
               </span>
-              <span className="text-[10px] font-semibold text-neon-purple bg-neon-purple/15 px-1.5 py-0.5 rounded-md border border-neon-purple/30 tracking-wider">
+              <span
+                className="text-[10px] font-semibold text-neon-purple bg-neon-purple/15 px-1.5 py-0.5 rounded-md border border-neon-purple/30 tracking-wider cursor-pointer hover:bg-neon-purple/20 transition-colors"
+                onDoubleClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const password = prompt("ADMIN | Ingrese contraseña:");
+                  if (password === "2020") {
+                    window.open('/admin-cotizador', '_blank');
+                  } else if (password !== null) {
+                    alert("Contraseña incorrecta.");
+                  }
+                }}
+              >
                 VER 7.07
               </span>
             </div>
