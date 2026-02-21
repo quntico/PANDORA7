@@ -1,7 +1,13 @@
 import React, { useState } from 'react';
+import ColorThief from 'colorthief';
 import { ShieldAlert, DollarSign, Settings, Calculator, Building2, Package, FileText, Plus, Upload, Palette } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+
+const rgbToHex = (r, g, b) => '#' + [r, g, b].map(x => {
+    const hex = x.toString(16);
+    return hex.length === 1 ? '0' + hex : hex;
+}).join('').toUpperCase();
 
 function AdminCotizadorPage() {
     // Default active tab to 'cotizador' so we can immediately see the new features
@@ -77,6 +83,36 @@ function AdminCotizadorPage() {
         if (file) {
             const url = URL.createObjectURL(file);
             setEditingForm(prev => ({ ...prev, logoUrl: url }));
+
+            // Extract colors automatically using ColorThief
+            const img = new Image();
+            img.crossOrigin = 'Anonymous';
+            img.src = url;
+            img.onload = () => {
+                try {
+                    const colorThief = new ColorThief();
+                    // Get a palette of 4 colors from the image
+                    const palette = colorThief.getPalette(img, 4);
+
+                    if (palette && palette.length > 0) {
+                        setEditingForm(prev => {
+                            const newForm = { ...prev };
+
+                            // Asignamos el color más dominante al Acento
+                            newForm.accentColor = rgbToHex(palette[0][0], palette[0][1], palette[0][2]);
+
+                            // Si detecta un segundo color útil, lo asignamos al Primario (Fondo de Tarjeta)
+                            if (palette.length >= 2) {
+                                newForm.primaryColor = rgbToHex(palette[1][0], palette[1][1], palette[1][2]);
+                            }
+
+                            return newForm;
+                        });
+                    }
+                } catch (error) {
+                    console.warn("No se pudieron extraer los colores del logo", error);
+                }
+            };
         }
     };
 

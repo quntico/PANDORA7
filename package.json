@@ -27,6 +27,7 @@
     "axios": "^1.6.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "colorthief": "^2.6.0",
     "framer-motion": "^11.15.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.1.0",
