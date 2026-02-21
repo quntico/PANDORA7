@@ -13,7 +13,9 @@ function AdminCotizadorPage() {
     const [editingForm, setEditingForm] = useState({
         logoUrl: null,
         primaryColor: '#10B981',
+        secondaryColor: '#FFFFFF',
         accentColor: '#00F0FF',
+        supportColor: '#E6E6E6',
         format: 'Plantilla Estándar PANDORA'
     });
 
@@ -23,14 +25,27 @@ function AdminCotizadorPage() {
 
         // Define hex color based on the simple color name for the demo
         let hexColor = '#10B981';
-        if (company.color === 'orange') hexColor = '#F97316';
-        if (company.color === 'blue') hexColor = '#3B82F6';
-        if (company.color === 'purple') hexColor = '#A855F7';
+        let actColor = '#00F0FF';
+        let secColor = '#FFFFFF';
+        let supColor = '#E6E6E6';
+
+        if (company.name === 'SOLIFOOD') {
+            hexColor = '#3B3B3B'; // Gris Antracita Fondo
+            secColor = '#FFFFFF'; // Blanco Corporativo
+            actColor = '#F2B705'; // Amarillo SOLIFOOD
+            supColor = '#E6E6E6'; // Gris Claro
+        } else {
+            if (company.color === 'orange') hexColor = '#F97316';
+            if (company.color === 'blue') hexColor = '#3B82F6';
+            if (company.color === 'purple') hexColor = '#A855F7';
+        }
 
         setEditingForm({
             logoUrl: company.logoUrl || null,
             primaryColor: hexColor,
-            accentColor: '#00F0FF',
+            secondaryColor: secColor,
+            accentColor: actColor,
+            supportColor: supColor,
             format: 'Plantilla Estándar PANDORA'
         });
     };
@@ -377,39 +392,83 @@ function AdminCotizadorPage() {
                             </label>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1">
-                                    <label className="text-xs text-gray-500">Color Primario</label>
-                                    <div className="flex items-center gap-3 p-2 bg-glass border border-glass-border rounded-lg relative overflow-hidden group">
+                                    <label className="text-xs text-gray-500">Color Primario Corporativo (Fondo)</label>
+                                    <div className="flex items-center gap-3 p-2 bg-glass border border-glass-border rounded-lg relative overflow-hidden focus-within:border-neon-cyan/50 transition-colors">
+                                        <div className="relative w-6 h-6 rounded-md shadow-inner border border-white/20 overflow-hidden shrink-0">
+                                            <input
+                                                type="color"
+                                                className="absolute inset-[-10px] w-12 h-12 cursor-pointer"
+                                                value={editingForm.primaryColor}
+                                                onChange={(e) => setEditingForm(prev => ({ ...prev, primaryColor: e.target.value }))}
+                                            />
+                                        </div>
                                         <input
-                                            type="color"
-                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                            type="text"
+                                            maxLength={7}
+                                            className="text-sm text-gray-300 font-mono uppercase bg-transparent border-none outline-none w-full focus:text-white"
                                             value={editingForm.primaryColor}
                                             onChange={(e) => setEditingForm(prev => ({ ...prev, primaryColor: e.target.value }))}
                                         />
-                                        <div
-                                            className="w-6 h-6 rounded-md shadow-inner border border-white/10"
-                                            style={{ backgroundColor: editingForm.primaryColor }}
-                                        ></div>
-                                        <span className="text-sm text-gray-300 font-mono uppercase">
-                                            {editingForm.primaryColor}
-                                        </span>
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs text-gray-500">Secundario Neutro (Texto Principal)</label>
+                                    <div className="flex items-center gap-3 p-2 bg-glass border border-glass-border rounded-lg relative overflow-hidden focus-within:border-neon-cyan/50 transition-colors">
+                                        <div className="relative w-6 h-6 rounded-md shadow-inner border border-white/20 overflow-hidden shrink-0">
+                                            <input
+                                                type="color"
+                                                className="absolute inset-[-10px] w-12 h-12 cursor-pointer"
+                                                value={editingForm.secondaryColor}
+                                                onChange={(e) => setEditingForm(prev => ({ ...prev, secondaryColor: e.target.value }))}
+                                            />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            maxLength={7}
+                                            className="text-sm text-gray-300 font-mono uppercase bg-transparent border-none outline-none w-full focus:text-white"
+                                            value={editingForm.secondaryColor}
+                                            onChange={(e) => setEditingForm(prev => ({ ...prev, secondaryColor: e.target.value }))}
+                                        />
                                     </div>
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-xs text-gray-500">Color de Acento</label>
-                                    <div className="flex items-center gap-3 p-2 bg-glass border border-glass-border rounded-lg relative overflow-hidden group">
+                                    <div className="flex items-center gap-3 p-2 bg-glass border border-glass-border rounded-lg relative overflow-hidden focus-within:border-neon-cyan/50 transition-colors">
+                                        <div className="relative w-6 h-6 rounded-md shadow-inner border border-white/20 overflow-hidden shrink-0">
+                                            <input
+                                                type="color"
+                                                className="absolute inset-[-10px] w-12 h-12 cursor-pointer"
+                                                value={editingForm.accentColor}
+                                                onChange={(e) => setEditingForm(prev => ({ ...prev, accentColor: e.target.value }))}
+                                            />
+                                        </div>
                                         <input
-                                            type="color"
-                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                            type="text"
+                                            maxLength={7}
+                                            className="text-sm text-gray-300 font-mono uppercase bg-transparent border-none outline-none w-full focus:text-white"
                                             value={editingForm.accentColor}
                                             onChange={(e) => setEditingForm(prev => ({ ...prev, accentColor: e.target.value }))}
                                         />
-                                        <div
-                                            className="w-6 h-6 rounded-md shadow-inner border border-white/10"
-                                            style={{ backgroundColor: editingForm.accentColor }}
-                                        ></div>
-                                        <span className="text-sm text-gray-300 font-mono uppercase">
-                                            {editingForm.accentColor}
-                                        </span>
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs text-gray-500">Soporte Tipográfico (Secundario)</label>
+                                    <div className="flex items-center gap-3 p-2 bg-glass border border-glass-border rounded-lg relative overflow-hidden focus-within:border-neon-cyan/50 transition-colors">
+                                        <div className="relative w-6 h-6 rounded-md shadow-inner border border-white/20 overflow-hidden shrink-0">
+                                            <input
+                                                type="color"
+                                                className="absolute inset-[-10px] w-12 h-12 cursor-pointer"
+                                                value={editingForm.supportColor}
+                                                onChange={(e) => setEditingForm(prev => ({ ...prev, supportColor: e.target.value }))}
+                                            />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            maxLength={7}
+                                            className="text-sm text-gray-300 font-mono uppercase bg-transparent border-none outline-none w-full focus:text-white"
+                                            value={editingForm.supportColor}
+                                            onChange={(e) => setEditingForm(prev => ({ ...prev, supportColor: e.target.value }))}
+                                        />
                                     </div>
                                 </div>
                             </div>
