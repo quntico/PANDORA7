@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ColorThief from 'colorthief';
-import { ShieldAlert, DollarSign, Settings, Calculator, Building2, Package, FileText, Plus, Upload, Palette } from 'lucide-react';
+import { ShieldAlert, DollarSign, Settings, Calculator, Building2, Package, FileText, Plus, Upload, Palette, ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
@@ -16,6 +16,9 @@ function AdminCotizadorPage() {
     const [activeCotizadorTab, setActiveCotizadorTab] = useState('empresas');
     // State to manage the currently editing company for settings
     const [editingCompany, setEditingCompany] = useState(null);
+    // State to manage the currently active company for its specific dashboard/ficha
+    const [activeCompanyFicha, setActiveCompanyFicha] = useState(null);
+
     const [editingForm, setEditingForm] = useState({
         logoUrl: null,
         primaryColor: '#10B981',
@@ -298,7 +301,11 @@ function AdminCotizadorPage() {
                                     {companies.map(company => (
                                         <div
                                             key={company.id}
-                                            className="p-6 bg-glass border rounded-xl transition-all duration-300 group relative overflow-hidden flex flex-col cursor-pointer hover:-translate-y-1"
+                                            className="p-6 bg-glass border rounded-xl transition-all duration-300 group relative overflow-hidden flex flex-col cursor-pointer hover:-translate-y-1 hover:shadow-glow-sm"
+                                            onClick={() => {
+                                                setActiveCompanyFicha(company);
+                                                setActiveCotizadorTab('ficha');
+                                            }}
                                             style={{
                                                 borderColor: `${company.theme.accent}40`,
                                                 boxShadow: `0 8px 32px ${company.theme.accent}15`,
@@ -403,9 +410,230 @@ function AdminCotizadorPage() {
                             </div>
                         )}
 
+                        {/* Inner Content for Ficha de Empresa */}
+                        {activeCotizadorTab === 'ficha' && activeCompanyFicha && (
+                            <div className="animate-fade-in flex-1 flex flex-col pt-4">
+                                {/* Encabezado de la Ficha */}
+                                <div className="flex items-center gap-4 mb-8">
+                                    <button
+                                        onClick={() => setActiveCotizadorTab('empresas')}
+                                        className="p-2.5 bg-glass border border-glass-border rounded-xl hover:bg-glass-light transition-all text-gray-400 hover:text-white group flex items-center justify-center"
+                                    >
+                                        <ChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                                    </button>
+                                    <div
+                                        className="w-14 h-14 rounded-xl flex items-center justify-center border bg-deep shadow-inner"
+                                        style={{ borderColor: `${activeCompanyFicha.theme.accent}50` }}
+                                    >
+                                        {activeCompanyFicha.theme.logoUrl ? (
+                                            <img src={activeCompanyFicha.theme.logoUrl} alt={activeCompanyFicha.name} className="max-w-[80%] max-h-[80%] object-contain drop-shadow-lg" />
+                                        ) : (
+                                            <span className="font-bold text-lg" style={{ color: activeCompanyFicha.theme.accent }}>{activeCompanyFicha.initials}</span>
+                                        )}
+                                    </div>
+                                    <div className="flex-1">
+                                        <h3 className="text-2xl font-bold text-white tracking-wide">{activeCompanyFicha.name}</h3>
+                                        <p className="text-sm text-gray-400 flex items-center gap-2 mt-1">
+                                            <Building2 className="w-3.5 h-3.5" /> Portal de Cotizaciones
+                                        </p>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-xs text-gray-400 mb-1">Métricas Generales</div>
+                                        <div className="flex gap-2">
+                                            <span className="px-3 py-1 bg-glass-light rounded-md border border-glass-border text-xs text-white">12 Cotizadas</span>
+                                            <span className="px-3 py-1 rounded-md border text-xs font-semibold" style={{ backgroundColor: `${activeCompanyFicha.theme.accent}20`, borderColor: `${activeCompanyFicha.theme.accent}30`, color: activeCompanyFicha.theme.accent }}>$1.2M USD</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Area de Trabajo interactiva */}
+                                <div className="flex flex-col xl:flex-row gap-6 flex-1 min-h-[600px]">
+                                    {/* Panel Lateral: Menú de Cotizaciones */}
+                                    <div className="w-full xl:w-1/4 bg-glass border border-glass-border rounded-2xl p-5 flex flex-col shadow-glow-sm">
+                                        <div className="flex justify-between items-center mb-6 pb-4 border-b border-glass-border">
+                                            <h4 className="text-lg font-bold text-white flex items-center gap-2">
+                                                <FileText className="w-5 h-5" style={{ color: activeCompanyFicha.theme.accent }} />
+                                                Historial
+                                            </h4>
+                                            <button
+                                                className="p-2 border rounded-lg transition-transform hover:scale-105 shadow-md flex items-center justify-center"
+                                                style={{ backgroundColor: activeCompanyFicha.theme.accent, color: activeCompanyFicha.theme.primary === '#FFFFFF' ? '#000' : activeCompanyFicha.theme.secondary, borderColor: activeCompanyFicha.theme.accent }}
+                                            >
+                                                <Plus className="w-4 h-4" />
+                                            </button>
+                                        </div>
+
+                                        <div className="flex flex-col gap-3 overflow-y-auto pr-2 stylized-scrollbar">
+                                            {/* Cotización Activa */}
+                                            <div
+                                                className="p-4 rounded-xl border flex flex-col gap-2 cursor-pointer transition-all hover:translate-x-1 shadow-lg bg-deep/50"
+                                                style={{ borderLeftColor: activeCompanyFicha.theme.accent, borderLeftWidth: '4px', borderColor: `${activeCompanyFicha.theme.accent}50` }}
+                                            >
+                                                <div className="flex justify-between items-start">
+                                                    <span className="text-white font-bold tracking-wider">COT-003</span>
+                                                    <span className="text-[10px] px-2 py-0.5 rounded-full uppercase tracking-widest font-bold" style={{ backgroundColor: `${activeCompanyFicha.theme.accent}20`, color: activeCompanyFicha.theme.accent }}>Borrador</span>
+                                                </div>
+                                                <span className="text-xs text-gray-300">Expansión Planta Tratamiento Sur</span>
+                                                <div className="flex justify-between items-center mt-2 pt-2 border-t border-glass-border/50">
+                                                    <span className="text-[10px] text-gray-500">Hoy, 10:45 AM</span>
+                                                    <span className="text-sm font-mono font-bold" style={{ color: activeCompanyFicha.theme.accent }}>$18,212.00</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Cotizaciones de Historial */}
+                                            {[2, 1].map(item => (
+                                                <div
+                                                    key={item}
+                                                    className="p-4 rounded-xl border border-glass-border bg-glass hover:bg-glass-light flex flex-col gap-2 cursor-pointer transition-all hover:translate-x-1"
+                                                >
+                                                    <div className="flex justify-between items-start">
+                                                        <span className="text-gray-300 font-bold tracking-wider">COT-00{item}</span>
+                                                        <span className="text-[10px] px-2 py-0.5 rounded-full uppercase border border-glass-border text-gray-400 bg-glass-dark">Enviada</span>
+                                                    </div>
+                                                    <span className="text-xs text-gray-400">Proyecto Modelo Industrial {item}</span>
+                                                    <div className="flex justify-between items-center mt-2 pt-2 border-t border-glass-border/30">
+                                                        <span className="text-[10px] text-gray-500">hace {item * 3} días</span>
+                                                        <span className="text-sm font-mono text-gray-400">${item * 12},500.00</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Panel Principal: Editor Visual */}
+                                    <div className="flex-1 bg-glass border border-glass-border rounded-2xl p-6 lg:p-10 flex flex-col relative overflow-hidden shadow-2xl">
+                                        {/* Luces decorativas temáticas */}
+                                        <div className="absolute top-0 right-0 w-96 h-96 rounded-bl-full opacity-10 blur-[80px] pointer-events-none transition-colors duration-1000" style={{ backgroundColor: activeCompanyFicha.theme.accent }}></div>
+                                        <div className="absolute bottom-0 left-0 w-64 h-64 rounded-tr-full opacity-[0.03] blur-[60px] pointer-events-none transition-colors duration-1000" style={{ backgroundColor: activeCompanyFicha.theme.accent }}></div>
+
+                                        <div className="border-b border-glass-border pb-6 mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center relative z-10 gap-4">
+                                            <div>
+                                                <h4 className="text-3xl font-black text-white mb-2 tracking-tight" style={{ textShadow: `0 0 30px ${activeCompanyFicha.theme.accent}40` }}>#COT-003</h4>
+                                                <p className="text-sm text-gray-400 flex items-center gap-2">
+                                                    <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: activeCompanyFicha.theme.accent }}></span>
+                                                    Editando archivo vivo
+                                                </p>
+                                            </div>
+                                            <div className="flex gap-3">
+                                                <button className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-glow-sm hover:scale-105" style={{ backgroundColor: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                                    Previsualizar
+                                                </button>
+                                                <button className="px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-xl hover:scale-105 hover:brightness-110 flex items-center gap-2" style={{ backgroundColor: activeCompanyFicha.theme.accent, color: activeCompanyFicha.theme.primary === '#3B3B3B' || activeCompanyFicha.theme.primary === '#FFFFFF' ? '#000' : activeCompanyFicha.theme.secondary }}>
+                                                    <Upload className="w-4 h-4" /> Exportar PDF
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Canvas EditorScroll */}
+                                        <div className="flex-1 overflow-y-auto space-y-8 relative z-10 pr-4 stylized-scrollbar">
+
+                                            {/* Metadatos Documento */}
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 rounded-xl border border-glass-border bg-deep/40 backdrop-blur-sm">
+                                                <div className="space-y-3">
+                                                    <label className="text-xs font-bold uppercase tracking-widest text-gray-500">Cliente / Proyecto</label>
+                                                    <input
+                                                        type="text"
+                                                        className="w-full bg-glass border border-glass-border p-3.5 rounded-lg text-white font-medium outline-none transition-all focus:shadow-glow-sm"
+                                                        style={{ focusBorderColor: activeCompanyFicha.theme.accent }}
+                                                        defaultValue="Expansión Planta Tratamiento Sur"
+                                                    />
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <label className="text-xs font-bold uppercase tracking-widest text-gray-500">Fecha y Validez</label>
+                                                    <div className="flex gap-3">
+                                                        <input
+                                                            type="date"
+                                                            className="w-full bg-glass border border-glass-border p-3.5 rounded-lg text-white font-medium outline-none transition-all"
+                                                        />
+                                                        <select className="bg-glass border border-glass-border p-3.5 rounded-lg text-white outline-none w-32">
+                                                            <option>15 Días</option>
+                                                            <option>30 Días</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Construccion de Partidas */}
+                                            <div className="space-y-6">
+                                                <div className="flex justify-between items-end border-b border-glass-border pb-3">
+                                                    <div>
+                                                        <h5 className="text-xl font-bold text-white tracking-wide">Partidas y Equipos</h5>
+                                                        <p className="text-xs text-gray-400 mt-1">Añade equipos del catálogo de la empresa o crea conceptos libres.</p>
+                                                    </div>
+                                                    <button
+                                                        className="cursor-pointer font-bold text-sm flex items-center gap-2 bg-glass-light px-4 py-2 rounded-xl border border-glass-border transition-transform hover:scale-105 shadow-sm"
+                                                        style={{ color: activeCompanyFicha.theme.accent }}
+                                                    >
+                                                        <Plus className="w-4 h-4" /> Nva. Partida
+                                                    </button>
+                                                </div>
+
+                                                {/* Tabla Estilizada */}
+                                                <div className="border border-glass-border bg-deep/80 rounded-2xl overflow-hidden shadow-xl backdrop-blur-md">
+                                                    <table className="w-full text-sm text-left border-collapse">
+                                                        <thead className="text-xs text-gray-400 uppercase tracking-wider bg-glass border-b border-glass-border">
+                                                            <tr>
+                                                                <th className="px-6 py-5 font-bold">Concepto Requerido</th>
+                                                                <th className="px-6 py-5 w-24 text-center font-bold">Cant.</th>
+                                                                <th className="px-6 py-5 w-48 text-right font-bold">Precio Unitario</th>
+                                                                <th className="px-6 py-5 w-48 text-right font-bold">Total Partida</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-glass-border/50">
+                                                            <tr className="hover:bg-glass-light/50 transition-colors group">
+                                                                <td className="px-6 py-5 text-white">
+                                                                    <div className="font-bold mb-1">Cámara de Refrigeración Modular</div>
+                                                                    <div className="text-xs text-gray-400 line-clamp-1">Dimensiones 5x5m, panel de poliuretano, equipo tipo Walk-in freezer.</div>
+                                                                </td>
+                                                                <td className="px-6 py-5 text-gray-300 text-center font-bold">1</td>
+                                                                <td className="px-6 py-5 text-gray-400 text-right font-mono">$12,500.00</td>
+                                                                <td className="px-6 py-5 font-bold text-right font-mono text-lg transition-all group-hover:scale-110 origin-right" style={{ color: activeCompanyFicha.theme.accent }}>$12,500.00</td>
+                                                            </tr>
+                                                            <tr className="hover:bg-glass-light/50 transition-colors group">
+                                                                <td className="px-6 py-5 text-white">
+                                                                    <div className="font-bold mb-1">Sistema de Control y Automatización</div>
+                                                                    <div className="text-xs text-gray-400 line-clamp-1">Sensores de temperatura IoT, tablero armado, contactores Schneider.</div>
+                                                                </td>
+                                                                <td className="px-6 py-5 text-gray-300 text-center font-bold">1</td>
+                                                                <td className="px-6 py-5 text-gray-400 text-right font-mono">$3,200.00</td>
+                                                                <td className="px-6 py-5 font-bold text-right font-mono text-lg transition-all group-hover:scale-110 origin-right" style={{ color: activeCompanyFicha.theme.accent }}>$3,200.00</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+
+                                                    {/* Total Catcher */}
+                                                    <div className="p-8 flex justify-end bg-gradient-to-l from-glass to-transparent border-t border-glass-border">
+                                                        <div className="text-right w-80">
+                                                            <div className="flex justify-between items-center text-sm text-gray-400 mb-3">
+                                                                <span className="tracking-wider">Subtotal:</span>
+                                                                <span className="font-mono text-white">$15,700.00</span>
+                                                            </div>
+                                                            <div className="flex justify-between items-center text-sm text-gray-400 mb-6 border-b border-glass-border/50 pb-6">
+                                                                <span className="tracking-wider">I.V.A Estimado (16%):</span>
+                                                                <span className="font-mono text-white">$2,512.00</span>
+                                                            </div>
+                                                            <div className="flex justify-between items-center bg-deep/50 p-4 rounded-xl border border-glass-border/50">
+                                                                <span className="text-xl font-black text-white tracking-widest">TOTAL</span>
+                                                                <span
+                                                                    className="text-3xl font-black shrink-0 font-mono transition-all hover:scale-105 cursor-default"
+                                                                    style={{ color: activeCompanyFicha.theme.accent, textShadow: `0 0 30px ${activeCompanyFicha.theme.accent}80` }}
+                                                                >
+                                                                    $18,212.00
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Inner Content for Catálogo de Equipos */}
                         {activeCotizadorTab === 'equipos' && (
-                            <div className="animate-fade-in flex-1">
+                            <div className="animate-fade-in flex-1 pt-4">
                                 <div className="flex justify-between items-center mb-4">
                                     <h3 className="text-xl font-semibold text-white">Catálogo de Equipos</h3>
                                     <button className="flex items-center gap-2 px-4 py-2 bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/50 rounded-lg font-medium hover:bg-neon-cyan hover:text-black transition-all">
