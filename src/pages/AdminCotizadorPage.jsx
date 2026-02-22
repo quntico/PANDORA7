@@ -3,6 +3,7 @@ import ColorThief from 'colorthief';
 import { ShieldAlert, DollarSign, Settings, Calculator, Building2, Package, FileText, Plus, Upload, Palette, ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import ChocoVer32Master from '@/components/cotizadores/ChocoVer32Master';
 
 const rgbToHex = (r, g, b) => '#' + [r, g, b].map(x => {
     const hex = x.toString(16);
@@ -18,6 +19,8 @@ function AdminCotizadorPage() {
     const [editingCompany, setEditingCompany] = useState(null);
     // State to manage the currently active company for its specific dashboard/ficha
     const [activeCompanyFicha, setActiveCompanyFicha] = useState(null);
+    // Control which template is actively rendering in the Ficha Canvas
+    const [activeTemplate, setActiveTemplate] = useState('standard');
 
     const [editingForm, setEditingForm] = useState({
         logoUrl: null,
@@ -305,6 +308,7 @@ function AdminCotizadorPage() {
                                             onClick={() => {
                                                 setActiveCompanyFicha(company);
                                                 setActiveCotizadorTab('ficha');
+                                                setActiveTemplate('standard');
                                             }}
                                             style={{
                                                 borderColor: `${company.theme.accent}40`,
@@ -466,8 +470,9 @@ function AdminCotizadorPage() {
                                         <div className="flex flex-col gap-3 overflow-y-auto pr-2 stylized-scrollbar">
                                             {/* Cotización Activa */}
                                             <div
-                                                className="p-4 rounded-xl border flex flex-col gap-2 cursor-pointer transition-all hover:translate-x-1 shadow-lg bg-deep/50"
-                                                style={{ borderLeftColor: activeCompanyFicha.theme.accent, borderLeftWidth: '4px', borderColor: `${activeCompanyFicha.theme.accent}50` }}
+                                                className={`p-4 rounded-xl border flex flex-col gap-2 cursor-pointer transition-all hover:translate-x-1 shadow-lg ${activeTemplate === 'standard' ? 'bg-deep/50' : 'bg-glass border-glass-border'}`}
+                                                style={activeTemplate === 'standard' ? { borderLeftColor: activeCompanyFicha.theme.accent, borderLeftWidth: '4px', borderColor: `${activeCompanyFicha.theme.accent}50` } : {}}
+                                                onClick={() => setActiveTemplate('standard')}
                                             >
                                                 <div className="flex justify-between items-start">
                                                     <span className="text-white font-bold tracking-wider">COT-003</span>
@@ -479,6 +484,23 @@ function AdminCotizadorPage() {
                                                     <span className="text-sm font-mono font-bold" style={{ color: activeCompanyFicha.theme.accent }}>$18,212.00</span>
                                                 </div>
                                             </div>
+                                            {/* Choco Template Especial (Solo Solifood) */}
+                                            {activeCompanyFicha.id === 'solifood' && (
+                                                <div
+                                                    className={`p-4 rounded-xl border flex flex-col gap-2 cursor-pointer transition-all hover:translate-x-1 ${activeTemplate === 'choco' ? 'bg-deep/50 shadow-lg' : 'bg-glass border-glass-border hover:bg-glass-light'}`}
+                                                    style={activeTemplate === 'choco' ? { borderLeftColor: activeCompanyFicha.theme.accent, borderLeftWidth: '4px', borderColor: `${activeCompanyFicha.theme.accent}50` } : {}}
+                                                    onClick={() => setActiveTemplate('choco')}
+                                                >
+                                                    <div className="flex justify-between items-start">
+                                                        <span className={activeTemplate === 'choco' ? "text-white font-bold tracking-wider" : "text-gray-300 font-bold tracking-wider"}>CHOCO 3.2</span>
+                                                        <span className="text-[10px] px-2 py-0.5 rounded-full uppercase tracking-widest font-bold" style={activeTemplate === 'choco' ? { backgroundColor: `${activeCompanyFicha.theme.accent}20`, color: activeCompanyFicha.theme.accent } : { backgroundColor: '#333', color: '#888' }}>Oficial</span>
+                                                    </div>
+                                                    <span className={activeTemplate === 'choco' ? "text-xs text-gray-300" : "text-xs text-gray-400"}>Master Listado Predictivo</span>
+                                                    <div className="flex justify-between items-center mt-2 pt-2 border-t border-glass-border/50">
+                                                        <span className="text-[10px] text-gray-500">Plantilla Algorítmica</span>
+                                                    </div>
+                                                </div>
+                                            )}
 
                                             {/* Cotizaciones de Historial */}
                                             {[2, 1].map(item => (
@@ -506,126 +528,132 @@ function AdminCotizadorPage() {
                                         <div className="absolute top-0 right-0 w-96 h-96 rounded-bl-full opacity-10 blur-[80px] pointer-events-none transition-colors duration-1000" style={{ backgroundColor: activeCompanyFicha.theme.accent }}></div>
                                         <div className="absolute bottom-0 left-0 w-64 h-64 rounded-tr-full opacity-[0.03] blur-[60px] pointer-events-none transition-colors duration-1000" style={{ backgroundColor: activeCompanyFicha.theme.accent }}></div>
 
-                                        <div className="border-b border-glass-border pb-6 mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center relative z-10 gap-4">
-                                            <div>
-                                                <h4 className="text-3xl font-black text-white mb-2 tracking-tight" style={{ textShadow: `0 0 30px ${activeCompanyFicha.theme.accent}40` }}>#COT-003</h4>
-                                                <p className="text-sm text-gray-400 flex items-center gap-2">
-                                                    <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: activeCompanyFicha.theme.accent }}></span>
-                                                    Editando archivo vivo
-                                                </p>
-                                            </div>
-                                            <div className="flex gap-3">
-                                                <button className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-glow-sm hover:scale-105" style={{ backgroundColor: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                                    Previsualizar
-                                                </button>
-                                                <button className="px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-xl hover:scale-105 hover:brightness-110 flex items-center gap-2" style={{ backgroundColor: activeCompanyFicha.theme.accent, color: activeCompanyFicha.theme.primary === '#3B3B3B' || activeCompanyFicha.theme.primary === '#FFFFFF' ? '#000' : activeCompanyFicha.theme.secondary }}>
-                                                    <Upload className="w-4 h-4" /> Exportar PDF
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        {/* Canvas EditorScroll */}
-                                        <div className="flex-1 overflow-y-auto space-y-8 relative z-10 pr-4 stylized-scrollbar">
-
-                                            {/* Metadatos Documento */}
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 rounded-xl border border-glass-border bg-deep/40 backdrop-blur-sm">
-                                                <div className="space-y-3">
-                                                    <label className="text-xs font-bold uppercase tracking-widest text-gray-500">Cliente / Proyecto</label>
-                                                    <input
-                                                        type="text"
-                                                        className="w-full bg-glass border border-glass-border p-3.5 rounded-lg text-white font-medium outline-none transition-all focus:shadow-glow-sm"
-                                                        style={{ focusBorderColor: activeCompanyFicha.theme.accent }}
-                                                        defaultValue="Expansión Planta Tratamiento Sur"
-                                                    />
-                                                </div>
-                                                <div className="space-y-3">
-                                                    <label className="text-xs font-bold uppercase tracking-widest text-gray-500">Fecha y Validez</label>
-                                                    <div className="flex gap-3">
-                                                        <input
-                                                            type="date"
-                                                            className="w-full bg-glass border border-glass-border p-3.5 rounded-lg text-white font-medium outline-none transition-all"
-                                                        />
-                                                        <select className="bg-glass border border-glass-border p-3.5 rounded-lg text-white outline-none w-32">
-                                                            <option>15 Días</option>
-                                                            <option>30 Días</option>
-                                                        </select>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Construccion de Partidas */}
-                                            <div className="space-y-6">
-                                                <div className="flex justify-between items-end border-b border-glass-border pb-3">
+                                        {activeTemplate === 'choco' ? (
+                                            <ChocoVer32Master theme={activeCompanyFicha.theme} />
+                                        ) : (
+                                            <>
+                                                <div className="border-b border-glass-border pb-6 mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center relative z-10 gap-4">
                                                     <div>
-                                                        <h5 className="text-xl font-bold text-white tracking-wide">Partidas y Equipos</h5>
-                                                        <p className="text-xs text-gray-400 mt-1">Añade equipos del catálogo de la empresa o crea conceptos libres.</p>
+                                                        <h4 className="text-3xl font-black text-white mb-2 tracking-tight" style={{ textShadow: `0 0 30px ${activeCompanyFicha.theme.accent}40` }}>#COT-003</h4>
+                                                        <p className="text-sm text-gray-400 flex items-center gap-2">
+                                                            <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: activeCompanyFicha.theme.accent }}></span>
+                                                            Editando archivo vivo
+                                                        </p>
                                                     </div>
-                                                    <button
-                                                        className="cursor-pointer font-bold text-sm flex items-center gap-2 bg-glass-light px-4 py-2 rounded-xl border border-glass-border transition-transform hover:scale-105 shadow-sm"
-                                                        style={{ color: activeCompanyFicha.theme.accent }}
-                                                    >
-                                                        <Plus className="w-4 h-4" /> Nva. Partida
-                                                    </button>
+                                                    <div className="flex gap-3">
+                                                        <button className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-glow-sm hover:scale-105" style={{ backgroundColor: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                                            Previsualizar
+                                                        </button>
+                                                        <button className="px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-xl hover:scale-105 hover:brightness-110 flex items-center gap-2" style={{ backgroundColor: activeCompanyFicha.theme.accent, color: activeCompanyFicha.theme.primary === '#3B3B3B' || activeCompanyFicha.theme.primary === '#FFFFFF' ? '#000' : activeCompanyFicha.theme.secondary }}>
+                                                            <Upload className="w-4 h-4" /> Exportar PDF
+                                                        </button>
+                                                    </div>
                                                 </div>
 
-                                                {/* Tabla Estilizada */}
-                                                <div className="border border-glass-border bg-deep/80 rounded-2xl overflow-hidden shadow-xl backdrop-blur-md">
-                                                    <table className="w-full text-sm text-left border-collapse">
-                                                        <thead className="text-xs text-gray-400 uppercase tracking-wider bg-glass border-b border-glass-border">
-                                                            <tr>
-                                                                <th className="px-6 py-5 font-bold">Concepto Requerido</th>
-                                                                <th className="px-6 py-5 w-24 text-center font-bold">Cant.</th>
-                                                                <th className="px-6 py-5 w-48 text-right font-bold">Precio Unitario</th>
-                                                                <th className="px-6 py-5 w-48 text-right font-bold">Total Partida</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="divide-y divide-glass-border/50">
-                                                            <tr className="hover:bg-glass-light/50 transition-colors group">
-                                                                <td className="px-6 py-5 text-white">
-                                                                    <div className="font-bold mb-1">Cámara de Refrigeración Modular</div>
-                                                                    <div className="text-xs text-gray-400 line-clamp-1">Dimensiones 5x5m, panel de poliuretano, equipo tipo Walk-in freezer.</div>
-                                                                </td>
-                                                                <td className="px-6 py-5 text-gray-300 text-center font-bold">1</td>
-                                                                <td className="px-6 py-5 text-gray-400 text-right font-mono">$12,500.00</td>
-                                                                <td className="px-6 py-5 font-bold text-right font-mono text-lg transition-all group-hover:scale-110 origin-right" style={{ color: activeCompanyFicha.theme.accent }}>$12,500.00</td>
-                                                            </tr>
-                                                            <tr className="hover:bg-glass-light/50 transition-colors group">
-                                                                <td className="px-6 py-5 text-white">
-                                                                    <div className="font-bold mb-1">Sistema de Control y Automatización</div>
-                                                                    <div className="text-xs text-gray-400 line-clamp-1">Sensores de temperatura IoT, tablero armado, contactores Schneider.</div>
-                                                                </td>
-                                                                <td className="px-6 py-5 text-gray-300 text-center font-bold">1</td>
-                                                                <td className="px-6 py-5 text-gray-400 text-right font-mono">$3,200.00</td>
-                                                                <td className="px-6 py-5 font-bold text-right font-mono text-lg transition-all group-hover:scale-110 origin-right" style={{ color: activeCompanyFicha.theme.accent }}>$3,200.00</td>
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
+                                                {/* Canvas EditorScroll */}
+                                                <div className="flex-1 overflow-y-auto space-y-8 relative z-10 pr-4 stylized-scrollbar">
 
-                                                    {/* Total Catcher */}
-                                                    <div className="p-8 flex justify-end bg-gradient-to-l from-glass to-transparent border-t border-glass-border">
-                                                        <div className="text-right w-80">
-                                                            <div className="flex justify-between items-center text-sm text-gray-400 mb-3">
-                                                                <span className="tracking-wider">Subtotal:</span>
-                                                                <span className="font-mono text-white">$15,700.00</span>
+                                                    {/* Metadatos Documento */}
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 rounded-xl border border-glass-border bg-deep/40 backdrop-blur-sm">
+                                                        <div className="space-y-3">
+                                                            <label className="text-xs font-bold uppercase tracking-widest text-gray-500">Cliente / Proyecto</label>
+                                                            <input
+                                                                type="text"
+                                                                className="w-full bg-glass border border-glass-border p-3.5 rounded-lg text-white font-medium outline-none transition-all focus:shadow-glow-sm"
+                                                                style={{ focusBorderColor: activeCompanyFicha.theme.accent }}
+                                                                defaultValue="Expansión Planta Tratamiento Sur"
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-3">
+                                                            <label className="text-xs font-bold uppercase tracking-widest text-gray-500">Fecha y Validez</label>
+                                                            <div className="flex gap-3">
+                                                                <input
+                                                                    type="date"
+                                                                    className="w-full bg-glass border border-glass-border p-3.5 rounded-lg text-white font-medium outline-none transition-all"
+                                                                />
+                                                                <select className="bg-glass border border-glass-border p-3.5 rounded-lg text-white outline-none w-32">
+                                                                    <option>15 Días</option>
+                                                                    <option>30 Días</option>
+                                                                </select>
                                                             </div>
-                                                            <div className="flex justify-between items-center text-sm text-gray-400 mb-6 border-b border-glass-border/50 pb-6">
-                                                                <span className="tracking-wider">I.V.A Estimado (16%):</span>
-                                                                <span className="font-mono text-white">$2,512.00</span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Construccion de Partidas */}
+                                                    <div className="space-y-6">
+                                                        <div className="flex justify-between items-end border-b border-glass-border pb-3">
+                                                            <div>
+                                                                <h5 className="text-xl font-bold text-white tracking-wide">Partidas y Equipos</h5>
+                                                                <p className="text-xs text-gray-400 mt-1">Añade equipos del catálogo de la empresa o crea conceptos libres.</p>
                                                             </div>
-                                                            <div className="flex justify-between items-center bg-deep/50 p-4 rounded-xl border border-glass-border/50">
-                                                                <span className="text-xl font-black text-white tracking-widest">TOTAL</span>
-                                                                <span
-                                                                    className="text-3xl font-black shrink-0 font-mono transition-all hover:scale-105 cursor-default"
-                                                                    style={{ color: activeCompanyFicha.theme.accent, textShadow: `0 0 30px ${activeCompanyFicha.theme.accent}80` }}
-                                                                >
-                                                                    $18,212.00
-                                                                </span>
+                                                            <button
+                                                                className="cursor-pointer font-bold text-sm flex items-center gap-2 bg-glass-light px-4 py-2 rounded-xl border border-glass-border transition-transform hover:scale-105 shadow-sm"
+                                                                style={{ color: activeCompanyFicha.theme.accent }}
+                                                            >
+                                                                <Plus className="w-4 h-4" /> Nva. Partida
+                                                            </button>
+                                                        </div>
+
+                                                        {/* Tabla Estilizada */}
+                                                        <div className="border border-glass-border bg-deep/80 rounded-2xl overflow-hidden shadow-xl backdrop-blur-md">
+                                                            <table className="w-full text-sm text-left border-collapse">
+                                                                <thead className="text-xs text-gray-400 uppercase tracking-wider bg-glass border-b border-glass-border">
+                                                                    <tr>
+                                                                        <th className="px-6 py-5 font-bold">Concepto Requerido</th>
+                                                                        <th className="px-6 py-5 w-24 text-center font-bold">Cant.</th>
+                                                                        <th className="px-6 py-5 w-48 text-right font-bold">Precio Unitario</th>
+                                                                        <th className="px-6 py-5 w-48 text-right font-bold">Total Partida</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody className="divide-y divide-glass-border/50">
+                                                                    <tr className="hover:bg-glass-light/50 transition-colors group">
+                                                                        <td className="px-6 py-5 text-white">
+                                                                            <div className="font-bold mb-1">Cámara de Refrigeración Modular</div>
+                                                                            <div className="text-xs text-gray-400 line-clamp-1">Dimensiones 5x5m, panel de poliuretano, equipo tipo Walk-in freezer.</div>
+                                                                        </td>
+                                                                        <td className="px-6 py-5 text-gray-300 text-center font-bold">1</td>
+                                                                        <td className="px-6 py-5 text-gray-400 text-right font-mono">$12,500.00</td>
+                                                                        <td className="px-6 py-5 font-bold text-right font-mono text-lg transition-all group-hover:scale-110 origin-right" style={{ color: activeCompanyFicha.theme.accent }}>$12,500.00</td>
+                                                                    </tr>
+                                                                    <tr className="hover:bg-glass-light/50 transition-colors group">
+                                                                        <td className="px-6 py-5 text-white">
+                                                                            <div className="font-bold mb-1">Sistema de Control y Automatización</div>
+                                                                            <div className="text-xs text-gray-400 line-clamp-1">Sensores de temperatura IoT, tablero armado, contactores Schneider.</div>
+                                                                        </td>
+                                                                        <td className="px-6 py-5 text-gray-300 text-center font-bold">1</td>
+                                                                        <td className="px-6 py-5 text-gray-400 text-right font-mono">$3,200.00</td>
+                                                                        <td className="px-6 py-5 font-bold text-right font-mono text-lg transition-all group-hover:scale-110 origin-right" style={{ color: activeCompanyFicha.theme.accent }}>$3,200.00</td>
+                                                                    </tr>
+                                                                </tbody>
+                                                            </table>
+
+                                                            {/* Total Catcher */}
+                                                            <div className="p-8 flex justify-end bg-gradient-to-l from-glass to-transparent border-t border-glass-border">
+                                                                <div className="text-right w-80">
+                                                                    <div className="flex justify-between items-center text-sm text-gray-400 mb-3">
+                                                                        <span className="tracking-wider">Subtotal:</span>
+                                                                        <span className="font-mono text-white">$15,700.00</span>
+                                                                    </div>
+                                                                    <div className="flex justify-between items-center text-sm text-gray-400 mb-6 border-b border-glass-border/50 pb-6">
+                                                                        <span className="tracking-wider">I.V.A Estimado (16%):</span>
+                                                                        <span className="font-mono text-white">$2,512.00</span>
+                                                                    </div>
+                                                                    <div className="flex justify-between items-center bg-deep/50 p-4 rounded-xl border border-glass-border/50">
+                                                                        <span className="text-xl font-black text-white tracking-widest">TOTAL</span>
+                                                                        <span
+                                                                            className="text-3xl font-black shrink-0 font-mono transition-all hover:scale-105 cursor-default"
+                                                                            style={{ color: activeCompanyFicha.theme.accent, textShadow: `0 0 30px ${activeCompanyFicha.theme.accent}80` }}
+                                                                        >
+                                                                            $18,212.00
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        </div>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -831,7 +859,7 @@ function AdminCotizadorPage() {
                     </div>
                 </DialogContent>
             </Dialog>
-        </div>
+        </div >
     );
 }
 

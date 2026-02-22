@@ -1,0 +1,339 @@
+import React, { useState } from "react";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
+import { Download, FileSpreadsheet, Zap, DollarSign, ListChecks, CheckCircle2 } from "lucide-react";
+
+const modules = [
+    {
+        name: "1. UTILIDADES Y SERVICIOS",
+        items: [
+            "1.1 Generador agua caliente / caldera",
+            "1.2 Bomba recirculación térmica",
+            "1.3 Tanque buffer térmico",
+            "1.4 Chiller industrial",
+            "1.5 Bombas glicol",
+            "1.6 HVAC industrial",
+            "1.7 Deshumidificador industrial",
+            "1.8 Sistema CIP completo",
+            "1.9 Colector de polvo",
+            "1.10 Sistema anti-explosión ATEX",
+            "1.11 Compresor aire principal",
+            "1.12 Secador aire + filtrado",
+            "1.13 Compresor respaldo",
+            "1.14 Sistema presurización agua",
+            "1.15 Banco capacitores automático",
+            "1.16 UPS PLC y control",
+            "1.17 Ventilación tablero general",
+            "1.18 Sistema contra incendio",
+        ],
+    },
+    {
+        name: "2. PREPARACIÓN FÓRMULA",
+        items: [
+            "2.1 Tolvas azúcar con pesaje",
+            "2.2 Tolvas leche en polvo",
+            "2.3 Tanque manteca fundida",
+            "2.4 Tanque pasta cacao",
+            "2.5 Mezclador horizontal intensivo",
+            "2.6 Sistema dosificación gravimétrica",
+            "2.7 Dosificador lecitina",
+            "2.8 Dosificador vainilla",
+            "2.9 Tamiz vibratorio sanitario",
+            "2.10 Imán trampa sanitario",
+            "2.11 Transporte tornillo flexible inoxidable",
+        ],
+    },
+    {
+        name: "3. PROCESO CHOCOLATE",
+        items: [
+            "3.1 Refinador 5 rodillos",
+            "3.2 Conchadora industrial",
+            "3.3 Tanques pulmón",
+            "3.4 Templadora automática",
+            "3.5 Moldeadora automática",
+            "3.6 Túnel enfriamiento 12 m",
+            "3.7 Desmoldador automático",
+            "3.8 Empacadora flowpack primaria",
+        ],
+    },
+    {
+        name: "4. FIN DE LÍNEA",
+        items: [
+            "4.1 Detector de metales",
+            "4.2 Checkweigher dinámico",
+            "4.3 Encajonadora automática",
+            "4.4 Paletizador automático",
+            "4.5 Envolvedora pallet stretch",
+            "4.6 Flejadora automática",
+        ],
+    },
+    {
+        name: "5. MANEJO Y LOGÍSTICA",
+        items: [
+            "5.1 Básculas industriales plataforma",
+            "5.2 Montacargas 2.5 ton",
+            "5.3 Apilador eléctrico",
+            "5.4 Patines hidráulicos",
+            "5.5 Estación descarga supersacos",
+            "5.6 Racks almacenamiento",
+        ],
+    },
+    {
+        name: "6. CALIDAD Y LABORATORIO",
+        items: [
+            "6.1 Grindómetro micras",
+            "6.2 Viscosímetro Brookfield",
+            "6.3 Cámara climática de pruebas",
+            "6.4 Instrumentación laboratorio completa",
+        ],
+    },
+];
+
+export default function ChocoVer32Master({ theme }) {
+    const [data, setData] = useState({});
+
+    // Use the provided theme accent color or default to #FFD400
+    const accentColor = theme?.accent || "#FFD400";
+    const primaryColor = theme?.primary || "#3B3B3B";
+    const isLightText = primaryColor === '#FFFFFF' || primaryColor === '#F8F9FA';
+    const headerTextColor = isLightText ? '#000000' : '#FFFFFF';
+
+    const updateValue = (key, field, value) => {
+        setData((prev) => ({
+            ...prev,
+            [key]: { ...prev[key], [field]: Number(value) },
+        }));
+    };
+
+    const calculateItem = (itemKey) => {
+        const item = data[itemKey] || {};
+        const qty = item.qty || 1;
+        const cost = item.cost || 0;
+        const margin = item.margin || 0;
+        return (cost + cost * (margin / 100)) * qty;
+    };
+
+    const totalUSD = () => {
+        return Object.keys(data)
+            .reduce((sum, key) => sum + calculateItem(key), 0);
+    };
+
+    const totalKW = () => {
+        return Object.keys(data)
+            .reduce((sum, key) => sum + ((data[key]?.kw || 0) * (data[key]?.qty || 1)), 0);
+    };
+
+    const exportExcel = () => {
+        let csv = "Equipo,QTY,kW,Costo,Utilidad,Venta\n";
+        Object.keys(data).forEach((key) => {
+            const item = data[key];
+            csv += `${key},${item.qty || 1},${item.kw || 0},${item.cost || 0},${item.margin || 0},${calculateItem(key)}\n`;
+        });
+
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.setAttribute("download", "CHOCO_VER_3_2_MASTER.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const exportPDF = () => {
+        const doc = new jsPDF();
+
+        // Configuración base PDF
+        doc.setFillColor(accentColor);
+        doc.rect(0, 0, 210, 25, 'F');
+
+        doc.setTextColor(isLightText ? 0 : 255, isLightText ? 0 : 255, isLightText ? 0 : 255);
+        doc.setFontSize(16);
+        doc.setFont("helvetica", "bold");
+        doc.text("CHOCO VER 3.2 – PROPUESTA ECONÓMICA PANDORA", 15, 16);
+
+        const rows = Object.keys(data).filter(key => (data[key]?.cost || 0) > 0).map((key) => [
+            key,
+            data[key].qty || 1,
+            `${data[key].kw || 0} kW`,
+            `$ ${calculateItem(key).toLocaleString("en-US", { minimumFractionDigits: 2 })}`
+        ]);
+
+        doc.autoTable({
+            head: [["Equipo", "QTY", "Consumo (kW)", "Precio Venta (USD)"]],
+            body: rows,
+            startY: 30,
+            theme: 'grid',
+            headStyles: { fillColor: [40, 40, 40], textColor: [255, 255, 255] },
+            styles: { fontSize: 10, cellPadding: 3 },
+            columnStyles: {
+                1: { halign: 'center', cellWidth: 20 },
+                2: { halign: 'center', cellWidth: 30 },
+                3: { halign: 'right', cellWidth: 40 }
+            },
+        });
+
+        // Totales Finales PDF
+        const finalY = doc.lastAutoTable.finalY + 15;
+
+        doc.setFontSize(12);
+        doc.setTextColor(50, 50, 50);
+        doc.text(`Consumo Eléctrico Estimado:`, 15, finalY);
+        doc.setFont("helvetica", "bold");
+        doc.text(`${totalKW().toFixed(2)} kW`, 80, finalY);
+
+        doc.setFontSize(14);
+        doc.text(`Inversión Total Estimada:`, 15, finalY + 10);
+        doc.setTextColor(0, 100, 0); // Color verde genérico para PDF financiero
+        doc.text(`$ ${totalUSD().toLocaleString("en-US", { minimumFractionDigits: 2 })} USD`, 80, finalY + 10);
+
+        doc.save("CHOCO_VER_3_2_MASTER.pdf");
+    };
+
+    return (
+        <div className="flex flex-col h-full animate-fade-in relative z-10 w-full" style={{ paddingRight: '8px' }}>
+
+            {/* HEADER SECTION TIPO PANDORA */}
+            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-8 pb-6 border-b border-glass-border/50 gap-6">
+                <div>
+                    <h2 className="text-3xl font-black mb-2 flex items-center gap-3 w-full" style={{ color: headerTextColor }}>
+                        <span className="p-2.5 rounded-xl border border-glass-border shrink-0" style={{ backgroundColor: `${accentColor}20` }}>
+                            <ListChecks className="w-6 h-6" style={{ color: accentColor }} />
+                        </span>
+                        <span className="break-words">Master Listado: CHOCO VER 3.2</span>
+                    </h2>
+                    <p className="text-sm text-gray-400 max-w-2xl px-2">
+                        Matriz de cotización predictiva con módulos enlazados. Ingresa variables, costos y márgenes de utilidad y Pandora calcula automáticamente los subtotales, venta final y consumos en kW totales.
+                    </p>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-3 w-full xl:w-auto shrink-0 mt-4 xl:mt-0">
+                    <button
+                        onClick={exportExcel}
+                        className="flex-1 sm:flex-none flex justify-center items-center gap-2 px-5 py-3 bg-glass border border-glass-border rounded-xl font-bold text-sm tracking-wide transition-all hover:bg-glass-light hover:-translate-y-0.5"
+                        style={{ color: '#10B981' }} // Excel verde clásico
+                    >
+                        <FileSpreadsheet className="w-4 h-4" /> CSV Excel
+                    </button>
+
+                    <button
+                        onClick={exportPDF}
+                        className="flex-1 sm:flex-none flex justify-center items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm tracking-wide transition-all shadow-glow-sm hover:scale-105"
+                        style={{ backgroundColor: accentColor, color: isLightText || primaryColor === '#3B3B3B' || accentColor.toUpperCase() === '#F2B705' ? '#000000' : '#FFFFFF', border: `1px solid ${accentColor}` }}
+                    >
+                        <Download className="w-4 h-4" /> PDF Formal
+                    </button>
+                </div>
+            </div>
+
+            {/* TABS METRICS RESUMEN */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 shrink-0">
+                <div className="bg-glass-light border border-glass-border/50 p-6 rounded-2xl flex items-center justify-between transition-colors shadow-sm relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-24 h-24 rounded-bl-full bg-emerald-500/10 -z-0 group-hover:scale-110 transition-transform"></div>
+                    <div className="relative z-10 w-full min-w-0">
+                        <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 flex justify-between w-full">Venta Total Calculada <DollarSign className="w-4 h-4 text-emerald-400" /></div>
+                        <div className="text-3xl font-black text-white font-mono break-words w-full truncate" style={{ textShadow: '0 0 20px rgba(16,185,129,0.3)' }}>
+                            $ {totalUSD().toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-glass-light border border-glass-border/50 p-6 rounded-2xl flex items-center justify-between transition-colors shadow-sm relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-24 h-24 rounded-bl-full bg-blue-500/10 -z-0 group-hover:scale-110 transition-transform"></div>
+                    <div className="relative z-10 w-full min-w-0">
+                        <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 flex justify-between w-full">Impacto Energético (kW) <Zap className="w-4 h-4 text-blue-400" /></div>
+                        <div className="text-3xl font-black text-white font-mono break-words w-full truncate" style={{ textShadow: '0 0 20px rgba(59,130,246,0.3)' }}>
+                            {totalKW().toFixed(2)}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* CONTENT BUILDER MODULES - SCROLLABLE Y RESPONSIVO */}
+            <div className="flex-1 w-full flex flex-col gap-6" style={{ minHeight: '600px' }}>
+                {modules.map((module) => (
+                    <div key={module.name} className="bg-deep/50 border border-glass-border rounded-xl mb-4 overflow-hidden w-full max-w-full">
+                        {/* Cabecera del Módulo */}
+                        <div className="bg-glass px-4 py-3 border-b border-glass-border flex items-center gap-3">
+                            <CheckCircle2 className="w-5 h-5 shrink-0" style={{ color: accentColor }} />
+                            <h3 className="font-bold tracking-wider text-sm lg:text-base pr-4" style={{ color: accentColor }}>{module.name}</h3>
+                        </div>
+
+                        {/* Tabla Responsive usando flex/grid y overflow horizontal */}
+                        <div className="w-full overflow-x-auto stylized-scrollbar pb-2">
+                            <div className="min-w-[1020px] p-4 flex flex-col gap-2">
+                                {/* Headers Columnas Interiores */}
+                                <div className="grid grid-cols-12 gap-3 px-4 py-2 border-b border-glass-border/30 text-xs font-bold text-gray-400 uppercase tracking-widest bg-glass/20 rounded-md">
+                                    <div className="col-span-4">Equipo / Concepto</div>
+                                    <div className="col-span-1 text-center">QTY</div>
+                                    <div className="col-span-2 text-right">Potencia (kW)</div>
+                                    <div className="col-span-2 text-right">Costo USD Base</div>
+                                    <div className="col-span-1 text-center">% Útil.</div>
+                                    <div className="col-span-2 text-right text-white">Venta Final</div>
+                                </div>
+
+                                {/* Filas */}
+                                {module.items.map((item) => (
+                                    <div key={item} className="grid grid-cols-12 gap-3 items-center px-4 py-3 bg-glass-light hover:bg-glass/80 rounded-lg group transition-colors border border-transparent hover:border-glass-border">
+                                        <div className="col-span-4 text-sm text-gray-200 truncate pr-2" title={item}>{item}</div>
+
+                                        <div className="col-span-1">
+                                            <input
+                                                type="number"
+                                                placeholder="1"
+                                                className="w-full bg-deep border-glass-border border p-2 rounded-md text-white text-center text-sm focus:outline-none focus:border-neon-cyan transition-colors"
+                                                min="0"
+                                                onChange={(e) => updateValue(item, "qty", e.target.value)}
+                                            />
+                                        </div>
+
+                                        <div className="col-span-2 relative">
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">kW</span>
+                                            <input
+                                                type="number"
+                                                placeholder="0.0"
+                                                className="w-full bg-deep border-glass-border border p-2 pl-9 rounded-md text-white text-right text-sm focus:outline-none focus:border-neon-cyan transition-colors font-mono"
+                                                min="0" step="0.1"
+                                                onChange={(e) => updateValue(item, "kw", e.target.value)}
+                                            />
+                                        </div>
+
+                                        <div className="col-span-2 relative">
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">$</span>
+                                            <input
+                                                type="number"
+                                                placeholder="0.00"
+                                                className="w-full bg-deep border-glass-border border p-2 pl-7 rounded-md text-white text-right text-sm focus:outline-none focus:border-neon-cyan transition-colors font-mono"
+                                                min="0" step="100"
+                                                onChange={(e) => updateValue(item, "cost", e.target.value)}
+                                            />
+                                        </div>
+
+                                        <div className="col-span-1 relative">
+                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">%</span>
+                                            <input
+                                                type="number"
+                                                placeholder="0"
+                                                className="w-full bg-deep border-glass-border border p-2 pr-7 rounded-md text-white text-center text-sm focus:outline-none focus:border-neon-cyan transition-colors"
+                                                min="0" max="100"
+                                                onChange={(e) => updateValue(item, "margin", e.target.value)}
+                                            />
+                                        </div>
+
+                                        <div className="col-span-2 text-right">
+                                            <span className="font-bold text-white font-mono tabular-nums text-sm lg:text-base block truncate pr-2" style={{ color: calculateItem(item) > 0 ? accentColor : '#9CA3AF' }}>
+                                                $ {calculateItem(item).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+        </div>
+    );
+}
