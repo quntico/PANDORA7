@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Download, FileSpreadsheet, Zap, DollarSign, ListChecks, CheckCircle2, FileText, ChevronDown, ChevronRight, FoldVertical, UnfoldVertical, Edit2, Plus, Trash2, AlignJustify, Upload } from "lucide-react";
@@ -91,18 +91,40 @@ const initialModules = [
 ];
 
 export default function ChocoVer32Master({ theme }) {
-    const [data, setData] = useState({});
-    const [meta, setMeta] = useState({ client: '', project: '', tc: 18.50 });
+    const [data, setData] = useState(() => {
+        const saved = localStorage.getItem("choco32_data");
+        return saved ? JSON.parse(saved) : {};
+    });
+    const [meta, setMeta] = useState(() => {
+        const saved = localStorage.getItem("choco32_meta");
+        return saved ? JSON.parse(saved) : { client: '', project: '', tc: 18.50 };
+    });
     const [editingDescItem, setEditingDescItem] = useState(null);
     const [tempDesc, setTempDesc] = useState("");
     const [collapsedModules, setCollapsedModules] = useState({});
 
-    // Nuevos estados para editor
-    const [modules, setModules] = useState(initialModules);
-    const [mainTitle, setMainTitle] = useState("Master Listado: CHOCO VER 3.2");
+    // Nuevos estados para editor persistentes
+    const [modules, setModules] = useState(() => {
+        const saved = localStorage.getItem("choco32_modules");
+        return saved ? JSON.parse(saved) : initialModules;
+    });
+    const [mainTitle, setMainTitle] = useState(() => {
+        return localStorage.getItem("choco32_mainTitle") || "Master Listado: CHOCO VER 3.2";
+    });
     const [isEditingMainTitle, setIsEditingMainTitle] = useState(false);
-    const [mainDesc, setMainDesc] = useState("Matriz de cotización predictiva con módulos enlazados. Ingresa variables, costos y márgenes de utilidad y Pandora calcula automáticamente los subtotales, venta final y consumos en kW totales.");
+    const [mainDesc, setMainDesc] = useState(() => {
+        return localStorage.getItem("choco32_mainDesc") || "Matriz de cotización predictiva con módulos enlazados. Ingresa variables, costos y márgenes de utilidad y Pandora calcula automáticamente los subtotales, venta final y consumos en kW totales.";
+    });
     const [isEditingMainDesc, setIsEditingMainDesc] = useState(false);
+
+    // Persistencia Automática
+    useEffect(() => {
+        localStorage.setItem("choco32_data", JSON.stringify(data));
+        localStorage.setItem("choco32_meta", JSON.stringify(meta));
+        localStorage.setItem("choco32_modules", JSON.stringify(modules));
+        localStorage.setItem("choco32_mainTitle", mainTitle);
+        localStorage.setItem("choco32_mainDesc", mainDesc);
+    }, [data, meta, modules, mainTitle, mainDesc]);
 
     // Force official #FFCC00 yellow for Solifood to override any pale colors extracted by ColorThief
     const isSolifood = theme?.id === 'solifood' || (theme?.name && theme.name.toLowerCase() === 'solifood');
