@@ -104,10 +104,16 @@ export default function ChocoVer32Master({ theme }) {
     const headerTextColor = isLightText ? '#000000' : '#FFFFFF';
 
     const updateValue = (key, field, value) => {
-        setData((prev) => ({
-            ...prev,
-            [key]: { ...prev[key], [field]: typeof value === 'boolean' || typeof value === 'string' ? value : Number(value) },
-        }));
+        setData((prev) => {
+            let processedValue = value;
+            if (field !== 'desc' && field !== 'enabled') {
+                processedValue = Number(value);
+            }
+            return {
+                ...prev,
+                [key]: { ...prev[key], [field]: processedValue },
+            };
+        });
     };
 
     const calculateItem = (itemKey) => {
