@@ -101,6 +101,8 @@ export default function ChocoVer32Master({ theme }) {
     });
     const [editingDescItem, setEditingDescItem] = useState(null);
     const [tempDesc, setTempDesc] = useState("");
+    const [editingNameItem, setEditingNameItem] = useState(null);
+    const [tempName, setTempName] = useState("");
     const [collapsedModules, setCollapsedModules] = useState({});
 
     // Nuevos estados para editor persistentes
@@ -192,6 +194,39 @@ export default function ChocoVer32Master({ theme }) {
         const newModules = [...modules];
         newModules[moduleIndex].items.splice(itemIndex, 1);
         setModules(newModules);
+    };
+
+    const saveItemName = () => {
+        if (!editingNameItem) return;
+        const { mIndex, itemIndex, itemName } = editingNameItem;
+        const finalName = tempName.trim();
+
+        if (!finalName || finalName === itemName) {
+            setEditingNameItem(null);
+            return;
+        }
+
+        const newModules = [...modules];
+        newModules[mIndex].items[itemIndex] = finalName;
+        setModules(newModules);
+
+        setData(prev => {
+            const newData = { ...prev };
+            // Transfer properties to the new key
+            newData[finalName] = { ...(newData[itemName] || {}) };
+
+            // Check if old name is used in any other module, if not, delete it
+            const isUsedElsewhere = newModules.some((mod, idx) =>
+                idx !== mIndex && mod.items.includes(itemName)
+            );
+
+            if (!isUsedElsewhere) {
+                delete newData[itemName];
+            }
+            return newData;
+        });
+
+        setEditingNameItem(null);
     };
 
     const moduleTotalUSD = (module) => module.items.reduce((sum, item) => sum + calculateItem(item), 0);
@@ -878,7 +913,16 @@ export default function ChocoVer32Master({ theme }) {
                                                         >
                                                             <Trash2 className="w-3.5 h-3.5" />
                                                         </button>
-                                                        <span className="truncate" title={item}>{item}</span>
+                                                        <span
+                                                            className="truncate cursor-pointer hover:text-white transition-colors border-b border-dashed border-transparent hover:border-gray-500"
+                                                            title="Editar o ver nombre completo del equipo (Click)"
+                                                            onClick={() => {
+                                                                setEditingNameItem({ mIndex, itemIndex, itemName: item });
+                                                                setTempName(item);
+                                                            }}
+                                                        >
+                                                            {item}
+                                                        </span>
                                                     </div>
 
                                                     <div
@@ -1052,6 +1096,50 @@ export default function ChocoVer32Master({ theme }) {
                                 Guardar Texto
                             </button>
                         </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Modal para Editar Nombre de Equipo */}
+            <Dialog open={!!editingNameItem} onOpenChange={(open) => !open && setEditingNameItem(null)}>
+                <DialogContent className="bg-deep border border-glass-border text-white sm:max-w-[450px]">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold flex items-center gap-2" style={{ color: accentColor }}>
+                            <Edit2 className="w-5 h-5" />
+                            Nombre del Concepto
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <textarea
+                            value={tempName}
+                            onChange={(e) => setTempName(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    saveItemName();
+                                }
+                            }}
+                            className="w-full bg-glass-light border border-glass-border rounded-xl p-4 text-white font-bold focus:outline-none focus:border-neon-cyan transition-colors resize-none text-justify"
+                            placeholder="Ej. 1.1 Bomba de Agua..."
+                            rows={3}
+                            autoFocus
+                        />
+                        <p className="text-[10px] text-gray-500 mt-2 text-right uppercase tracking-widest">Presiona ENTER para guardar</p>
+                    </div>
+                    <div className="flex justify-end gap-3 mt-1">
+                        <button
+                            onClick={() => setEditingNameItem(null)}
+                            className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-400 hover:text-white transition-colors"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={saveItemName}
+                            className="px-5 py-2 rounded-lg font-bold text-sm shadow-glow-sm transition-transform hover:-translate-y-0.5"
+                            style={{ backgroundColor: accentColor, color: isLightText || primaryColor === '#3B3B3B' || accentColor.toUpperCase() === '#F2B705' || accentColor.toUpperCase() === '#FFCC00' ? '#000000' : '#FFFFFF' }}
+                        >
+                            Guardar
+                        </button>
                     </div>
                 </DialogContent>
             </Dialog>
