@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import { Download, FileSpreadsheet, Zap, DollarSign, ListChecks, CheckCircle2 } from "lucide-react";
+import { Download, FileSpreadsheet, Zap, DollarSign, ListChecks, CheckCircle2, FileText } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const modules = [
     {
@@ -92,6 +93,8 @@ const modules = [
 export default function ChocoVer32Master({ theme }) {
     const [data, setData] = useState({});
     const [meta, setMeta] = useState({ client: '', project: '', tc: 18.50 });
+    const [editingDescItem, setEditingDescItem] = useState(null);
+    const [tempDesc, setTempDesc] = useState("");
 
     // Force official #FFCC00 yellow for Solifood to override any pale colors extracted by ColorThief
     const isSolifood = theme?.id === 'solifood' || (theme?.name && theme.name.toLowerCase() === 'solifood');
@@ -103,7 +106,7 @@ export default function ChocoVer32Master({ theme }) {
     const updateValue = (key, field, value) => {
         setData((prev) => ({
             ...prev,
-            [key]: { ...prev[key], [field]: typeof value === 'boolean' ? value : Number(value) },
+            [key]: { ...prev[key], [field]: typeof value === 'boolean' || typeof value === 'string' ? value : Number(value) },
         }));
     };
 
@@ -134,11 +137,12 @@ export default function ChocoVer32Master({ theme }) {
 
     const exportExcel = () => {
         try {
-            let csv = "Equipo,QTY,Potencia (kW),Costo Unitario USD,Utilidad %,Venta Total USD\n";
+            let csv = "Equipo,Descripción,QTY,Potencia (kW),Costo Unitario USD,Utilidad %,Venta Total USD\n";
             Object.keys(data).forEach((key) => {
                 const item = data[key];
                 if (item.enabled !== false && ((item.qty || 0) > 0 || (item.cost || 0) > 0)) {
-                    csv += `"${key}",${item.qty || 1},${item.kw || 0},${item.cost || 0},${item.margin || 0},${calculateItem(key)}\n`;
+                    const descSafe = (item.desc || "").replace(/"/g, '""');
+                    csv += `"${key}","${descSafe}",${item.qty || 1},${item.kw || 0},${item.cost || 0},${item.margin || 0},${calculateItem(key)}\n`;
                 }
             });
 
@@ -211,8 +215,9 @@ export default function ChocoVer32Master({ theme }) {
             // Preparar Filas
             const rows = Object.keys(data).filter(key => data[key]?.enabled !== false && (data[key]?.cost || 0) > 0).map((key) => {
                 const subtext = (data[key].qty || 1) > 1 ? `\n(Cantidad: ${data[key].qty} unidades)` : '';
+                const descText = data[key].desc ? `\n\n${data[key].desc}` : '';
                 return [
-                    `${key}${subtext}`,
+                    `${key}${descText}${subtext}`,
                     `${(data[key]?.kw || 0).toFixed(1)} KW`,
                     `$${calculateItem(key).toLocaleString("en-US", { minimumFractionDigits: 2 })}`
                 ];
@@ -405,9 +410,10 @@ export default function ChocoVer32Master({ theme }) {
                                 {/* Headers Columnas Interiores */}
                                 <div
                                     className="grid gap-3 px-4 py-2 border-b border-glass-border/30 text-xs font-bold uppercase tracking-widest bg-glass/20 rounded-md"
-                                    style={{ gridTemplateColumns: "3.5fr 1fr 1.5fr 1.8fr 1.5fr 2fr", color: accentColor }}
+                                    style={{ gridTemplateColumns: "3fr 2fr 1fr 1.5fr 1.8fr 1.5fr 2fr", color: accentColor }}
                                 >
                                     <div>Equipo / Concepto</div>
+                                    <div>Descripción</div>
                                     <div className="text-center">QTY</div>
                                     <div className="text-right">Potencia (kW)</div>
                                     <div className="text-right">Costo USD Base</div>
@@ -421,7 +427,7 @@ export default function ChocoVer32Master({ theme }) {
                                     return (
                                         <div key={item}
                                             className={`grid gap-3 items-center px-4 py-3 bg-glass-light hover:bg-glass/80 rounded-lg group transition-colors border border-transparent hover:border-glass-border ${!isEnabled ? 'opacity-40 grayscale' : ''}`}
-                                            style={{ gridTemplateColumns: "3.5fr 1fr 1.5fr 1.8fr 1.5fr 2fr" }}
+                                            style={{ gridTemplateColumns: "3fr 2fr 1fr 1.5fr 1.8fr 1.5fr 2fr" }}
                                         >
                                             <div className="flex items-center gap-3 overflow-hidden text-sm text-gray-200">
                                                 <input
@@ -432,6 +438,17 @@ export default function ChocoVer32Master({ theme }) {
                                                     style={{ accentColor: accentColor }}
                                                 />
                                                 <span className="truncate" title={item}>{item}</span>
+                                            </div>
+
+                                            <div
+                                                className="col-span-1 text-xs text-gray-300 truncate cursor-pointer hover:text-white transition-colors flex items-center h-full bg-deep/30 px-3 py-2 rounded-md border border-glass-border/40 hover:border-neon-cyan/50"
+                                                title={data[item]?.desc || "Haz clic para añadir una descripción técnica detallada..."}
+                                                onClick={() => {
+                                                    setEditingDescItem(item);
+                                                    setTempDesc(data[item]?.desc || "");
+                                                }}
+                                            >
+                                                {data[item]?.desc ? data[item].desc : <span className="text-gray-600 italic">Ej. Inox 304, 2HP...</span>}
                                             </div>
 
                                             <div>
@@ -494,6 +511,46 @@ export default function ChocoVer32Master({ theme }) {
                     </div>
                 ))}
             </div>
+
+            {/* Modal para Editar Descripción */}
+            <Dialog open={!!editingDescItem} onOpenChange={(open) => !open && setEditingDescItem(null)}>
+                <DialogContent className="bg-deep border border-glass-border text-white sm:max-w-[500px]">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold flex items-center gap-2" style={{ color: accentColor }}>
+                            <FileText className="w-5 h-5" />
+                            Descripción del Equipo
+                        </DialogTitle>
+                        <p className="text-sm font-bold text-gray-300 mt-2">{editingDescItem}</p>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <textarea
+                            value={tempDesc}
+                            onChange={(e) => setTempDesc(e.target.value)}
+                            className="w-full bg-glass-light border border-glass-border rounded-xl p-4 text-white text-sm focus:outline-none focus:border-neon-cyan transition-colors resize-none text-justify"
+                            placeholder="Ej. Fabricado en acero Inoxidable 304, con motor de 2HP y tablero de control integrado..."
+                            rows={5}
+                        />
+                    </div>
+                    <div className="flex justify-end gap-3 mt-4">
+                        <button
+                            onClick={() => setEditingDescItem(null)}
+                            className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-400 hover:text-white transition-colors"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={() => {
+                                updateValue(editingDescItem, "desc", tempDesc);
+                                setEditingDescItem(null);
+                            }}
+                            className="px-5 py-2 rounded-lg font-bold text-sm shadow-glow-sm transition-transform hover:-translate-y-0.5"
+                            style={{ backgroundColor: accentColor, color: isLightText || primaryColor === '#3B3B3B' || accentColor.toUpperCase() === '#F2B705' || accentColor.toUpperCase() === '#FFCC00' ? '#000000' : '#FFFFFF' }}
+                        >
+                            Guardar Texto
+                        </button>
+                    </div>
+                </DialogContent>
+            </Dialog>
 
         </div>
     );
