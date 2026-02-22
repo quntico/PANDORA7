@@ -262,7 +262,7 @@ export default function ChocoVer32Master({ theme }) {
 
                         {/* Tabla Responsive usando flex/grid y overflow horizontal */}
                         <div className="w-full overflow-x-auto stylized-scrollbar pb-2">
-                            <div className="min-w-[1020px] p-4 flex flex-col gap-2">
+                            <div className="min-w-[850px] p-4 flex flex-col gap-2">
                                 {/* Headers Columnas Interiores */}
                                 <div className="grid grid-cols-12 gap-3 px-4 py-2 border-b border-glass-border/30 text-xs font-bold text-gray-400 uppercase tracking-widest bg-glass/20 rounded-md">
                                     <div className="col-span-4">Equipo / Concepto</div>
