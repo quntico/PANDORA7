@@ -274,14 +274,22 @@ export default function ChocoVer32Master({ theme }) {
             const tableStartY = 62 + (splitDesc.length * 4);
 
             // Preparar Filas
-            const rows = Object.keys(data).filter(key => data[key]?.enabled !== false && (data[key]?.cost || 0) > 0).map((key) => {
-                const subtext = (data[key].qty || 1) > 1 ? `\n(Cantidad: ${data[key].qty} unidades)` : '';
-                const descText = data[key].desc ? `\n\n${data[key].desc}` : '';
-                return [
-                    `${key}${descText}${subtext}`,
-                    `${(data[key]?.kw || 0).toFixed(1)} KW`,
-                    `$${calculateItem(key).toLocaleString("en-US", { minimumFractionDigits: 2 })}`
-                ];
+            const rows = [];
+            Object.keys(data).filter(key => data[key]?.enabled !== false && (data[key]?.cost || 0) > 0).forEach((key) => {
+                const qty = data[key].qty || 1;
+                const subtext = qty > 1 ? ` (x${qty})` : '';
+
+                rows.push([
+                    { content: `${key}${subtext}`, styles: { fontStyle: 'bold', textColor: [20, 20, 20], halign: 'left', cellPadding: data[key].desc ? { top: 5, right: 5, bottom: 1, left: 5 } : 5 } },
+                    { content: `${(data[key]?.kw || 0).toFixed(1)} KW`, rowSpan: data[key].desc ? 2 : 1, styles: { valign: 'middle' } },
+                    { content: `$${calculateItem(key).toLocaleString("en-US", { minimumFractionDigits: 2 })}`, rowSpan: data[key].desc ? 2 : 1, styles: { valign: 'middle' } }
+                ]);
+
+                if (data[key].desc) {
+                    rows.push([
+                        { content: data[key].desc, isDesc: true, styles: { fontStyle: 'normal', halign: 'justify', textColor: [80, 80, 80], cellPadding: { top: 1, right: 5, bottom: 5, left: 5 } } }
+                    ]);
+                }
             });
 
             autoTable(doc, {
@@ -297,6 +305,14 @@ export default function ChocoVer32Master({ theme }) {
                     1: { halign: 'center', cellWidth: 30 },
                     2: { halign: 'right', cellWidth: 40, fontStyle: 'bold' }
                 },
+                didDrawCell: function (data) {
+                    // Borrar el borde superior de la fila de descripción para unificarla visualmente con su título
+                    if (data.row.raw[0] && data.row.raw[0].isDesc && data.column.index === 0) {
+                        doc.setDrawColor(255, 255, 255);
+                        doc.setLineWidth(0.3);
+                        doc.line(data.cell.x + 0.2, data.cell.y, data.cell.x + data.cell.width - 0.2, data.cell.y);
+                    }
+                }
             });
 
             // Totales Finales PDF (Cuadro redondeado inferior derecho)
