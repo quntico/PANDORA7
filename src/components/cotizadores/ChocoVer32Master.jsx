@@ -429,24 +429,38 @@ export default function ChocoVer32Master({ theme }) {
 
             const tableStartY = 62 + (splitDesc.length * 4);
 
-            // Preparar Filas
+            // Preparar Filas agrupadas por módulo
             const rows = [];
-            Object.keys(data).filter(key => data[key]?.enabled !== false && (data[key]?.cost || 0) > 0).forEach((key) => {
-                const qty = data[key].qty || 1;
-                const subtext = qty > 1 ? ` (x${qty})` : '';
-                const safeKeyStr = sanitizePDFText(`${key}${subtext}`);
-
-                rows.push([
-                    { content: safeKeyStr, styles: { fontStyle: 'bold', textColor: [20, 20, 20], halign: 'left', cellPadding: data[key].desc ? { top: 5, right: 5, bottom: 1, left: 5 } : 5 } },
-                    { content: `${(data[key]?.kw || 0).toFixed(1)} KW`, rowSpan: data[key].desc ? 2 : 1, styles: { valign: 'middle' } },
-                    { content: `$${calculateItem(key).toLocaleString("en-US", { minimumFractionDigits: 2 })}`, rowSpan: data[key].desc ? 2 : 1, styles: { valign: 'middle' } }
-                ]);
-
-                if (data[key].desc) {
-                    const cleanDesc = sanitizePDFText(data[key].desc);
+            modules.forEach(module => {
+                const activeItems = module.items.filter(key => data[key]?.enabled !== false && (data[key]?.cost || 0) > 0);
+                if (activeItems.length > 0) {
+                    // Header de Módulo
                     rows.push([
-                        { content: cleanDesc, isDesc: true, styles: { fontStyle: 'normal', halign: 'justify', textColor: [80, 80, 80], cellPadding: { top: 1, right: 5, bottom: 5, left: 5 } } }
+                        {
+                            content: sanitizePDFText(module.name).toUpperCase(),
+                            colSpan: 3,
+                            styles: { fontStyle: 'bold', fillColor: [240, 240, 240], textColor: accentRgb, halign: 'center', cellPadding: 6 }
+                        }
                     ]);
+
+                    activeItems.forEach((key) => {
+                        const qty = data[key].qty || 1;
+                        const subtext = qty > 1 ? ` (x${qty})` : '';
+                        const safeKeyStr = sanitizePDFText(`${key}${subtext}`);
+
+                        rows.push([
+                            { content: safeKeyStr, styles: { fontStyle: 'bold', textColor: [20, 20, 20], halign: 'left', cellPadding: data[key].desc ? { top: 5, right: 5, bottom: 1, left: 5 } : 5 } },
+                            { content: `${(data[key]?.kw || 0).toFixed(1)} KW`, rowSpan: data[key].desc ? 2 : 1, styles: { valign: 'middle' } },
+                            { content: `$${calculateItem(key).toLocaleString("en-US", { minimumFractionDigits: 2 })}`, rowSpan: data[key].desc ? 2 : 1, styles: { valign: 'middle' } }
+                        ]);
+
+                        if (data[key].desc) {
+                            const cleanDesc = sanitizePDFText(data[key].desc);
+                            rows.push([
+                                { content: cleanDesc, isDesc: true, styles: { fontStyle: 'normal', halign: 'justify', textColor: [80, 80, 80], cellPadding: { top: 1, right: 5, bottom: 5, left: 5 } } }
+                            ]);
+                        }
+                    });
                 }
             });
 
@@ -590,19 +604,33 @@ export default function ChocoVer32Master({ theme }) {
             const tableStartY = 62 + (splitDesc.length * 4);
 
             const rows = [];
-            Object.keys(data).filter(key => data[key]?.enabled !== false && (data[key]?.cost || 0) > 0).forEach((key) => {
-                const qty = data[key].qty || 1;
-                const cost = data[key].cost || 0;
-                const margin = data[key].margin || 0;
-                const safeKeyStr = sanitizePDFText(key);
+            modules.forEach(module => {
+                const activeItems = module.items.filter(key => data[key]?.enabled !== false && (data[key]?.cost || 0) > 0);
+                if (activeItems.length > 0) {
+                    // Header de Módulo Interno
+                    rows.push([
+                        {
+                            content: sanitizePDFText(module.name).toUpperCase(),
+                            colSpan: 5,
+                            styles: { fontStyle: 'bold', fillColor: [240, 240, 240], textColor: accentRgb, halign: 'center', cellPadding: 6 }
+                        }
+                    ]);
 
-                rows.push([
-                    { content: safeKeyStr, styles: { fontStyle: 'bold', textColor: [20, 20, 20], halign: 'left' } },
-                    { content: qty.toString(), styles: { halign: 'center' } },
-                    { content: `$${cost.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, styles: { halign: 'right' } },
-                    { content: `${margin}%`, styles: { halign: 'center' } },
-                    { content: `$${calculateItem(key).toLocaleString("en-US", { minimumFractionDigits: 2 })}`, styles: { halign: 'right', fontStyle: 'bold' } }
-                ]);
+                    activeItems.forEach(key => {
+                        const qty = data[key].qty || 1;
+                        const cost = data[key].cost || 0;
+                        const margin = data[key].margin || 0;
+                        const safeKeyStr = sanitizePDFText(key);
+
+                        rows.push([
+                            { content: safeKeyStr, styles: { fontStyle: 'bold', textColor: [20, 20, 20], halign: 'left' } },
+                            { content: qty.toString(), styles: { halign: 'center' } },
+                            { content: `$${cost.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, styles: { halign: 'right' } },
+                            { content: `${margin}%`, styles: { halign: 'center' } },
+                            { content: `$${calculateItem(key).toLocaleString("en-US", { minimumFractionDigits: 2 })}`, styles: { halign: 'right', fontStyle: 'bold' } }
+                        ]);
+                    });
+                }
             });
 
             autoTable(doc, {
