@@ -486,10 +486,10 @@ export default function ChocoVer32Master({ theme }) {
 
             {/* HEADER SECTION TIPO PANDORA */}
             <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-8 pb-6 border-b border-glass-border/50 gap-6">
-                <div className="w-full xl:w-2/3">
-                    <h2 className="text-3xl font-black mb-2 flex flex-wrap items-center gap-3 w-full" style={{ color: headerTextColor }}>
+                <div className="flex-1 min-w-0 pr-4 xl:pr-8">
+                    <h2 className="text-3xl font-black mb-2 flex items-center gap-3 w-full" style={{ color: headerTextColor }}>
                         <span className="p-2.5 rounded-xl border border-glass-border shrink-0" style={{ backgroundColor: `${accentColor}20` }}>
-                            <ListChecks className="w-6 h-6" style={{ color: accentColor }} />
+                            <ListChecks className="w-6 h-6 shrink-0" style={{ color: accentColor }} />
                         </span>
 
                         {isEditingMainTitle ? (
@@ -504,7 +504,7 @@ export default function ChocoVer32Master({ theme }) {
                             />
                         ) : (
                             <span
-                                className="break-words border-b-2 border-dashed border-transparent hover:border-gray-500 cursor-pointer transition-colors"
+                                className="border-b-2 border-dashed border-transparent hover:border-gray-500 cursor-pointer transition-colors truncate"
                                 onClick={() => setIsEditingMainTitle(true)}
                                 title="Editar Título del Módulo Maestro"
                             >
@@ -520,7 +520,7 @@ export default function ChocoVer32Master({ theme }) {
                         </button>
                     </h2>
 
-                    <div className="flex items-start gap-2 mt-3">
+                    <div className="flex items-start gap-2 mt-3 w-full">
                         {isEditingMainDesc ? (
                             <textarea
                                 autoFocus
@@ -532,7 +532,7 @@ export default function ChocoVer32Master({ theme }) {
                             />
                         ) : (
                             <p
-                                className="text-sm text-gray-400 max-w-2xl px-2 cursor-pointer border-b border-dashed border-transparent hover:border-gray-600 transition-colors"
+                                className="text-sm text-gray-400 w-full xl:max-w-4xl px-2 cursor-pointer border-b border-dashed border-transparent hover:border-gray-600 transition-colors"
                                 onClick={() => setIsEditingMainDesc(true)}
                                 title="Editar Descripción General"
                             >
