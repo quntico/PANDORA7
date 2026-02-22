@@ -740,7 +740,7 @@ export default function ChocoVer32Master({ theme }) {
                                                     </div>
 
                                                     <div className="relative">
-                                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">kW</span>
+                                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-xs" style={{ color: accentColor }}>kW</span>
                                                         <input
                                                             type="number"
                                                             placeholder="0.0"
@@ -753,7 +753,7 @@ export default function ChocoVer32Master({ theme }) {
                                                     </div>
 
                                                     <div className="relative">
-                                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">$</span>
+                                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-xs" style={{ color: accentColor }}>$</span>
                                                         <input
                                                             type="number"
                                                             placeholder="0.00"
@@ -766,7 +766,7 @@ export default function ChocoVer32Master({ theme }) {
                                                     </div>
 
                                                     <div className="relative">
-                                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">%</span>
+                                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 font-bold text-xs" style={{ color: accentColor }}>%</span>
                                                         <input
                                                             type="number"
                                                             placeholder="0"
