@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import jsPDF from "jspdf";
-import "jspdf-autotable";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 import { Download, FileSpreadsheet, Zap, DollarSign, ListChecks, CheckCircle2 } from "lucide-react";
 
 const modules = [
@@ -123,71 +123,90 @@ export default function ChocoVer32Master({ theme }) {
             .reduce((sum, key) => sum + ((data[key]?.kw || 0) * (data[key]?.qty || 1)), 0);
     };
 
-    const exportExcel = () => {
-        let csv = "Equipo,QTY,kW,Costo,Utilidad,Venta\n";
-        Object.keys(data).forEach((key) => {
-            const item = data[key];
-            csv += `${key},${item.qty || 1},${item.kw || 0},${item.cost || 0},${item.margin || 0},${calculateItem(key)}\n`;
-        });
+    const hexToRgb = (hex) => {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)] : [40, 40, 40];
+    };
 
-        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        link.href = url;
-        link.setAttribute("download", "CHOCO_VER_3_2_MASTER.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    const exportExcel = () => {
+        try {
+            let csv = "Equipo,QTY,Potencia (kW),Costo Unitario USD,Utilidad %,Venta Total USD\n";
+            Object.keys(data).forEach((key) => {
+                const item = data[key];
+                if ((item.qty || 0) > 0 || (item.cost || 0) > 0) {
+                    csv += `"${key}",${item.qty || 1},${item.kw || 0},${item.cost || 0},${item.margin || 0},${calculateItem(key)}\n`;
+                }
+            });
+
+            const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.href = url;
+            link.setAttribute("download", "COTIZACION_CHOCO_VER_3_2.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (error) {
+            console.error("Error exporting Excel:", error);
+            alert("No se pudo exportar el archivo CSV Excel. Revisa tu consola para más detalles.");
+        }
     };
 
     const exportPDF = () => {
-        const doc = new jsPDF();
+        try {
+            const doc = new jsPDF();
+            const accentRgb = hexToRgb(accentColor);
 
-        // Configuración base PDF
-        doc.setFillColor(accentColor);
-        doc.rect(0, 0, 210, 25, 'F');
+            // Configuración base PDF
+            doc.setFillColor(accentRgb[0], accentRgb[1], accentRgb[2]);
+            doc.rect(0, 0, 210, 25, 'F');
 
-        doc.setTextColor(isLightText ? 0 : 255, isLightText ? 0 : 255, isLightText ? 0 : 255);
-        doc.setFontSize(16);
-        doc.setFont("helvetica", "bold");
-        doc.text("CHOCO VER 3.2 – PROPUESTA ECONÓMICA PANDORA", 15, 16);
+            doc.setTextColor(isLightText ? 0 : 255, isLightText ? 0 : 255, isLightText ? 0 : 255);
+            doc.setFontSize(16);
+            doc.setFont("helvetica", "bold");
+            doc.text("CHOCO VER 3.2 – PROPUESTA ECONÓMICA PANDORA", 15, 16);
 
-        const rows = Object.keys(data).filter(key => (data[key]?.cost || 0) > 0).map((key) => [
-            key,
-            data[key].qty || 1,
-            `${data[key].kw || 0} kW`,
-            `$ ${calculateItem(key).toLocaleString("en-US", { minimumFractionDigits: 2 })}`
-        ]);
+            const rows = Object.keys(data).filter(key => (data[key]?.cost || 0) > 0).map((key) => [
+                key,
+                data[key].qty || 1,
+                `${data[key].kw || 0} kW`,
+                `$ ${calculateItem(key).toLocaleString("en-US", { minimumFractionDigits: 2 })}`
+            ]);
 
-        doc.autoTable({
-            head: [["Equipo", "QTY", "Consumo (kW)", "Precio Venta (USD)"]],
-            body: rows,
-            startY: 30,
-            theme: 'grid',
-            headStyles: { fillColor: [40, 40, 40], textColor: [255, 255, 255] },
-            styles: { fontSize: 10, cellPadding: 3 },
-            columnStyles: {
-                1: { halign: 'center', cellWidth: 20 },
-                2: { halign: 'center', cellWidth: 30 },
-                3: { halign: 'right', cellWidth: 40 }
-            },
-        });
+            autoTable(doc, {
+                head: [["Equipo", "QTY", "Consumo (kW)", "Precio Venta (USD)"]],
+                body: rows,
+                startY: 30,
+                theme: 'grid',
+                headStyles: { fillColor: [40, 40, 40], textColor: [255, 255, 255] },
+                styles: { fontSize: 10, cellPadding: 3 },
+                columnStyles: {
+                    1: { halign: 'center', cellWidth: 20 },
+                    2: { halign: 'center', cellWidth: 30 },
+                    3: { halign: 'right', cellWidth: 40 }
+                },
+            });
 
-        // Totales Finales PDF
-        const finalY = doc.lastAutoTable.finalY + 15;
+            // Totales Finales PDF
+            // get finalY dynamically robust against different autotable APIs
+            const finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : 150;
 
-        doc.setFontSize(12);
-        doc.setTextColor(50, 50, 50);
-        doc.text(`Consumo Eléctrico Estimado:`, 15, finalY);
-        doc.setFont("helvetica", "bold");
-        doc.text(`${totalKW().toFixed(2)} kW`, 80, finalY);
+            doc.setFontSize(12);
+            doc.setTextColor(50, 50, 50);
+            doc.text(`Consumo Eléctrico Estimado:`, 15, finalY);
+            doc.setFont("helvetica", "bold");
+            doc.text(`${totalKW().toFixed(2)} kW`, 80, finalY);
 
-        doc.setFontSize(14);
-        doc.text(`Inversión Total Estimada:`, 15, finalY + 10);
-        doc.setTextColor(0, 100, 0); // Color verde genérico para PDF financiero
-        doc.text(`$ ${totalUSD().toLocaleString("en-US", { minimumFractionDigits: 2 })} USD`, 80, finalY + 10);
+            doc.setFontSize(14);
+            doc.text(`Inversión Total Estimada:`, 15, finalY + 10);
+            doc.setTextColor(0, 100, 0); // Color verde genérico para PDF financiero
+            doc.text(`$ ${totalUSD().toLocaleString("en-US", { minimumFractionDigits: 2 })} USD`, 80, finalY + 10);
 
-        doc.save("CHOCO_VER_3_2_MASTER.pdf");
+            doc.save("COTIZACION_CHOCO_VER_3_2.pdf");
+        } catch (error) {
+            console.error("Error exporting PDF:", error);
+            alert("No se pudo exportar el PDF. Revisa tu consola para más detalles.");
+        }
     };
 
     return (
