@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import { Download, FileSpreadsheet, Zap, DollarSign, ListChecks, CheckCircle2, FileText, ChevronDown, ChevronRight, FoldVertical, UnfoldVertical, Edit2, Plus, Trash2, AlignJustify, Upload } from "lucide-react";
+import { Link, Download, FileSpreadsheet, Zap, DollarSign, ListChecks, CheckCircle2, FileText, ChevronDown, ChevronRight, FoldVertical, UnfoldVertical, Edit2, Plus, Trash2, AlignJustify, Upload } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const initialModules = [
@@ -101,6 +101,7 @@ export default function ChocoVer32Master({ theme }) {
     });
     const [editingDescItem, setEditingDescItem] = useState(null);
     const [tempDesc, setTempDesc] = useState("");
+    const [tempUrl, setTempUrl] = useState("");
     const [editingNameItem, setEditingNameItem] = useState(null);
     const [tempName, setTempName] = useState("");
     const [collapsedModules, setCollapsedModules] = useState({});
@@ -138,7 +139,7 @@ export default function ChocoVer32Master({ theme }) {
     const updateValue = (key, field, value) => {
         setData((prev) => {
             let processedValue = value;
-            if (field !== 'desc' && field !== 'enabled') {
+            if (field !== 'desc' && field !== 'enabled' && field !== 'url') {
                 processedValue = Number(value);
             }
             return {
@@ -913,6 +914,15 @@ export default function ChocoVer32Master({ theme }) {
                                                         >
                                                             <Trash2 className="w-3.5 h-3.5" />
                                                         </button>
+                                                        {data[item]?.url && data[item].url.trim() !== "" ? (
+                                                            <a href={data[item].url.startsWith('http') ? data[item].url : `https://${data[item].url}`} target="_blank" rel="noopener noreferrer" className="p-1 hover:scale-110 transition-transform shrink-0" title="Abrir Link Guardado de Referencia">
+                                                                <Link className="w-3.5 h-3.5" style={{ color: accentColor }} />
+                                                            </a>
+                                                        ) : (
+                                                            <button className="opacity-20 p-1 cursor-default shrink-0" title="Sin Link Guardado. (Admin: edita la descripción para agregar uno)">
+                                                                <Link className="w-3.5 h-3.5 text-gray-400" />
+                                                            </button>
+                                                        )}
                                                         <span
                                                             className="truncate cursor-pointer hover:text-white transition-colors border-b border-dashed border-transparent hover:border-gray-500"
                                                             title="Editar o ver nombre completo del equipo (Click)"
@@ -931,6 +941,7 @@ export default function ChocoVer32Master({ theme }) {
                                                         onClick={() => {
                                                             setEditingDescItem(item);
                                                             setTempDesc(data[item]?.desc || "");
+                                                            setTempUrl(data[item]?.url || "");
                                                         }}
                                                     >
                                                         {data[item]?.desc ? data[item].desc : <span className="text-gray-600 italic">Ej. Inox 304, 2HP...</span>}
@@ -1054,7 +1065,7 @@ export default function ChocoVer32Master({ theme }) {
                         </DialogTitle>
                         <p className="text-sm font-bold text-gray-300 mt-2">{editingDescItem}</p>
                     </DialogHeader>
-                    <div className="py-4">
+                    <div className="py-4 flex flex-col gap-4">
                         <textarea
                             value={tempDesc}
                             onChange={(e) => setTempDesc(e.target.value)}
@@ -1062,6 +1073,18 @@ export default function ChocoVer32Master({ theme }) {
                             placeholder="Ej. Fabricado en acero Inoxidable 304, con motor de 2HP y tablero de control integrado..."
                             rows={5}
                         />
+                        <div className="flex items-center gap-2">
+                            <span className="p-2.5 bg-glass-light border border-glass-border rounded-lg shrink-0">
+                                <Link className="w-4 h-4 text-gray-400" />
+                            </span>
+                            <input
+                                type="url"
+                                value={tempUrl}
+                                onChange={e => setTempUrl(e.target.value)}
+                                className="w-full bg-glass-light border border-glass-border rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-neon-cyan transition-colors placeholder:text-gray-600"
+                                placeholder="Opcional: Pega el link/URL de referencia de este equipo..."
+                            />
+                        </div>
                     </div>
                     <div className="flex justify-between items-center mt-2">
                         <button
@@ -1088,6 +1111,7 @@ export default function ChocoVer32Master({ theme }) {
                             <button
                                 onClick={() => {
                                     updateValue(editingDescItem, "desc", tempDesc);
+                                    updateValue(editingDescItem, "url", tempUrl);
                                     setEditingDescItem(null);
                                 }}
                                 className="px-5 py-2 rounded-lg font-bold text-sm shadow-glow-sm transition-transform hover:-translate-y-0.5"
