@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ColorThief from 'colorthief';
-import { ShieldAlert, DollarSign, Settings, Calculator, Building2, Package, FileText, Plus, Upload, Palette, ChevronLeft, ChevronRight, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { ShieldAlert, DollarSign, Settings, Calculator, Building2, Package, FileText, Plus, Upload, Palette, ChevronLeft, ChevronRight, PanelLeftClose, PanelLeftOpen, Edit2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import ChocoVer32Master from '@/components/cotizadores/ChocoVer32Master';
@@ -23,6 +23,10 @@ function AdminCotizadorPage() {
     const [activeTemplate, setActiveTemplate] = useState('standard');
     // Control collapse state of the history sidebar
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+    // State for module editor rename
+    const [projectTitle, setProjectTitle] = useState('Portal de Cotizaciones');
+    const [isEditingTitle, setIsEditingTitle] = useState(false);
 
     const [editingForm, setEditingForm] = useState({
         logoUrl: null,
@@ -467,9 +471,37 @@ function AdminCotizadorPage() {
                                     </div>
                                     <div className="flex-1">
                                         <h3 className="text-2xl font-bold text-white tracking-wide">{activeCompanyFicha.name}</h3>
-                                        <p className="text-sm text-gray-400 flex items-center gap-2 mt-1">
-                                            <Building2 className="w-3.5 h-3.5" /> Portal de Cotizaciones
-                                        </p>
+                                        <div className="text-sm text-gray-400 flex items-center gap-2 mt-1">
+                                            <Building2 className="w-3.5 h-3.5 shrink-0" />
+                                            {isEditingTitle ? (
+                                                <input
+                                                    type="text"
+                                                    value={projectTitle}
+                                                    onChange={(e) => setProjectTitle(e.target.value)}
+                                                    onBlur={() => setIsEditingTitle(false)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') setIsEditingTitle(false);
+                                                    }}
+                                                    autoFocus
+                                                    className="bg-deep border border-glass-border rounded px-2 py-0.5 text-white min-w-[280px] focus:border-neon-cyan outline-none transition-colors"
+                                                />
+                                            ) : (
+                                                <span
+                                                    className="cursor-pointer border-b border-dashed border-transparent hover:border-gray-500 transition-colors text-white font-bold tracking-wider"
+                                                    onClick={() => setIsEditingTitle(true)}
+                                                    title="Haz clic para cambiar el nombre de este Módulo"
+                                                >
+                                                    {projectTitle}
+                                                </span>
+                                            )}
+                                            <button
+                                                onClick={() => setIsEditingTitle(!isEditingTitle)}
+                                                className="ml-1 p-1 rounded-md text-gray-500 hover:text-white bg-glass border border-glass-border hover:border-gray-400 hover:shadow-glow-sm transition-all"
+                                                title="Activar Modo Editor de Módulo"
+                                            >
+                                                <Edit2 className="w-3.5 h-3.5" style={{ color: activeCompanyFicha.theme.accent }} />
+                                            </button>
+                                        </div>
                                     </div>
                                     <div className="text-right">
                                         <div className="text-xs text-gray-400 mb-1">Métricas Generales</div>
