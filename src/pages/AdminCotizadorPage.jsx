@@ -39,7 +39,7 @@ function AdminCotizadorPage() {
             name: 'SOLIFOOD',
             description: 'Equipos para la industria alimentaria.',
             initials: 'SF',
-            theme: { primary: '#3B3B3B', secondary: '#FFFFFF', accent: '#FFD400', support: '#E6E6E6', logoUrl: null },
+            theme: { primary: '#3B3B3B', secondary: '#FFFFFF', accent: '#FFCC00', support: '#E6E6E6', logoUrl: null },
             format: 'Plantilla Estándar PANDORA',
             equiposCount: 84
         },

@@ -163,10 +163,32 @@ export default function ChocoVer32Master({ theme }) {
             doc.rect(0, 0, 210, 28, 'F');
 
             // Logo o Nombre de empresa
-            doc.setTextColor(accentRgb[0], accentRgb[1], accentRgb[2]);
-            doc.setFontSize(22);
-            doc.setFont("helvetica", "bold");
-            doc.text((theme?.name || "solifood").toLowerCase(), 15, 18);
+            if (theme?.logoUrl && theme.logoUrl.startsWith('data:image')) {
+                try {
+                    const imgProps = doc.getImageProperties(theme.logoUrl);
+                    const maxLogoWidth = 45;
+                    const maxLogoHeight = 18;
+                    const ratio = Math.min(maxLogoWidth / imgProps.width, maxLogoHeight / imgProps.height);
+
+                    const finalWidth = imgProps.width * ratio;
+                    const finalHeight = imgProps.height * ratio;
+                    const yPos = 14 - (finalHeight / 2); // Center vertically in 28mm header
+
+                    doc.addImage(theme.logoUrl, imgProps.fileType || 'PNG', 15, yPos, finalWidth, finalHeight);
+                } catch (imgError) {
+                    console.error("Error drawing logo in PDF:", imgError);
+                    // Fallback to Text
+                    doc.setTextColor(accentRgb[0], accentRgb[1], accentRgb[2]);
+                    doc.setFontSize(22);
+                    doc.setFont("helvetica", "bold");
+                    doc.text((theme?.name || "solifood").toLowerCase(), 15, 18);
+                }
+            } else {
+                doc.setTextColor(accentRgb[0], accentRgb[1], accentRgb[2]);
+                doc.setFontSize(22);
+                doc.setFont("helvetica", "bold");
+                doc.text((theme?.name || "solifood").toLowerCase(), 15, 18);
+            }
 
             // Título Propuesta
             doc.setFontSize(18);
