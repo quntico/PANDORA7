@@ -433,11 +433,10 @@ export default function ChocoVer32Master({ theme }) {
             }
 
             // Draw Totals Box
-            const boxBg = hexToRgb(primaryColor);
-            const isDarkBg = boxBg[0] < 150; // Checar si el fondo es oscuro para contrastar texto
-            const textBaseColor = isDarkBg ? [220, 220, 220] : [40, 40, 40];
-            const textMutedColor = isDarkBg ? [160, 160, 160] : [120, 120, 120];
-            const textStrongColor = isDarkBg ? [255, 255, 255] : [0, 0, 0];
+            const boxBg = [34, 36, 42]; // Solifood Dark Gray Hardcoded
+            const textBaseColor = [240, 240, 240];
+            const textMutedColor = [160, 160, 160];
+            const textStrongColor = [255, 255, 255];
 
             doc.setDrawColor(boxBg[0], boxBg[1], boxBg[2]);
             doc.setFillColor(boxBg[0], boxBg[1], boxBg[2]);
