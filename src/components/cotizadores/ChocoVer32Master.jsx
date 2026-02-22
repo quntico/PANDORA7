@@ -731,6 +731,7 @@ export default function ChocoVer32Master({ theme }) {
                                                         <input
                                                             type="number"
                                                             placeholder="1"
+                                                            value={data[item]?.qty ?? ""}
                                                             className="w-full bg-deep border-glass-border border p-2 rounded-md text-white text-center text-sm focus:outline-none focus:border-neon-cyan transition-colors"
                                                             min="0"
                                                             disabled={!isEnabled}
@@ -743,6 +744,7 @@ export default function ChocoVer32Master({ theme }) {
                                                         <input
                                                             type="number"
                                                             placeholder="0.0"
+                                                            value={data[item]?.kw ?? ""}
                                                             className="w-full bg-deep border-glass-border border p-2 pl-9 rounded-md text-white text-right text-sm focus:outline-none focus:border-neon-cyan transition-colors font-mono"
                                                             min="0" step="0.1"
                                                             disabled={!isEnabled}
@@ -755,6 +757,7 @@ export default function ChocoVer32Master({ theme }) {
                                                         <input
                                                             type="number"
                                                             placeholder="0.00"
+                                                            value={data[item]?.cost ?? ""}
                                                             className="w-full bg-deep border-glass-border border p-2 pl-7 rounded-md text-white text-right text-sm focus:outline-none focus:border-neon-cyan transition-colors font-mono"
                                                             min="0" step="100"
                                                             disabled={!isEnabled}
@@ -767,6 +770,7 @@ export default function ChocoVer32Master({ theme }) {
                                                         <input
                                                             type="number"
                                                             placeholder="0"
+                                                            value={data[item]?.margin ?? ""}
                                                             className="w-full bg-deep border-glass-border border p-2 pr-7 rounded-md text-white text-center text-sm focus:outline-none focus:border-neon-cyan transition-colors"
                                                             min="0" max="100"
                                                             disabled={!isEnabled}
