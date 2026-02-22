@@ -136,6 +136,19 @@ export default function ChocoVer32Master({ theme }) {
     const isLightText = primaryColor === '#FFFFFF' || primaryColor === '#F8F9FA';
     const headerTextColor = isLightText ? '#000000' : '#FFFFFF';
 
+    const sanitizePDFText = (text) => {
+        if (!text) return "";
+        return text.toString()
+            .replace(/≤/g, "<=")
+            .replace(/≥/g, ">=")
+            .replace(/µ|μ/g, "u")
+            .replace(/[“”]/g, '"')
+            .replace(/[‘’]/g, "'")
+            .replace(/–|—/g, "-")
+            .replace(/[\u00A0\u1680\u180e\u2000-\u200b\u202f\u205f\u3000]/g, " ")
+            .replace(/[^\x20-\x7E\xA0-\xFF]/g, "");
+    };
+
     const updateValue = (key, field, value) => {
         setData((prev) => {
             let processedValue = value;
@@ -411,7 +424,7 @@ export default function ChocoVer32Master({ theme }) {
             doc.setFontSize(9);
             doc.setTextColor(120, 120, 120);
             doc.setFont("helvetica", "italic");
-            const splitDesc = doc.splitTextToSize(mainDesc, 180);
+            const splitDesc = doc.splitTextToSize(sanitizePDFText(mainDesc), 180);
             doc.text(splitDesc, 15, 60);
 
             const tableStartY = 62 + (splitDesc.length * 4);
@@ -421,15 +434,16 @@ export default function ChocoVer32Master({ theme }) {
             Object.keys(data).filter(key => data[key]?.enabled !== false && (data[key]?.cost || 0) > 0).forEach((key) => {
                 const qty = data[key].qty || 1;
                 const subtext = qty > 1 ? ` (x${qty})` : '';
+                const safeKeyStr = sanitizePDFText(`${key}${subtext}`);
 
                 rows.push([
-                    { content: `${key}${subtext}`, styles: { fontStyle: 'bold', textColor: [20, 20, 20], halign: 'left', cellPadding: data[key].desc ? { top: 5, right: 5, bottom: 1, left: 5 } : 5 } },
+                    { content: safeKeyStr, styles: { fontStyle: 'bold', textColor: [20, 20, 20], halign: 'left', cellPadding: data[key].desc ? { top: 5, right: 5, bottom: 1, left: 5 } : 5 } },
                     { content: `${(data[key]?.kw || 0).toFixed(1)} KW`, rowSpan: data[key].desc ? 2 : 1, styles: { valign: 'middle' } },
                     { content: `$${calculateItem(key).toLocaleString("en-US", { minimumFractionDigits: 2 })}`, rowSpan: data[key].desc ? 2 : 1, styles: { valign: 'middle' } }
                 ]);
 
                 if (data[key].desc) {
-                    const cleanDesc = data[key].desc.replace(/[\u00A0\u1680\u180e\u2000-\u200b\u202f\u205f\u3000]/g, ' ');
+                    const cleanDesc = sanitizePDFText(data[key].desc);
                     rows.push([
                         { content: cleanDesc, isDesc: true, styles: { fontStyle: 'normal', halign: 'justify', textColor: [80, 80, 80], cellPadding: { top: 1, right: 5, bottom: 5, left: 5 } } }
                     ]);
@@ -570,7 +584,7 @@ export default function ChocoVer32Master({ theme }) {
             doc.setFontSize(9);
             doc.setTextColor(120, 120, 120);
             doc.setFont("helvetica", "italic");
-            const splitDesc = doc.splitTextToSize(mainDesc, 180);
+            const splitDesc = doc.splitTextToSize(sanitizePDFText(mainDesc), 180);
             doc.text(splitDesc, 15, 60);
 
             const tableStartY = 62 + (splitDesc.length * 4);
@@ -580,9 +594,10 @@ export default function ChocoVer32Master({ theme }) {
                 const qty = data[key].qty || 1;
                 const cost = data[key].cost || 0;
                 const margin = data[key].margin || 0;
+                const safeKeyStr = sanitizePDFText(key);
 
                 rows.push([
-                    { content: key, styles: { fontStyle: 'bold', textColor: [20, 20, 20], halign: 'left' } },
+                    { content: safeKeyStr, styles: { fontStyle: 'bold', textColor: [20, 20, 20], halign: 'left' } },
                     { content: qty.toString(), styles: { halign: 'center' } },
                     { content: `$${cost.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, styles: { halign: 'right' } },
                     { content: `${margin}%`, styles: { halign: 'center' } },
