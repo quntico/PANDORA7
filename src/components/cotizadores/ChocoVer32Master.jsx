@@ -91,6 +91,7 @@ const modules = [
 
 export default function ChocoVer32Master({ theme }) {
     const [data, setData] = useState({});
+    const [meta, setMeta] = useState({ client: '', project: '', tc: 18.50 });
 
     // Use the provided theme accent color or default to #FFD400
     const accentColor = theme?.accent || "#FFD400";
@@ -157,52 +158,109 @@ export default function ChocoVer32Master({ theme }) {
             const doc = new jsPDF();
             const accentRgb = hexToRgb(accentColor);
 
-            // Configuración base PDF
-            doc.setFillColor(accentRgb[0], accentRgb[1], accentRgb[2]);
-            doc.rect(0, 0, 210, 25, 'F');
+            // Configuración base PDF - Cabecera Negra (estilo imagen 2)
+            doc.setFillColor(0, 0, 0); // Header negro rigido
+            doc.rect(0, 0, 210, 28, 'F');
 
-            doc.setTextColor(isLightText ? 0 : 255, isLightText ? 0 : 255, isLightText ? 0 : 255);
-            doc.setFontSize(16);
+            // Logo o Nombre de empresa
+            doc.setTextColor(accentRgb[0], accentRgb[1], accentRgb[2]);
+            doc.setFontSize(22);
             doc.setFont("helvetica", "bold");
-            doc.text("CHOCO VER 3.2 – PROPUESTA ECONÓMICA PANDORA", 15, 16);
+            doc.text((theme?.name || "solifood").toLowerCase(), 15, 18);
 
-            const rows = Object.keys(data).filter(key => (data[key]?.cost || 0) > 0).map((key) => [
-                key,
-                data[key].qty || 1,
-                `${data[key].kw || 0} kW`,
-                `$ ${calculateItem(key).toLocaleString("en-US", { minimumFractionDigits: 2 })}`
-            ]);
+            // Título Propuesta
+            doc.setFontSize(18);
+            doc.text("PROPUESTA ECONÓMICA", 195, 18, { align: 'right' });
+
+            // Metadatos (Cliente, Proyecto, Fecha)
+            doc.setTextColor(40, 40, 40);
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+
+            const formatterDate = new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
+
+            doc.text(`CLIENTE: ${meta.client.toUpperCase() || 'POR DEFINIR'}`, 15, 40);
+            doc.text(`PROYECTO: ${meta.project.toUpperCase() || 'SIN NOMBRE'}`, 15, 46);
+            doc.text(`FECHA: ${formatterDate.format(new Date())}`, 15, 52);
+
+            // Preparar Filas
+            const rows = Object.keys(data).filter(key => (data[key]?.cost || 0) > 0).map((key) => {
+                const subtext = (data[key].qty || 1) > 1 ? `\n(Cantidad: ${data[key].qty} unidades)` : '';
+                return [
+                    `${key}${subtext}`,
+                    `${(data[key]?.kw || 0).toFixed(1)} KW`,
+                    `$${calculateItem(key).toLocaleString("en-US", { minimumFractionDigits: 2 })}`
+                ];
+            });
 
             autoTable(doc, {
-                head: [["Equipo", "QTY", "Consumo (kW)", "Precio Venta (USD)"]],
+                head: [["Descripción", "Potencia", "Importe"]],
                 body: rows,
-                startY: 30,
+                startY: 65,
                 theme: 'grid',
-                headStyles: { fillColor: [40, 40, 40], textColor: [255, 255, 255] },
-                styles: { fontSize: 10, cellPadding: 3 },
+                headStyles: { fillColor: accentRgb, textColor: [0, 0, 0], fontStyle: 'bold' },
+                bodyStyles: { textColor: [60, 60, 60] },
+                styles: { fontSize: 9, cellPadding: 5, lineColor: [220, 220, 220], lineWidth: 0.1 },
                 columnStyles: {
-                    1: { halign: 'center', cellWidth: 20 },
-                    2: { halign: 'center', cellWidth: 30 },
-                    3: { halign: 'right', cellWidth: 40 }
+                    0: { halign: 'left' },
+                    1: { halign: 'center', cellWidth: 30 },
+                    2: { halign: 'right', cellWidth: 40, fontStyle: 'bold' }
                 },
             });
 
-            // Totales Finales PDF
-            // get finalY dynamically robust against different autotable APIs
-            const finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : 150;
+            // Totales Finales PDF (Cuadro redondeado inferior derecho)
+            const finalY = (doc.lastAutoTable ? doc.lastAutoTable.finalY : 150) + 15;
 
-            doc.setFontSize(12);
-            doc.setTextColor(50, 50, 50);
-            doc.text(`Consumo Eléctrico Estimado:`, 15, finalY);
+            // Check page break for the totals box (needs approx 60 units of space)
+            let boxY = finalY;
+            if (boxY + 60 > 280) {
+                doc.addPage();
+                boxY = 20;
+            }
+
+            // Draw Totals Box
+            doc.setDrawColor(200, 200, 200);
+            doc.setFillColor(252, 252, 252);
+            doc.roundedRect(100, boxY, 95, 60, 3, 3, 'FD');
+
+            // Text inside box
+            const boxRightAlign = 185;
+            const boxLeft = 105;
+            let currentY = boxY + 12;
+
+            doc.setFontSize(10);
+            doc.setTextColor(40, 40, 40);
+            doc.setFont("helvetica", "normal");
+            doc.text("Potencia Total:", boxLeft, currentY);
+            doc.text(`${totalKW().toFixed(2)} KW`, boxRightAlign, currentY, { align: 'right' });
+
+            currentY += 10;
+            doc.setFontSize(11);
             doc.setFont("helvetica", "bold");
-            doc.text(`${totalKW().toFixed(2)} kW`, 80, finalY);
+            doc.setTextColor(accentRgb[0], accentRgb[1], accentRgb[2]); // Yellow
+            doc.text("TOTAL (USD):", boxLeft, currentY);
+            doc.text(`$${totalUSD().toLocaleString("en-US", { minimumFractionDigits: 2 })}`, boxRightAlign, currentY, { align: 'right' });
 
-            doc.setFontSize(14);
-            doc.text(`Inversión Total Estimada:`, 15, finalY + 10);
-            doc.setTextColor(0, 100, 0); // Color verde genérico para PDF financiero
-            doc.text(`$ ${totalUSD().toLocaleString("en-US", { minimumFractionDigits: 2 })} USD`, 80, finalY + 10);
+            currentY += 8;
+            doc.setFontSize(8);
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(120, 120, 120);
+            doc.text("PRECIOS MÁS 16% DE I.V.A", boxRightAlign, currentY, { align: 'right' });
 
-            doc.save("COTIZACION_CHOCO_VER_3_2.pdf");
+            currentY += 12;
+            doc.setFontSize(9);
+            doc.text("T.C. estimado:", boxLeft, currentY);
+            doc.text(`$${meta.tc.toFixed(2)} MXN`, boxRightAlign, currentY, { align: 'right' });
+
+            currentY += 10;
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(0, 0, 0);
+            doc.text("TOTAL (MXN):", boxLeft, currentY);
+            const totalMXN = totalUSD() * meta.tc;
+            doc.text(`MX$${totalMXN.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, boxRightAlign, currentY, { align: 'right' });
+
+            doc.save(`PROPUESTA_${(meta.client || 'PANDORA').replace(/\s+/g, '_')}_CHOCO.pdf`);
         } catch (error) {
             console.error("Error exporting PDF:", error);
             alert("No se pudo exportar el PDF. Revisa tu consola para más detalles.");
@@ -243,6 +301,43 @@ export default function ChocoVer32Master({ theme }) {
                     >
                         <Download className="w-4 h-4" /> PDF Formal
                     </button>
+                </div>
+            </div>
+
+            {/* METADATA INPUTS SECTION */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 shrink-0">
+                <div className="bg-glass-light border border-glass-border/50 p-4 rounded-xl flex flex-col justify-center">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Empresa / Cliente</label>
+                    <input
+                        type="text"
+                        value={meta.client}
+                        onChange={(e) => setMeta({ ...meta, client: e.target.value })}
+                        className="w-full bg-deep/50 border border-glass-border/80 p-2 rounded-md text-white text-sm focus:outline-none focus:border-neon-cyan transition-colors placeholder:text-gray-600"
+                        placeholder="Ej. Cristina Delfín"
+                    />
+                </div>
+                <div className="bg-glass-light border border-glass-border/50 p-4 rounded-xl flex flex-col justify-center">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Nombre de Proyecto</label>
+                    <input
+                        type="text"
+                        value={meta.project}
+                        onChange={(e) => setMeta({ ...meta, project: e.target.value })}
+                        className="w-full bg-deep/50 border border-glass-border/80 p-2 rounded-md text-white text-sm focus:outline-none focus:border-neon-cyan transition-colors placeholder:text-gray-600"
+                        placeholder="Ej. Barra Manicero"
+                    />
+                </div>
+                <div className="bg-glass-light border border-glass-border/50 p-4 rounded-xl flex flex-col justify-center">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">TC Proyectado (MXN)</label>
+                    <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-mono text-xs">$</span>
+                        <input
+                            type="number"
+                            step="0.01"
+                            value={meta.tc}
+                            onChange={(e) => setMeta({ ...meta, tc: parseFloat(e.target.value) || 0 })}
+                            className="w-full bg-deep/50 border border-glass-border/80 p-2 pl-7 rounded-md text-white font-mono text-sm focus:outline-none focus:border-neon-cyan transition-colors"
+                        />
+                    </div>
                 </div>
             </div>
 
