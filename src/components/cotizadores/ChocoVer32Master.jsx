@@ -249,7 +249,9 @@ export default function ChocoVer32Master({ theme }) {
 
             // Título Propuesta
             doc.setFontSize(18);
-            doc.text("PROPUESTA ECONÓMICA", 195, 18, { align: 'right' });
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(accentRgb[0], accentRgb[1], accentRgb[2]);
+            doc.text(mainTitle.toUpperCase(), 195, 18, { align: 'right' });
 
             // Metadatos (Cliente, Proyecto, Fecha)
             doc.setTextColor(40, 40, 40);
@@ -261,6 +263,15 @@ export default function ChocoVer32Master({ theme }) {
             doc.text(`CLIENTE: ${meta.client.toUpperCase() || 'POR DEFINIR'}`, 15, 40);
             doc.text(`PROYECTO: ${meta.project.toUpperCase() || 'SIN NOMBRE'}`, 15, 46);
             doc.text(`FECHA: ${formatterDate.format(new Date())}`, 15, 52);
+
+            // Subtítulo / Descripción
+            doc.setFontSize(9);
+            doc.setTextColor(120, 120, 120);
+            doc.setFont("helvetica", "italic");
+            const splitDesc = doc.splitTextToSize(mainDesc, 180);
+            doc.text(splitDesc, 15, 60);
+
+            const tableStartY = 62 + (splitDesc.length * 4);
 
             // Preparar Filas
             const rows = Object.keys(data).filter(key => data[key]?.enabled !== false && (data[key]?.cost || 0) > 0).map((key) => {
@@ -276,7 +287,7 @@ export default function ChocoVer32Master({ theme }) {
             autoTable(doc, {
                 head: [["Descripción", "Potencia", "Importe"]],
                 body: rows,
-                startY: 65,
+                startY: tableStartY,
                 theme: 'grid',
                 headStyles: { fillColor: accentRgb, textColor: [0, 0, 0], fontStyle: 'bold' },
                 bodyStyles: { textColor: [60, 60, 60] },
