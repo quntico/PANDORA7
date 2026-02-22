@@ -777,7 +777,7 @@ export default function ChocoVer32Master({ theme }) {
                     ]);
 
                     activeItems.forEach(key => {
-                        const qty = data[key].qty || 1;
+                        const qty = data[key]?.qty || 1;
                         const safeKeyStr = sanitizePDFText(key);
 
                         rows.push([
