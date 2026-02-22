@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import { Download, FileSpreadsheet, Zap, DollarSign, ListChecks, CheckCircle2, FileText, ChevronDown, ChevronRight, FoldVertical, UnfoldVertical } from "lucide-react";
+import { Download, FileSpreadsheet, Zap, DollarSign, ListChecks, CheckCircle2, FileText, ChevronDown, ChevronRight, FoldVertical, UnfoldVertical, Edit2, Plus, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
-const modules = [
+const initialModules = [
     {
         name: "1. UTILIDADES Y SERVICIOS",
         items: [
@@ -97,6 +97,13 @@ export default function ChocoVer32Master({ theme }) {
     const [tempDesc, setTempDesc] = useState("");
     const [collapsedModules, setCollapsedModules] = useState({});
 
+    // Nuevos estados para editor
+    const [modules, setModules] = useState(initialModules);
+    const [mainTitle, setMainTitle] = useState("Master Listado: CHOCO VER 3.2");
+    const [isEditingMainTitle, setIsEditingMainTitle] = useState(false);
+    const [mainDesc, setMainDesc] = useState("Matriz de cotización predictiva con módulos enlazados. Ingresa variables, costos y márgenes de utilidad y Pandora calcula automáticamente los subtotales, venta final y consumos en kW totales.");
+    const [isEditingMainDesc, setIsEditingMainDesc] = useState(false);
+
     // Force official #FFCC00 yellow for Solifood to override any pale colors extracted by ColorThief
     const isSolifood = theme?.id === 'solifood' || (theme?.name && theme.name.toLowerCase() === 'solifood');
     const accentColor = isSolifood ? "#FFCC00" : (theme?.accent || "#FFCC00");
@@ -145,6 +152,24 @@ export default function ChocoVer32Master({ theme }) {
         const newState = {};
         modules.forEach(m => newState[m.name] = collapse);
         setCollapsedModules(newState);
+    };
+
+    const handleAddModule = () => {
+        const newIdx = modules.length + 1;
+        setModules([...modules, { name: `${newIdx}. NUEVO MÓDULO PANDORA`, items: [] }]);
+    };
+
+    const handleAddItem = (moduleIndex) => {
+        const newModules = [...modules];
+        const newItemName = `Nuevo Equipo Personalizado ${Math.floor(Math.random() * 1000)}`;
+        newModules[moduleIndex].items.push(newItemName);
+        setModules(newModules);
+    };
+
+    const handleRemoveItem = (moduleIndex, itemIndex) => {
+        const newModules = [...modules];
+        newModules[moduleIndex].items.splice(itemIndex, 1);
+        setModules(newModules);
     };
 
     const moduleTotalUSD = (module) => module.items.reduce((sum, item) => sum + calculateItem(item), 0);
@@ -327,16 +352,60 @@ export default function ChocoVer32Master({ theme }) {
 
             {/* HEADER SECTION TIPO PANDORA */}
             <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-8 pb-6 border-b border-glass-border/50 gap-6">
-                <div>
-                    <h2 className="text-3xl font-black mb-2 flex items-center gap-3 w-full" style={{ color: headerTextColor }}>
+                <div className="w-full xl:w-2/3">
+                    <h2 className="text-3xl font-black mb-2 flex flex-wrap items-center gap-3 w-full" style={{ color: headerTextColor }}>
                         <span className="p-2.5 rounded-xl border border-glass-border shrink-0" style={{ backgroundColor: `${accentColor}20` }}>
                             <ListChecks className="w-6 h-6" style={{ color: accentColor }} />
                         </span>
-                        <span className="break-words">Master Listado: CHOCO VER 3.2</span>
+
+                        {isEditingMainTitle ? (
+                            <input
+                                type="text"
+                                autoFocus
+                                value={mainTitle}
+                                onChange={(e) => setMainTitle(e.target.value)}
+                                onBlur={() => setIsEditingMainTitle(false)}
+                                onKeyDown={(e) => { if (e.key === 'Enter') setIsEditingMainTitle(false) }}
+                                className="bg-deep border border-glass-border rounded-lg px-3 py-1 text-3xl font-black focus:border-neon-cyan outline-none w-full max-w-xl transition-colors"
+                            />
+                        ) : (
+                            <span
+                                className="break-words border-b-2 border-dashed border-transparent hover:border-gray-500 cursor-pointer transition-colors"
+                                onClick={() => setIsEditingMainTitle(true)}
+                                title="Editar Título del Módulo Maestro"
+                            >
+                                {mainTitle}
+                            </span>
+                        )}
+                        <button
+                            onClick={() => setIsEditingMainTitle(!isEditingMainTitle)}
+                            className="p-1.5 rounded-lg text-gray-500 hover:text-white bg-glass border border-glass-border hover:border-gray-400 hover:shadow-glow-sm transition-all shrink-0"
+                            title="Activar Modo Editor de Título"
+                        >
+                            <Edit2 className="w-5 h-5" style={{ color: accentColor }} />
+                        </button>
                     </h2>
-                    <p className="text-sm text-gray-400 max-w-2xl px-2">
-                        Matriz de cotización predictiva con módulos enlazados. Ingresa variables, costos y márgenes de utilidad y Pandora calcula automáticamente los subtotales, venta final y consumos en kW totales.
-                    </p>
+
+                    <div className="flex items-start gap-2 mt-3">
+                        {isEditingMainDesc ? (
+                            <textarea
+                                autoFocus
+                                value={mainDesc}
+                                onChange={(e) => setMainDesc(e.target.value)}
+                                onBlur={() => setIsEditingMainDesc(false)}
+                                className="w-full max-w-2xl bg-deep border border-glass-border rounded-lg px-3 py-2 text-sm text-gray-300 focus:border-neon-cyan outline-none transition-colors resize-none"
+                                rows={3}
+                            />
+                        ) : (
+                            <p
+                                className="text-sm text-gray-400 max-w-2xl px-2 cursor-pointer border-b border-dashed border-transparent hover:border-gray-600 transition-colors"
+                                onClick={() => setIsEditingMainDesc(true)}
+                                title="Editar Descripción General"
+                            >
+                                {mainDesc}
+                            </p>
+                        )}
+                    </div>
                 </div>
 
                 {/* Action Buttons */}
@@ -438,10 +507,10 @@ export default function ChocoVer32Master({ theme }) {
             </div>
 
             <div className="flex-1 w-full flex flex-col gap-6" style={{ minHeight: '600px' }}>
-                {modules.map((module) => {
+                {modules.map((module, mIndex) => {
                     const isCollapsed = collapsedModules[module.name];
                     return (
-                        <div key={module.name} className="bg-deep/50 border border-glass-border rounded-xl overflow-hidden w-full max-w-full">
+                        <div key={mIndex} className="bg-deep/50 border border-glass-border rounded-xl overflow-hidden w-full max-w-full">
                             {/* Cabecera del Módulo Expansible */}
                             <div
                                 className="bg-glass px-4 py-3 border-b border-glass-border flex items-center justify-between cursor-pointer hover:bg-glass/80 transition-colors"
@@ -476,14 +545,14 @@ export default function ChocoVer32Master({ theme }) {
                                         </div>
 
                                         {/* Filas */}
-                                        {module.items.map((item) => {
+                                        {module.items.map((item, itemIndex) => {
                                             const isEnabled = data[item]?.enabled !== false;
                                             return (
-                                                <div key={item}
+                                                <div key={`${mIndex}-${itemIndex}`}
                                                     className={`grid gap-3 items-center px-4 py-3 bg-glass-light hover:bg-glass/80 rounded-lg group transition-colors border border-transparent hover:border-glass-border ${!isEnabled ? 'opacity-40 grayscale' : ''}`}
                                                     style={{ gridTemplateColumns: "3fr 2fr 1fr 1.5fr 1.8fr 1.5fr 2fr" }}
                                                 >
-                                                    <div className="flex items-center gap-3 overflow-hidden text-sm text-gray-200">
+                                                    <div className="flex items-center gap-2 overflow-hidden text-sm text-gray-200">
                                                         <input
                                                             type="checkbox"
                                                             checked={isEnabled}
@@ -491,6 +560,13 @@ export default function ChocoVer32Master({ theme }) {
                                                             className="w-4 h-4 shrink-0 rounded border-glass-border bg-deep text-neon-cyan focus:ring-neon-cyan focus:ring-offset-deep cursor-pointer"
                                                             style={{ accentColor: accentColor }}
                                                         />
+                                                        <button
+                                                            onClick={() => handleRemoveItem(mIndex, itemIndex)}
+                                                            className="opacity-20 hover:opacity-100 p-1 text-red-400 hover:text-red-300 transition-opacity shrink-0"
+                                                            title="Eliminar Equipo"
+                                                        >
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                        </button>
                                                         <span className="truncate" title={item}>{item}</span>
                                                     </div>
 
@@ -560,6 +636,15 @@ export default function ChocoVer32Master({ theme }) {
                                                 </div>
                                             );
                                         })}
+
+                                        <div className="mt-2 px-4">
+                                            <button
+                                                onClick={() => handleAddItem(mIndex)}
+                                                className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-gray-400 hover:text-white bg-glass-light border border-glass-border hover:border-neon-cyan/50 rounded-lg transition-colors"
+                                            >
+                                                <Plus className="w-3.5 h-3.5" /> Agregar Equipo al Módulo
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             )
@@ -567,6 +652,16 @@ export default function ChocoVer32Master({ theme }) {
                         </div>
                     )
                 })}
+
+                <div className="flex justify-center mt-2">
+                    <button
+                        onClick={handleAddModule}
+                        className="flex items-center gap-2 px-6 py-3 font-bold text-sm tracking-wide bg-glass border border-glass-border rounded-xl transition-all shadow-glow-sm hover:scale-105"
+                        style={{ color: accentColor, borderColor: accentColor }}
+                    >
+                        <Plus className="w-5 h-5" /> AGREGAR NUEVO MÓDULO
+                    </button>
+                </div>
 
                 {/* RECUPERACIÓN DE TOTAL AL FINAL DE LA PANTALLA */}
                 <div className="bg-glass border border-glass-border rounded-2xl p-6 mt-4 mb-12 flex flex-col md:flex-row items-center justify-between shadow-glow-sm relative overflow-hidden group">
