@@ -714,6 +714,108 @@ export default function ChocoVer32Master({ theme }) {
         }
     };
 
+    const exportSimpleListPDF = () => {
+        try {
+            const doc = new jsPDF();
+            const accentRgb = hexToRgb(accentColor);
+
+            doc.setFillColor(0, 0, 0);
+            doc.rect(0, 0, 210, 28, 'F');
+
+            if (theme?.logoUrl && theme.logoUrl.startsWith('data:image')) {
+                try {
+                    const imgProps = doc.getImageProperties(theme.logoUrl);
+                    const ratio = Math.min(45 / imgProps.width, 18 / imgProps.height);
+                    doc.addImage(theme.logoUrl, imgProps.fileType || 'PNG', 15, 14 - ((imgProps.height * ratio) / 2), imgProps.width * ratio, imgProps.height * ratio);
+                } catch (e) {
+                    doc.setTextColor(accentRgb[0], accentRgb[1], accentRgb[2]);
+                    doc.setFontSize(22);
+                    doc.setFont("helvetica", "bold");
+                    doc.text((theme?.name || "solifood").toLowerCase(), 15, 18);
+                }
+            } else {
+                doc.setTextColor(accentRgb[0], accentRgb[1], accentRgb[2]);
+                doc.setFontSize(22);
+                doc.setFont("helvetica", "bold");
+                doc.text((theme?.name || "solifood").toLowerCase(), 15, 18);
+            }
+
+            doc.setFontSize(18);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(accentRgb[0], accentRgb[1], accentRgb[2]);
+            doc.text(mainTitle.toUpperCase() + " (LISTADO)", 195, 18, { align: 'right' });
+
+            doc.setTextColor(40, 40, 40);
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+            const formatterDate = new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
+            doc.text(`CLIENTE: ${meta.client.toUpperCase() || 'POR DEFINIR'}`, 15, 40);
+            doc.text(`PROYECTO: ${meta.project.toUpperCase() || 'SIN NOMBRE'}`, 15, 46);
+            doc.text(`FECHA: ${formatterDate.format(new Date())}`, 15, 52);
+
+            doc.setFontSize(9);
+            doc.setTextColor(120, 120, 120);
+            doc.setFont("helvetica", "italic");
+            const splitDesc = doc.splitTextToSize(sanitizePDFText(mainDesc), 180);
+            doc.text(splitDesc, 15, 60);
+
+            const tableStartY = 62 + (splitDesc.length * 4);
+
+            const rows = [];
+            let itemCounter = 1;
+
+            modules.forEach(module => {
+                const activeItems = module.items.filter(key => data[key]?.enabled !== false && (data[key]?.cost || 0) > 0);
+                if (activeItems.length > 0) {
+                    // Header de Módulo Listado
+                    rows.push([
+                        {
+                            content: sanitizePDFText(module.name).toUpperCase(),
+                            colSpan: 3,
+                            styles: { fontStyle: 'bold', fillColor: [240, 240, 240], textColor: accentRgb, halign: 'center', cellPadding: 6 }
+                        }
+                    ]);
+
+                    activeItems.forEach(key => {
+                        const qty = data[key].qty || 1;
+                        const safeKeyStr = sanitizePDFText(key);
+
+                        rows.push([
+                            { content: itemCounter.toString(), styles: { fontStyle: 'bold', halign: 'center' } },
+                            { content: safeKeyStr, styles: { textColor: [40, 40, 40], halign: 'left' } },
+                            { content: qty.toString(), styles: { halign: 'center', fontStyle: 'bold' } }
+                        ]);
+                        itemCounter++;
+                    });
+                }
+            });
+
+            autoTable(doc, {
+                head: [["#", "EQUIPO / CONCEPTO", "CANTIDAD"]],
+                body: rows,
+                startY: tableStartY,
+                theme: 'grid',
+                headStyles: { fillColor: accentRgb, textColor: [0, 0, 0], fontStyle: 'bold', halign: 'center' },
+                bodyStyles: { textColor: [60, 60, 60] },
+                styles: { fontSize: 9, cellPadding: 5, lineColor: [220, 220, 220], lineWidth: 0.1 },
+                columnStyles: {
+                    0: { halign: 'center', cellWidth: 15 },
+                    1: { halign: 'left' },
+                    2: { halign: 'center', cellWidth: 25 }
+                }
+            });
+
+            let finalFileName = meta.pdfName && meta.pdfName.trim() !== '' ? meta.pdfName.trim() + "_LISTADO" : `PROPUESTA_${(meta.client || 'PANDORA').replace(/\s+/g, '_')}_CHOCO_LISTADO`;
+            if (!finalFileName.toLowerCase().endsWith('.pdf')) {
+                finalFileName += '.pdf';
+            }
+            doc.save(finalFileName);
+        } catch (error) {
+            console.error("Error exporting simple list PDF:", error);
+            alert("No se pudo exportar el PDF del Listado. Revisa tu consola para más detalles.");
+        }
+    };
+
     return (
         <div className="flex flex-col h-full animate-fade-in relative z-10 w-full" style={{ paddingRight: '8px' }}>
 
@@ -797,6 +899,14 @@ export default function ChocoVer32Master({ theme }) {
                         title="Exportar documento en vista interna con detalle de costos y utilidad."
                     >
                         <FileText className="w-4 h-4" style={{ color: accentColor }} /> PDF Interno
+                    </button>
+
+                    <button
+                        onClick={exportSimpleListPDF}
+                        className="flex-1 sm:flex-none flex justify-center items-center gap-2 px-5 py-3 border rounded-xl font-bold text-sm tracking-wide transition-all shadow-glow-sm hover:scale-105 bg-glass border-glass-border hover:bg-glass-light text-gray-300 hover:text-white"
+                        title="Exportar un listado numerado de equipos y cantidades sin costos ni descripciones largas."
+                    >
+                        <ListChecks className="w-4 h-4" style={{ color: accentColor }} /> PDF Listado
                     </button>
 
                     <button
