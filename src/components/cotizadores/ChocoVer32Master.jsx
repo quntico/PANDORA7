@@ -429,8 +429,9 @@ export default function ChocoVer32Master({ theme }) {
                 ]);
 
                 if (data[key].desc) {
+                    const cleanDesc = data[key].desc.replace(/[\u00A0\u1680\u180e\u2000-\u200b\u202f\u205f\u3000]/g, ' ');
                     rows.push([
-                        { content: data[key].desc, isDesc: true, styles: { fontStyle: 'normal', halign: 'left', textColor: [80, 80, 80], cellPadding: { top: 1, right: 5, bottom: 5, left: 5 } } }
+                        { content: cleanDesc, isDesc: true, styles: { fontStyle: 'normal', halign: 'justify', textColor: [80, 80, 80], cellPadding: { top: 1, right: 5, bottom: 5, left: 5 } } }
                     ]);
                 }
             });
