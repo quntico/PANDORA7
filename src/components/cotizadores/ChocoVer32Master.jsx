@@ -103,12 +103,13 @@ export default function ChocoVer32Master({ theme }) {
     const updateValue = (key, field, value) => {
         setData((prev) => ({
             ...prev,
-            [key]: { ...prev[key], [field]: Number(value) },
+            [key]: { ...prev[key], [field]: typeof value === 'boolean' ? value : Number(value) },
         }));
     };
 
     const calculateItem = (itemKey) => {
         const item = data[itemKey] || {};
+        if (item.enabled === false) return 0;
         const qty = item.qty || 1;
         const cost = item.cost || 0;
         const margin = item.margin || 0;
@@ -122,6 +123,7 @@ export default function ChocoVer32Master({ theme }) {
 
     const totalKW = () => {
         return Object.keys(data)
+            .filter(key => data[key]?.enabled !== false)
             .reduce((sum, key) => sum + ((data[key]?.kw || 0) * (data[key]?.qty || 1)), 0);
     };
 
@@ -135,7 +137,7 @@ export default function ChocoVer32Master({ theme }) {
             let csv = "Equipo,QTY,Potencia (kW),Costo Unitario USD,Utilidad %,Venta Total USD\n";
             Object.keys(data).forEach((key) => {
                 const item = data[key];
-                if ((item.qty || 0) > 0 || (item.cost || 0) > 0) {
+                if (item.enabled !== false && ((item.qty || 0) > 0 || (item.cost || 0) > 0)) {
                     csv += `"${key}",${item.qty || 1},${item.kw || 0},${item.cost || 0},${item.margin || 0},${calculateItem(key)}\n`;
                 }
             });
@@ -207,7 +209,7 @@ export default function ChocoVer32Master({ theme }) {
             doc.text(`FECHA: ${formatterDate.format(new Date())}`, 15, 52);
 
             // Preparar Filas
-            const rows = Object.keys(data).filter(key => (data[key]?.cost || 0) > 0).map((key) => {
+            const rows = Object.keys(data).filter(key => data[key]?.enabled !== false && (data[key]?.cost || 0) > 0).map((key) => {
                 const subtext = (data[key].qty || 1) > 1 ? `\n(Cantidad: ${data[key].qty} unidades)` : '';
                 return [
                     `${key}${subtext}`,
@@ -401,70 +403,92 @@ export default function ChocoVer32Master({ theme }) {
                         <div className="w-full overflow-x-auto stylized-scrollbar pb-2">
                             <div className="min-w-[850px] p-4 flex flex-col gap-2">
                                 {/* Headers Columnas Interiores */}
-                                <div className="grid grid-cols-12 gap-3 px-4 py-2 border-b border-glass-border/30 text-xs font-bold text-gray-400 uppercase tracking-widest bg-glass/20 rounded-md">
-                                    <div className="col-span-4">Equipo / Concepto</div>
-                                    <div className="col-span-1 text-center">QTY</div>
-                                    <div className="col-span-2 text-right">Potencia (kW)</div>
-                                    <div className="col-span-2 text-right">Costo USD Base</div>
-                                    <div className="col-span-1 text-center">% Útil.</div>
-                                    <div className="col-span-2 text-right text-white">Venta Final</div>
+                                <div
+                                    className="grid gap-3 px-4 py-2 border-b border-glass-border/30 text-xs font-bold uppercase tracking-widest bg-glass/20 rounded-md"
+                                    style={{ gridTemplateColumns: "3.5fr 1fr 1.5fr 1.8fr 1.5fr 2fr", color: accentColor }}
+                                >
+                                    <div>Equipo / Concepto</div>
+                                    <div className="text-center">QTY</div>
+                                    <div className="text-right">Potencia (kW)</div>
+                                    <div className="text-right">Costo USD Base</div>
+                                    <div className="text-center">% Útil.</div>
+                                    <div className="text-right">Venta Final</div>
                                 </div>
 
                                 {/* Filas */}
-                                {module.items.map((item) => (
-                                    <div key={item} className="grid grid-cols-12 gap-3 items-center px-4 py-3 bg-glass-light hover:bg-glass/80 rounded-lg group transition-colors border border-transparent hover:border-glass-border">
-                                        <div className="col-span-4 text-sm text-gray-200 truncate pr-2" title={item}>{item}</div>
+                                {module.items.map((item) => {
+                                    const isEnabled = data[item]?.enabled !== false;
+                                    return (
+                                        <div key={item}
+                                            className={`grid gap-3 items-center px-4 py-3 bg-glass-light hover:bg-glass/80 rounded-lg group transition-colors border border-transparent hover:border-glass-border ${!isEnabled ? 'opacity-40 grayscale' : ''}`}
+                                            style={{ gridTemplateColumns: "3.5fr 1fr 1.5fr 1.8fr 1.5fr 2fr" }}
+                                        >
+                                            <div className="flex items-center gap-3 overflow-hidden text-sm text-gray-200">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isEnabled}
+                                                    onChange={(e) => updateValue(item, "enabled", e.target.checked)}
+                                                    className="w-4 h-4 shrink-0 rounded border-glass-border bg-deep text-neon-cyan focus:ring-neon-cyan focus:ring-offset-deep cursor-pointer"
+                                                    style={{ accentColor: accentColor }}
+                                                />
+                                                <span className="truncate" title={item}>{item}</span>
+                                            </div>
 
-                                        <div className="col-span-1">
-                                            <input
-                                                type="number"
-                                                placeholder="1"
-                                                className="w-full bg-deep border-glass-border border p-2 rounded-md text-white text-center text-sm focus:outline-none focus:border-neon-cyan transition-colors"
-                                                min="0"
-                                                onChange={(e) => updateValue(item, "qty", e.target.value)}
-                                            />
-                                        </div>
+                                            <div>
+                                                <input
+                                                    type="number"
+                                                    placeholder="1"
+                                                    className="w-full bg-deep border-glass-border border p-2 rounded-md text-white text-center text-sm focus:outline-none focus:border-neon-cyan transition-colors"
+                                                    min="0"
+                                                    disabled={!isEnabled}
+                                                    onChange={(e) => updateValue(item, "qty", e.target.value)}
+                                                />
+                                            </div>
 
-                                        <div className="col-span-2 relative">
-                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">kW</span>
-                                            <input
-                                                type="number"
-                                                placeholder="0.0"
-                                                className="w-full bg-deep border-glass-border border p-2 pl-9 rounded-md text-white text-right text-sm focus:outline-none focus:border-neon-cyan transition-colors font-mono"
-                                                min="0" step="0.1"
-                                                onChange={(e) => updateValue(item, "kw", e.target.value)}
-                                            />
-                                        </div>
+                                            <div className="relative">
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">kW</span>
+                                                <input
+                                                    type="number"
+                                                    placeholder="0.0"
+                                                    className="w-full bg-deep border-glass-border border p-2 pl-9 rounded-md text-white text-right text-sm focus:outline-none focus:border-neon-cyan transition-colors font-mono"
+                                                    min="0" step="0.1"
+                                                    disabled={!isEnabled}
+                                                    onChange={(e) => updateValue(item, "kw", e.target.value)}
+                                                />
+                                            </div>
 
-                                        <div className="col-span-2 relative">
-                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">$</span>
-                                            <input
-                                                type="number"
-                                                placeholder="0.00"
-                                                className="w-full bg-deep border-glass-border border p-2 pl-7 rounded-md text-white text-right text-sm focus:outline-none focus:border-neon-cyan transition-colors font-mono"
-                                                min="0" step="100"
-                                                onChange={(e) => updateValue(item, "cost", e.target.value)}
-                                            />
-                                        </div>
+                                            <div className="relative">
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">$</span>
+                                                <input
+                                                    type="number"
+                                                    placeholder="0.00"
+                                                    className="w-full bg-deep border-glass-border border p-2 pl-7 rounded-md text-white text-right text-sm focus:outline-none focus:border-neon-cyan transition-colors font-mono"
+                                                    min="0" step="100"
+                                                    disabled={!isEnabled}
+                                                    onChange={(e) => updateValue(item, "cost", e.target.value)}
+                                                />
+                                            </div>
 
-                                        <div className="col-span-1 relative">
-                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">%</span>
-                                            <input
-                                                type="number"
-                                                placeholder="0"
-                                                className="w-full bg-deep border-glass-border border p-2 pr-7 rounded-md text-white text-center text-sm focus:outline-none focus:border-neon-cyan transition-colors"
-                                                min="0" max="100"
-                                                onChange={(e) => updateValue(item, "margin", e.target.value)}
-                                            />
-                                        </div>
+                                            <div className="relative">
+                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">%</span>
+                                                <input
+                                                    type="number"
+                                                    placeholder="0"
+                                                    className="w-full bg-deep border-glass-border border p-2 pr-7 rounded-md text-white text-center text-sm focus:outline-none focus:border-neon-cyan transition-colors"
+                                                    min="0" max="100"
+                                                    disabled={!isEnabled}
+                                                    onChange={(e) => updateValue(item, "margin", e.target.value)}
+                                                />
+                                            </div>
 
-                                        <div className="col-span-2 text-right">
-                                            <span className="font-bold text-white font-mono tabular-nums text-sm lg:text-base block truncate pr-2" style={{ color: calculateItem(item) > 0 ? accentColor : '#9CA3AF' }}>
-                                                $ {calculateItem(item).toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                                            </span>
+                                            <div className="text-right">
+                                                <span className="font-bold text-white font-mono tabular-nums text-sm lg:text-base block truncate pr-2" style={{ color: calculateItem(item) > 0 ? accentColor : '#9CA3AF' }}>
+                                                    $ {calculateItem(item).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                                                </span>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     </div>
