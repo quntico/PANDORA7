@@ -491,6 +491,149 @@ export default function ChocoVer32Master({ theme }) {
         }
     };
 
+    const exportInternalPDF = () => {
+        try {
+            const doc = new jsPDF();
+            const accentRgb = hexToRgb(accentColor);
+
+            doc.setFillColor(0, 0, 0);
+            doc.rect(0, 0, 210, 28, 'F');
+
+            if (theme?.logoUrl && theme.logoUrl.startsWith('data:image')) {
+                try {
+                    const imgProps = doc.getImageProperties(theme.logoUrl);
+                    const ratio = Math.min(45 / imgProps.width, 18 / imgProps.height);
+                    doc.addImage(theme.logoUrl, imgProps.fileType || 'PNG', 15, 14 - ((imgProps.height * ratio) / 2), imgProps.width * ratio, imgProps.height * ratio);
+                } catch (e) {
+                    doc.setTextColor(accentRgb[0], accentRgb[1], accentRgb[2]);
+                    doc.setFontSize(22);
+                    doc.setFont("helvetica", "bold");
+                    doc.text((theme?.name || "solifood").toLowerCase(), 15, 18);
+                }
+            } else {
+                doc.setTextColor(accentRgb[0], accentRgb[1], accentRgb[2]);
+                doc.setFontSize(22);
+                doc.setFont("helvetica", "bold");
+                doc.text((theme?.name || "solifood").toLowerCase(), 15, 18);
+            }
+
+            doc.setFontSize(18);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(accentRgb[0], accentRgb[1], accentRgb[2]);
+            doc.text(mainTitle.toUpperCase() + " (INTERNO)", 195, 18, { align: 'right' });
+
+            doc.setTextColor(40, 40, 40);
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+            const formatterDate = new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
+            doc.text(`CLIENTE: ${meta.client.toUpperCase() || 'POR DEFINIR'}`, 15, 40);
+            doc.text(`PROYECTO: ${meta.project.toUpperCase() || 'SIN NOMBRE'}`, 15, 46);
+            doc.text(`FECHA: ${formatterDate.format(new Date())}`, 15, 52);
+
+            doc.setFontSize(9);
+            doc.setTextColor(120, 120, 120);
+            doc.setFont("helvetica", "italic");
+            const splitDesc = doc.splitTextToSize(mainDesc, 180);
+            doc.text(splitDesc, 15, 60);
+
+            const tableStartY = 62 + (splitDesc.length * 4);
+
+            const rows = [];
+            Object.keys(data).filter(key => data[key]?.enabled !== false && (data[key]?.cost || 0) > 0).forEach((key) => {
+                const qty = data[key].qty || 1;
+                const cost = data[key].cost || 0;
+                const margin = data[key].margin || 0;
+
+                rows.push([
+                    { content: key, styles: { fontStyle: 'bold', textColor: [20, 20, 20], halign: 'left' } },
+                    { content: qty.toString(), styles: { halign: 'center' } },
+                    { content: `$${cost.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, styles: { halign: 'right' } },
+                    { content: `${margin}%`, styles: { halign: 'center' } },
+                    { content: `$${calculateItem(key).toLocaleString("en-US", { minimumFractionDigits: 2 })}`, styles: { halign: 'right', fontStyle: 'bold' } }
+                ]);
+            });
+
+            autoTable(doc, {
+                head: [["EQUIPO / CONCEPTO", "QTY", "COSTO BASE", "% UTILIDAD", "VENTA FINAL"]],
+                body: rows,
+                startY: tableStartY,
+                theme: 'grid',
+                headStyles: { fillColor: accentRgb, textColor: [0, 0, 0], fontStyle: 'bold', halign: 'center' },
+                bodyStyles: { textColor: [60, 60, 60] },
+                styles: { fontSize: 9, cellPadding: 5, lineColor: [220, 220, 220], lineWidth: 0.1 },
+                columnStyles: {
+                    0: { halign: 'left' },
+                    1: { halign: 'center', cellWidth: 15 },
+                    2: { halign: 'right', cellWidth: 35 },
+                    3: { halign: 'center', cellWidth: 25 },
+                    4: { halign: 'right', cellWidth: 35, fontStyle: 'bold' }
+                }
+            });
+
+            const finalY = (doc.lastAutoTable ? doc.lastAutoTable.finalY : 150) + 15;
+            let boxY = finalY;
+            if (boxY + 60 > 280) {
+                doc.addPage();
+                boxY = 20;
+            }
+
+            const boxBg = [34, 36, 42];
+            const textBaseColor = [240, 240, 240];
+            const textMutedColor = [160, 160, 160];
+            const textStrongColor = [255, 255, 255];
+
+            doc.setDrawColor(boxBg[0], boxBg[1], boxBg[2]);
+            doc.setFillColor(boxBg[0], boxBg[1], boxBg[2]);
+            doc.roundedRect(100, boxY, 95, 60, 3, 3, 'FD');
+
+            const boxRightAlign = 185;
+            const boxLeft = 105;
+            let currentY = boxY + 12;
+
+            doc.setFontSize(10);
+            doc.setTextColor(textBaseColor[0], textBaseColor[1], textBaseColor[2]);
+            doc.setFont("helvetica", "normal");
+            doc.text("Potencia Total:", boxLeft, currentY);
+            doc.text(`${totalKW().toFixed(2)} KW`, boxRightAlign, currentY, { align: 'right' });
+
+            currentY += 10;
+            doc.setFontSize(11);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(accentRgb[0], accentRgb[1], accentRgb[2]);
+            doc.text("TOTAL (USD):", boxLeft, currentY);
+            doc.text(`$${totalUSD().toLocaleString("en-US", { minimumFractionDigits: 2 })}`, boxRightAlign, currentY, { align: 'right' });
+
+            currentY += 8;
+            doc.setFontSize(8);
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(textMutedColor[0], textMutedColor[1], textMutedColor[2]);
+            doc.text("PRECIOS MÁS 16% DE I.V.A", boxRightAlign, currentY, { align: 'right' });
+
+            currentY += 12;
+            doc.setFontSize(9);
+            doc.setTextColor(textBaseColor[0], textBaseColor[1], textBaseColor[2]);
+            doc.text("T.C. estimado:", boxLeft, currentY);
+            doc.text(`$${meta.tc.toFixed(2)} MXN`, boxRightAlign, currentY, { align: 'right' });
+
+            currentY += 10;
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(textStrongColor[0], textStrongColor[1], textStrongColor[2]);
+            doc.text("TOTAL (MXN):", boxLeft, currentY);
+            const totalMXN = totalUSD() * meta.tc;
+            doc.text(`MX$${totalMXN.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, boxRightAlign, currentY, { align: 'right' });
+
+            let finalFileName = meta.pdfName && meta.pdfName.trim() !== '' ? meta.pdfName.trim() + "_INTERNO" : `PROPUESTA_${(meta.client || 'PANDORA').replace(/\s+/g, '_')}_CHOCO_INTERNO`;
+            if (!finalFileName.toLowerCase().endsWith('.pdf')) {
+                finalFileName += '.pdf';
+            }
+            doc.save(finalFileName);
+        } catch (error) {
+            console.error("Error exporting internal PDF:", error);
+            alert("No se pudo exportar el PDF Interno. Revisa tu consola para más detalles.");
+        }
+    };
+
     return (
         <div className="flex flex-col h-full animate-fade-in relative z-10 w-full" style={{ paddingRight: '8px' }}>
 
@@ -566,6 +709,14 @@ export default function ChocoVer32Master({ theme }) {
                         title="Exportar Módulos a CSV para usarlos como Plantilla luego"
                     >
                         <FileSpreadsheet className="w-4 h-4" /> Exportar a CSV
+                    </button>
+
+                    <button
+                        onClick={exportInternalPDF}
+                        className="flex-1 sm:flex-none flex justify-center items-center gap-2 px-5 py-3 border rounded-xl font-bold text-sm tracking-wide transition-all shadow-glow-sm hover:scale-105 bg-glass border-glass-border hover:bg-glass-light text-gray-300 hover:text-white"
+                        title="Exportar documento en vista interna con detalle de costos y utilidad."
+                    >
+                        <FileText className="w-4 h-4" style={{ color: accentColor }} /> PDF Interno
                     </button>
 
                     <button
