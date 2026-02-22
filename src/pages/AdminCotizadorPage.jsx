@@ -76,7 +76,15 @@ function AdminCotizadorPage() {
         const saved = localStorage.getItem('pandora_companies_data');
         if (saved) {
             try {
-                return JSON.parse(saved);
+                let parsedList = JSON.parse(saved);
+                // Permanent sanity check block: Force Solifood's exact yellow to avoid ColorThief pale extraction cache
+                parsedList = parsedList.map(c => {
+                    if (c.id === 'solifood' || (c.name && c.name.toUpperCase() === 'SOLIFOOD')) {
+                        return { ...c, theme: { ...c.theme, accent: '#FFCC00' } };
+                    }
+                    return c;
+                });
+                return parsedList;
             } catch (e) {
                 console.warn("Failed to load saved companies", e);
             }
@@ -147,12 +155,13 @@ function AdminCotizadorPage() {
     const handleSaveSettings = () => {
         setCompanies(prev => prev.map(c => {
             if (c.id === editingCompany.id) {
+                const finalAccent = c.id === 'solifood' ? '#FFCC00' : editingForm.accentColor;
                 return {
                     ...c,
                     theme: {
                         primary: editingForm.primaryColor,
                         secondary: editingForm.secondaryColor,
-                        accent: editingForm.accentColor,
+                        accent: finalAccent,
                         support: editingForm.supportColor,
                         logoUrl: editingForm.logoUrl
                     },
@@ -161,6 +170,25 @@ function AdminCotizadorPage() {
             }
             return c;
         }));
+
+        // Also update the activeCompanyFicha if it's the one we just edited
+        if (activeCompanyFicha && activeCompanyFicha.id === editingCompany.id) {
+            setActiveCompanyFicha(prev => {
+                const finalAccent = prev.id === 'solifood' ? '#FFCC00' : editingForm.accentColor;
+                return {
+                    ...prev,
+                    theme: {
+                        primary: editingForm.primaryColor,
+                        secondary: editingForm.secondaryColor,
+                        accent: finalAccent,
+                        support: editingForm.supportColor,
+                        logoUrl: editingForm.logoUrl
+                    },
+                    format: editingForm.format
+                };
+            });
+        }
+
         setEditingCompany(null);
     };
 
