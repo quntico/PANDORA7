@@ -430,7 +430,7 @@ export default function ChocoVer32Master({ theme }) {
 
                 if (data[key].desc) {
                     rows.push([
-                        { content: data[key].desc, isDesc: true, styles: { fontStyle: 'normal', halign: 'justify', textColor: [80, 80, 80], cellPadding: { top: 1, right: 5, bottom: 5, left: 5 } } }
+                        { content: data[key].desc, isDesc: true, styles: { fontStyle: 'normal', halign: 'left', textColor: [80, 80, 80], cellPadding: { top: 1, right: 5, bottom: 5, left: 5 } } }
                     ]);
                 }
             });
@@ -444,7 +444,7 @@ export default function ChocoVer32Master({ theme }) {
                 bodyStyles: { textColor: [60, 60, 60] },
                 styles: { fontSize: 9, cellPadding: 5, lineColor: [220, 220, 220], lineWidth: 0.1 },
                 columnStyles: {
-                    0: { halign: 'left' },
+                    0: { halign: 'left', cellWidth: 110 },
                     1: { halign: 'center', cellWidth: 30 },
                     2: { halign: 'right', cellWidth: 40, fontStyle: 'bold' }
                 },
