@@ -97,7 +97,7 @@ export default function ChocoVer32Master({ theme }) {
     });
     const [meta, setMeta] = useState(() => {
         const saved = localStorage.getItem("choco32_meta");
-        return saved ? JSON.parse(saved) : { client: '', project: '', tc: 18.50 };
+        return saved ? { client: '', project: '', tc: 18.50, pdfName: '', ...JSON.parse(saved) } : { client: '', project: '', tc: 18.50, pdfName: '' };
     });
     const [editingDescItem, setEditingDescItem] = useState(null);
     const [tempDesc, setTempDesc] = useState("");
@@ -480,7 +480,11 @@ export default function ChocoVer32Master({ theme }) {
             const totalMXN = totalUSD() * meta.tc;
             doc.text(`MX$${totalMXN.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, boxRightAlign, currentY, { align: 'right' });
 
-            doc.save(`PROPUESTA_${(meta.client || 'PANDORA').replace(/\s+/g, '_')}_CHOCO.pdf`);
+            let finalFileName = meta.pdfName && meta.pdfName.trim() !== '' ? meta.pdfName.trim() : `PROPUESTA_${(meta.client || 'PANDORA').replace(/\s+/g, '_')}_CHOCO`;
+            if (!finalFileName.toLowerCase().endsWith('.pdf')) {
+                finalFileName += '.pdf';
+            }
+            doc.save(finalFileName);
         } catch (error) {
             console.error("Error exporting PDF:", error);
             alert("No se pudo exportar el PDF. Revisa tu consola para más detalles.");
@@ -575,7 +579,7 @@ export default function ChocoVer32Master({ theme }) {
             </div>
 
             {/* METADATA INPUTS SECTION */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 shrink-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 shrink-0">
                 <div className="bg-glass-light border border-glass-border/50 p-4 rounded-xl flex flex-col justify-center">
                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Empresa / Cliente</label>
                     <input
@@ -594,6 +598,16 @@ export default function ChocoVer32Master({ theme }) {
                         onChange={(e) => setMeta({ ...meta, project: e.target.value })}
                         className="w-full bg-deep/50 border border-glass-border/80 p-2 rounded-md text-white text-sm focus:outline-none focus:border-neon-cyan transition-colors placeholder:text-gray-600"
                         placeholder="Ej. Barra Manicero"
+                    />
+                </div>
+                <div className="bg-glass-light border border-glass-border/50 p-4 rounded-xl flex flex-col justify-center">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Nombre de Exportación (PDF)</label>
+                    <input
+                        type="text"
+                        value={meta.pdfName || ''}
+                        onChange={(e) => setMeta({ ...meta, pdfName: e.target.value })}
+                        className="w-full bg-deep/50 border border-glass-border/80 p-2 rounded-md text-white text-sm focus:outline-none focus:border-neon-cyan transition-colors placeholder:text-gray-600"
+                        placeholder="Ej. Cotizacion_Final"
                     />
                 </div>
                 <div className="bg-glass-light border border-glass-border/50 p-4 rounded-xl flex flex-col justify-center">
