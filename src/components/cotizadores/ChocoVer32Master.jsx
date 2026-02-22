@@ -486,7 +486,7 @@ export default function ChocoVer32Master({ theme }) {
 
             {/* HEADER SECTION TIPO PANDORA */}
             <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-8 pb-6 border-b border-glass-border/50 gap-6">
-                <div className="flex-1 min-w-0 pr-4 xl:pr-8">
+                <div className="w-full xl:w-[60%] pr-4">
                     <h2 className="text-3xl font-black mb-2 flex items-center gap-3 w-full" style={{ color: headerTextColor }}>
                         <span className="p-2.5 rounded-xl border border-glass-border shrink-0" style={{ backgroundColor: `${accentColor}20` }}>
                             <ListChecks className="w-6 h-6 shrink-0" style={{ color: accentColor }} />
@@ -504,7 +504,7 @@ export default function ChocoVer32Master({ theme }) {
                             />
                         ) : (
                             <span
-                                className="border-b-2 border-dashed border-transparent hover:border-gray-500 cursor-pointer transition-colors truncate"
+                                className="border-b-2 border-dashed border-transparent hover:border-gray-500 cursor-pointer transition-colors"
                                 onClick={() => setIsEditingMainTitle(true)}
                                 title="Editar Título del Módulo Maestro"
                             >
@@ -532,7 +532,7 @@ export default function ChocoVer32Master({ theme }) {
                             />
                         ) : (
                             <p
-                                className="text-sm text-gray-400 w-full xl:max-w-4xl px-2 cursor-pointer border-b border-dashed border-transparent hover:border-gray-600 transition-colors"
+                                className="text-sm text-gray-400 w-full px-2 cursor-pointer border-b border-dashed border-transparent hover:border-gray-600 transition-colors"
                                 onClick={() => setIsEditingMainDesc(true)}
                                 title="Editar Descripción General"
                             >
@@ -543,7 +543,7 @@ export default function ChocoVer32Master({ theme }) {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-3 w-full xl:w-auto shrink-0 mt-4 xl:mt-0">
+                <div className="flex flex-col sm:flex-row flex-wrap xl:justify-end gap-3 w-full xl:w-[40%] shrink-0 mt-4 xl:mt-0">
                     <label className="flex-1 sm:flex-none flex justify-center items-center gap-2 px-5 py-3 bg-glass border border-glass-border rounded-xl font-bold text-sm tracking-wide transition-all hover:bg-glass-light hover:-translate-y-0.5 cursor-pointer text-gray-300 hover:text-white">
                         <Upload className="w-4 h-4" /> Importar Plantilla
                         <input type="file" accept=".csv" className="hidden" onChange={handleImportCSV} />
