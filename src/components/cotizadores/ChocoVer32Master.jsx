@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import { Download, FileSpreadsheet, Zap, DollarSign, ListChecks, CheckCircle2, FileText } from "lucide-react";
+import { Download, FileSpreadsheet, Zap, DollarSign, ListChecks, CheckCircle2, FileText, ChevronDown, ChevronRight, FoldVertical, UnfoldVertical } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const modules = [
@@ -95,6 +95,7 @@ export default function ChocoVer32Master({ theme }) {
     const [meta, setMeta] = useState({ client: '', project: '', tc: 18.50 });
     const [editingDescItem, setEditingDescItem] = useState(null);
     const [tempDesc, setTempDesc] = useState("");
+    const [collapsedModules, setCollapsedModules] = useState({});
 
     // Force official #FFCC00 yellow for Solifood to override any pale colors extracted by ColorThief
     const isSolifood = theme?.id === 'solifood' || (theme?.name && theme.name.toLowerCase() === 'solifood');
@@ -135,6 +136,24 @@ export default function ChocoVer32Master({ theme }) {
             .filter(key => data[key]?.enabled !== false)
             .reduce((sum, key) => sum + ((data[key]?.kw || 0) * (data[key]?.qty || 1)), 0);
     };
+
+    const toggleModule = (moduleName) => {
+        setCollapsedModules((prev) => ({ ...prev, [moduleName]: !prev[moduleName] }));
+    };
+
+    const toggleAllModules = (collapse) => {
+        const newState = {};
+        modules.forEach(m => newState[m.name] = collapse);
+        setCollapsedModules(newState);
+    };
+
+    const moduleTotalUSD = (module) => module.items.reduce((sum, item) => sum + calculateItem(item), 0);
+
+    const moduleTotalKW = (module) => module.items.reduce((sum, item) => {
+        const itemData = data[item];
+        if (itemData?.enabled === false) return sum;
+        return sum + ((itemData?.kw || 0) * (itemData?.qty || 1));
+    }, 0);
 
     const hexToRgb = (hex) => {
         const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -401,121 +420,174 @@ export default function ChocoVer32Master({ theme }) {
             </div>
 
             {/* CONTENT BUILDER MODULES - SCROLLABLE Y RESPONSIVO */}
+            <div className="w-full flex justify-end gap-3 mb-3">
+                <button
+                    onClick={() => toggleAllModules(false)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-gray-400 hover:text-white bg-deep border border-glass-border hover:border-neon-cyan/50 rounded-lg transition-colors"
+                >
+                    <UnfoldVertical className="w-4 h-4" />
+                    Abrir Todos
+                </button>
+                <button
+                    onClick={() => toggleAllModules(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-gray-400 hover:text-white bg-deep border border-glass-border hover:border-neon-cyan/50 rounded-lg transition-colors"
+                >
+                    <FoldVertical className="w-4 h-4" />
+                    Contraer Todos
+                </button>
+            </div>
+
             <div className="flex-1 w-full flex flex-col gap-6" style={{ minHeight: '600px' }}>
-                {modules.map((module) => (
-                    <div key={module.name} className="bg-deep/50 border border-glass-border rounded-xl mb-4 overflow-hidden w-full max-w-full">
-                        {/* Cabecera del Módulo */}
-                        <div className="bg-glass px-4 py-3 border-b border-glass-border flex items-center gap-3">
-                            <CheckCircle2 className="w-5 h-5 shrink-0" style={{ color: accentColor }} />
-                            <h3 className="font-bold tracking-wider text-sm lg:text-base pr-4" style={{ color: accentColor }}>{module.name}</h3>
-                        </div>
-
-                        {/* Tabla Responsive usando flex/grid y overflow horizontal */}
-                        <div className="w-full overflow-x-auto stylized-scrollbar pb-2">
-                            <div className="min-w-[850px] p-4 flex flex-col gap-2">
-                                {/* Headers Columnas Interiores */}
-                                <div
-                                    className="grid gap-3 px-4 py-2 border-b border-glass-border/30 text-xs font-bold uppercase tracking-widest bg-glass/20 rounded-md"
-                                    style={{ gridTemplateColumns: "3fr 2fr 1fr 1.5fr 1.8fr 1.5fr 2fr", color: accentColor }}
-                                >
-                                    <div>Equipo / Concepto</div>
-                                    <div>Descripción</div>
-                                    <div className="text-center">QTY</div>
-                                    <div className="text-right">Potencia (kW)</div>
-                                    <div className="text-right">Costo USD Base</div>
-                                    <div className="text-center">% Útil.</div>
-                                    <div className="text-right">Venta Final</div>
+                {modules.map((module) => {
+                    const isCollapsed = collapsedModules[module.name];
+                    return (
+                        <div key={module.name} className="bg-deep/50 border border-glass-border rounded-xl overflow-hidden w-full max-w-full">
+                            {/* Cabecera del Módulo Expansible */}
+                            <div
+                                className="bg-glass px-4 py-3 border-b border-glass-border flex items-center justify-between cursor-pointer hover:bg-glass/80 transition-colors"
+                                onClick={() => toggleModule(module.name)}
+                            >
+                                <div className="flex items-center gap-3">
+                                    {isCollapsed ? <ChevronRight className="w-5 h-5 shrink-0" style={{ color: accentColor }} /> : <ChevronDown className="w-5 h-5 shrink-0" style={{ color: accentColor }} />}
+                                    <h3 className="font-bold tracking-wider text-sm lg:text-base pr-4" style={{ color: accentColor }}>{module.name}</h3>
                                 </div>
-
-                                {/* Filas */}
-                                {module.items.map((item) => {
-                                    const isEnabled = data[item]?.enabled !== false;
-                                    return (
-                                        <div key={item}
-                                            className={`grid gap-3 items-center px-4 py-3 bg-glass-light hover:bg-glass/80 rounded-lg group transition-colors border border-transparent hover:border-glass-border ${!isEnabled ? 'opacity-40 grayscale' : ''}`}
-                                            style={{ gridTemplateColumns: "3fr 2fr 1fr 1.5fr 1.8fr 1.5fr 2fr" }}
-                                        >
-                                            <div className="flex items-center gap-3 overflow-hidden text-sm text-gray-200">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={isEnabled}
-                                                    onChange={(e) => updateValue(item, "enabled", e.target.checked)}
-                                                    className="w-4 h-4 shrink-0 rounded border-glass-border bg-deep text-neon-cyan focus:ring-neon-cyan focus:ring-offset-deep cursor-pointer"
-                                                    style={{ accentColor: accentColor }}
-                                                />
-                                                <span className="truncate" title={item}>{item}</span>
-                                            </div>
-
-                                            <div
-                                                className="col-span-1 text-xs text-gray-300 truncate cursor-pointer hover:text-white transition-colors flex items-center h-full bg-deep/30 px-3 py-2 rounded-md border border-glass-border/40 hover:border-neon-cyan/50"
-                                                title={data[item]?.desc || "Haz clic para añadir una descripción técnica detallada..."}
-                                                onClick={() => {
-                                                    setEditingDescItem(item);
-                                                    setTempDesc(data[item]?.desc || "");
-                                                }}
-                                            >
-                                                {data[item]?.desc ? data[item].desc : <span className="text-gray-600 italic">Ej. Inox 304, 2HP...</span>}
-                                            </div>
-
-                                            <div>
-                                                <input
-                                                    type="number"
-                                                    placeholder="1"
-                                                    className="w-full bg-deep border-glass-border border p-2 rounded-md text-white text-center text-sm focus:outline-none focus:border-neon-cyan transition-colors"
-                                                    min="0"
-                                                    disabled={!isEnabled}
-                                                    onChange={(e) => updateValue(item, "qty", e.target.value)}
-                                                />
-                                            </div>
-
-                                            <div className="relative">
-                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">kW</span>
-                                                <input
-                                                    type="number"
-                                                    placeholder="0.0"
-                                                    className="w-full bg-deep border-glass-border border p-2 pl-9 rounded-md text-white text-right text-sm focus:outline-none focus:border-neon-cyan transition-colors font-mono"
-                                                    min="0" step="0.1"
-                                                    disabled={!isEnabled}
-                                                    onChange={(e) => updateValue(item, "kw", e.target.value)}
-                                                />
-                                            </div>
-
-                                            <div className="relative">
-                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">$</span>
-                                                <input
-                                                    type="number"
-                                                    placeholder="0.00"
-                                                    className="w-full bg-deep border-glass-border border p-2 pl-7 rounded-md text-white text-right text-sm focus:outline-none focus:border-neon-cyan transition-colors font-mono"
-                                                    min="0" step="100"
-                                                    disabled={!isEnabled}
-                                                    onChange={(e) => updateValue(item, "cost", e.target.value)}
-                                                />
-                                            </div>
-
-                                            <div className="relative">
-                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">%</span>
-                                                <input
-                                                    type="number"
-                                                    placeholder="0"
-                                                    className="w-full bg-deep border-glass-border border p-2 pr-7 rounded-md text-white text-center text-sm focus:outline-none focus:border-neon-cyan transition-colors"
-                                                    min="0" max="100"
-                                                    disabled={!isEnabled}
-                                                    onChange={(e) => updateValue(item, "margin", e.target.value)}
-                                                />
-                                            </div>
-
-                                            <div className="text-right">
-                                                <span className="font-bold text-white font-mono tabular-nums text-sm lg:text-base block truncate pr-2" style={{ color: calculateItem(item) > 0 ? accentColor : '#9CA3AF' }}>
-                                                    $ {calculateItem(item).toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
+                                <div className="flex gap-4 md:gap-8 items-center text-xs md:text-sm">
+                                    <span className="font-mono text-gray-400 hidden sm:inline">Energía: <span className="text-white font-bold ml-1">{moduleTotalKW(module).toFixed(2)} kW</span></span>
+                                    <span className="font-mono text-gray-400">Total: <span className="text-white font-bold tracking-wider ml-1" style={{ color: accentColor }}>$ {moduleTotalUSD(module).toLocaleString("en-US", { minimumFractionDigits: 2 })}</span></span>
+                                </div>
                             </div>
+
+                            {!isCollapsed && (
+                                <div className="w-full overflow-x-auto stylized-scrollbar pb-2">
+                                    {/* Tabla Responsive usando flex/grid y overflow horizontal */}
+                                    <div className="min-w-[880px] p-4 flex flex-col gap-2">
+                                        {/* Headers Columnas Interiores */}
+                                        <div
+                                            className="grid gap-3 px-4 py-2 border-b border-glass-border/30 text-xs font-bold uppercase tracking-widest bg-glass/20 rounded-md"
+                                            style={{ gridTemplateColumns: "3fr 2fr 1fr 1.5fr 1.8fr 1.5fr 2fr", color: accentColor }}
+                                        >
+                                            <div>Equipo / Concepto</div>
+                                            <div>Descripción</div>
+                                            <div className="text-center">QTY</div>
+                                            <div className="text-right">Potencia (kW)</div>
+                                            <div className="text-right">Costo USD Base</div>
+                                            <div className="text-center">% Útil.</div>
+                                            <div className="text-right">Venta Final</div>
+                                        </div>
+
+                                        {/* Filas */}
+                                        {module.items.map((item) => {
+                                            const isEnabled = data[item]?.enabled !== false;
+                                            return (
+                                                <div key={item}
+                                                    className={`grid gap-3 items-center px-4 py-3 bg-glass-light hover:bg-glass/80 rounded-lg group transition-colors border border-transparent hover:border-glass-border ${!isEnabled ? 'opacity-40 grayscale' : ''}`}
+                                                    style={{ gridTemplateColumns: "3fr 2fr 1fr 1.5fr 1.8fr 1.5fr 2fr" }}
+                                                >
+                                                    <div className="flex items-center gap-3 overflow-hidden text-sm text-gray-200">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isEnabled}
+                                                            onChange={(e) => updateValue(item, "enabled", e.target.checked)}
+                                                            className="w-4 h-4 shrink-0 rounded border-glass-border bg-deep text-neon-cyan focus:ring-neon-cyan focus:ring-offset-deep cursor-pointer"
+                                                            style={{ accentColor: accentColor }}
+                                                        />
+                                                        <span className="truncate" title={item}>{item}</span>
+                                                    </div>
+
+                                                    <div
+                                                        className="col-span-1 text-xs text-gray-300 truncate cursor-pointer hover:text-white transition-colors flex items-center h-full bg-deep/30 px-3 py-2 rounded-md border border-glass-border/40 hover:border-neon-cyan/50"
+                                                        title={data[item]?.desc || "Haz clic para añadir una descripción técnica detallada..."}
+                                                        onClick={() => {
+                                                            setEditingDescItem(item);
+                                                            setTempDesc(data[item]?.desc || "");
+                                                        }}
+                                                    >
+                                                        {data[item]?.desc ? data[item].desc : <span className="text-gray-600 italic">Ej. Inox 304, 2HP...</span>}
+                                                    </div>
+
+                                                    <div>
+                                                        <input
+                                                            type="number"
+                                                            placeholder="1"
+                                                            className="w-full bg-deep border-glass-border border p-2 rounded-md text-white text-center text-sm focus:outline-none focus:border-neon-cyan transition-colors"
+                                                            min="0"
+                                                            disabled={!isEnabled}
+                                                            onChange={(e) => updateValue(item, "qty", e.target.value)}
+                                                        />
+                                                    </div>
+
+                                                    <div className="relative">
+                                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">kW</span>
+                                                        <input
+                                                            type="number"
+                                                            placeholder="0.0"
+                                                            className="w-full bg-deep border-glass-border border p-2 pl-9 rounded-md text-white text-right text-sm focus:outline-none focus:border-neon-cyan transition-colors font-mono"
+                                                            min="0" step="0.1"
+                                                            disabled={!isEnabled}
+                                                            onChange={(e) => updateValue(item, "kw", e.target.value)}
+                                                        />
+                                                    </div>
+
+                                                    <div className="relative">
+                                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">$</span>
+                                                        <input
+                                                            type="number"
+                                                            placeholder="0.00"
+                                                            className="w-full bg-deep border-glass-border border p-2 pl-7 rounded-md text-white text-right text-sm focus:outline-none focus:border-neon-cyan transition-colors font-mono"
+                                                            min="0" step="100"
+                                                            disabled={!isEnabled}
+                                                            onChange={(e) => updateValue(item, "cost", e.target.value)}
+                                                        />
+                                                    </div>
+
+                                                    <div className="relative">
+                                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">%</span>
+                                                        <input
+                                                            type="number"
+                                                            placeholder="0"
+                                                            className="w-full bg-deep border-glass-border border p-2 pr-7 rounded-md text-white text-center text-sm focus:outline-none focus:border-neon-cyan transition-colors"
+                                                            min="0" max="100"
+                                                            disabled={!isEnabled}
+                                                            onChange={(e) => updateValue(item, "margin", e.target.value)}
+                                                        />
+                                                    </div>
+
+                                                    <div className="text-right">
+                                                        <span className="font-bold text-white font-mono tabular-nums text-sm lg:text-base block truncate pr-2" style={{ color: calculateItem(item) > 0 ? accentColor : '#9CA3AF' }}>
+                                                            $ {calculateItem(item).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )
+                            }
+                        </div>
+                    )
+                })}
+
+                {/* RECUPERACIÓN DE TOTAL AL FINAL DE LA PANTALLA */}
+                <div className="bg-glass border border-glass-border rounded-2xl p-6 mt-4 mb-12 flex flex-col md:flex-row items-center justify-between shadow-glow-sm relative overflow-hidden group">
+                    <div className="absolute top-0 left-0 w-32 h-32 rounded-br-full opacity-10 -z-0 group-hover:scale-110 transition-transform" style={{ backgroundColor: accentColor }}></div>
+                    <div className="relative z-10 text-center md:text-left">
+                        <h2 className="text-xl md:text-2xl font-black tracking-widest uppercase mb-1" style={{ color: accentColor }}>Resumen Proyecto</h2>
+                        <p className="text-xs font-bold text-gray-400 underline decoration-glass-border underline-offset-4">TODOS LOS MÓDULOS</p>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-6 md:gap-12 items-center mt-6 md:mt-0 relative z-10 text-center sm:text-right">
+                        <div>
+                            <p className="text-[10px] font-bold text-gray-500 tracking-widest uppercase mb-1">Impacto Eléctrico (Total)</p>
+                            <p className="text-xl font-mono text-blue-400 font-bold">{totalKW().toFixed(2)} <span className="text-sm">kW</span></p>
+                        </div>
+                        <div>
+                            <p className="text-xs font-bold text-gray-400 tracking-widest uppercase mb-1">Gran Total Venta USD</p>
+                            <p className="text-3xl md:text-4xl font-black font-mono" style={{ color: accentColor }}>
+                                $ {totalUSD().toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                            </p>
                         </div>
                     </div>
-                ))}
+                </div>
             </div>
 
             {/* Modal para Editar Descripción */}
@@ -558,6 +630,6 @@ export default function ChocoVer32Master({ theme }) {
                 </DialogContent>
             </Dialog>
 
-        </div>
+        </div >
     );
 }
