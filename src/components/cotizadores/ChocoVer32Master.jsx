@@ -93,8 +93,9 @@ export default function ChocoVer32Master({ theme }) {
     const [data, setData] = useState({});
     const [meta, setMeta] = useState({ client: '', project: '', tc: 18.50 });
 
-    // Use the provided theme accent color or default to #FFD400
-    const accentColor = theme?.accent || "#FFD400";
+    // Force official #FFCC00 yellow for Solifood to override any pale colors extracted by ColorThief
+    const isSolifood = theme?.id === 'solifood' || (theme?.name && theme.name.toLowerCase() === 'solifood');
+    const accentColor = isSolifood ? "#FFCC00" : (theme?.accent || "#FFCC00");
     const primaryColor = theme?.primary || "#3B3B3B";
     const isLightText = primaryColor === '#FFFFFF' || primaryColor === '#F8F9FA';
     const headerTextColor = isLightText ? '#000000' : '#FFFFFF';
