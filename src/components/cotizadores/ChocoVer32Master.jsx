@@ -765,7 +765,7 @@ export default function ChocoVer32Master({ theme }) {
             let itemCounter = 1;
 
             modules.forEach(module => {
-                const activeItems = module.items.filter(key => data[key]?.enabled !== false && (data[key]?.cost || 0) > 0);
+                const activeItems = module.items.filter(key => data[key]?.enabled !== false);
                 if (activeItems.length > 0) {
                     // Header de Módulo Listado
                     rows.push([
@@ -801,7 +801,7 @@ export default function ChocoVer32Master({ theme }) {
                 columnStyles: {
                     0: { halign: 'center', cellWidth: 15 },
                     1: { halign: 'left' },
-                    2: { halign: 'center', cellWidth: 25 }
+                    2: { halign: 'center', cellWidth: 35 }
                 }
             });
 
