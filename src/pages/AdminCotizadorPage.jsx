@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ColorThief from 'colorthief';
-import { ShieldAlert, DollarSign, Settings, Calculator, Building2, Package, FileText, Plus, Upload, Palette, ChevronLeft } from 'lucide-react';
+import { ShieldAlert, DollarSign, Settings, Calculator, Building2, Package, FileText, Plus, Upload, Palette, ChevronLeft, ChevronRight, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import ChocoVer32Master from '@/components/cotizadores/ChocoVer32Master';
@@ -21,6 +21,8 @@ function AdminCotizadorPage() {
     const [activeCompanyFicha, setActiveCompanyFicha] = useState(null);
     // Control which template is actively rendering in the Ficha Canvas
     const [activeTemplate, setActiveTemplate] = useState('standard');
+    // Control collapse state of the history sidebar
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
     const [editingForm, setEditingForm] = useState({
         logoUrl: null,
@@ -453,39 +455,47 @@ function AdminCotizadorPage() {
                                 {/* Area de Trabajo interactiva */}
                                 <div className="flex flex-col xl:flex-row gap-6 flex-1 min-h-[600px]">
                                     {/* Panel Lateral: Menú de Cotizaciones */}
-                                    <div className="w-full xl:w-1/4 bg-glass border border-glass-border rounded-2xl p-5 flex flex-col shadow-glow-sm">
-                                        <div className="flex justify-between items-center mb-6 pb-4 border-b border-glass-border">
-                                            <h4 className="text-lg font-bold text-white flex items-center gap-2">
-                                                <FileText className="w-5 h-5" style={{ color: activeCompanyFicha.theme.accent }} />
-                                                Historial
-                                            </h4>
+                                    {isSidebarOpen ? (
+                                        <div className="w-full xl:w-1/4 bg-glass border border-glass-border rounded-2xl p-5 flex flex-col shadow-glow-sm relative animate-fade-in-left shrink-0">
+                                            {/* Toggle Button Inside Sidebar */}
                                             <button
-                                                className="p-2 border rounded-lg transition-transform hover:scale-105 shadow-md flex items-center justify-center"
-                                                style={{ backgroundColor: activeCompanyFicha.theme.accent, color: activeCompanyFicha.theme.primary === '#FFFFFF' ? '#000' : activeCompanyFicha.theme.secondary, borderColor: activeCompanyFicha.theme.accent }}
+                                                onClick={() => setIsSidebarOpen(false)}
+                                                className="absolute -right-4 top-8 w-8 h-8 rounded-full bg-deep border-glass-border border flex items-center justify-center hover:bg-glass-light transition-colors z-20 shadow-lg text-gray-400 hover:text-white"
                                             >
-                                                <Plus className="w-4 h-4" />
+                                                <PanelLeftClose className="w-4 h-4" />
                                             </button>
-                                        </div>
 
-                                        <div className="flex flex-col gap-3 overflow-y-auto pr-2 stylized-scrollbar">
-                                            {/* Cotización Activa */}
-                                            <div
-                                                className={`p-4 rounded-xl border flex flex-col gap-2 cursor-pointer transition-all hover:translate-x-1 shadow-lg ${activeTemplate === 'standard' ? 'bg-deep/50' : 'bg-glass border-glass-border'}`}
-                                                style={activeTemplate === 'standard' ? { borderLeftColor: activeCompanyFicha.theme.accent, borderLeftWidth: '4px', borderColor: `${activeCompanyFicha.theme.accent}50` } : {}}
-                                                onClick={() => setActiveTemplate('standard')}
-                                            >
-                                                <div className="flex justify-between items-start">
-                                                    <span className="text-white font-bold tracking-wider">COT-003</span>
-                                                    <span className="text-[10px] px-2 py-0.5 rounded-full uppercase tracking-widest font-bold" style={{ backgroundColor: `${activeCompanyFicha.theme.accent}20`, color: activeCompanyFicha.theme.accent }}>Borrador</span>
-                                                </div>
-                                                <span className="text-xs text-gray-300">Expansión Planta Tratamiento Sur</span>
-                                                <div className="flex justify-between items-center mt-2 pt-2 border-t border-glass-border/50">
-                                                    <span className="text-[10px] text-gray-500">Hoy, 10:45 AM</span>
-                                                    <span className="text-sm font-mono font-bold" style={{ color: activeCompanyFicha.theme.accent }}>$18,212.00</span>
-                                                </div>
+                                            <div className="flex justify-between items-center mb-6 pb-4 border-b border-glass-border">
+                                                <h4 className="text-lg font-bold text-white flex items-center gap-2">
+                                                    <FileText className="w-5 h-5" style={{ color: activeCompanyFicha.theme.accent }} />
+                                                    Historial
+                                                </h4>
+                                                <button
+                                                    className="p-2 border rounded-lg transition-transform hover:scale-105 shadow-md flex items-center justify-center"
+                                                    style={{ backgroundColor: activeCompanyFicha.theme.accent, color: activeCompanyFicha.theme.primary === '#FFFFFF' ? '#000' : activeCompanyFicha.theme.secondary, borderColor: activeCompanyFicha.theme.accent }}
+                                                >
+                                                    <Plus className="w-4 h-4" />
+                                                </button>
                                             </div>
-                                            {/* Choco Template Especial (Solo Solifood) */}
-                                            {activeCompanyFicha.id === 'solifood' && (
+
+                                            <div className="flex flex-col gap-3 overflow-y-auto pr-2 stylized-scrollbar">
+                                                {/* Cotización Activa */}
+                                                <div
+                                                    className={`p-4 rounded-xl border flex flex-col gap-2 cursor-pointer transition-all hover:translate-x-1 shadow-lg ${activeTemplate === 'standard' ? 'bg-deep/50' : 'bg-glass border-glass-border'}`}
+                                                    style={activeTemplate === 'standard' ? { borderLeftColor: activeCompanyFicha.theme.accent, borderLeftWidth: '4px', borderColor: `${activeCompanyFicha.theme.accent}50` } : {}}
+                                                    onClick={() => setActiveTemplate('standard')}
+                                                >
+                                                    <div className="flex justify-between items-start">
+                                                        <span className="text-white font-bold tracking-wider">COT-003</span>
+                                                        <span className="text-[10px] px-2 py-0.5 rounded-full uppercase tracking-widest font-bold" style={{ backgroundColor: `${activeCompanyFicha.theme.accent}20`, color: activeCompanyFicha.theme.accent }}>Borrador</span>
+                                                    </div>
+                                                    <span className="text-xs text-gray-300">Expansión Planta Tratamiento Sur</span>
+                                                    <div className="flex justify-between items-center mt-2 pt-2 border-t border-glass-border/50">
+                                                        <span className="text-[10px] text-gray-500">Hoy, 10:45 AM</span>
+                                                        <span className="text-sm font-mono font-bold" style={{ color: activeCompanyFicha.theme.accent }}>$18,212.00</span>
+                                                    </div>
+                                                </div>
+                                                {/* Choco Template Especial (General para Empresas) */}
                                                 <div
                                                     className={`p-4 rounded-xl border flex flex-col gap-2 cursor-pointer transition-all hover:translate-x-1 ${activeTemplate === 'choco' ? 'bg-deep/50 shadow-lg' : 'bg-glass border-glass-border hover:bg-glass-light'}`}
                                                     style={activeTemplate === 'choco' ? { borderLeftColor: activeCompanyFicha.theme.accent, borderLeftWidth: '4px', borderColor: `${activeCompanyFicha.theme.accent}50` } : {}}
@@ -500,30 +510,44 @@ function AdminCotizadorPage() {
                                                         <span className="text-[10px] text-gray-500">Plantilla Algorítmica</span>
                                                     </div>
                                                 </div>
-                                            )}
 
-                                            {/* Cotizaciones de Historial */}
-                                            {[2, 1].map(item => (
-                                                <div
-                                                    key={item}
-                                                    className="p-4 rounded-xl border border-glass-border bg-glass hover:bg-glass-light flex flex-col gap-2 cursor-pointer transition-all hover:translate-x-1"
-                                                >
-                                                    <div className="flex justify-between items-start">
-                                                        <span className="text-gray-300 font-bold tracking-wider">COT-00{item}</span>
-                                                        <span className="text-[10px] px-2 py-0.5 rounded-full uppercase border border-glass-border text-gray-400 bg-glass-dark">Enviada</span>
+                                                {/* Cotizaciones de Historial */}
+                                                {[2, 1].map(item => (
+                                                    <div
+                                                        key={item}
+                                                        className="p-4 rounded-xl border border-glass-border bg-glass hover:bg-glass-light flex flex-col gap-2 cursor-pointer transition-all hover:translate-x-1"
+                                                    >
+                                                        <div className="flex justify-between items-start">
+                                                            <span className="text-gray-300 font-bold tracking-wider">COT-00{item}</span>
+                                                            <span className="text-[10px] px-2 py-0.5 rounded-full uppercase border border-glass-border text-gray-400 bg-glass-dark">Enviada</span>
+                                                        </div>
+                                                        <span className="text-xs text-gray-400">Proyecto Modelo Industrial {item}</span>
+                                                        <div className="flex justify-between items-center mt-2 pt-2 border-t border-glass-border/30">
+                                                            <span className="text-[10px] text-gray-500">hace {item * 3} días</span>
+                                                            <span className="text-sm font-mono text-gray-400">${item * 12},500.00</span>
+                                                        </div>
                                                     </div>
-                                                    <span className="text-xs text-gray-400">Proyecto Modelo Industrial {item}</span>
-                                                    <div className="flex justify-between items-center mt-2 pt-2 border-t border-glass-border/30">
-                                                        <span className="text-[10px] text-gray-500">hace {item * 3} días</span>
-                                                        <span className="text-sm font-mono text-gray-400">${item * 12},500.00</span>
-                                                    </div>
-                                                </div>
-                                            ))}
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
+                                    ) : (
+                                        <div className="flex flex-col gap-4 items-center animate-fade-in-right px-2 mt-4 shrink-0 justify-start">
+                                            <button
+                                                onClick={() => setIsSidebarOpen(true)}
+                                                className="w-10 h-10 rounded-full bg-glass-light border-glass-border border flex items-center justify-center hover:bg-glass transition-all shadow-glow-sm hover:scale-110"
+                                                style={{ borderColor: `${activeCompanyFicha.theme.accent}50`, color: activeCompanyFicha.theme.accent }}
+                                            >
+                                                <PanelLeftOpen className="w-5 h-5" />
+                                            </button>
+
+                                            <button className="w-10 h-10 rounded-full bg-glass flex items-center justify-center text-gray-400 hover:text-white transition-colors border border-glass-border shadow-md">
+                                                <Plus className="w-5 h-5" />
+                                            </button>
+                                        </div>
+                                    )}
 
                                     {/* Panel Principal: Editor Visual */}
-                                    <div className="flex-1 bg-glass border border-glass-border rounded-2xl p-6 lg:p-10 flex flex-col relative overflow-hidden shadow-2xl">
+                                    <div className="flex-1 bg-glass border border-glass-border rounded-2xl p-6 lg:p-10 flex flex-col relative overflow-hidden shadow-2xl transition-all duration-300">
                                         {/* Luces decorativas temáticas */}
                                         <div className="absolute top-0 right-0 w-96 h-96 rounded-bl-full opacity-10 blur-[80px] pointer-events-none transition-colors duration-1000" style={{ backgroundColor: activeCompanyFicha.theme.accent }}></div>
                                         <div className="absolute bottom-0 left-0 w-64 h-64 rounded-tr-full opacity-[0.03] blur-[60px] pointer-events-none transition-colors duration-1000" style={{ backgroundColor: activeCompanyFicha.theme.accent }}></div>
