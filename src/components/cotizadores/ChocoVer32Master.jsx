@@ -400,11 +400,11 @@ export default function ChocoVer32Master({ theme }) {
             });
 
             autoTable(doc, {
-                head: [["Descripción", "Potencia", "Importe"]],
+                head: [["DESCRIPCIÓN", "POTENCIA", "IMPORTE"]],
                 body: rows,
                 startY: tableStartY,
                 theme: 'grid',
-                headStyles: { fillColor: accentRgb, textColor: [0, 0, 0], fontStyle: 'bold' },
+                headStyles: { fillColor: accentRgb, textColor: [0, 0, 0], fontStyle: 'bold', halign: 'center' },
                 bodyStyles: { textColor: [60, 60, 60] },
                 styles: { fontSize: 9, cellPadding: 5, lineColor: [220, 220, 220], lineWidth: 0.1 },
                 columnStyles: {
