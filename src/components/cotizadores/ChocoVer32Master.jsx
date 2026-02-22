@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import { Download, FileSpreadsheet, Zap, DollarSign, ListChecks, CheckCircle2, FileText, ChevronDown, ChevronRight, FoldVertical, UnfoldVertical, Edit2, Plus, Trash2, AlignJustify } from "lucide-react";
+import { Download, FileSpreadsheet, Zap, DollarSign, ListChecks, CheckCircle2, FileText, ChevronDown, ChevronRight, FoldVertical, UnfoldVertical, Edit2, Plus, Trash2, AlignJustify, Upload } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const initialModules = [
@@ -187,20 +187,27 @@ export default function ChocoVer32Master({ theme }) {
 
     const exportExcel = () => {
         try {
-            let csv = "Equipo,Descripción,QTY,Potencia (kW),Costo Unitario USD,Utilidad %,Venta Total USD\n";
-            Object.keys(data).forEach((key) => {
-                const item = data[key];
-                if (item.enabled !== false && ((item.qty || 0) > 0 || (item.cost || 0) > 0)) {
+            let csv = "Módulo,Equipo,Descripción,QTY,Potencia (kW),Costo Unitario USD,Utilidad %,Venta Total USD\n";
+            modules.forEach(module => {
+                module.items.forEach(itemKey => {
+                    const item = data[itemKey] || {};
                     const descSafe = (item.desc || "").replace(/"/g, '""');
-                    csv += `"${key}","${descSafe}",${item.qty || 1},${item.kw || 0},${item.cost || 0},${item.margin || 0},${calculateItem(key)}\n`;
-                }
+                    const modSafe = (module.name || "").replace(/"/g, '""');
+                    const keySafe = (itemKey || "").replace(/"/g, '""');
+                    const qty = item.qty !== undefined ? item.qty : 1;
+                    const kw = item.kw || 0;
+                    const cost = item.cost || 0;
+                    const margin = item.margin || 0;
+
+                    csv += `"${modSafe}","${keySafe}","${descSafe}",${qty},${kw},${cost},${margin},${calculateItem(itemKey)}\n`;
+                });
             });
 
             const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
             const link = document.createElement("a");
             const url = URL.createObjectURL(blob);
             link.href = url;
-            link.setAttribute("download", "COTIZACION_CHOCO_VER_3_2.csv");
+            link.setAttribute("download", "PLANTILLA_PANDORA_MODULOS.csv");
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -208,6 +215,84 @@ export default function ChocoVer32Master({ theme }) {
             console.error("Error exporting Excel:", error);
             alert("No se pudo exportar el archivo CSV Excel. Revisa tu consola para más detalles.");
         }
+    };
+
+    const handleImportCSV = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const text = event.target.result;
+                const lines = text.split('\n').filter(line => line.trim());
+
+                const parseCSVLine = (textLine) => {
+                    const result = [];
+                    let current = '';
+                    let inQuotes = false;
+                    for (let i = 0; i < textLine.length; i++) {
+                        const char = textLine[i];
+                        if (char === '"') {
+                            if (inQuotes && textLine[i + 1] === '"') {
+                                current += '"';
+                                i++;
+                            } else {
+                                inQuotes = !inQuotes;
+                            }
+                        } else if (char === ',' && !inQuotes) {
+                            result.push(current);
+                            current = '';
+                        } else {
+                            current += char;
+                        }
+                    }
+                    result.push(current);
+                    return result;
+                };
+
+                const parsedLines = lines.slice(1).map(parseCSVLine);
+                const importedModules = [];
+                const importedData = { ...data };
+
+                parsedLines.forEach(cols => {
+                    if (cols.length < 7) return;
+                    const modName = cols[0].trim();
+                    const itemName = cols[1].trim();
+                    const desc = cols[2].trim();
+                    const qty = parseFloat(cols[3]) || 1;
+                    const kw = parseFloat(cols[4]) || 0;
+                    const cost = parseFloat(cols[5]) || 0;
+                    const margin = parseFloat(cols[6]) || 0;
+
+                    let modIndex = importedModules.findIndex(m => m.name === modName);
+                    if (modIndex === -1) {
+                        importedModules.push({ name: modName, items: [] });
+                        modIndex = importedModules.length - 1;
+                    }
+
+                    if (!importedModules[modIndex].items.includes(itemName)) {
+                        importedModules[modIndex].items.push(itemName);
+                    }
+
+                    importedData[itemName] = {
+                        ...importedData[itemName], // Mantener otros estados como enabled si existían
+                        desc, qty, kw, cost, margin, enabled: true
+                    };
+                });
+
+                if (importedModules.length > 0) {
+                    setModules(importedModules);
+                    setData(importedData);
+                }
+
+                e.target.value = null; // reset input
+            } catch (err) {
+                console.error("Error parsing CSV:", err);
+                alert("Error al procesar el archivo CSV. Comprueba que el formato sea el correcto exportado por PANDORA.");
+            }
+        };
+        reader.readAsText(file);
     };
 
     const exportPDF = () => {
@@ -437,12 +522,18 @@ export default function ChocoVer32Master({ theme }) {
 
                 {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row gap-3 w-full xl:w-auto shrink-0 mt-4 xl:mt-0">
+                    <label className="flex-1 sm:flex-none flex justify-center items-center gap-2 px-5 py-3 bg-glass border border-glass-border rounded-xl font-bold text-sm tracking-wide transition-all hover:bg-glass-light hover:-translate-y-0.5 cursor-pointer text-gray-300 hover:text-white">
+                        <Upload className="w-4 h-4" /> Importar Plantilla
+                        <input type="file" accept=".csv" className="hidden" onChange={handleImportCSV} />
+                    </label>
+
                     <button
                         onClick={exportExcel}
                         className="flex-1 sm:flex-none flex justify-center items-center gap-2 px-5 py-3 bg-glass border border-glass-border rounded-xl font-bold text-sm tracking-wide transition-all hover:bg-glass-light hover:-translate-y-0.5"
                         style={{ color: '#10B981' }} // Excel verde clásico
+                        title="Exportar Módulos a CSV para usarlos como Plantilla luego"
                     >
-                        <FileSpreadsheet className="w-4 h-4" /> CSV Excel
+                        <FileSpreadsheet className="w-4 h-4" /> Exportar a CSV
                     </button>
 
                     <button
