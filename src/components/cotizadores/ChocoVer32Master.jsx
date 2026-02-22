@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import { Download, FileSpreadsheet, Zap, DollarSign, ListChecks, CheckCircle2, FileText, ChevronDown, ChevronRight, FoldVertical, UnfoldVertical, Edit2, Plus, Trash2 } from "lucide-react";
+import { Download, FileSpreadsheet, Zap, DollarSign, ListChecks, CheckCircle2, FileText, ChevronDown, ChevronRight, FoldVertical, UnfoldVertical, Edit2, Plus, Trash2, AlignJustify } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const initialModules = [
@@ -731,23 +731,39 @@ export default function ChocoVer32Master({ theme }) {
                             rows={5}
                         />
                     </div>
-                    <div className="flex justify-end gap-3 mt-4">
-                        <button
-                            onClick={() => setEditingDescItem(null)}
-                            className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-400 hover:text-white transition-colors"
-                        >
-                            Cancelar
-                        </button>
+                    <div className="flex justify-between items-center mt-2">
                         <button
                             onClick={() => {
-                                updateValue(editingDescItem, "desc", tempDesc);
-                                setEditingDescItem(null);
+                                // Simple trick to just show it's justified (the PDF already justifies it)
+                                const textarea = document.querySelector('textarea');
+                                if (textarea) {
+                                    textarea.style.textAlign = textarea.style.textAlign === 'justify' ? 'left' : 'justify';
+                                }
                             }}
-                            className="px-5 py-2 rounded-lg font-bold text-sm shadow-glow-sm transition-transform hover:-translate-y-0.5"
-                            style={{ backgroundColor: accentColor, color: isLightText || primaryColor === '#3B3B3B' || accentColor.toUpperCase() === '#F2B705' || accentColor.toUpperCase() === '#FFCC00' ? '#000000' : '#FFFFFF' }}
+                            className="p-2 rounded-lg bg-glass border border-glass-border text-gray-400 hover:text-white hover:border-gray-400 transition-colors flex items-center gap-2 text-xs"
+                            title="Justificar Texto"
                         >
-                            Guardar Texto
+                            <AlignJustify className="w-4 h-4" />
+                            Justificar
                         </button>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setEditingDescItem(null)}
+                                className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-400 hover:text-white transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={() => {
+                                    updateValue(editingDescItem, "desc", tempDesc);
+                                    setEditingDescItem(null);
+                                }}
+                                className="px-5 py-2 rounded-lg font-bold text-sm shadow-glow-sm transition-transform hover:-translate-y-0.5"
+                                style={{ backgroundColor: accentColor, color: isLightText || primaryColor === '#3B3B3B' || accentColor.toUpperCase() === '#F2B705' || accentColor.toUpperCase() === '#FFCC00' ? '#000000' : '#FFFFFF' }}
+                            >
+                                Guardar Texto
+                            </button>
+                        </div>
                     </div>
                 </DialogContent>
             </Dialog>
