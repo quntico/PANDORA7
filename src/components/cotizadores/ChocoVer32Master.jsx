@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import { Link, Download, FileSpreadsheet, Zap, DollarSign, ListChecks, CheckCircle2, FileText, ChevronDown, ChevronRight, FoldVertical, UnfoldVertical, Edit2, Plus, Trash2, AlignJustify, Upload } from "lucide-react";
+import pptxgen from "pptxgenjs"; // <-- Importado nuevo
+import { Link, Download, FileSpreadsheet, Zap, DollarSign, ListChecks, CheckCircle2, FileText, ChevronDown, ChevronRight, FoldVertical, UnfoldVertical, Edit2, Plus, Trash2, AlignJustify, Upload, Presentation } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const initialModules = [
@@ -1128,6 +1129,154 @@ export default function ChocoVer32Master({ theme, storageKey = 'choco34' }) {
         }
     };
 
+    const exportPPTX = async () => {
+        try {
+            let pres = new pptxgen();
+            pres.theme = { headFontFace: "Helvetica", bodyFontFace: "Helvetica" };
+            const pptAccent = accentColor.replace('#', ''); // Remove hash for pptxgen
+
+            // ==========================================
+            // HEADER/COVER SLIDE
+            // ==========================================
+            let slide = pres.addSlide();
+
+            // Top branding bar
+            slide.addShape(pres.ShapeType.rect, { x: 0, y: 0, w: '100%', h: 1.0, fill: { color: "000000" } });
+
+            // Accent Line under header
+            slide.addShape(pres.ShapeType.rect, { x: 0, y: 1.0, w: '100%', h: 0.1, fill: { color: pptAccent } });
+
+            // Branding logic (Text instead of logo if url fails or requires auth)
+            slide.addText((theme?.name || "solifood").toUpperCase(), {
+                x: 0.5, y: 0.25, w: 4, h: 0.5,
+                color: pptAccent, bold: true, fontSize: 24, fontFace: 'Helvetica'
+            });
+
+            // "Resumen Proyecto" Right align
+            slide.addText(mainTitle.toUpperCase(), {
+                x: 5, y: 0.25, w: 4.5, h: 0.5,
+                color: "FFFFFF", bold: true, fontSize: 18, align: "right"
+            });
+
+            // Metadata info
+            slide.addText("PROPUESTA DE EQUIPAMIENTO", { x: 0.5, y: 1.5, w: 9, fontSize: 32, bold: true, color: "333333" });
+
+            slide.addText([
+                { text: "CLIENTE: ", options: { bold: true, color: "666666" } },
+                { text: meta.client ? meta.client.toUpperCase() : "NO DEFINIDO", options: { color: "000000" } }
+            ], { x: 0.5, y: 2.3, w: 5, fontSize: 14 });
+
+            slide.addText([
+                { text: "PROYECTO: ", options: { bold: true, color: "666666" } },
+                { text: meta.project ? meta.project.toUpperCase() : "NO DEFINIDO", options: { color: "000000" } }
+            ], { x: 0.5, y: 2.7, w: 5, fontSize: 14 });
+
+            slide.addText([
+                { text: "FECHA: ", options: { bold: true, color: "666666" } },
+                { text: new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }), options: { color: "000000" } }
+            ], { x: 0.5, y: 3.1, w: 5, fontSize: 14 });
+
+            // Totals Box on Cover
+            slide.addShape(pres.ShapeType.rect, { x: 6, y: 2, w: 3.5, h: meta.hidePrices ? 1.5 : 2.5, fill: { color: "22242A" }, align: 'center' });
+
+            if (meta.hidePrices) {
+                slide.addText("POTENCIA TOTAL:", { x: 6, y: 2.3, w: 3.5, color: pptAccent, bold: true, fontSize: 16, align: 'center' });
+                slide.addText(`${totalKW().toFixed(2)} KW`, { x: 6, y: 2.7, w: 3.5, color: "FFFFFF", bold: true, fontSize: 22, align: 'center' });
+            } else {
+                slide.addText("POTENCIA:", { x: 6, y: 2.2, w: 3.5, color: "CCCCCC", fontSize: 12, align: 'center' });
+                slide.addText(`${totalKW().toFixed(2)} KW`, { x: 6, y: 2.5, w: 3.5, color: "FFFFFF", bold: true, fontSize: 14, align: 'center' });
+                slide.addText("TOTAL (USD):", { x: 6, y: 3.0, w: 3.5, color: pptAccent, bold: true, fontSize: 16, align: 'center' });
+                slide.addText(`$${totalUSD().toLocaleString("en-US", { minimumFractionDigits: 2 })}`, { x: 6, y: 3.4, w: 3.5, color: "FFFFFF", bold: true, fontSize: 22, align: 'center' });
+                slide.addText("PRECIOS MAS 16% I.V.A.", { x: 6, y: 3.9, w: 3.5, color: "888888", fontSize: 10, align: 'center' });
+            }
+
+            // Description / Main Body
+            slide.addText(mainDesc, { x: 0.5, y: 4, w: 9, h: 1, color: "666666", fontSize: 12, fontFace: "Helvetica", italic: true, valign: "top" });
+
+            // ==========================================
+            // DYNAMIC SLIDES FOR EVERY MODULE
+            // ==========================================
+            modules.forEach(module => {
+                const activeItems = module.items.filter(key => data[key]?.enabled !== false && (meta.hidePrices || (data[key]?.cost || 0) > 0));
+
+                if (activeItems.length > 0) {
+                    let modSlide = pres.addSlide();
+
+                    // Header Bar for Module Slide
+                    modSlide.addShape(pres.ShapeType.rect, { x: 0, y: 0, w: '100%', h: 0.6, fill: { color: "000000" } });
+                    modSlide.addText(sanitizePDFText(module.name).toUpperCase(), { x: 0.5, y: 0.05, w: 9, color: pptAccent, bold: true, fontSize: 18 });
+                    modSlide.addShape(pres.ShapeType.rect, { x: 0, y: 0.6, w: '100%', h: 0.05, fill: { color: pptAccent } });
+
+                    // Generate PPTx Table Rows
+                    let tableRows = [];
+
+                    // Header Row
+                    let headerRow = [
+                        { text: "DESCRIPCIÓN", options: { bold: true, fill: pptAccent, color: "000000", margin: 5, fontSize: 12 } },
+                        { text: "POT.", options: { bold: true, fill: pptAccent, color: "000000", margin: 5, fontSize: 12, align: 'center' } }
+                    ];
+
+                    if (!meta.hidePrices) {
+                        headerRow.push({ text: "IMPORTE (USD)", options: { bold: true, fill: pptAccent, color: "000000", margin: 5, fontSize: 12, align: 'right' } });
+                    }
+                    tableRows.push(headerRow);
+
+                    // Body Rows
+                    activeItems.forEach(key => {
+                        const qty = data[key]?.qty || 1;
+                        const subtext = qty > 1 ? ` (x${qty})` : '';
+                        const safeKeyStr = sanitizePDFText(`${key}${subtext}`);
+                        let cleanDesc = sanitizePDFText(data[key]?.desc || '');
+
+                        // Combiner Header + Desc into one cell for PPT simplicity 
+                        const descriptionCellContent = cleanDesc ? `${safeKeyStr}\n\n${cleanDesc}` : safeKeyStr;
+
+                        let row = [
+                            { text: descriptionCellContent, options: { bold: false, color: "333333", margin: 5, fontSize: 11, valign: 'top' } },
+                            { text: `${(data[key]?.kw || 0).toFixed(1)} KW`, options: { color: "444444", align: 'center', fontSize: 11, valign: 'top' } }
+                        ];
+
+                        if (!meta.hidePrices) {
+                            row.push({ text: `$${calculateItem(key).toLocaleString("en-US", { minimumFractionDigits: 2 })}`, options: { bold: true, color: "111111", align: 'right', fontSize: 11, valign: 'top' } });
+                        }
+                        tableRows.push(row);
+                    });
+
+                    // Subtotal Row
+                    if (!meta.hidePrices) {
+                        const modTotal = moduleTotalUSD({ ...module, items: activeItems });
+                        tableRows.push([
+                            { text: `SUBTOTAL MÓDULO`, options: { colspan: 2, bold: true, align: 'right', fill: "F5F5F5", color: "333333", margin: 5 } },
+                            { text: `$${modTotal.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, options: { bold: true, align: 'right', fill: "F5F5F5", color: pptAccent, margin: 5 } }
+                        ]);
+                    }
+
+                    // Calculate column widths
+                    let colW = meta.hidePrices ? [8, 1.5] : [6, 1.5, 2];
+
+                    // Draw Auto-Paging Table
+                    modSlide.addTable(tableRows, {
+                        x: 0.25, y: 0.8, w: 9.5,
+                        border: { type: 'solid', color: 'EEEEEE', pt: 1 },
+                        autoPage: true, autoPageRepeatHeader: true,
+                        colW: colW,
+                        valign: 'middle'
+                    });
+                }
+            });
+
+            // ==========================================
+            // SAVE
+            // ==========================================
+            let finalFileName = meta.pdfName && meta.pdfName.trim() !== '' ? meta.pdfName.trim() : `PROPUESTA_${(meta.client || 'PANDORA').replace(/\s+/g, '_')}_CHOCO`;
+            pres.writeFile({ fileName: finalFileName + ".pptx" });
+
+        } catch (error) {
+            console.error("Error exporting PPTX:", error);
+            alert("No se pudo exportar a PowerPoint. Revisa tu consola para más detalles.");
+        }
+    };
+
     return (
         <div className="flex flex-col h-full animate-fade-in relative z-10 w-full" style={{ paddingRight: '8px' }}>
 
@@ -1212,6 +1361,15 @@ export default function ChocoVer32Master({ theme, storageKey = 'choco34' }) {
                             title="Exportar documento en vista interna con detalle de costos y utilidad."
                         >
                             <FileText className="w-4 h-4" style={{ color: accentColor }} /> PDF Interno
+                        </button>
+
+                        <button
+                            onClick={exportPPTX}
+                            className="flex-1 sm:flex-none flex justify-center items-center gap-2 px-5 py-3 border rounded-xl font-bold text-sm tracking-wide transition-all shadow-glow-sm hover:scale-105 bg-glass border-glass-border hover:bg-glass-light hover:text-white"
+                            style={{ color: '#D04423' }} // Naranja rojizo para evocar PPT
+                            title="Exportar cotización entera en formato editable de PowerPoint (.pptx)"
+                        >
+                            <Presentation className="w-4 h-4" /> PPT Editable
                         </button>
 
                         <button
