@@ -487,7 +487,8 @@ export default function ChocoVer32Master({ theme }) {
                         {
                             content: sanitizePDFText(module.name).toUpperCase(),
                             colSpan: 3,
-                            styles: { fontStyle: 'bold', fillColor: [240, 240, 240], textColor: accentRgb, halign: 'center', cellPadding: 6 }
+                            isModuleTitle: true,
+                            styles: { fontStyle: 'bold', fillColor: [40, 40, 40], fontSize: 13, textColor: accentRgb, halign: 'center', cellPadding: 8 }
                         }
                     ]);
 
@@ -531,6 +532,13 @@ export default function ChocoVer32Master({ theme }) {
                         doc.setDrawColor(255, 255, 255);
                         doc.setLineWidth(0.3);
                         doc.line(data.cell.x + 0.2, data.cell.y, data.cell.x + data.cell.width - 0.2, data.cell.y);
+                    }
+                },
+                willDrawCell: function (data) {
+                    if (data.row.raw[0] && data.row.raw[0].isModuleTitle) {
+                        if (data.cursor.y > 250 && typeof data.addPage === 'function') {
+                            data.addPage();
+                        }
                     }
                 }
             });
@@ -660,7 +668,8 @@ export default function ChocoVer32Master({ theme }) {
                         {
                             content: sanitizePDFText(module.name).toUpperCase(),
                             colSpan: 5,
-                            styles: { fontStyle: 'bold', fillColor: [240, 240, 240], textColor: accentRgb, halign: 'center', cellPadding: 6 }
+                            isModuleTitle: true,
+                            styles: { fontStyle: 'bold', fillColor: [40, 40, 40], fontSize: 13, textColor: accentRgb, halign: 'center', cellPadding: 8 }
                         }
                     ]);
 
@@ -695,6 +704,13 @@ export default function ChocoVer32Master({ theme }) {
                     2: { halign: 'right', cellWidth: 35 },
                     3: { halign: 'center', cellWidth: 25 },
                     4: { halign: 'right', cellWidth: 35, fontStyle: 'bold' }
+                },
+                willDrawCell: function (data) {
+                    if (data.row.raw[0] && data.row.raw[0].isModuleTitle) {
+                        if (data.cursor.y > 250 && typeof data.addPage === 'function') {
+                            data.addPage();
+                        }
+                    }
                 }
             });
 
@@ -820,7 +836,8 @@ export default function ChocoVer32Master({ theme }) {
                         {
                             content: sanitizePDFText(module.name).toUpperCase(),
                             colSpan: 3,
-                            styles: { fontStyle: 'bold', fillColor: [240, 240, 240], textColor: accentRgb, halign: 'center', cellPadding: 6 }
+                            isModuleTitle: true,
+                            styles: { fontStyle: 'bold', fillColor: [40, 40, 40], fontSize: 13, textColor: accentRgb, halign: 'center', cellPadding: 8 }
                         }
                     ]);
 
@@ -850,6 +867,13 @@ export default function ChocoVer32Master({ theme }) {
                     0: { halign: 'center', cellWidth: 15 },
                     1: { halign: 'left' },
                     2: { halign: 'center', cellWidth: 35 }
+                },
+                willDrawCell: function (data) {
+                    if (data.row.raw[0] && data.row.raw[0].isModuleTitle) {
+                        if (data.cursor.y > 250 && typeof data.addPage === 'function') {
+                            data.addPage();
+                        }
+                    }
                 }
             });
 
