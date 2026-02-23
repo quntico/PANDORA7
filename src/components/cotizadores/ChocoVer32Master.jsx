@@ -540,7 +540,7 @@ export default function ChocoVer32Master({ theme }) {
                 willDrawCell: function (data) {
                     if (data.row.raw[0] && data.row.raw[0].isModuleTitle) {
                         currentPrintedModule = data.row.raw[0].content;
-                        if (data.cursor.y > 250 && typeof data.addPage === 'function') {
+                        if (data.cursor.y > 230 && typeof data.addPage === 'function') {
                             data.addPage();
                         }
                     }
@@ -765,7 +765,7 @@ export default function ChocoVer32Master({ theme }) {
                 willDrawCell: function (data) {
                     if (data.row.raw[0] && data.row.raw[0].isModuleTitle) {
                         currentPrintedModule = data.row.raw[0].content;
-                        if (data.cursor.y > 250 && typeof data.addPage === 'function') {
+                        if (data.cursor.y > 230 && typeof data.addPage === 'function') {
                             data.addPage();
                         }
                     }
@@ -982,7 +982,7 @@ export default function ChocoVer32Master({ theme }) {
                 willDrawCell: function (data) {
                     if (data.row.raw[0] && data.row.raw[0].isModuleTitle) {
                         currentPrintedModule = data.row.raw[0].content;
-                        if (data.cursor.y > 250 && typeof data.addPage === 'function') {
+                        if (data.cursor.y > 230 && typeof data.addPage === 'function') {
                             data.addPage();
                         }
                     }
