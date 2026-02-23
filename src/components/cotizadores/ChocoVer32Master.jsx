@@ -644,6 +644,17 @@ export default function ChocoVer32Master({ theme }) {
             const totalMXN = totalUSD() * meta.tc;
             doc.text(`MX$${totalMXN.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, boxRightAlign, currentY, { align: 'right' });
 
+            const totalPagesExp = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPagesExp; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.setFont("helvetica", "normal");
+                // Footer Content
+                doc.text("www.solifood.mx", 105, 290, { align: 'center' });
+                doc.text(`Página ${i} de ${totalPagesExp}`, 195, 290, { align: 'right' });
+            }
+
             let finalFileName = meta.pdfName && meta.pdfName.trim() !== '' ? meta.pdfName.trim() : `PROPUESTA_${(meta.client || 'PANDORA').replace(/\s+/g, '_')}_CHOCO`;
             if (!finalFileName.toLowerCase().endsWith('.pdf')) {
                 finalFileName += '.pdf';
@@ -853,6 +864,17 @@ export default function ChocoVer32Master({ theme }) {
             const totalMXN = totalUSD() * meta.tc;
             doc.text(`MX$${totalMXN.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, boxRightAlign, currentY, { align: 'right' });
 
+            const totalPagesInt = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPagesInt; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.setFont("helvetica", "normal");
+                // Footer Content
+                doc.text("www.solifood.mx", 105, 290, { align: 'center' });
+                doc.text(`Página ${i} de ${totalPagesInt}`, 195, 290, { align: 'right' });
+            }
+
             let finalFileName = meta.pdfName && meta.pdfName.trim() !== '' ? meta.pdfName.trim() + "_INTERNO" : `PROPUESTA_${(meta.client || 'PANDORA').replace(/\s+/g, '_')}_CHOCO_INTERNO`;
             if (!finalFileName.toLowerCase().endsWith('.pdf')) {
                 finalFileName += '.pdf';
@@ -1005,6 +1027,17 @@ export default function ChocoVer32Master({ theme }) {
                 },
                 margin: { top: 25 }
             });
+
+            const totalPagesList = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPagesList; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.setFont("helvetica", "normal");
+                // Footer Content
+                doc.text("www.solifood.mx", 105, 290, { align: 'center' });
+                doc.text(`Página ${i} de ${totalPagesList}`, 195, 290, { align: 'right' });
+            }
 
             let finalFileName = meta.pdfName && meta.pdfName.trim() !== '' ? meta.pdfName.trim() + "_LISTADO" : `PROPUESTA_${(meta.client || 'PANDORA').replace(/\s+/g, '_')}_CHOCO_LISTADO`;
             if (!finalFileName.toLowerCase().endsWith('.pdf')) {
