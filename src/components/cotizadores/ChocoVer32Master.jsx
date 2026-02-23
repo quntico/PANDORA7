@@ -79,11 +79,11 @@ const initialModules = [
 
 export default function ChocoVer32Master({ theme }) {
     const [data, setData] = useState(() => {
-        const saved = localStorage.getItem("choco32_data");
+        const saved = localStorage.getItem("choco33_data");
         return saved ? JSON.parse(saved) : {};
     });
     const [meta, setMeta] = useState(() => {
-        const saved = localStorage.getItem("choco32_meta");
+        const saved = localStorage.getItem("choco33_meta");
         return saved ? { client: '', project: '', tc: 18.50, pdfName: '', ...JSON.parse(saved) } : { client: '', project: '', tc: 18.50, pdfName: '' };
     });
     const [editingDescItem, setEditingDescItem] = useState(null);
@@ -95,25 +95,26 @@ export default function ChocoVer32Master({ theme }) {
 
     // Nuevos estados para editor persistentes
     const [modules, setModules] = useState(() => {
-        const saved = localStorage.getItem("choco32_modules");
+        const saved = localStorage.getItem("choco33_modules");
         return saved ? JSON.parse(saved) : initialModules;
     });
     const [mainTitle, setMainTitle] = useState(() => {
-        return localStorage.getItem("choco32_mainTitle") || "Master Listado: CHOCO VER 3.2";
+        // Renamed to 3.3 for internal tracking
+        return localStorage.getItem("choco33_mainTitle") || "Master Listado: CHOCO VER 3.3";
     });
     const [isEditingMainTitle, setIsEditingMainTitle] = useState(false);
     const [mainDesc, setMainDesc] = useState(() => {
-        return localStorage.getItem("choco32_mainDesc") || "Matriz de cotización predictiva con módulos enlazados. Ingresa variables, costos y márgenes de utilidad y Pandora calcula automáticamente los subtotales, venta final y consumos en kW totales.";
+        return localStorage.getItem("choco33_mainDesc") || "Matriz de cotización predictiva con módulos enlazados. Ingresa variables, costos y márgenes de utilidad y Pandora calcula automáticamente los subtotales, venta final y consumos en kW totales.";
     });
     const [isEditingMainDesc, setIsEditingMainDesc] = useState(false);
 
     // Persistencia Automática
     useEffect(() => {
-        localStorage.setItem("choco32_data", JSON.stringify(data));
-        localStorage.setItem("choco32_meta", JSON.stringify(meta));
-        localStorage.setItem("choco32_modules", JSON.stringify(modules));
-        localStorage.setItem("choco32_mainTitle", mainTitle);
-        localStorage.setItem("choco32_mainDesc", mainDesc);
+        localStorage.setItem("choco33_data", JSON.stringify(data));
+        localStorage.setItem("choco33_meta", JSON.stringify(meta));
+        localStorage.setItem("choco33_modules", JSON.stringify(modules));
+        localStorage.setItem("choco33_mainTitle", mainTitle);
+        localStorage.setItem("choco33_mainDesc", mainDesc);
     }, [data, meta, modules, mainTitle, mainDesc]);
 
     // Force official #FFCC00 yellow for Solifood to override any pale colors extracted by ColorThief
