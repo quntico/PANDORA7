@@ -1208,9 +1208,9 @@ export default function ChocoVer32Master({ theme, storageKey = 'choco34' }) {
                     let modSlide = pres.addSlide();
 
                     // Header Bar for Module Slide
-                    modSlide.addShape(pres.ShapeType.rect, { x: 0, y: 0, w: '100%', h: 0.6, fill: { color: "000000" } });
-                    modSlide.addText(sanitizePDFText(module.name).toUpperCase(), { x: 0.5, y: 0.05, w: slideWidth - 1, color: pptAccent, bold: true, fontSize: 18 });
-                    modSlide.addShape(pres.ShapeType.rect, { x: 0, y: 0.6, w: '100%', h: 0.05, fill: { color: pptAccent } });
+                    modSlide.addShape(pres.ShapeType.rect, { x: 0, y: 0, w: '100%', h: 0.8, fill: { color: "000000" } });
+                    modSlide.addText(sanitizePDFText(module.name).toUpperCase(), { x: 0.25, y: 0, w: slideWidth - 0.5, h: 0.8, color: pptAccent, bold: true, fontSize: 16, valign: 'middle' });
+                    modSlide.addShape(pres.ShapeType.rect, { x: 0, y: 0.8, w: '100%', h: 0.05, fill: { color: pptAccent } });
 
                     // Generate PPTx Table Rows
                     let tableRows = [];
@@ -1233,16 +1233,23 @@ export default function ChocoVer32Master({ theme, storageKey = 'choco34' }) {
                         const safeKeyStr = sanitizePDFText(`${key}${subtext}`);
                         let cleanDesc = sanitizePDFText(data[key]?.desc || '');
 
-                        // Combiner Header + Desc into one cell for PPT simplicity 
-                        const descriptionCellContent = cleanDesc ? `${safeKeyStr}\n\n${cleanDesc}` : safeKeyStr;
+                        // Combiner Header + Desc into one cell with rich formatting for PPT simplicity 
+                        const descriptionCellContent = cleanDesc
+                            ? [
+                                { text: safeKeyStr, options: { bold: true, fontSize: 10, color: "000000", breakLine: true } },
+                                { text: '\n' + cleanDesc, options: { bold: false, fontSize: 9, color: "333333" } }
+                            ]
+                            : [
+                                { text: safeKeyStr, options: { bold: true, fontSize: 10, color: "000000" } }
+                            ];
 
                         let row = [
-                            { text: descriptionCellContent, options: { bold: false, color: "333333", margin: 5, fontSize: 9, valign: 'top' } },
-                            { text: `${(data[key]?.kw || 0).toFixed(1)} KW`, options: { color: "444444", align: 'center', fontSize: 9, valign: 'top' } }
+                            { text: descriptionCellContent, options: { margin: 5, valign: 'top' } },
+                            { text: `${(data[key]?.kw || 0).toFixed(1)} KW`, options: { color: "444444", align: 'center', fontSize: 10, valign: 'top' } }
                         ];
 
                         if (!meta.hidePrices) {
-                            row.push({ text: `$${calculateItem(key).toLocaleString("en-US", { minimumFractionDigits: 2 })}`, options: { bold: true, color: "111111", align: 'right', fontSize: 9, valign: 'top' } });
+                            row.push({ text: `$${calculateItem(key).toLocaleString("en-US", { minimumFractionDigits: 2 })}`, options: { bold: true, color: "111111", align: 'right', fontSize: 10, valign: 'top' } });
                         }
                         tableRows.push(row);
                     });
@@ -1256,15 +1263,22 @@ export default function ChocoVer32Master({ theme, storageKey = 'choco34' }) {
                         ]);
                     }
 
-                    // Calculate column widths
-                    let colWText = isLandscape ? (meta.hidePrices ? 8 : 6.5) : (meta.hidePrices ? 6 : 4.5);
-                    let colW = meta.hidePrices ? [colWText, 1.2] : [colWText, 1.0, 1.8];
+                    // Calculate column widths explicitly so layout doesnt spill or leave empty whitespaces
+                    let colW;
+                    if (isLandscape) {
+                        // total width = 9.5
+                        colW = meta.hidePrices ? [8.0, 1.5] : [6.3, 1.2, 2.0];
+                    } else {
+                        // total width = 7.77 (8.27 - 0.5)
+                        colW = meta.hidePrices ? [6.27, 1.5] : [4.77, 1.2, 1.8];
+                    }
 
                     // Draw Auto-Paging Table
                     modSlide.addTable(tableRows, {
-                        x: 0.25, y: 0.8, w: slideWidth - 0.5,
+                        x: 0.25, y: 1.0, w: slideWidth - 0.5,
                         border: { type: 'solid', color: 'EEEEEE', pt: 1 },
                         autoPage: true, autoPageRepeatHeader: true,
+                        autoPageSlideStartY: 1.0,
                         colW: colW,
                         valign: 'middle'
                     });
