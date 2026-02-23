@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ColorThief from 'colorthief';
-import { ShieldAlert, DollarSign, Settings, Calculator, Building2, Package, FileText, Plus, Upload, Palette, ChevronLeft, ChevronRight, PanelLeftClose, PanelLeftOpen, Edit2 } from 'lucide-react';
+import { ShieldAlert, DollarSign, Settings, Calculator, Building2, Package, FileText, Plus, Upload, Palette, ChevronLeft, ChevronRight, PanelLeftClose, PanelLeftOpen, Edit2, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import ChocoVer32Master from '@/components/cotizadores/ChocoVer32Master';
@@ -19,10 +19,63 @@ function AdminCotizadorPage() {
     const [editingCompany, setEditingCompany] = useState(null);
     // State to manage the currently active company for its specific dashboard/ficha
     const [activeCompanyFicha, setActiveCompanyFicha] = useState(null);
-    // Control which template is actively rendering in the Ficha Canvas
-    const [activeTemplate, setActiveTemplate] = useState('standard');
+    // Control which quote is actively rendering in the Ficha Canvas
+    const [activeTemplate, setActiveTemplate] = useState('choco34');
     // Control collapse state of the history sidebar
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+    const [quotes, setQuotes] = useState(() => {
+        const saved = localStorage.getItem('pandora_quotes');
+        if (saved) return JSON.parse(saved);
+        return [{ id: 'choco34', type: 'oficial', name: 'CHOCO 3.2', desc: 'Master Listado Predictivo', date: Date.now() }];
+    });
+
+    useEffect(() => {
+        localStorage.setItem('pandora_quotes', JSON.stringify(quotes));
+    }, [quotes]);
+
+    const handleCreateQuote = () => {
+        const timestamp = Date.now();
+        const newId = `cot_${timestamp}`;
+        const prevCount = quotes.filter(q => q.id !== 'choco34').length;
+        const newQuote = {
+            id: newId,
+            type: 'borrador',
+            name: `COT-${String(prevCount + 1).padStart(3, '0')}`,
+            desc: 'Nueva Cotización',
+            date: timestamp
+        };
+
+        // Clone from choco34 base
+        ['data', 'meta', 'modules', 'mainTitle', 'mainDesc'].forEach(key => {
+            const baseVal = localStorage.getItem(`choco34_${key}`);
+            if (baseVal) {
+                localStorage.setItem(`${newId}_${key}`, baseVal);
+            }
+        });
+
+        const newQuotesList = [newQuote, ...quotes];
+        setQuotes(newQuotesList);
+        setActiveTemplate(newId);
+    };
+
+    const handleDeleteQuote = (e, idToDelete) => {
+        e.stopPropagation();
+        if (idToDelete === 'choco34') {
+            alert("No puedes borrar la plantilla base oficial.");
+            return;
+        }
+        if (window.confirm("¿Seguro que deseas eliminar esta cotización? Esta acción no se puede deshacer.")) {
+            ['data', 'meta', 'modules', 'mainTitle', 'mainDesc'].forEach(key => {
+                localStorage.removeItem(`${idToDelete}_${key}`);
+            });
+            const filtered = quotes.filter(q => q.id !== idToDelete);
+            setQuotes(filtered);
+            if (activeTemplate === idToDelete) {
+                setActiveTemplate('choco34');
+            }
+        }
+    };
 
     // State for module editor rename
     const [projectTitle, setProjectTitle] = useState('Portal de Cotizaciones');
@@ -544,7 +597,8 @@ function AdminCotizadorPage() {
                                                     Historial
                                                 </h4>
                                                 <button
-                                                    className="p-2 border rounded-lg transition-transform hover:scale-105 shadow-md flex items-center justify-center"
+                                                    onClick={handleCreateQuote}
+                                                    className="p-2 border rounded-lg transition-transform hover:scale-105 shadow-md flex items-center justify-center hover:shadow-glow-sm"
                                                     style={{ backgroundColor: activeCompanyFicha.theme.accent, color: activeCompanyFicha.theme.primary === '#FFFFFF' ? '#000' : activeCompanyFicha.theme.secondary, borderColor: activeCompanyFicha.theme.accent }}
                                                 >
                                                     <Plus className="w-4 h-4" />
@@ -552,52 +606,32 @@ function AdminCotizadorPage() {
                                             </div>
 
                                             <div className="flex flex-col gap-3 overflow-y-auto pr-2 stylized-scrollbar">
-                                                {/* Cotización Activa */}
-                                                <div
-                                                    className={`p-4 rounded-xl border flex flex-col gap-2 cursor-pointer transition-all hover:translate-x-1 shadow-lg ${activeTemplate === 'standard' ? 'bg-deep/50' : 'bg-glass border-glass-border'}`}
-                                                    style={activeTemplate === 'standard' ? { borderLeftColor: activeCompanyFicha.theme.accent, borderLeftWidth: '4px', borderColor: `${activeCompanyFicha.theme.accent}50` } : {}}
-                                                    onClick={() => setActiveTemplate('standard')}
-                                                >
-                                                    <div className="flex justify-between items-start">
-                                                        <span className="text-white font-bold tracking-wider">COT-003</span>
-                                                        <span className="text-[10px] px-2 py-0.5 rounded-full uppercase tracking-widest font-bold" style={{ backgroundColor: `${activeCompanyFicha.theme.accent}20`, color: activeCompanyFicha.theme.accent }}>Borrador</span>
-                                                    </div>
-                                                    <span className="text-xs text-gray-300">Expansión Planta Tratamiento Sur</span>
-                                                    <div className="flex justify-between items-center mt-2 pt-2 border-t border-glass-border/50">
-                                                        <span className="text-[10px] text-gray-500">Hoy, 10:45 AM</span>
-                                                        <span className="text-sm font-mono font-bold" style={{ color: activeCompanyFicha.theme.accent }}>$18,212.00</span>
-                                                    </div>
-                                                </div>
-                                                {/* Choco Template Especial (General para Empresas) */}
-                                                <div
-                                                    className={`p-4 rounded-xl border flex flex-col gap-2 cursor-pointer transition-all hover:translate-x-1 ${activeTemplate === 'choco' ? 'bg-deep/50 shadow-lg' : 'bg-glass border-glass-border hover:bg-glass-light'}`}
-                                                    style={activeTemplate === 'choco' ? { borderLeftColor: activeCompanyFicha.theme.accent, borderLeftWidth: '4px', borderColor: `${activeCompanyFicha.theme.accent}50` } : {}}
-                                                    onClick={() => setActiveTemplate('choco')}
-                                                >
-                                                    <div className="flex justify-between items-start">
-                                                        <span className={activeTemplate === 'choco' ? "text-white font-bold tracking-wider" : "text-gray-300 font-bold tracking-wider"}>CHOCO 3.2</span>
-                                                        <span className="text-[10px] px-2 py-0.5 rounded-full uppercase tracking-widest font-bold" style={activeTemplate === 'choco' ? { backgroundColor: `${activeCompanyFicha.theme.accent}20`, color: activeCompanyFicha.theme.accent } : { backgroundColor: '#333', color: '#888' }}>Oficial</span>
-                                                    </div>
-                                                    <span className={activeTemplate === 'choco' ? "text-xs text-gray-300" : "text-xs text-gray-400"}>Master Listado Predictivo</span>
-                                                    <div className="flex justify-between items-center mt-2 pt-2 border-t border-glass-border/50">
-                                                        <span className="text-[10px] text-gray-500">Plantilla Algorítmica</span>
-                                                    </div>
-                                                </div>
-
-                                                {/* Cotizaciones de Historial */}
-                                                {[2, 1].map(item => (
+                                                {/* Iterar sobre todas las cotizaciones creadas */}
+                                                {quotes.map(quote => (
                                                     <div
-                                                        key={item}
-                                                        className="p-4 rounded-xl border border-glass-border bg-glass hover:bg-glass-light flex flex-col gap-2 cursor-pointer transition-all hover:translate-x-1"
+                                                        key={quote.id}
+                                                        className={`p-4 rounded-xl border flex flex-col gap-2 cursor-pointer transition-all hover:translate-x-1 shadow-sm ${activeTemplate === quote.id ? 'bg-deep/50 shadow-lg' : 'bg-glass border-glass-border hover:bg-glass-light'}`}
+                                                        style={activeTemplate === quote.id ? { borderLeftColor: activeCompanyFicha.theme.accent, borderLeftWidth: '4px', borderColor: `${activeCompanyFicha.theme.accent}50` } : {}}
+                                                        onClick={() => setActiveTemplate(quote.id)}
                                                     >
                                                         <div className="flex justify-between items-start">
-                                                            <span className="text-gray-300 font-bold tracking-wider">COT-00{item}</span>
-                                                            <span className="text-[10px] px-2 py-0.5 rounded-full uppercase border border-glass-border text-gray-400 bg-glass-dark">Enviada</span>
+                                                            <span className={activeTemplate === quote.id ? "text-white font-bold tracking-wider" : "text-gray-300 font-bold tracking-wider"}>{quote.name}</span>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-[10px] px-2 py-0.5 rounded-full uppercase tracking-widest font-bold" style={activeTemplate === quote.id ? { backgroundColor: `${activeCompanyFicha.theme.accent}20`, color: activeCompanyFicha.theme.accent } : { backgroundColor: '#333', color: '#888' }}>{quote.type}</span>
+                                                                {quote.id !== 'choco34' && (
+                                                                    <button
+                                                                        onClick={(e) => handleDeleteQuote(e, quote.id)}
+                                                                        className="p-1 text-red-500 hover:text-white bg-transparent hover:bg-red-500 transition-colors border border-transparent hover:border-red-400 rounded-md"
+                                                                        title="Eliminar Cotización"
+                                                                    >
+                                                                        <Trash2 className="w-3 h-3" />
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                        <span className="text-xs text-gray-400">Proyecto Modelo Industrial {item}</span>
-                                                        <div className="flex justify-between items-center mt-2 pt-2 border-t border-glass-border/30">
-                                                            <span className="text-[10px] text-gray-500">hace {item * 3} días</span>
-                                                            <span className="text-sm font-mono text-gray-400">${item * 12},500.00</span>
+                                                        <span className={activeTemplate === quote.id ? "text-xs text-gray-300" : "text-xs text-gray-400"}>{quote.desc}</span>
+                                                        <div className="flex justify-between items-center mt-2 pt-2 border-t border-glass-border/50">
+                                                            <span className="text-[10px] text-gray-500">{new Date(quote.date).toLocaleDateString('es-MX', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                                                         </div>
                                                     </div>
                                                 ))}
@@ -625,7 +659,7 @@ function AdminCotizadorPage() {
                                         <div className="absolute top-0 right-0 w-96 h-96 rounded-bl-full opacity-10 blur-[80px] pointer-events-none transition-colors duration-1000" style={{ backgroundColor: activeCompanyFicha.theme.accent }}></div>
                                         <div className="absolute bottom-0 left-0 w-64 h-64 rounded-tr-full opacity-[0.03] blur-[60px] pointer-events-none transition-colors duration-1000" style={{ backgroundColor: activeCompanyFicha.theme.accent }}></div>
 
-                                        <ChocoVer32Master theme={activeCompanyFicha.theme} />
+                                        <ChocoVer32Master key={activeTemplate} storageKey={activeTemplate} theme={activeCompanyFicha.theme} />
                                     </div>
                                 </div>
                             </div>
