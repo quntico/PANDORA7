@@ -79,50 +79,43 @@ const initialModules = [
 
 export default function ChocoVer32Master({ theme }) {
     const [data, setData] = useState(() => {
-        const saved33 = localStorage.getItem("choco33_data");
-        const parsed33 = saved33 ? JSON.parse(saved33) : null;
+        const saved34 = localStorage.getItem("choco34_data");
+        if (saved34) return JSON.parse(saved34);
 
         const saved32 = localStorage.getItem("choco32_data");
         if (saved32) {
             const oldData = JSON.parse(saved32);
-            // Si no hay saved33 O es un objeto vacío (sobre-escrito por accidente)
-            if (!parsed33 || Object.keys(parsed33).length === 0) {
-                const migratedData = {};
-                for (const key in oldData) {
-                    let newKey = key;
-                    if (key.match(/^[456]\./)) {
-                        const parts = key.split(" ");
-                        const numPart = parts[0];
-                        if (numPart.includes(".")) {
-                            const [major, minor] = numPart.split(".");
-                            const newMajor = parseInt(major) - 1;
-                            if (newMajor >= 3) {
-                                parts[0] = `${newMajor}.${minor}`;
-                                newKey = parts.join(" ");
-                            }
+            const migratedData = {};
+            for (const key in oldData) {
+                let newKey = key;
+                if (key.match(/^[456]\./)) {
+                    const parts = key.split(" ");
+                    const numPart = parts[0];
+                    if (numPart.includes(".")) {
+                        const [major, minor] = numPart.split(".");
+                        const newMajor = parseInt(major) - 1;
+                        if (newMajor >= 3) {
+                            parts[0] = `${newMajor}.${minor}`;
+                            newKey = parts.join(" ");
                         }
                     }
-                    migratedData[newKey] = oldData[key];
                 }
-                return migratedData;
+                migratedData[newKey] = oldData[key];
             }
+            return migratedData;
         }
-        return parsed33 || {};
+        return {};
     });
 
     const [meta, setMeta] = useState(() => {
-        const saved33 = localStorage.getItem("choco33_meta");
-        const parsed33 = saved33 ? JSON.parse(saved33) : null;
+        const saved34 = localStorage.getItem("choco34_meta");
+        if (saved34) return { client: '', project: '', tc: 18.50, pdfName: '', ...JSON.parse(saved34) };
 
         const saved32 = localStorage.getItem("choco32_meta");
         if (saved32) {
-            const parsed32 = JSON.parse(saved32);
-            // Rescatar meta de V32 si la V33 acaba de ser creada vacía
-            if (!parsed33 || (!parsed33.client && !parsed33.project && !parsed33.pdfName)) {
-                return { client: '', project: '', tc: 18.50, pdfName: '', ...parsed32 };
-            }
+            return { client: '', project: '', tc: 18.50, pdfName: '', ...JSON.parse(saved32) };
         }
-        return parsed33 ? { client: '', project: '', tc: 18.50, pdfName: '', ...parsed33 } : { client: '', project: '', tc: 18.50, pdfName: '' };
+        return { client: '', project: '', tc: 18.50, pdfName: '' };
     });
     const [editingDescItem, setEditingDescItem] = useState(null);
     const [tempDesc, setTempDesc] = useState("");
@@ -133,25 +126,55 @@ export default function ChocoVer32Master({ theme }) {
 
     // Nuevos estados para editor persistentes
     const [modules, setModules] = useState(() => {
-        const saved = localStorage.getItem("choco33_modules");
-        return saved ? JSON.parse(saved) : initialModules;
+        const saved34 = localStorage.getItem("choco34_modules");
+        if (saved34) return JSON.parse(saved34);
+
+        const saved32 = localStorage.getItem("choco32_modules");
+        if (saved32) {
+            let oldModules = JSON.parse(saved32);
+            oldModules = oldModules.filter(m => !m.name.includes("3. PROCESO CHOCOLATE"));
+
+            oldModules = oldModules.map(m => {
+                let newName = m.name;
+                const matchName = m.name.match(/^([456])\./);
+                if (matchName) {
+                    const newMajor = parseInt(matchName[1]) - 1;
+                    newName = m.name.replace(/^([456])\./, `${newMajor}.`);
+                }
+
+                const newItems = m.items.map(item => {
+                    const matchItem = item.match(/^([456])\./);
+                    if (matchItem) {
+                        const newMajor = parseInt(matchItem[1]) - 1;
+                        return item.replace(/^([456])\./, `${newMajor}.`);
+                    }
+                    return item;
+                });
+
+                return { ...m, name: newName, items: newItems };
+            });
+            return oldModules;
+        }
+
+        return initialModules;
     });
+
     const [mainTitle, setMainTitle] = useState(() => {
-        return localStorage.getItem("choco33_mainTitle") || localStorage.getItem("choco32_mainTitle") || "Master Listado: CHOCO VER 3.3";
+        return localStorage.getItem("choco34_mainTitle") || localStorage.getItem("choco32_mainTitle") || "Master Listado: CHOCO VER 3.4";
     });
     const [isEditingMainTitle, setIsEditingMainTitle] = useState(false);
     const [mainDesc, setMainDesc] = useState(() => {
-        return localStorage.getItem("choco33_mainDesc") || localStorage.getItem("choco32_mainDesc") || "Matriz de cotización predictiva con módulos enlazados. Ingresa variables, costos y márgenes de utilidad y Pandora calcula automáticamente los subtotales, venta final y consumos en kW totales.";
+        return localStorage.getItem("choco34_mainDesc") || localStorage.getItem("choco32_mainDesc") || "Matriz de cotización predictiva con módulos enlazados. Ingresa variables, costos y márgenes de utilidad y Pandora calcula automáticamente los subtotales, venta final y consumos en kW totales.";
     });
     const [isEditingMainDesc, setIsEditingMainDesc] = useState(false);
 
     // Persistencia Automática
     useEffect(() => {
-        localStorage.setItem("choco33_data", JSON.stringify(data));
-        localStorage.setItem("choco33_meta", JSON.stringify(meta));
-        localStorage.setItem("choco33_modules", JSON.stringify(modules));
-        localStorage.setItem("choco33_mainTitle", mainTitle);
-        localStorage.setItem("choco33_mainDesc", mainDesc);
+        localStorage.setItem("choco34_data", JSON.stringify(data));
+        localStorage.setItem("choco34_meta", JSON.stringify(meta));
+        localStorage.setItem("choco34_modules", JSON.stringify(modules));
+        localStorage.setItem("choco34_mainTitle", mainTitle);
+        localStorage.setItem("choco34_mainDesc", mainDesc);
     }, [data, meta, modules, mainTitle, mainDesc]);
 
     // Force official #FFCC00 yellow for Solifood to override any pale colors extracted by ColorThief
