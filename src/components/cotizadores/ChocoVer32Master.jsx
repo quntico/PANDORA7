@@ -222,14 +222,26 @@ export default function ChocoVer32Master({ theme, storageKey = 'choco34' }) {
     };
 
     const totalUSD = () => {
-        return Object.keys(data)
-            .reduce((sum, key) => sum + calculateItem(key), 0);
+        let sum = 0;
+        modules.forEach(module => {
+            module.items.forEach(itemKey => {
+                sum += calculateItem(itemKey);
+            });
+        });
+        return sum;
     };
 
     const totalKW = () => {
-        return Object.keys(data)
-            .filter(key => data[key]?.enabled !== false)
-            .reduce((sum, key) => sum + ((data[key]?.kw || 0) * (data[key]?.qty || 1)), 0);
+        let sum = 0;
+        modules.forEach(module => {
+            module.items.forEach(itemKey => {
+                const itemData = data[itemKey];
+                if (itemData?.enabled !== false) {
+                    sum += (itemData?.kw || 0) * (itemData?.qty || 1);
+                }
+            });
+        });
+        return sum;
     };
 
     const toggleModule = (moduleName) => {
