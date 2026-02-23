@@ -488,7 +488,7 @@ export default function ChocoVer32Master({ theme }) {
                             content: sanitizePDFText(module.name).toUpperCase(),
                             colSpan: 3,
                             isModuleTitle: true,
-                            styles: { fontStyle: 'bold', fillColor: [40, 40, 40], fontSize: 13, textColor: accentRgb, halign: 'center', cellPadding: 8 }
+                            styles: { fontStyle: 'bold', fillColor: [40, 40, 40], fontSize: 13, textColor: accentRgb, halign: 'center', cellPadding: 4 }
                         }
                     ]);
 
@@ -669,7 +669,7 @@ export default function ChocoVer32Master({ theme }) {
                             content: sanitizePDFText(module.name).toUpperCase(),
                             colSpan: 5,
                             isModuleTitle: true,
-                            styles: { fontStyle: 'bold', fillColor: [40, 40, 40], fontSize: 13, textColor: accentRgb, halign: 'center', cellPadding: 8 }
+                            styles: { fontStyle: 'bold', fillColor: [40, 40, 40], fontSize: 13, textColor: accentRgb, halign: 'center', cellPadding: 4 }
                         }
                     ]);
 
@@ -837,7 +837,7 @@ export default function ChocoVer32Master({ theme }) {
                             content: sanitizePDFText(module.name).toUpperCase(),
                             colSpan: 3,
                             isModuleTitle: true,
-                            styles: { fontStyle: 'bold', fillColor: [40, 40, 40], fontSize: 13, textColor: accentRgb, halign: 'center', cellPadding: 8 }
+                            styles: { fontStyle: 'bold', fillColor: [40, 40, 40], fontSize: 13, textColor: accentRgb, halign: 'center', cellPadding: 4 }
                         }
                     ]);
 
