@@ -80,40 +80,49 @@ const initialModules = [
 export default function ChocoVer32Master({ theme }) {
     const [data, setData] = useState(() => {
         const saved33 = localStorage.getItem("choco33_data");
-        if (saved33) return JSON.parse(saved33);
+        const parsed33 = saved33 ? JSON.parse(saved33) : null;
 
         const saved32 = localStorage.getItem("choco32_data");
         if (saved32) {
             const oldData = JSON.parse(saved32);
-            const migratedData = {};
-
-            for (const key in oldData) {
-                let newKey = key;
-                if (key.match(/^[456]\./)) {
-                    const parts = key.split(" ");
-                    const numPart = parts[0];
-                    if (numPart.includes(".")) {
-                        const [major, minor] = numPart.split(".");
-                        const newMajor = parseInt(major) - 1;
-                        if (newMajor >= 3) {
-                            parts[0] = `${newMajor}.${minor}`;
-                            newKey = parts.join(" ");
+            // Si no hay saved33 O es un objeto vacío (sobre-escrito por accidente)
+            if (!parsed33 || Object.keys(parsed33).length === 0) {
+                const migratedData = {};
+                for (const key in oldData) {
+                    let newKey = key;
+                    if (key.match(/^[456]\./)) {
+                        const parts = key.split(" ");
+                        const numPart = parts[0];
+                        if (numPart.includes(".")) {
+                            const [major, minor] = numPart.split(".");
+                            const newMajor = parseInt(major) - 1;
+                            if (newMajor >= 3) {
+                                parts[0] = `${newMajor}.${minor}`;
+                                newKey = parts.join(" ");
+                            }
                         }
                     }
+                    migratedData[newKey] = oldData[key];
                 }
-                migratedData[newKey] = oldData[key];
+                return migratedData;
             }
-            return migratedData;
         }
-        return {};
+        return parsed33 || {};
     });
 
     const [meta, setMeta] = useState(() => {
         const saved33 = localStorage.getItem("choco33_meta");
-        if (saved33) return { client: '', project: '', tc: 18.50, pdfName: '', ...JSON.parse(saved33) };
+        const parsed33 = saved33 ? JSON.parse(saved33) : null;
 
         const saved32 = localStorage.getItem("choco32_meta");
-        return saved32 ? { client: '', project: '', tc: 18.50, pdfName: '', ...JSON.parse(saved32) } : { client: '', project: '', tc: 18.50, pdfName: '' };
+        if (saved32) {
+            const parsed32 = JSON.parse(saved32);
+            // Rescatar meta de V32 si la V33 acaba de ser creada vacía
+            if (!parsed33 || (!parsed33.client && !parsed33.project && !parsed33.pdfName)) {
+                return { client: '', project: '', tc: 18.50, pdfName: '', ...parsed32 };
+            }
+        }
+        return parsed33 ? { client: '', project: '', tc: 18.50, pdfName: '', ...parsed33 } : { client: '', project: '', tc: 18.50, pdfName: '' };
     });
     const [editingDescItem, setEditingDescItem] = useState(null);
     const [tempDesc, setTempDesc] = useState("");
