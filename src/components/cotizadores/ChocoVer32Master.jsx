@@ -167,6 +167,8 @@ export default function ChocoVer32Master({ theme }) {
         return localStorage.getItem("choco34_mainDesc") || localStorage.getItem("choco32_mainDesc") || "Matriz de cotización predictiva con módulos enlazados. Ingresa variables, costos y márgenes de utilidad y Pandora calcula automáticamente los subtotales, venta final y consumos en kW totales.";
     });
     const [isEditingMainDesc, setIsEditingMainDesc] = useState(false);
+    const [editingModuleNameIndex, setEditingModuleNameIndex] = useState(null);
+    const [tempModuleName, setTempModuleName] = useState("");
 
     // Persistencia Automática
     useEffect(() => {
@@ -289,6 +291,32 @@ export default function ChocoVer32Master({ theme }) {
         });
 
         setEditingNameItem(null);
+    };
+
+    const saveModuleName = (mIndex) => {
+        if (mIndex === null || mIndex === undefined) return;
+        const finalName = tempModuleName.trim();
+
+        if (!finalName) {
+            setEditingModuleNameIndex(null);
+            return;
+        }
+
+        const newModules = [...modules];
+        const oldName = newModules[mIndex].name;
+
+        if (oldName !== finalName) {
+            const newCollapsedModules = { ...collapsedModules };
+            if (newCollapsedModules.hasOwnProperty(oldName)) {
+                newCollapsedModules[finalName] = newCollapsedModules[oldName];
+                delete newCollapsedModules[oldName];
+            }
+            newModules[mIndex].name = finalName;
+            setModules(newModules);
+            setCollapsedModules(newCollapsedModules);
+        }
+
+        setEditingModuleNameIndex(null);
     };
 
     const moduleTotalUSD = (module) => module.items.reduce((sum, item) => sum + calculateItem(item), 0);
@@ -1244,15 +1272,44 @@ export default function ChocoVer32Master({ theme }) {
                     return (
                         <div key={mIndex} className="bg-deep/50 border border-glass-border rounded-xl overflow-hidden w-full max-w-full">
                             {/* Cabecera del Módulo Expansible */}
-                            <div
-                                className="bg-glass px-4 py-3 border-b border-glass-border flex items-center justify-between cursor-pointer hover:bg-glass/80 transition-colors"
-                                onClick={() => toggleModule(module.name)}
-                            >
+                            <div className="bg-glass px-4 py-3 border-b border-glass-border flex items-center justify-between transition-colors hover:bg-glass/80">
                                 <div className="flex items-center gap-3">
-                                    {isCollapsed ? <ChevronRight className="w-5 h-5 shrink-0" style={{ color: accentColor }} /> : <ChevronDown className="w-5 h-5 shrink-0" style={{ color: accentColor }} />}
-                                    <h3 className="font-bold tracking-wider text-sm lg:text-base pr-4" style={{ color: accentColor }}>{module.name}</h3>
+                                    <button onClick={() => toggleModule(module.name)} className="cursor-pointer hover:scale-110 transition-transform p-1">
+                                        {isCollapsed ? <ChevronRight className="w-5 h-5 shrink-0" style={{ color: accentColor }} /> : <ChevronDown className="w-5 h-5 shrink-0" style={{ color: accentColor }} />}
+                                    </button>
+
+                                    {editingModuleNameIndex === mIndex ? (
+                                        <input
+                                            type="text"
+                                            value={tempModuleName}
+                                            onChange={(e) => setTempModuleName(e.target.value)}
+                                            onBlur={() => saveModuleName(mIndex)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') saveModuleName(mIndex);
+                                                if (e.key === 'Escape') setEditingModuleNameIndex(null);
+                                            }}
+                                            className="bg-deep border px-3 py-1.5 rounded-md text-sm lg:text-base text-white font-bold outline-none ring-2 ring-neon-cyan/50 shadow-glow-sm transition-all"
+                                            style={{ borderColor: accentColor }}
+                                            autoFocus
+                                        />
+                                    ) : (
+                                        <div className="flex items-center gap-3 group cursor-pointer" onClick={() => toggleModule(module.name)}>
+                                            <h3 className="font-bold tracking-wider text-sm lg:text-base" style={{ color: accentColor }}>{module.name}</h3>
+                                            <button
+                                                className="opacity-0 group-hover:opacity-100 p-1.5 bg-glass-light border border-glass-border rounded-md text-gray-400 hover:text-white transition-all transform hover:scale-110 hover:shadow-glow-sm"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setEditingModuleNameIndex(mIndex);
+                                                    setTempModuleName(module.name);
+                                                }}
+                                                title="Editar nombre del módulo"
+                                            >
+                                                <Edit2 className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="flex gap-4 md:gap-8 items-center text-xs md:text-sm">
+                                <div className="flex gap-4 md:gap-8 items-center text-xs md:text-sm cursor-pointer" onClick={() => toggleModule(module.name)}>
                                     <span className="font-mono text-gray-400 hidden sm:inline">Energía: <span className="text-white font-bold ml-1">{moduleTotalKW(module).toFixed(2)} kW</span></span>
                                     <span className="font-mono text-gray-400">Total: <span className="text-white font-bold tracking-wider ml-1" style={{ color: accentColor }}>$ {moduleTotalUSD(module).toLocaleString("en-US", { minimumFractionDigits: 2 })}</span></span>
                                 </div>
