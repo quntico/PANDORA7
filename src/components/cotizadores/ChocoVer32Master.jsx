@@ -544,11 +544,11 @@ export default function ChocoVer32Master({ theme }) {
             });
 
             // Totales Finales PDF (Cuadro redondeado inferior derecho)
-            const finalY = (doc.lastAutoTable ? doc.lastAutoTable.finalY : 150) + 15;
+            const finalY = (doc.lastAutoTable ? doc.lastAutoTable.finalY : 150) + 5;
 
-            // Check page break for the totals box (needs approx 60 units of space)
+            // Check page break for the totals box
             let boxY = finalY;
-            if (boxY + 60 > 280) {
+            if (boxY + 45 > 288) {
                 doc.addPage();
                 boxY = 20;
             }
@@ -561,12 +561,12 @@ export default function ChocoVer32Master({ theme }) {
 
             doc.setDrawColor(boxBg[0], boxBg[1], boxBg[2]);
             doc.setFillColor(boxBg[0], boxBg[1], boxBg[2]);
-            doc.roundedRect(100, boxY, 95, 60, 3, 3, 'FD');
+            doc.roundedRect(100, boxY, 95, 45, 3, 3, 'FD');
 
             // Text inside box
             const boxRightAlign = 185;
             const boxLeft = 105;
-            let currentY = boxY + 12;
+            let currentY = boxY + 8;
 
             doc.setFontSize(10);
             doc.setTextColor(textBaseColor[0], textBaseColor[1], textBaseColor[2]);
@@ -574,26 +574,26 @@ export default function ChocoVer32Master({ theme }) {
             doc.text("Potencia Total:", boxLeft, currentY);
             doc.text(`${totalKW().toFixed(2)} KW`, boxRightAlign, currentY, { align: 'right' });
 
-            currentY += 10;
+            currentY += 7;
             doc.setFontSize(11);
             doc.setFont("helvetica", "bold");
             doc.setTextColor(accentRgb[0], accentRgb[1], accentRgb[2]); // Yellow / Accent
             doc.text("TOTAL (USD):", boxLeft, currentY);
             doc.text(`$${totalUSD().toLocaleString("en-US", { minimumFractionDigits: 2 })}`, boxRightAlign, currentY, { align: 'right' });
 
-            currentY += 8;
+            currentY += 5;
             doc.setFontSize(8);
             doc.setFont("helvetica", "normal");
             doc.setTextColor(textMutedColor[0], textMutedColor[1], textMutedColor[2]);
             doc.text("PRECIOS MÁS 16% DE I.V.A", boxRightAlign, currentY, { align: 'right' });
 
-            currentY += 12;
+            currentY += 9;
             doc.setFontSize(9);
             doc.setTextColor(textBaseColor[0], textBaseColor[1], textBaseColor[2]);
             doc.text("T.C. estimado:", boxLeft, currentY);
             doc.text(`$${meta.tc.toFixed(2)} MXN`, boxRightAlign, currentY, { align: 'right' });
 
-            currentY += 10;
+            currentY += 8;
             doc.setFontSize(12);
             doc.setFont("helvetica", "bold");
             doc.setTextColor(textStrongColor[0], textStrongColor[1], textStrongColor[2]);
@@ -714,9 +714,9 @@ export default function ChocoVer32Master({ theme }) {
                 }
             });
 
-            const finalY = (doc.lastAutoTable ? doc.lastAutoTable.finalY : 150) + 15;
+            const finalY = (doc.lastAutoTable ? doc.lastAutoTable.finalY : 150) + 5;
             let boxY = finalY;
-            if (boxY + 60 > 280) {
+            if (boxY + 45 > 288) {
                 doc.addPage();
                 boxY = 20;
             }
@@ -728,11 +728,11 @@ export default function ChocoVer32Master({ theme }) {
 
             doc.setDrawColor(boxBg[0], boxBg[1], boxBg[2]);
             doc.setFillColor(boxBg[0], boxBg[1], boxBg[2]);
-            doc.roundedRect(100, boxY, 95, 60, 3, 3, 'FD');
+            doc.roundedRect(100, boxY, 95, 45, 3, 3, 'FD');
 
             const boxRightAlign = 185;
             const boxLeft = 105;
-            let currentY = boxY + 12;
+            let currentY = boxY + 8;
 
             doc.setFontSize(10);
             doc.setTextColor(textBaseColor[0], textBaseColor[1], textBaseColor[2]);
@@ -740,26 +740,26 @@ export default function ChocoVer32Master({ theme }) {
             doc.text("Potencia Total:", boxLeft, currentY);
             doc.text(`${totalKW().toFixed(2)} KW`, boxRightAlign, currentY, { align: 'right' });
 
-            currentY += 10;
+            currentY += 7;
             doc.setFontSize(11);
             doc.setFont("helvetica", "bold");
             doc.setTextColor(accentRgb[0], accentRgb[1], accentRgb[2]);
             doc.text("TOTAL (USD):", boxLeft, currentY);
             doc.text(`$${totalUSD().toLocaleString("en-US", { minimumFractionDigits: 2 })}`, boxRightAlign, currentY, { align: 'right' });
 
-            currentY += 8;
+            currentY += 5;
             doc.setFontSize(8);
             doc.setFont("helvetica", "normal");
             doc.setTextColor(textMutedColor[0], textMutedColor[1], textMutedColor[2]);
             doc.text("PRECIOS MÁS 16% DE I.V.A", boxRightAlign, currentY, { align: 'right' });
 
-            currentY += 12;
+            currentY += 9;
             doc.setFontSize(9);
             doc.setTextColor(textBaseColor[0], textBaseColor[1], textBaseColor[2]);
             doc.text("T.C. estimado:", boxLeft, currentY);
             doc.text(`$${meta.tc.toFixed(2)} MXN`, boxRightAlign, currentY, { align: 'right' });
 
-            currentY += 10;
+            currentY += 8;
             doc.setFontSize(12);
             doc.setFont("helvetica", "bold");
             doc.setTextColor(textStrongColor[0], textStrongColor[1], textStrongColor[2]);
