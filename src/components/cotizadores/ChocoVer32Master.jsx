@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import pptxgen from "pptxgenjs"; // <-- Importado nuevo
-import { Link, Download, FileSpreadsheet, Zap, DollarSign, ListChecks, CheckCircle2, FileText, ChevronDown, ChevronRight, FoldVertical, UnfoldVertical, Edit2, Plus, Trash2, AlignJustify, Upload, Presentation } from "lucide-react";
+import { Link, Download, FileSpreadsheet, Zap, DollarSign, ListChecks, CheckCircle2, FileText, ChevronDown, ChevronRight, FoldVertical, UnfoldVertical, Edit2, Plus, Trash2, AlignJustify, Upload, Presentation, Monitor } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const initialModules = [
@@ -1885,48 +1885,107 @@ export default function ChocoVer32Master({ theme, storageKey = 'choco34' }) {
 
             {/* Modal para Opciones de exportación PPTX */}
             <Dialog open={isPptxModalOpen} onOpenChange={setIsPptxModalOpen}>
-                <DialogContent className="bg-deep border border-glass-border text-white sm:max-w-[425px]">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-bold flex items-center gap-2" style={{ color: accentColor }}>
-                            <Presentation className="w-5 h-5" />
-                            Opciones de Presentación
-                        </DialogTitle>
-                    </DialogHeader>
-                    <div className="py-2 flex flex-col gap-4">
-                        <p className="text-sm text-gray-300">Selecciona la orientación de tu archivo PowerPoint. Las tablas y el contenido se ajustarán automáticamente.</p>
-                        <div className="grid grid-cols-2 gap-4">
-                            <button
-                                onClick={() => setPptxSettings({ ...pptxSettings, orientation: 'landscape' })}
-                                className={`flex flex-col justify-center items-center gap-3 p-4 rounded-xl border-2 transition-all ${pptxSettings.orientation === 'landscape' ? 'border-neon-cyan bg-neon-cyan/20' : 'border-glass-border bg-glass hover:bg-glass-light'}`}
-                                style={pptxSettings.orientation === 'landscape' ? { borderColor: accentColor, backgroundColor: `${accentColor}20` } : {}}
-                            >
-                                <div className="w-16 h-9 border-2 rounded-sm" style={{ borderColor: pptxSettings.orientation === 'landscape' ? accentColor : '#666' }}></div>
-                                <span className="font-bold text-sm text-center">Horizontal<br /><span className="text-xs font-normal opacity-70">(Panorámico 16:9)</span></span>
-                            </button>
-                            <button
-                                onClick={() => setPptxSettings({ ...pptxSettings, orientation: 'portrait' })}
-                                className={`flex flex-col justify-center items-center gap-3 p-4 rounded-xl border-2 transition-all ${pptxSettings.orientation === 'portrait' ? 'border-neon-cyan bg-neon-cyan/20' : 'border-glass-border bg-glass hover:bg-glass-light'}`}
-                                style={pptxSettings.orientation === 'portrait' ? { borderColor: accentColor, backgroundColor: `${accentColor}20` } : {}}
-                            >
-                                <div className="w-10 h-14 border-2 rounded-sm" style={{ borderColor: pptxSettings.orientation === 'portrait' ? accentColor : '#666' }}></div>
-                                <span className="font-bold text-sm text-center">Vertical<br /><span className="text-xs font-normal opacity-70">(Páginas A4)</span></span>
-                            </button>
+                <DialogContent className="bg-deep border border-glass-border text-white sm:max-w-[750px] overflow-hidden p-0">
+                    <div className="flex flex-col md:flex-row h-full">
+                        {/* Panel Izquierdo: Controles */}
+                        <div className="flex-1 p-6 flex flex-col z-10">
+                            <DialogHeader className="mb-4">
+                                <DialogTitle className="text-xl font-bold flex items-center gap-2" style={{ color: accentColor }}>
+                                    <Presentation className="w-5 h-5" />
+                                    Exportar PowerPoint
+                                </DialogTitle>
+                            </DialogHeader>
+                            <div className="py-2 flex flex-col gap-4 flex-1">
+                                <p className="text-sm text-gray-300">Selecciona la orientación de tu archivo PowerPoint. Las tablas y el contenido se ajustarán automáticamente.</p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <button
+                                        onClick={() => setPptxSettings({ ...pptxSettings, orientation: 'landscape' })}
+                                        className={`flex flex-col justify-center items-center gap-3 p-4 rounded-xl border-2 transition-all ${pptxSettings.orientation === 'landscape' ? 'border-neon-cyan bg-neon-cyan/20 shadow-glow-sm' : 'border-glass-border bg-glass hover:bg-glass-light'}`}
+                                        style={pptxSettings.orientation === 'landscape' ? { borderColor: accentColor, backgroundColor: `${accentColor}20` } : {}}
+                                    >
+                                        <div className="w-16 h-9 border-2 rounded-sm relative flex justify-center items-start pt-1" style={{ borderColor: pptxSettings.orientation === 'landscape' ? accentColor : '#666' }}>
+                                            <div className="w-full h-1 bg-black absolute top-0 left-0"></div>
+                                        </div>
+                                        <span className="font-bold text-sm text-center">Horizontal<br /><span className="text-[10px] font-normal opacity-70">(Panorámico 16:9)</span></span>
+                                    </button>
+                                    <button
+                                        onClick={() => setPptxSettings({ ...pptxSettings, orientation: 'portrait' })}
+                                        className={`flex flex-col justify-center items-center gap-3 p-4 rounded-xl border-2 transition-all ${pptxSettings.orientation === 'portrait' ? 'border-neon-cyan bg-neon-cyan/20 shadow-glow-sm' : 'border-glass-border bg-glass hover:bg-glass-light'}`}
+                                        style={pptxSettings.orientation === 'portrait' ? { borderColor: accentColor, backgroundColor: `${accentColor}20` } : {}}
+                                    >
+                                        <div className="w-9 h-12 border-2 rounded-sm relative flex justify-center items-start pt-1" style={{ borderColor: pptxSettings.orientation === 'portrait' ? accentColor : '#666' }}>
+                                            <div className="w-full h-1 bg-black absolute top-0 left-0"></div>
+                                        </div>
+                                        <span className="font-bold text-sm text-center">Vertical<br /><span className="text-[10px] font-normal opacity-70">(Páginas A4)</span></span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="flex justify-start pt-4 mt-6 border-t border-glass-border gap-3">
+                                <button
+                                    onClick={() => setIsPptxModalOpen(false)}
+                                    className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-400 hover:text-white transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={() => { setIsPptxModalOpen(false); exportPPTX(); }}
+                                    className="px-6 py-2.5 rounded-lg font-bold shadow-glow-sm hover:scale-105 transition-transform flex items-center gap-2"
+                                    style={{ backgroundColor: accentColor, color: isLightText || primaryColor === '#3B3B3B' || accentColor.toUpperCase() === '#F2B705' || accentColor.toUpperCase() === '#FFCC00' ? '#000000' : '#FFFFFF' }}
+                                >
+                                    <Download className="w-4 h-4" /> Exportar a PPTX
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                    <div className="flex justify-end pt-4 mt-2 border-t border-glass-border gap-3">
-                        <button
-                            onClick={() => setIsPptxModalOpen(false)}
-                            className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-400 hover:text-white transition-colors"
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            onClick={() => { setIsPptxModalOpen(false); exportPPTX(); }}
-                            className="px-6 py-2.5 rounded-lg font-bold shadow-glow-sm hover:scale-105 transition-transform flex items-center gap-2"
-                            style={{ backgroundColor: accentColor, color: isLightText || primaryColor === '#3B3B3B' || accentColor.toUpperCase() === '#F2B705' || accentColor.toUpperCase() === '#FFCC00' ? '#000000' : '#FFFFFF' }}
-                        >
-                            <Download className="w-4 h-4" /> Exportar PPTX
-                        </button>
+
+                        {/* Panel Derecho: Mini-Visor (Preview) */}
+                        <div className="flex-1 bg-gradient-to-br from-[#1a1c22] to-[#121318] p-6 flex flex-col items-center justify-center relative border-l border-glass-border">
+                            <div className="absolute top-4 left-4 text-[10px] font-bold tracking-widest text-gray-500 uppercase flex items-center gap-1.5">
+                                <Monitor className="w-3 h-3" /> Previsualización
+                            </div>
+
+                            {/* Lienzo del Mockup animado */}
+                            <div
+                                className="bg-white rounded shadow-2xl overflow-hidden transition-all duration-500 relative flex flex-col pointer-events-none"
+                                style={{
+                                    width: pptxSettings.orientation === 'landscape' ? '280px' : '200px',
+                                    height: pptxSettings.orientation === 'landscape' ? '157.5px' : '282.8px'
+                                }}
+                            >
+                                {/* Header del Mockup */}
+                                <div className="w-full h-[15%] bg-black relative shrink-0">
+                                    {theme?.logoUrl && theme.logoUrl.startsWith('data:image') ? (
+                                        <img src={theme.logoUrl} className="absolute left-2 top-1/2 -translate-y-1/2 h-1/2 object-contain" style={{ maxWidth: '30%' }} alt="logo" />
+                                    ) : (
+                                        <div className="absolute left-2 top-1/2 -translate-y-1/2 font-bold" style={{ color: accentColor, fontSize: '6px' }}>
+                                            {(theme?.name || "solifood").toUpperCase()}
+                                        </div>
+                                    )}
+                                    <div className="absolute right-2 top-1/2 -translate-y-1/2 font-bold text-white text-right" style={{ fontSize: '5px' }}>
+                                        {mainTitle.toUpperCase().substring(0, 30)}...
+                                    </div>
+                                    <div className="absolute bottom-0 left-0 w-full h-[10%] opacity-80" style={{ backgroundColor: accentColor }}></div>
+                                </div>
+
+                                {/* Body del Mockup (Simula la primera hoja de un Modulo) */}
+                                <div className="flex-1 p-3 flex flex-col gap-2">
+                                    <div className="w-3/4 h-2 rounded-sm opacity-20" style={{ backgroundColor: accentColor }}></div>
+                                    <div className="w-full flex-1 flex flex-col gap-1 mt-1">
+                                        <div className="w-full h-3 rounded-sm flex overflow-hidden opacity-90" style={{ backgroundColor: accentColor }}>
+                                            <div className="h-full flex-1 bg-black/10"></div>
+                                            <div className="h-full w-1/4 border-l border-black/10"></div>
+                                            {!meta.hidePrices && <div className="h-full w-1/4 border-l border-black/10"></div>}
+                                        </div>
+                                        {[1, 2, 3].map((_, i) => (
+                                            <div key={i} className="w-full h-[2px] bg-gray-200 rounded-full"></div>
+                                        ))}
+                                        <div className="w-full h-[2px] bg-gray-200 rounded-full w-4/5"></div>
+                                    </div>
+
+                                    {/* Rectángulo simulando caja de Resumen (si es final, lo verían igual de estilo) */}
+                                    <div className="mt-auto self-end w-1/2 h-4 rounded-sm bg-[#22242A] flex shrink-0 border" style={{ borderColor: accentColor }} ></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </DialogContent>
             </Dialog>
