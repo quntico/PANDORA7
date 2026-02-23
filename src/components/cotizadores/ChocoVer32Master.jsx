@@ -1151,80 +1151,84 @@ export default function ChocoVer32Master({ theme, storageKey = 'choco34' }) {
             const slideWidth = isLandscape ? 10 : 8.27;
 
             // ==========================================
-            // HEADER/COVER SLIDE
+            // HEADER/COVER SLIDE MASTER
             // ==========================================
-            let slide = pres.addSlide();
+            let masterObjects = [
+                { rect: { x: 0, y: 0, w: '100%', h: isLandscape ? 1.0 : 1.2, fill: { color: "000000" } } },
+                { rect: { x: 0, y: isLandscape ? 1.0 : 1.2, w: '100%', h: 0.1, fill: { color: pptAccent } } },
+                { text: { text: mainTitle.toUpperCase(), options: { x: slideWidth - 6.5, y: isLandscape ? 0.25 : 0.4, w: 6, h: 0.5, color: "FFFFFF", bold: true, fontSize: 14, align: "right" } } }
+            ];
 
-            // Top branding bar
-            slide.addShape(pres.ShapeType.rect, { x: 0, y: 0, w: '100%', h: isLandscape ? 1.0 : 1.2, fill: { color: "000000" } });
-
-            // Accent Line under header
-            slide.addShape(pres.ShapeType.rect, { x: 0, y: isLandscape ? 1.0 : 1.2, w: '100%', h: 0.1, fill: { color: pptAccent } });
-
-            // Branding logic (Image Logo or Text)
             if (theme?.logoUrl && theme.logoUrl.startsWith('data:image')) {
-                slide.addImage({ data: theme.logoUrl, x: 0.5, y: isLandscape ? 0.2 : 0.3, w: 2.5, h: isLandscape ? 0.6 : 0.8, sizing: { type: 'contain', w: 2.5, h: isLandscape ? 0.6 : 0.8 } });
+                masterObjects.push({ image: { data: theme.logoUrl, x: 0.5, y: isLandscape ? 0.2 : 0.3, w: 2.5, h: isLandscape ? 0.6 : 0.6, sizing: { type: 'contain', w: 2.5, h: isLandscape ? 0.6 : 0.6 } } });
             } else {
-                slide.addText((theme?.name || "solifood").toUpperCase(), {
-                    x: 0.5, y: 0.25, w: 4, h: 0.5,
-                    color: pptAccent, bold: true, fontSize: 24, fontFace: 'Helvetica'
-                });
+                masterObjects.push({ text: { text: (theme?.name || "solifood").toUpperCase(), options: { x: 0.5, y: 0.25, w: 4, h: 0.5, color: pptAccent, bold: true, fontSize: 24, fontFace: 'Helvetica' } } });
             }
 
-            // "Resumen Proyecto" Right align
-            slide.addText(mainTitle.toUpperCase(), {
-                x: slideWidth - 5, y: 0.25, w: 4.5, h: isLandscape ? 0.5 : 0.7,
-                color: "FFFFFF", bold: true, fontSize: 18, align: "right"
+            pres.defineSlideMaster({
+                title: 'MASTER_REPORT',
+                background: { fill: 'FFFFFF' },
+                objects: masterObjects,
+                slideNumber: { x: slideWidth - 2, y: isLandscape ? 5.2 : 11.2, w: 1.5, fontSize: 9, color: '888888', align: 'right' }
             });
 
-            // Metadata info
-            slide.addText("PROPUESTA DE EQUIPAMIENTO", { x: 0.5, y: isLandscape ? 1.5 : 2.0, w: slideWidth - 1, fontSize: 32, bold: true, color: "333333" });
+            let slide = pres.addSlide({ masterName: 'MASTER_REPORT' });
+
+            // ==========================================
+            // COVERSHEET METADATA (FIRST PAGE ONLY)
+            // ==========================================
+            let currentY = isLandscape ? 1.5 : 1.8;
+
+            slide.addText("PROPUESTA DE EQUIPAMIENTO", { x: 0.5, y: currentY, w: slideWidth - 1, fontSize: 22, bold: true, color: "333333" });
+            currentY += isLandscape ? 0.6 : 0.8;
 
             slide.addText([
                 { text: "CLIENTE: ", options: { bold: true, color: "666666" } },
                 { text: meta.client ? meta.client.toUpperCase() : "NO DEFINIDO", options: { color: "000000" } }
-            ], { x: 0.5, y: isLandscape ? 2.3 : 2.8, w: 5, fontSize: 14 });
+            ], { x: 0.5, y: currentY, w: 5, fontSize: 11 });
+            currentY += 0.3;
 
             slide.addText([
                 { text: "PROYECTO: ", options: { bold: true, color: "666666" } },
                 { text: meta.project ? meta.project.toUpperCase() : "NO DEFINIDO", options: { color: "000000" } }
-            ], { x: 0.5, y: isLandscape ? 2.7 : 3.2, w: 5, fontSize: 14 });
+            ], { x: 0.5, y: currentY, w: 5, fontSize: 11 });
+            currentY += 0.3;
 
             slide.addText([
                 { text: "FECHA: ", options: { bold: true, color: "666666" } },
                 { text: new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }), options: { color: "000000" } }
-            ], { x: 0.5, y: isLandscape ? 3.1 : 3.6, w: 5, fontSize: 14 });
+            ], { x: 0.5, y: currentY, w: 5, fontSize: 11 });
+            currentY += 0.6;
 
-            // Description / Main Body
-            slide.addText(mainDesc, { x: 0.5, y: isLandscape ? 4 : 4.5, w: slideWidth - 1, h: 1, color: "666666", fontSize: 12, fontFace: "Helvetica", italic: true, valign: "top" });
+            slide.addText(mainDesc, { x: 0.5, y: currentY, w: slideWidth - 1, h: 0.5, color: "666666", fontSize: 9, italic: true, valign: "top" });
+            currentY += 0.8;
 
             // ==========================================
-            // DYNAMIC SLIDES FOR EVERY MODULE
+            // UNIFIED TABLE WITH AUTO-PAGING
             // ==========================================
+            let tableRows = [];
+
+            // Header Row (Yellow)
+            let headerRow = [
+                { text: "DESCRIPCIÓN", options: { bold: true, fill: pptAccent, color: "000000", margin: 5, fontSize: 10 } },
+                { text: "POTENCIA", options: { bold: true, fill: pptAccent, color: "000000", margin: 5, fontSize: 10, align: 'center' } }
+            ];
+
+            if (!meta.hidePrices) {
+                headerRow.push({ text: "IMPORTE (USD)", options: { bold: true, fill: pptAccent, color: "000000", margin: 5, fontSize: 10, align: 'right' } });
+            }
+            tableRows.push(headerRow);
+
             modules.forEach(module => {
                 const activeItems = module.items.filter(key => data[key]?.enabled !== false && (meta.hidePrices || (data[key]?.cost || 0) > 0));
 
                 if (activeItems.length > 0) {
-                    let modSlide = pres.addSlide();
+                    let colspan = meta.hidePrices ? 2 : 3;
 
-                    // Header Bar for Module Slide
-                    modSlide.addShape(pres.ShapeType.rect, { x: 0, y: 0, w: '100%', h: 0.8, fill: { color: "000000" } });
-                    modSlide.addText(sanitizePDFText(module.name).toUpperCase(), { x: 0.25, y: 0, w: slideWidth - 0.5, h: 0.8, color: pptAccent, bold: true, fontSize: 16, valign: 'middle' });
-                    modSlide.addShape(pres.ShapeType.rect, { x: 0, y: 0.8, w: '100%', h: 0.05, fill: { color: pptAccent } });
-
-                    // Generate PPTx Table Rows
-                    let tableRows = [];
-
-                    // Header Row
-                    let headerRow = [
-                        { text: "DESCRIPCIÓN", options: { bold: true, fill: pptAccent, color: "000000", margin: 5, fontSize: 10 } },
-                        { text: "POT.", options: { bold: true, fill: pptAccent, color: "000000", margin: 5, fontSize: 10, align: 'center' } }
-                    ];
-
-                    if (!meta.hidePrices) {
-                        headerRow.push({ text: "IMPORTE (USD)", options: { bold: true, fill: pptAccent, color: "000000", margin: 5, fontSize: 10, align: 'right' } });
-                    }
-                    tableRows.push(headerRow);
+                    // Module Header Bar (Dark Grey)
+                    tableRows.push([
+                        { text: sanitizePDFText(module.name).toUpperCase(), options: { colspan: colspan, bold: true, fill: "2A2A2A", color: pptAccent, margin: 8, fontSize: 11, valign: 'middle' } }
+                    ]);
 
                     // Body Rows
                     activeItems.forEach(key => {
@@ -1233,23 +1237,22 @@ export default function ChocoVer32Master({ theme, storageKey = 'choco34' }) {
                         const safeKeyStr = sanitizePDFText(`${key}${subtext}`);
                         let cleanDesc = sanitizePDFText(data[key]?.desc || '');
 
-                        // Combiner Header + Desc into one cell with rich formatting for PPT simplicity 
                         const descriptionCellContent = cleanDesc
                             ? [
-                                { text: safeKeyStr, options: { bold: true, fontSize: 10, color: "000000", breakLine: true } },
-                                { text: '\n' + cleanDesc, options: { bold: false, fontSize: 9, color: "333333" } }
+                                { text: safeKeyStr, options: { bold: true, fontSize: 9, color: "000000", breakLine: true } },
+                                { text: '\n' + cleanDesc, options: { bold: false, fontSize: 8, color: "555555" } }
                             ]
                             : [
-                                { text: safeKeyStr, options: { bold: true, fontSize: 10, color: "000000" } }
+                                { text: safeKeyStr, options: { bold: true, fontSize: 9, color: "000000" } }
                             ];
 
                         let row = [
-                            { text: descriptionCellContent, options: { margin: 5, valign: 'top' } },
-                            { text: `${(data[key]?.kw || 0).toFixed(1)} KW`, options: { color: "444444", align: 'center', fontSize: 10, valign: 'top' } }
+                            { text: descriptionCellContent, options: { margin: 8, valign: 'top', fill: "FFFFFF" } },
+                            { text: `${(data[key]?.kw || 0).toFixed(1)} KW`, options: { color: "333333", align: 'center', fontSize: 9, valign: 'middle', fill: "FFFFFF" } }
                         ];
 
                         if (!meta.hidePrices) {
-                            row.push({ text: `$${calculateItem(key).toLocaleString("en-US", { minimumFractionDigits: 2 })}`, options: { bold: true, color: "111111", align: 'right', fontSize: 10, valign: 'top' } });
+                            row.push({ text: `$${calculateItem(key).toLocaleString("en-US", { minimumFractionDigits: 2 })}`, options: { bold: true, color: "111111", align: 'right', fontSize: 9, valign: 'middle', fill: "FFFFFF" } });
                         }
                         tableRows.push(row);
                     });
@@ -1258,58 +1261,55 @@ export default function ChocoVer32Master({ theme, storageKey = 'choco34' }) {
                     if (!meta.hidePrices) {
                         const modTotal = moduleTotalUSD({ ...module, items: activeItems });
                         tableRows.push([
-                            { text: `SUBTOTAL MÓDULO`, options: { colspan: 2, bold: true, align: 'right', fill: "F5F5F5", color: "333333", margin: 5 } },
-                            { text: `$${modTotal.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, options: { bold: true, align: 'right', fill: "F5F5F5", color: pptAccent, margin: 5 } }
+                            { text: `SUBTOTAL MÓDULO`, options: { colspan: 2, bold: true, align: 'right', fill: "F9F9F9", color: "333333", margin: 8, fontSize: 9 } },
+                            { text: `$${modTotal.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, options: { bold: true, align: 'right', fill: "F9F9F9", color: pptAccent, margin: 8, fontSize: 9 } }
                         ]);
                     }
-
-                    // Calculate column widths explicitly so layout doesnt spill or leave empty whitespaces
-                    let colW;
-                    if (isLandscape) {
-                        // total width = 9.5
-                        colW = meta.hidePrices ? [8.0, 1.5] : [6.3, 1.2, 2.0];
-                    } else {
-                        // total width = 7.77 (8.27 - 0.5)
-                        colW = meta.hidePrices ? [6.27, 1.5] : [4.77, 1.2, 1.8];
-                    }
-
-                    // Draw Auto-Paging Table
-                    modSlide.addTable(tableRows, {
-                        x: 0.25, y: 1.0, w: slideWidth - 0.5,
-                        border: { type: 'solid', color: 'EEEEEE', pt: 1 },
-                        autoPage: true, autoPageRepeatHeader: true,
-                        autoPageSlideStartY: 1.0,
-                        colW: colW,
-                        valign: 'middle'
-                    });
                 }
             });
 
-            // ==========================================
-            // FINAL TOTALS SLIDE (Pushed to the end)
-            // ==========================================
-            let finalPage = pres.addSlide();
-            finalPage.addShape(pres.ShapeType.rect, { x: 0, y: 0, w: '100%', h: isLandscape ? 1.0 : 1.2, fill: { color: "000000" } });
-            finalPage.addShape(pres.ShapeType.rect, { x: 0, y: isLandscape ? 1.0 : 1.2, w: '100%', h: 0.1, fill: { color: pptAccent } });
-            finalPage.addText("RESUMEN GENERAL", { x: 0.5, y: 0.25, w: slideWidth - 1, color: "FFFFFF", bold: true, fontSize: 24, align: "center", fontFace: 'Helvetica' });
-
-            const boxWidth = isLandscape ? 5 : 6.5;
-            const boxX = (slideWidth - boxWidth) / 2;
-            const boxY = isLandscape ? 2 : 4;
-
-            finalPage.addShape(pres.ShapeType.rect, { x: boxX, y: boxY, w: boxWidth, h: meta.hidePrices ? 2 : 3.5, fill: { color: "22242A" }, align: 'center', rectRadius: 0.2 });
+            // General Totals injected inside the table at the very end to keep format perfect
+            tableRows.push([
+                { text: "RESUMEN GENERAL", options: { colspan: meta.hidePrices ? 2 : 3, bold: true, fill: "000000", color: "FFFFFF", margin: 8, fontSize: 12, align: 'center' } }
+            ]);
 
             if (meta.hidePrices) {
-                finalPage.addText("POTENCIA TOTAL CALCULADA:", { x: boxX, y: boxY + 0.5, w: boxWidth, color: pptAccent, bold: true, fontSize: 16, align: 'center' });
-                finalPage.addText(`${totalKW().toFixed(2)} KW`, { x: boxX, y: boxY + 1.2, w: boxWidth, color: "FFFFFF", bold: true, fontSize: 28, align: 'center' });
+                tableRows.push([
+                    { text: "POTENCIA TOTAL CALCULADA:", options: { bold: true, align: 'right', fill: "F0F0F0", color: "333333", margin: 8, fontSize: 10 } },
+                    { text: `${totalKW().toFixed(2)} KW`, options: { bold: true, align: 'center', fill: "F0F0F0", color: pptAccent, margin: 8, fontSize: 12 } }
+                ]);
             } else {
-                finalPage.addText("POTENCIA TOTAL:", { x: boxX, y: boxY + 0.4, w: boxWidth, color: "CCCCCC", fontSize: 12, align: 'center' });
-                finalPage.addText(`${totalKW().toFixed(2)} KW`, { x: boxX, y: boxY + 0.8, w: boxWidth, color: "FFFFFF", bold: true, fontSize: 16, align: 'center' });
-
-                finalPage.addText("INVERSIÓN TOTAL ESTIMADA (USD):", { x: boxX, y: boxY + 1.5, w: boxWidth, color: pptAccent, bold: true, fontSize: 16, align: 'center' });
-                finalPage.addText(`$${totalUSD().toLocaleString("en-US", { minimumFractionDigits: 2 })}`, { x: boxX, y: boxY + 2.0, w: boxWidth, color: "FFFFFF", bold: true, fontSize: 32, align: 'center' });
-                finalPage.addText("PRECIOS MAS 16% I.V.A.", { x: boxX, y: boxY + 2.8, w: boxWidth, color: "888888", fontSize: 10, align: 'center' });
+                tableRows.push([
+                    { text: "POTENCIA TOTAL CALCULADA:", options: { colspan: 2, bold: true, align: 'right', fill: "F0F0F0", color: "333333", margin: 8, fontSize: 10 } },
+                    { text: `${totalKW().toFixed(2)} KW`, options: { bold: true, align: 'right', fill: "F0F0F0", color: "111111", margin: 8, fontSize: 10 } }
+                ]);
+                tableRows.push([
+                    { text: "INVERSIÓN TOTAL ESTIMADA (PRECIOS MÁS 16% I.V.A.)", options: { colspan: 2, bold: true, align: 'right', fill: "F0F0F0", color: "333333", margin: 8, fontSize: 10 } },
+                    { text: `$${totalUSD().toLocaleString("en-US", { minimumFractionDigits: 2 })}`, options: { bold: true, align: 'right', fill: "F0F0F0", color: pptAccent, margin: 8, fontSize: 14 } }
+                ]);
             }
+
+            let colW;
+            if (isLandscape) {
+                colW = meta.hidePrices ? [7.5, 1.5] : [6.0, 1.5, 1.5];
+            } else {
+                colW = meta.hidePrices ? [5.77, 1.5] : [4.5, 1.0, 1.77];
+            }
+
+            let sumColW = colW.reduce((a, b) => a + b, 0);
+            let tableX = (slideWidth - sumColW) / 2;
+
+            slide.addTable(tableRows, {
+                x: tableX,
+                y: currentY,
+                w: sumColW,
+                border: { type: 'solid', color: 'E0E0E0', pt: 1 },
+                autoPage: true,
+                autoPageRepeatHeader: true,
+                autoPageSlideStartY: isLandscape ? 1.5 : 1.7,
+                colW: colW,
+                valign: 'middle'
+            });
 
             // ==========================================
             // SAVE
