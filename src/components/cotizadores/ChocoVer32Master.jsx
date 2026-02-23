@@ -555,19 +555,19 @@ export default function ChocoVer32Master({ theme }) {
                         if (targetLogo && targetLogo.startsWith('data:image')) {
                             try {
                                 const imgProps = doc.getImageProperties(targetLogo);
-                                const ratio = Math.min(130 / imgProps.width, 28 / imgProps.height);
+                                const ratio = Math.min(156 / imgProps.width, 34 / imgProps.height);
                                 doc.addImage(targetLogo, imgProps.fileType || 'PNG', 15, 6, imgProps.width * ratio, imgProps.height * ratio);
                             } catch (e) {
                                 doc.setTextColor(accentRgb[0], accentRgb[1], accentRgb[2]);
                                 doc.setFontSize(14);
                                 doc.setFont("helvetica", "bold");
-                                doc.text((theme?.name || "solifood").toLowerCase(), 15, 24);
+                                doc.text((theme?.name || "solifood").toLowerCase(), 15, 26);
                             }
                         } else {
                             doc.setTextColor(accentRgb[0], accentRgb[1], accentRgb[2]);
                             doc.setFontSize(14);
                             doc.setFont("helvetica", "bold");
-                            doc.text((theme?.name || "solifood").toLowerCase(), 15, 24);
+                            doc.text((theme?.name || "solifood").toLowerCase(), 15, 26);
                         }
 
                         doc.setFontSize(9);
@@ -575,15 +575,15 @@ export default function ChocoVer32Master({ theme }) {
                         doc.setFont("helvetica", "italic");
                         const modName = pageModules[data.pageNumber] || "";
                         if (modName) {
-                            doc.text(modName, 195, 24, { align: 'right' });
+                            doc.text(modName, 195, 26, { align: 'right' });
                         }
 
                         doc.setDrawColor(220, 220, 220);
                         doc.setLineWidth(0.5);
-                        doc.line(15, 29, 195, 29);
+                        doc.line(15, 32, 195, 32);
                     }
                 },
-                margin: { top: 35 }
+                margin: { top: 38 }
             });
 
             // Totales Finales PDF (Cuadro redondeado inferior derecho)
@@ -780,19 +780,19 @@ export default function ChocoVer32Master({ theme }) {
                         if (targetLogo && targetLogo.startsWith('data:image')) {
                             try {
                                 const imgProps = doc.getImageProperties(targetLogo);
-                                const ratio = Math.min(130 / imgProps.width, 28 / imgProps.height);
+                                const ratio = Math.min(156 / imgProps.width, 34 / imgProps.height);
                                 doc.addImage(targetLogo, imgProps.fileType || 'PNG', 15, 6, imgProps.width * ratio, imgProps.height * ratio);
                             } catch (e) {
                                 doc.setTextColor(accentRgb[0], accentRgb[1], accentRgb[2]);
                                 doc.setFontSize(14);
                                 doc.setFont("helvetica", "bold");
-                                doc.text((theme?.name || "solifood").toLowerCase(), 15, 24);
+                                doc.text((theme?.name || "solifood").toLowerCase(), 15, 26);
                             }
                         } else {
                             doc.setTextColor(accentRgb[0], accentRgb[1], accentRgb[2]);
                             doc.setFontSize(14);
                             doc.setFont("helvetica", "bold");
-                            doc.text((theme?.name || "solifood").toLowerCase(), 15, 24);
+                            doc.text((theme?.name || "solifood").toLowerCase(), 15, 26);
                         }
 
                         doc.setFontSize(9);
@@ -800,15 +800,15 @@ export default function ChocoVer32Master({ theme }) {
                         doc.setFont("helvetica", "italic");
                         const modName = pageModules[data.pageNumber] || "";
                         if (modName) {
-                            doc.text(modName, 195, 24, { align: 'right' });
+                            doc.text(modName, 195, 26, { align: 'right' });
                         }
 
                         doc.setDrawColor(220, 220, 220);
                         doc.setLineWidth(0.5);
-                        doc.line(15, 29, 195, 29);
+                        doc.line(15, 32, 195, 32);
                     }
                 },
-                margin: { top: 35 }
+                margin: { top: 38 }
             });
 
             const finalY = (doc.lastAutoTable ? doc.lastAutoTable.finalY : 150) + 5;
@@ -997,19 +997,19 @@ export default function ChocoVer32Master({ theme }) {
                         if (targetLogo && targetLogo.startsWith('data:image')) {
                             try {
                                 const imgProps = doc.getImageProperties(targetLogo);
-                                const ratio = Math.min(130 / imgProps.width, 28 / imgProps.height);
+                                const ratio = Math.min(156 / imgProps.width, 34 / imgProps.height);
                                 doc.addImage(targetLogo, imgProps.fileType || 'PNG', 15, 6, imgProps.width * ratio, imgProps.height * ratio);
                             } catch (e) {
                                 doc.setTextColor(accentRgb[0], accentRgb[1], accentRgb[2]);
                                 doc.setFontSize(14);
                                 doc.setFont("helvetica", "bold");
-                                doc.text((theme?.name || "solifood").toLowerCase(), 15, 24);
+                                doc.text((theme?.name || "solifood").toLowerCase(), 15, 26);
                             }
                         } else {
                             doc.setTextColor(accentRgb[0], accentRgb[1], accentRgb[2]);
                             doc.setFontSize(14);
                             doc.setFont("helvetica", "bold");
-                            doc.text((theme?.name || "solifood").toLowerCase(), 15, 24);
+                            doc.text((theme?.name || "solifood").toLowerCase(), 15, 26);
                         }
 
                         doc.setFontSize(9);
@@ -1017,15 +1017,15 @@ export default function ChocoVer32Master({ theme }) {
                         doc.setFont("helvetica", "italic");
                         const modName = pageModules[data.pageNumber] || "";
                         if (modName) {
-                            doc.text(modName, 195, 24, { align: 'right' });
+                            doc.text(modName, 195, 26, { align: 'right' });
                         }
 
                         doc.setDrawColor(220, 220, 220);
                         doc.setLineWidth(0.5);
-                        doc.line(15, 29, 195, 29);
+                        doc.line(15, 32, 195, 32);
                     }
                 },
-                margin: { top: 35 }
+                margin: { top: 38 }
             });
 
             const totalPagesList = doc.internal.getNumberOfPages();
