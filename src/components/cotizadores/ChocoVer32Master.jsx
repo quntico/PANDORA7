@@ -513,6 +513,9 @@ export default function ChocoVer32Master({ theme }) {
                 }
             });
 
+            let currentPrintedModule = "";
+            let pageModules = {};
+
             autoTable(doc, {
                 head: [["DESCRIPCIÓN", "POTENCIA", "IMPORTE"]],
                 body: rows,
@@ -536,11 +539,50 @@ export default function ChocoVer32Master({ theme }) {
                 },
                 willDrawCell: function (data) {
                     if (data.row.raw[0] && data.row.raw[0].isModuleTitle) {
+                        currentPrintedModule = data.row.raw[0].content;
                         if (data.cursor.y > 250 && typeof data.addPage === 'function') {
                             data.addPage();
                         }
                     }
-                }
+                    if (!pageModules[data.pageNumber]) {
+                        pageModules[data.pageNumber] = currentPrintedModule;
+                    }
+                },
+                didDrawPage: function (data) {
+                    if (data.pageNumber > 1) {
+                        const doc = data.doc;
+                        if (theme?.logoUrl && theme.logoUrl.startsWith('data:image')) {
+                            try {
+                                const imgProps = doc.getImageProperties(theme.logoUrl);
+                                const ratio = Math.min(30 / imgProps.width, 10 / imgProps.height);
+                                doc.addImage(theme.logoUrl, imgProps.fileType || 'PNG', 15, 8, imgProps.width * ratio, imgProps.height * ratio);
+                            } catch (e) {
+                                doc.setTextColor(accentRgb[0], accentRgb[1], accentRgb[2]);
+                                doc.setFontSize(14);
+                                doc.setFont("helvetica", "bold");
+                                doc.text((theme?.name || "solifood").toLowerCase(), 15, 14);
+                            }
+                        } else {
+                            doc.setTextColor(accentRgb[0], accentRgb[1], accentRgb[2]);
+                            doc.setFontSize(14);
+                            doc.setFont("helvetica", "bold");
+                            doc.text((theme?.name || "solifood").toLowerCase(), 15, 14);
+                        }
+
+                        doc.setFontSize(9);
+                        doc.setTextColor(100, 100, 100);
+                        doc.setFont("helvetica", "italic");
+                        const modName = pageModules[data.pageNumber] || "";
+                        if (modName) {
+                            doc.text(modName, 195, 14, { align: 'right' });
+                        }
+
+                        doc.setDrawColor(220, 220, 220);
+                        doc.setLineWidth(0.5);
+                        doc.line(15, 18, 195, 18);
+                    }
+                },
+                margin: { top: 25 }
             });
 
             // Totales Finales PDF (Cuadro redondeado inferior derecho)
@@ -690,6 +732,9 @@ export default function ChocoVer32Master({ theme }) {
                 }
             });
 
+            let currentPrintedModule = "";
+            let pageModules = {};
+
             autoTable(doc, {
                 head: [["EQUIPO / CONCEPTO", "QTY", "COSTO BASE", "% UTILIDAD", "VENTA FINAL"]],
                 body: rows,
@@ -707,11 +752,50 @@ export default function ChocoVer32Master({ theme }) {
                 },
                 willDrawCell: function (data) {
                     if (data.row.raw[0] && data.row.raw[0].isModuleTitle) {
+                        currentPrintedModule = data.row.raw[0].content;
                         if (data.cursor.y > 250 && typeof data.addPage === 'function') {
                             data.addPage();
                         }
                     }
-                }
+                    if (!pageModules[data.pageNumber]) {
+                        pageModules[data.pageNumber] = currentPrintedModule;
+                    }
+                },
+                didDrawPage: function (data) {
+                    if (data.pageNumber > 1) {
+                        const doc = data.doc;
+                        if (theme?.logoUrl && theme.logoUrl.startsWith('data:image')) {
+                            try {
+                                const imgProps = doc.getImageProperties(theme.logoUrl);
+                                const ratio = Math.min(30 / imgProps.width, 10 / imgProps.height);
+                                doc.addImage(theme.logoUrl, imgProps.fileType || 'PNG', 15, 8, imgProps.width * ratio, imgProps.height * ratio);
+                            } catch (e) {
+                                doc.setTextColor(accentRgb[0], accentRgb[1], accentRgb[2]);
+                                doc.setFontSize(14);
+                                doc.setFont("helvetica", "bold");
+                                doc.text((theme?.name || "solifood").toLowerCase(), 15, 14);
+                            }
+                        } else {
+                            doc.setTextColor(accentRgb[0], accentRgb[1], accentRgb[2]);
+                            doc.setFontSize(14);
+                            doc.setFont("helvetica", "bold");
+                            doc.text((theme?.name || "solifood").toLowerCase(), 15, 14);
+                        }
+
+                        doc.setFontSize(9);
+                        doc.setTextColor(100, 100, 100);
+                        doc.setFont("helvetica", "italic");
+                        const modName = pageModules[data.pageNumber] || "";
+                        if (modName) {
+                            doc.text(modName, 195, 14, { align: 'right' });
+                        }
+
+                        doc.setDrawColor(220, 220, 220);
+                        doc.setLineWidth(0.5);
+                        doc.line(15, 18, 195, 18);
+                    }
+                },
+                margin: { top: 25 }
             });
 
             const finalY = (doc.lastAutoTable ? doc.lastAutoTable.finalY : 150) + 5;
@@ -855,6 +939,9 @@ export default function ChocoVer32Master({ theme }) {
                 }
             });
 
+            let currentPrintedModule = "";
+            let pageModules = {};
+
             autoTable(doc, {
                 head: [["#", "EQUIPO / CONCEPTO", "CANTIDAD"]],
                 body: rows,
@@ -870,11 +957,50 @@ export default function ChocoVer32Master({ theme }) {
                 },
                 willDrawCell: function (data) {
                     if (data.row.raw[0] && data.row.raw[0].isModuleTitle) {
+                        currentPrintedModule = data.row.raw[0].content;
                         if (data.cursor.y > 250 && typeof data.addPage === 'function') {
                             data.addPage();
                         }
                     }
-                }
+                    if (!pageModules[data.pageNumber]) {
+                        pageModules[data.pageNumber] = currentPrintedModule;
+                    }
+                },
+                didDrawPage: function (data) {
+                    if (data.pageNumber > 1) {
+                        const doc = data.doc;
+                        if (theme?.logoUrl && theme.logoUrl.startsWith('data:image')) {
+                            try {
+                                const imgProps = doc.getImageProperties(theme.logoUrl);
+                                const ratio = Math.min(30 / imgProps.width, 10 / imgProps.height);
+                                doc.addImage(theme.logoUrl, imgProps.fileType || 'PNG', 15, 8, imgProps.width * ratio, imgProps.height * ratio);
+                            } catch (e) {
+                                doc.setTextColor(accentRgb[0], accentRgb[1], accentRgb[2]);
+                                doc.setFontSize(14);
+                                doc.setFont("helvetica", "bold");
+                                doc.text((theme?.name || "solifood").toLowerCase(), 15, 14);
+                            }
+                        } else {
+                            doc.setTextColor(accentRgb[0], accentRgb[1], accentRgb[2]);
+                            doc.setFontSize(14);
+                            doc.setFont("helvetica", "bold");
+                            doc.text((theme?.name || "solifood").toLowerCase(), 15, 14);
+                        }
+
+                        doc.setFontSize(9);
+                        doc.setTextColor(100, 100, 100);
+                        doc.setFont("helvetica", "italic");
+                        const modName = pageModules[data.pageNumber] || "";
+                        if (modName) {
+                            doc.text(modName, 195, 14, { align: 'right' });
+                        }
+
+                        doc.setDrawColor(220, 220, 220);
+                        doc.setLineWidth(0.5);
+                        doc.line(15, 18, 195, 18);
+                    }
+                },
+                margin: { top: 25 }
             });
 
             let finalFileName = meta.pdfName && meta.pdfName.trim() !== '' ? meta.pdfName.trim() + "_LISTADO" : `PROPUESTA_${(meta.client || 'PANDORA').replace(/\s+/g, '_')}_CHOCO_LISTADO`;
