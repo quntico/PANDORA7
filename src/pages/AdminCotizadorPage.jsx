@@ -171,26 +171,24 @@ function AdminCotizadorPage() {
 
     const handleSaveSettings = () => {
         setCompanies(prev => prev.map(c => {
-            if (c.id === editingCompany.id) {
-                const finalAccent = c.id === 'solifood' ? '#FFCC00' : editingForm.accentColor;
-                return {
-                    ...c,
-                    theme: {
-                        primary: editingForm.primaryColor,
-                        secondary: editingForm.secondaryColor,
-                        accent: finalAccent,
-                        support: editingForm.supportColor,
-                        logoUrl: editingForm.logoUrl,
-                        logoLightUrl: editingForm.logoLightUrl
-                    },
-                    format: editingForm.format
-                };
-            }
-            return c;
+            // "TODOS LOS AJUSTES QUIERO QUE SE REFLEJEN EN TODAS LAS DEMÁS EMPRESAS"
+            const finalAccent = c.id === 'solifood' ? '#FFCC00' : editingForm.accentColor;
+            return {
+                ...c,
+                theme: {
+                    primary: editingForm.primaryColor,
+                    secondary: editingForm.secondaryColor,
+                    accent: finalAccent,
+                    support: editingForm.supportColor,
+                    logoUrl: editingForm.logoUrl,
+                    logoLightUrl: editingForm.logoLightUrl
+                },
+                format: editingForm.format
+            };
         }));
 
-        // Also update the activeCompanyFicha if it's the one we just edited
-        if (activeCompanyFicha && activeCompanyFicha.id === editingCompany.id) {
+        // Update activeCompanyFicha if open, since we applied to all companies
+        if (activeCompanyFicha) {
             setActiveCompanyFicha(prev => {
                 const finalAccent = prev.id === 'solifood' ? '#FFCC00' : editingForm.accentColor;
                 return {
