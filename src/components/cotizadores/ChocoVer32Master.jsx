@@ -125,6 +125,10 @@ export default function ChocoVer32Master({ theme, storageKey = 'choco34' }) {
     const [tempName, setTempName] = useState("");
     const [collapsedModules, setCollapsedModules] = useState({});
 
+    // Opciones para Modal PPTX
+    const [isPptxModalOpen, setIsPptxModalOpen] = useState(false);
+    const [pptxSettings, setPptxSettings] = useState({ orientation: 'landscape' });
+
     // Nuevos estados para editor persistentes
     const [modules, setModules] = useState(() => {
         const saved34 = localStorage.getItem(`${storageKey}_modules`);
@@ -1135,63 +1139,64 @@ export default function ChocoVer32Master({ theme, storageKey = 'choco34' }) {
             pres.theme = { headFontFace: "Helvetica", bodyFontFace: "Helvetica" };
             const pptAccent = accentColor.replace('#', ''); // Remove hash for pptxgen
 
+            const isLandscape = pptxSettings.orientation === 'landscape';
+            if (!isLandscape) {
+                // Portrait A4
+                pres.defineLayout({ name: 'A4_Portrait', width: 8.27, height: 11.69 });
+                pres.layout = 'A4_Portrait';
+            } else {
+                pres.layout = 'LAYOUT_16x9'; // width: 10, height: 5.625
+            }
+
+            const slideWidth = isLandscape ? 10 : 8.27;
+
             // ==========================================
             // HEADER/COVER SLIDE
             // ==========================================
             let slide = pres.addSlide();
 
             // Top branding bar
-            slide.addShape(pres.ShapeType.rect, { x: 0, y: 0, w: '100%', h: 1.0, fill: { color: "000000" } });
+            slide.addShape(pres.ShapeType.rect, { x: 0, y: 0, w: '100%', h: isLandscape ? 1.0 : 1.2, fill: { color: "000000" } });
 
             // Accent Line under header
-            slide.addShape(pres.ShapeType.rect, { x: 0, y: 1.0, w: '100%', h: 0.1, fill: { color: pptAccent } });
+            slide.addShape(pres.ShapeType.rect, { x: 0, y: isLandscape ? 1.0 : 1.2, w: '100%', h: 0.1, fill: { color: pptAccent } });
 
-            // Branding logic (Text instead of logo if url fails or requires auth)
-            slide.addText((theme?.name || "solifood").toUpperCase(), {
-                x: 0.5, y: 0.25, w: 4, h: 0.5,
-                color: pptAccent, bold: true, fontSize: 24, fontFace: 'Helvetica'
-            });
+            // Branding logic (Image Logo or Text)
+            if (theme?.logoUrl && theme.logoUrl.startsWith('data:image')) {
+                slide.addImage({ data: theme.logoUrl, x: 0.5, y: isLandscape ? 0.2 : 0.3, w: 2.5, h: isLandscape ? 0.6 : 0.8, sizing: { type: 'contain', w: 2.5, h: isLandscape ? 0.6 : 0.8 } });
+            } else {
+                slide.addText((theme?.name || "solifood").toUpperCase(), {
+                    x: 0.5, y: 0.25, w: 4, h: 0.5,
+                    color: pptAccent, bold: true, fontSize: 24, fontFace: 'Helvetica'
+                });
+            }
 
             // "Resumen Proyecto" Right align
             slide.addText(mainTitle.toUpperCase(), {
-                x: 5, y: 0.25, w: 4.5, h: 0.5,
+                x: slideWidth - 5, y: 0.25, w: 4.5, h: isLandscape ? 0.5 : 0.7,
                 color: "FFFFFF", bold: true, fontSize: 18, align: "right"
             });
 
             // Metadata info
-            slide.addText("PROPUESTA DE EQUIPAMIENTO", { x: 0.5, y: 1.5, w: 9, fontSize: 32, bold: true, color: "333333" });
+            slide.addText("PROPUESTA DE EQUIPAMIENTO", { x: 0.5, y: isLandscape ? 1.5 : 2.0, w: slideWidth - 1, fontSize: 32, bold: true, color: "333333" });
 
             slide.addText([
                 { text: "CLIENTE: ", options: { bold: true, color: "666666" } },
                 { text: meta.client ? meta.client.toUpperCase() : "NO DEFINIDO", options: { color: "000000" } }
-            ], { x: 0.5, y: 2.3, w: 5, fontSize: 14 });
+            ], { x: 0.5, y: isLandscape ? 2.3 : 2.8, w: 5, fontSize: 14 });
 
             slide.addText([
                 { text: "PROYECTO: ", options: { bold: true, color: "666666" } },
                 { text: meta.project ? meta.project.toUpperCase() : "NO DEFINIDO", options: { color: "000000" } }
-            ], { x: 0.5, y: 2.7, w: 5, fontSize: 14 });
+            ], { x: 0.5, y: isLandscape ? 2.7 : 3.2, w: 5, fontSize: 14 });
 
             slide.addText([
                 { text: "FECHA: ", options: { bold: true, color: "666666" } },
                 { text: new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }), options: { color: "000000" } }
-            ], { x: 0.5, y: 3.1, w: 5, fontSize: 14 });
-
-            // Totals Box on Cover
-            slide.addShape(pres.ShapeType.rect, { x: 6, y: 2, w: 3.5, h: meta.hidePrices ? 1.5 : 2.5, fill: { color: "22242A" }, align: 'center' });
-
-            if (meta.hidePrices) {
-                slide.addText("POTENCIA TOTAL:", { x: 6, y: 2.3, w: 3.5, color: pptAccent, bold: true, fontSize: 16, align: 'center' });
-                slide.addText(`${totalKW().toFixed(2)} KW`, { x: 6, y: 2.7, w: 3.5, color: "FFFFFF", bold: true, fontSize: 22, align: 'center' });
-            } else {
-                slide.addText("POTENCIA:", { x: 6, y: 2.2, w: 3.5, color: "CCCCCC", fontSize: 12, align: 'center' });
-                slide.addText(`${totalKW().toFixed(2)} KW`, { x: 6, y: 2.5, w: 3.5, color: "FFFFFF", bold: true, fontSize: 14, align: 'center' });
-                slide.addText("TOTAL (USD):", { x: 6, y: 3.0, w: 3.5, color: pptAccent, bold: true, fontSize: 16, align: 'center' });
-                slide.addText(`$${totalUSD().toLocaleString("en-US", { minimumFractionDigits: 2 })}`, { x: 6, y: 3.4, w: 3.5, color: "FFFFFF", bold: true, fontSize: 22, align: 'center' });
-                slide.addText("PRECIOS MAS 16% I.V.A.", { x: 6, y: 3.9, w: 3.5, color: "888888", fontSize: 10, align: 'center' });
-            }
+            ], { x: 0.5, y: isLandscape ? 3.1 : 3.6, w: 5, fontSize: 14 });
 
             // Description / Main Body
-            slide.addText(mainDesc, { x: 0.5, y: 4, w: 9, h: 1, color: "666666", fontSize: 12, fontFace: "Helvetica", italic: true, valign: "top" });
+            slide.addText(mainDesc, { x: 0.5, y: isLandscape ? 4 : 4.5, w: slideWidth - 1, h: 1, color: "666666", fontSize: 12, fontFace: "Helvetica", italic: true, valign: "top" });
 
             // ==========================================
             // DYNAMIC SLIDES FOR EVERY MODULE
@@ -1204,7 +1209,7 @@ export default function ChocoVer32Master({ theme, storageKey = 'choco34' }) {
 
                     // Header Bar for Module Slide
                     modSlide.addShape(pres.ShapeType.rect, { x: 0, y: 0, w: '100%', h: 0.6, fill: { color: "000000" } });
-                    modSlide.addText(sanitizePDFText(module.name).toUpperCase(), { x: 0.5, y: 0.05, w: 9, color: pptAccent, bold: true, fontSize: 18 });
+                    modSlide.addText(sanitizePDFText(module.name).toUpperCase(), { x: 0.5, y: 0.05, w: slideWidth - 1, color: pptAccent, bold: true, fontSize: 18 });
                     modSlide.addShape(pres.ShapeType.rect, { x: 0, y: 0.6, w: '100%', h: 0.05, fill: { color: pptAccent } });
 
                     // Generate PPTx Table Rows
@@ -1212,12 +1217,12 @@ export default function ChocoVer32Master({ theme, storageKey = 'choco34' }) {
 
                     // Header Row
                     let headerRow = [
-                        { text: "DESCRIPCIÓN", options: { bold: true, fill: pptAccent, color: "000000", margin: 5, fontSize: 12 } },
-                        { text: "POT.", options: { bold: true, fill: pptAccent, color: "000000", margin: 5, fontSize: 12, align: 'center' } }
+                        { text: "DESCRIPCIÓN", options: { bold: true, fill: pptAccent, color: "000000", margin: 5, fontSize: 10 } },
+                        { text: "POT.", options: { bold: true, fill: pptAccent, color: "000000", margin: 5, fontSize: 10, align: 'center' } }
                     ];
 
                     if (!meta.hidePrices) {
-                        headerRow.push({ text: "IMPORTE (USD)", options: { bold: true, fill: pptAccent, color: "000000", margin: 5, fontSize: 12, align: 'right' } });
+                        headerRow.push({ text: "IMPORTE (USD)", options: { bold: true, fill: pptAccent, color: "000000", margin: 5, fontSize: 10, align: 'right' } });
                     }
                     tableRows.push(headerRow);
 
@@ -1232,12 +1237,12 @@ export default function ChocoVer32Master({ theme, storageKey = 'choco34' }) {
                         const descriptionCellContent = cleanDesc ? `${safeKeyStr}\n\n${cleanDesc}` : safeKeyStr;
 
                         let row = [
-                            { text: descriptionCellContent, options: { bold: false, color: "333333", margin: 5, fontSize: 11, valign: 'top' } },
-                            { text: `${(data[key]?.kw || 0).toFixed(1)} KW`, options: { color: "444444", align: 'center', fontSize: 11, valign: 'top' } }
+                            { text: descriptionCellContent, options: { bold: false, color: "333333", margin: 5, fontSize: 9, valign: 'top' } },
+                            { text: `${(data[key]?.kw || 0).toFixed(1)} KW`, options: { color: "444444", align: 'center', fontSize: 9, valign: 'top' } }
                         ];
 
                         if (!meta.hidePrices) {
-                            row.push({ text: `$${calculateItem(key).toLocaleString("en-US", { minimumFractionDigits: 2 })}`, options: { bold: true, color: "111111", align: 'right', fontSize: 11, valign: 'top' } });
+                            row.push({ text: `$${calculateItem(key).toLocaleString("en-US", { minimumFractionDigits: 2 })}`, options: { bold: true, color: "111111", align: 'right', fontSize: 9, valign: 'top' } });
                         }
                         tableRows.push(row);
                     });
@@ -1252,11 +1257,12 @@ export default function ChocoVer32Master({ theme, storageKey = 'choco34' }) {
                     }
 
                     // Calculate column widths
-                    let colW = meta.hidePrices ? [8, 1.5] : [6, 1.5, 2];
+                    let colWText = isLandscape ? (meta.hidePrices ? 8 : 6.5) : (meta.hidePrices ? 6 : 4.5);
+                    let colW = meta.hidePrices ? [colWText, 1.2] : [colWText, 1.0, 1.8];
 
                     // Draw Auto-Paging Table
                     modSlide.addTable(tableRows, {
-                        x: 0.25, y: 0.8, w: 9.5,
+                        x: 0.25, y: 0.8, w: slideWidth - 0.5,
                         border: { type: 'solid', color: 'EEEEEE', pt: 1 },
                         autoPage: true, autoPageRepeatHeader: true,
                         colW: colW,
@@ -1264,6 +1270,32 @@ export default function ChocoVer32Master({ theme, storageKey = 'choco34' }) {
                     });
                 }
             });
+
+            // ==========================================
+            // FINAL TOTALS SLIDE (Pushed to the end)
+            // ==========================================
+            let finalPage = pres.addSlide();
+            finalPage.addShape(pres.ShapeType.rect, { x: 0, y: 0, w: '100%', h: isLandscape ? 1.0 : 1.2, fill: { color: "000000" } });
+            finalPage.addShape(pres.ShapeType.rect, { x: 0, y: isLandscape ? 1.0 : 1.2, w: '100%', h: 0.1, fill: { color: pptAccent } });
+            finalPage.addText("RESUMEN GENERAL", { x: 0.5, y: 0.25, w: slideWidth - 1, color: "FFFFFF", bold: true, fontSize: 24, align: "center", fontFace: 'Helvetica' });
+
+            const boxWidth = isLandscape ? 5 : 6.5;
+            const boxX = (slideWidth - boxWidth) / 2;
+            const boxY = isLandscape ? 2 : 4;
+
+            finalPage.addShape(pres.ShapeType.rect, { x: boxX, y: boxY, w: boxWidth, h: meta.hidePrices ? 2 : 3.5, fill: { color: "22242A" }, align: 'center', rectRadius: 0.2 });
+
+            if (meta.hidePrices) {
+                finalPage.addText("POTENCIA TOTAL CALCULADA:", { x: boxX, y: boxY + 0.5, w: boxWidth, color: pptAccent, bold: true, fontSize: 16, align: 'center' });
+                finalPage.addText(`${totalKW().toFixed(2)} KW`, { x: boxX, y: boxY + 1.2, w: boxWidth, color: "FFFFFF", bold: true, fontSize: 28, align: 'center' });
+            } else {
+                finalPage.addText("POTENCIA TOTAL:", { x: boxX, y: boxY + 0.4, w: boxWidth, color: "CCCCCC", fontSize: 12, align: 'center' });
+                finalPage.addText(`${totalKW().toFixed(2)} KW`, { x: boxX, y: boxY + 0.8, w: boxWidth, color: "FFFFFF", bold: true, fontSize: 16, align: 'center' });
+
+                finalPage.addText("INVERSIÓN TOTAL ESTIMADA (USD):", { x: boxX, y: boxY + 1.5, w: boxWidth, color: pptAccent, bold: true, fontSize: 16, align: 'center' });
+                finalPage.addText(`$${totalUSD().toLocaleString("en-US", { minimumFractionDigits: 2 })}`, { x: boxX, y: boxY + 2.0, w: boxWidth, color: "FFFFFF", bold: true, fontSize: 32, align: 'center' });
+                finalPage.addText("PRECIOS MAS 16% I.V.A.", { x: boxX, y: boxY + 2.8, w: boxWidth, color: "888888", fontSize: 10, align: 'center' });
+            }
 
             // ==========================================
             // SAVE
@@ -1364,7 +1396,7 @@ export default function ChocoVer32Master({ theme, storageKey = 'choco34' }) {
                         </button>
 
                         <button
-                            onClick={exportPPTX}
+                            onClick={() => setIsPptxModalOpen(true)}
                             className="flex-1 sm:flex-none flex justify-center items-center gap-2 px-5 py-3 border rounded-xl font-bold text-sm tracking-wide transition-all shadow-glow-sm hover:scale-105 bg-glass border-glass-border hover:bg-glass-light hover:text-white"
                             style={{ color: '#D04423' }} // Naranja rojizo para evocar PPT
                             title="Exportar cotización entera en formato editable de PowerPoint (.pptx)"
@@ -1851,6 +1883,54 @@ export default function ChocoVer32Master({ theme, storageKey = 'choco34' }) {
                 </DialogContent>
             </Dialog>
 
-        </div >
+            {/* Modal para Opciones de exportación PPTX */}
+            <Dialog open={isPptxModalOpen} onOpenChange={setIsPptxModalOpen}>
+                <DialogContent className="bg-deep border border-glass-border text-white sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold flex items-center gap-2" style={{ color: accentColor }}>
+                            <Presentation className="w-5 h-5" />
+                            Opciones de Presentación
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="py-2 flex flex-col gap-4">
+                        <p className="text-sm text-gray-300">Selecciona la orientación de tu archivo PowerPoint. Las tablas y el contenido se ajustarán automáticamente.</p>
+                        <div className="grid grid-cols-2 gap-4">
+                            <button
+                                onClick={() => setPptxSettings({ ...pptxSettings, orientation: 'landscape' })}
+                                className={`flex flex-col justify-center items-center gap-3 p-4 rounded-xl border-2 transition-all ${pptxSettings.orientation === 'landscape' ? 'border-neon-cyan bg-neon-cyan/20' : 'border-glass-border bg-glass hover:bg-glass-light'}`}
+                                style={pptxSettings.orientation === 'landscape' ? { borderColor: accentColor, backgroundColor: `${accentColor}20` } : {}}
+                            >
+                                <div className="w-16 h-9 border-2 rounded-sm" style={{ borderColor: pptxSettings.orientation === 'landscape' ? accentColor : '#666' }}></div>
+                                <span className="font-bold text-sm text-center">Horizontal<br /><span className="text-xs font-normal opacity-70">(Panorámico 16:9)</span></span>
+                            </button>
+                            <button
+                                onClick={() => setPptxSettings({ ...pptxSettings, orientation: 'portrait' })}
+                                className={`flex flex-col justify-center items-center gap-3 p-4 rounded-xl border-2 transition-all ${pptxSettings.orientation === 'portrait' ? 'border-neon-cyan bg-neon-cyan/20' : 'border-glass-border bg-glass hover:bg-glass-light'}`}
+                                style={pptxSettings.orientation === 'portrait' ? { borderColor: accentColor, backgroundColor: `${accentColor}20` } : {}}
+                            >
+                                <div className="w-10 h-14 border-2 rounded-sm" style={{ borderColor: pptxSettings.orientation === 'portrait' ? accentColor : '#666' }}></div>
+                                <span className="font-bold text-sm text-center">Vertical<br /><span className="text-xs font-normal opacity-70">(Páginas A4)</span></span>
+                            </button>
+                        </div>
+                    </div>
+                    <div className="flex justify-end pt-4 mt-2 border-t border-glass-border gap-3">
+                        <button
+                            onClick={() => setIsPptxModalOpen(false)}
+                            className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-400 hover:text-white transition-colors"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={() => { setIsPptxModalOpen(false); exportPPTX(); }}
+                            className="px-6 py-2.5 rounded-lg font-bold shadow-glow-sm hover:scale-105 transition-transform flex items-center gap-2"
+                            style={{ backgroundColor: accentColor, color: isLightText || primaryColor === '#3B3B3B' || accentColor.toUpperCase() === '#F2B705' || accentColor.toUpperCase() === '#FFCC00' ? '#000000' : '#FFFFFF' }}
+                        >
+                            <Download className="w-4 h-4" /> Exportar PPTX
+                        </button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+        </div>
     );
 }
