@@ -79,12 +79,41 @@ const initialModules = [
 
 export default function ChocoVer32Master({ theme }) {
     const [data, setData] = useState(() => {
-        const saved = localStorage.getItem("choco33_data");
-        return saved ? JSON.parse(saved) : {};
+        const saved33 = localStorage.getItem("choco33_data");
+        if (saved33) return JSON.parse(saved33);
+
+        const saved32 = localStorage.getItem("choco32_data");
+        if (saved32) {
+            const oldData = JSON.parse(saved32);
+            const migratedData = {};
+
+            for (const key in oldData) {
+                let newKey = key;
+                if (key.match(/^[456]\./)) {
+                    const parts = key.split(" ");
+                    const numPart = parts[0];
+                    if (numPart.includes(".")) {
+                        const [major, minor] = numPart.split(".");
+                        const newMajor = parseInt(major) - 1;
+                        if (newMajor >= 3) {
+                            parts[0] = `${newMajor}.${minor}`;
+                            newKey = parts.join(" ");
+                        }
+                    }
+                }
+                migratedData[newKey] = oldData[key];
+            }
+            return migratedData;
+        }
+        return {};
     });
+
     const [meta, setMeta] = useState(() => {
-        const saved = localStorage.getItem("choco33_meta");
-        return saved ? { client: '', project: '', tc: 18.50, pdfName: '', ...JSON.parse(saved) } : { client: '', project: '', tc: 18.50, pdfName: '' };
+        const saved33 = localStorage.getItem("choco33_meta");
+        if (saved33) return { client: '', project: '', tc: 18.50, pdfName: '', ...JSON.parse(saved33) };
+
+        const saved32 = localStorage.getItem("choco32_meta");
+        return saved32 ? { client: '', project: '', tc: 18.50, pdfName: '', ...JSON.parse(saved32) } : { client: '', project: '', tc: 18.50, pdfName: '' };
     });
     const [editingDescItem, setEditingDescItem] = useState(null);
     const [tempDesc, setTempDesc] = useState("");
@@ -99,12 +128,11 @@ export default function ChocoVer32Master({ theme }) {
         return saved ? JSON.parse(saved) : initialModules;
     });
     const [mainTitle, setMainTitle] = useState(() => {
-        // Renamed to 3.3 for internal tracking
-        return localStorage.getItem("choco33_mainTitle") || "Master Listado: CHOCO VER 3.3";
+        return localStorage.getItem("choco33_mainTitle") || localStorage.getItem("choco32_mainTitle") || "Master Listado: CHOCO VER 3.3";
     });
     const [isEditingMainTitle, setIsEditingMainTitle] = useState(false);
     const [mainDesc, setMainDesc] = useState(() => {
-        return localStorage.getItem("choco33_mainDesc") || "Matriz de cotización predictiva con módulos enlazados. Ingresa variables, costos y márgenes de utilidad y Pandora calcula automáticamente los subtotales, venta final y consumos en kW totales.";
+        return localStorage.getItem("choco33_mainDesc") || localStorage.getItem("choco32_mainDesc") || "Matriz de cotización predictiva con módulos enlazados. Ingresa variables, costos y márgenes de utilidad y Pandora calcula automáticamente los subtotales, venta final y consumos en kW totales.";
     });
     const [isEditingMainDesc, setIsEditingMainDesc] = useState(false);
 
