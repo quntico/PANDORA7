@@ -537,6 +537,14 @@ export default function ChocoVer32Master({ theme }) {
                             ]);
                         }
                     });
+
+                    // Añadir Subtotal del Módulo
+                    const modTotal = moduleTotalUSD({ ...module, items: activeItems });
+                    rows.push([{
+                        content: `SUBTOTAL MÓDULO: $${modTotal.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+                        colSpan: 3,
+                        styles: { fontStyle: 'bold', fillColor: [245, 245, 245], fontSize: 9, textColor: accentRgb, halign: 'right', cellPadding: 4 }
+                    }]);
                 }
             });
 
@@ -767,6 +775,14 @@ export default function ChocoVer32Master({ theme }) {
                             { content: `$${calculateItem(key).toLocaleString("en-US", { minimumFractionDigits: 2 })}`, styles: { halign: 'right', fontStyle: 'bold' } }
                         ]);
                     });
+
+                    // Añadir Subtotal del Módulo
+                    const modTotal = moduleTotalUSD({ ...module, items: activeItems });
+                    rows.push([{
+                        content: `SUBTOTAL MÓDULO: $${modTotal.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+                        colSpan: 5,
+                        styles: { fontStyle: 'bold', fillColor: [245, 245, 245], fontSize: 9, textColor: accentRgb, halign: 'right', cellPadding: 4 }
+                    }]);
                 }
             });
 
