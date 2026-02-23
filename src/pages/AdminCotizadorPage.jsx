@@ -106,6 +106,7 @@ function AdminCotizadorPage() {
 
         setEditingForm({
             logoUrl: company.theme.logoUrl,
+            logoLightUrl: company.theme.logoLightUrl || null,
             primaryColor: company.theme.primary,
             secondaryColor: company.theme.secondary,
             accentColor: company.theme.accent,
@@ -156,6 +157,18 @@ function AdminCotizadorPage() {
         }
     };
 
+    const handleLogoLightUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64Url = reader.result;
+                setEditingForm(prev => ({ ...prev, logoLightUrl: base64Url }));
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     const handleSaveSettings = () => {
         setCompanies(prev => prev.map(c => {
             if (c.id === editingCompany.id) {
@@ -167,7 +180,8 @@ function AdminCotizadorPage() {
                         secondary: editingForm.secondaryColor,
                         accent: finalAccent,
                         support: editingForm.supportColor,
-                        logoUrl: editingForm.logoUrl
+                        logoUrl: editingForm.logoUrl,
+                        logoLightUrl: editingForm.logoLightUrl
                     },
                     format: editingForm.format
                 };
@@ -186,7 +200,8 @@ function AdminCotizadorPage() {
                         secondary: editingForm.secondaryColor,
                         accent: finalAccent,
                         support: editingForm.supportColor,
-                        logoUrl: editingForm.logoUrl
+                        logoUrl: editingForm.logoUrl,
+                        logoLightUrl: editingForm.logoLightUrl
                     },
                     format: editingForm.format
                 };
@@ -817,6 +832,34 @@ function AdminCotizadorPage() {
                                         <div className="text-center">
                                             <p className="text-sm text-gray-300">Haz clic para subir un nuevo logotipo</p>
                                             <p className="text-xs text-gray-500 mt-1">PNG, JPG, SVG (Recomendado 500x500px)</p>
+                                        </div>
+                                    </>
+                                )}
+                            </label>
+                        </div>
+
+                        {/* Logo Light Upload Section */}
+                        <div className="space-y-3">
+                            <label className="text-sm font-medium text-gray-300">Logotipo Alternativo (Para fondos claros)</label>
+                            <label className="border-2 border-dashed border-glass-border rounded-xl p-6 flex flex-col items-center justify-center gap-3 hover:border-black/50 bg-white hover:bg-white/90 transition-all cursor-pointer group relative overflow-hidden shadow-inner">
+                                <input type="file" className="hidden" accept="image/png, image/jpeg, image/svg+xml" onChange={handleLogoLightUpload} />
+                                {editingForm.logoLightUrl ? (
+                                    <div className="absolute inset-0 bg-white flex items-center justify-center">
+                                        <img src={editingForm.logoLightUrl} alt="Logo Light" className="max-h-24 max-w-full object-contain" />
+                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <span className="text-white text-sm font-medium flex items-center gap-2">
+                                                <Upload className="w-4 h-4" /> Cambiar Logo Claro
+                                            </span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="p-3 bg-gray-100 rounded-full group-hover:bg-gray-200 transition-colors">
+                                            <Upload className="w-6 h-6 text-gray-400 group-hover:text-black" />
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-sm text-gray-600">Logo para hoja 2 en adelante</p>
+                                            <p className="text-xs text-gray-400 mt-1">Gris oscuro/Negro recomendado</p>
                                         </div>
                                     </>
                                 )}

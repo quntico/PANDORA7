@@ -551,11 +551,12 @@ export default function ChocoVer32Master({ theme }) {
                 didDrawPage: function (data) {
                     if (data.pageNumber > 1) {
                         const doc = data.doc;
-                        if (theme?.logoUrl && theme.logoUrl.startsWith('data:image')) {
+                        const targetLogo = theme?.logoLightUrl || theme?.logoUrl;
+                        if (targetLogo && targetLogo.startsWith('data:image')) {
                             try {
-                                const imgProps = doc.getImageProperties(theme.logoUrl);
+                                const imgProps = doc.getImageProperties(targetLogo);
                                 const ratio = Math.min(30 / imgProps.width, 10 / imgProps.height);
-                                doc.addImage(theme.logoUrl, imgProps.fileType || 'PNG', 15, 8, imgProps.width * ratio, imgProps.height * ratio);
+                                doc.addImage(targetLogo, imgProps.fileType || 'PNG', 15, 8, imgProps.width * ratio, imgProps.height * ratio);
                             } catch (e) {
                                 doc.setTextColor(accentRgb[0], accentRgb[1], accentRgb[2]);
                                 doc.setFontSize(14);
@@ -764,11 +765,12 @@ export default function ChocoVer32Master({ theme }) {
                 didDrawPage: function (data) {
                     if (data.pageNumber > 1) {
                         const doc = data.doc;
-                        if (theme?.logoUrl && theme.logoUrl.startsWith('data:image')) {
+                        const targetLogo = theme?.logoLightUrl || theme?.logoUrl;
+                        if (targetLogo && targetLogo.startsWith('data:image')) {
                             try {
-                                const imgProps = doc.getImageProperties(theme.logoUrl);
+                                const imgProps = doc.getImageProperties(targetLogo);
                                 const ratio = Math.min(30 / imgProps.width, 10 / imgProps.height);
-                                doc.addImage(theme.logoUrl, imgProps.fileType || 'PNG', 15, 8, imgProps.width * ratio, imgProps.height * ratio);
+                                doc.addImage(targetLogo, imgProps.fileType || 'PNG', 15, 8, imgProps.width * ratio, imgProps.height * ratio);
                             } catch (e) {
                                 doc.setTextColor(accentRgb[0], accentRgb[1], accentRgb[2]);
                                 doc.setFontSize(14);
@@ -969,11 +971,12 @@ export default function ChocoVer32Master({ theme }) {
                 didDrawPage: function (data) {
                     if (data.pageNumber > 1) {
                         const doc = data.doc;
-                        if (theme?.logoUrl && theme.logoUrl.startsWith('data:image')) {
+                        const targetLogo = theme?.logoLightUrl || theme?.logoUrl;
+                        if (targetLogo && targetLogo.startsWith('data:image')) {
                             try {
-                                const imgProps = doc.getImageProperties(theme.logoUrl);
+                                const imgProps = doc.getImageProperties(targetLogo);
                                 const ratio = Math.min(30 / imgProps.width, 10 / imgProps.height);
-                                doc.addImage(theme.logoUrl, imgProps.fileType || 'PNG', 15, 8, imgProps.width * ratio, imgProps.height * ratio);
+                                doc.addImage(targetLogo, imgProps.fileType || 'PNG', 15, 8, imgProps.width * ratio, imgProps.height * ratio);
                             } catch (e) {
                                 doc.setTextColor(accentRgb[0], accentRgb[1], accentRgb[2]);
                                 doc.setFontSize(14);
