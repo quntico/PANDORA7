@@ -520,12 +520,12 @@ export default function ChocoVer32Master({ theme, storageKey = 'choco34' }) {
             // Preparar Filas agrupadas por módulo
             const rows = [];
             modules.forEach(module => {
-                const activeItems = module.items.filter(key => data[key]?.enabled !== false && (data[key]?.cost || 0) > 0);
+                const activeItems = module.items.filter(key => data[key]?.enabled !== false && (meta.hidePrices || (data[key]?.cost || 0) > 0));
                 if (activeItems.length > 0) {
                     // Header de Módulo
                     rows.push([{
                         content: sanitizePDFText(module.name).toUpperCase(),
-                        colSpan: 3,
+                        colSpan: meta.hidePrices ? 2 : 3,
                         styles: { fontStyle: 'bold', fillColor: [40, 40, 40], fontSize: 13, textColor: accentRgb, halign: 'center', cellPadding: 4 }
                     }]);
                     // Aplicar una regla estricta de no saltar página en el header si está pegado:
@@ -536,11 +536,16 @@ export default function ChocoVer32Master({ theme, storageKey = 'choco34' }) {
                         const subtext = qty > 1 ? ` (x${qty})` : '';
                         const safeKeyStr = sanitizePDFText(`${key}${subtext}`);
 
-                        rows.push([
+                        const modRow = [
                             { content: safeKeyStr, styles: { fontStyle: 'bold', textColor: [20, 20, 20], halign: 'left', cellPadding: data[key].desc ? { top: 5, right: 5, bottom: 1, left: 5 } : 5 } },
-                            { content: `${(data[key]?.kw || 0).toFixed(1)} KW`, rowSpan: data[key].desc ? 2 : 1, styles: { valign: 'middle' } },
-                            { content: `$${calculateItem(key).toLocaleString("en-US", { minimumFractionDigits: 2 })}`, rowSpan: data[key].desc ? 2 : 1, styles: { valign: 'middle' } }
-                        ]);
+                            { content: `${(data[key]?.kw || 0).toFixed(1)} KW`, rowSpan: data[key].desc ? 2 : 1, styles: { valign: 'middle' } }
+                        ];
+
+                        if (!meta.hidePrices) {
+                            modRow.push({ content: `$${calculateItem(key).toLocaleString("en-US", { minimumFractionDigits: 2 })}`, rowSpan: data[key].desc ? 2 : 1, styles: { valign: 'middle' } });
+                        }
+
+                        rows.push(modRow);
 
                         if (data[key].desc) {
                             const cleanDesc = sanitizePDFText(data[key].desc);
@@ -551,31 +556,41 @@ export default function ChocoVer32Master({ theme, storageKey = 'choco34' }) {
                     });
 
                     // Añadir Subtotal del Módulo
-                    const modTotal = moduleTotalUSD({ ...module, items: activeItems });
-                    rows.push([{
-                        content: `SUBTOTAL MÓDULO: $${modTotal.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
-                        colSpan: 3,
-                        styles: { fontStyle: 'bold', fillColor: [245, 245, 245], fontSize: 9, textColor: accentRgb, halign: 'right', cellPadding: 4 }
-                    }]);
+                    if (!meta.hidePrices) {
+                        const modTotal = moduleTotalUSD({ ...module, items: activeItems });
+                        rows.push([{
+                            content: `SUBTOTAL MÓDULO: $${modTotal.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+                            colSpan: 3,
+                            styles: { fontStyle: 'bold', fillColor: [245, 245, 245], fontSize: 9, textColor: accentRgb, halign: 'right', cellPadding: 4 }
+                        }]);
+                    }
                 }
             });
 
             let currentPrintedModule = "";
             let pageModules = {};
 
+            let headColumns = ["DESCRIPCIÓN", "POTENCIA"];
+            let colStyles = {
+                0: { halign: 'left', cellWidth: meta.hidePrices ? 140 : 110 },
+                1: { halign: 'center', cellWidth: 40 }
+            };
+
+            if (!meta.hidePrices) {
+                headColumns.push("IMPORTE");
+                colStyles[2] = { halign: 'right', cellWidth: 40, fontStyle: 'bold' };
+                colStyles[1] = { halign: 'center', cellWidth: 30 };
+            }
+
             autoTable(doc, {
-                head: [["DESCRIPCIÓN", "POTENCIA", "IMPORTE"]],
+                head: [headColumns],
                 body: rows,
                 startY: tableStartY,
                 theme: 'grid',
                 headStyles: { fillColor: accentRgb, textColor: [0, 0, 0], fontStyle: 'bold', halign: 'center' },
                 bodyStyles: { textColor: [60, 60, 60] },
                 styles: { fontSize: 9, cellPadding: 5, lineColor: [220, 220, 220], lineWidth: 0.1 },
-                columnStyles: {
-                    0: { halign: 'left', cellWidth: 110 },
-                    1: { halign: 'center', cellWidth: 30 },
-                    2: { halign: 'right', cellWidth: 40, fontStyle: 'bold' }
-                },
+                columnStyles: colStyles,
                 didDrawCell: function (data) {
                     // Borrar el borde superior de la fila de descripción para unificarla visualmente con su título
                     if (data.row.raw[0] && data.row.raw[0].isDesc && data.column.index === 0) {
@@ -635,10 +650,11 @@ export default function ChocoVer32Master({ theme, storageKey = 'choco34' }) {
 
             // Totales Finales PDF (Cuadro redondeado inferior derecho)
             const finalY = (doc.lastAutoTable ? doc.lastAutoTable.finalY : 150) + 5;
+            let boxHeight = meta.hidePrices ? 20 : 45;
 
             // Check page break for the totals box
             let boxY = finalY;
-            if (boxY + 45 > 288) {
+            if (boxY + boxHeight > 288) {
                 doc.addPage();
                 boxY = 20;
             }
@@ -651,45 +667,54 @@ export default function ChocoVer32Master({ theme, storageKey = 'choco34' }) {
 
             doc.setDrawColor(boxBg[0], boxBg[1], boxBg[2]);
             doc.setFillColor(boxBg[0], boxBg[1], boxBg[2]);
-            doc.roundedRect(100, boxY, 95, 45, 3, 3, 'FD');
+            doc.roundedRect(100, boxY, 95, boxHeight, 3, 3, 'FD');
 
             // Text inside box
             const boxRightAlign = 185;
             const boxLeft = 105;
             let currentY = boxY + 8;
 
-            doc.setFontSize(10);
-            doc.setTextColor(textBaseColor[0], textBaseColor[1], textBaseColor[2]);
-            doc.setFont("helvetica", "normal");
-            doc.text("Potencia Total:", boxLeft, currentY);
-            doc.text(`${totalKW().toFixed(2)} KW`, boxRightAlign, currentY, { align: 'right' });
+            if (meta.hidePrices) {
+                doc.setFontSize(14);
+                doc.setTextColor(accentRgb[0], accentRgb[1], accentRgb[2]);
+                doc.setFont("helvetica", "bold");
+                doc.text("POTENCIA TOTAL:", boxLeft, currentY + 4);
+                doc.setTextColor(textStrongColor[0], textStrongColor[1], textStrongColor[2]);
+                doc.text(`${totalKW().toFixed(2)} KW`, boxRightAlign, currentY + 4, { align: 'right' });
+            } else {
+                doc.setFontSize(10);
+                doc.setTextColor(textBaseColor[0], textBaseColor[1], textBaseColor[2]);
+                doc.setFont("helvetica", "normal");
+                doc.text("Potencia Total:", boxLeft, currentY);
+                doc.text(`${totalKW().toFixed(2)} KW`, boxRightAlign, currentY, { align: 'right' });
 
-            currentY += 7;
-            doc.setFontSize(11);
-            doc.setFont("helvetica", "bold");
-            doc.setTextColor(accentRgb[0], accentRgb[1], accentRgb[2]); // Yellow / Accent
-            doc.text("TOTAL (USD):", boxLeft, currentY);
-            doc.text(`$${totalUSD().toLocaleString("en-US", { minimumFractionDigits: 2 })}`, boxRightAlign, currentY, { align: 'right' });
+                currentY += 7;
+                doc.setFontSize(11);
+                doc.setFont("helvetica", "bold");
+                doc.setTextColor(accentRgb[0], accentRgb[1], accentRgb[2]); // Yellow / Accent
+                doc.text("TOTAL (USD):", boxLeft, currentY);
+                doc.text(`$${totalUSD().toLocaleString("en-US", { minimumFractionDigits: 2 })}`, boxRightAlign, currentY, { align: 'right' });
 
-            currentY += 5;
-            doc.setFontSize(8);
-            doc.setFont("helvetica", "normal");
-            doc.setTextColor(textMutedColor[0], textMutedColor[1], textMutedColor[2]);
-            doc.text("PRECIOS MÁS 16% DE I.V.A", boxRightAlign, currentY, { align: 'right' });
+                currentY += 5;
+                doc.setFontSize(8);
+                doc.setFont("helvetica", "normal");
+                doc.setTextColor(textMutedColor[0], textMutedColor[1], textMutedColor[2]);
+                doc.text("PRECIOS MÁS 16% DE I.V.A", boxRightAlign, currentY, { align: 'right' });
 
-            currentY += 9;
-            doc.setFontSize(9);
-            doc.setTextColor(textBaseColor[0], textBaseColor[1], textBaseColor[2]);
-            doc.text("T.C. estimado:", boxLeft, currentY);
-            doc.text(`$${meta.tc.toFixed(2)} MXN`, boxRightAlign, currentY, { align: 'right' });
+                currentY += 9;
+                doc.setFontSize(9);
+                doc.setTextColor(textBaseColor[0], textBaseColor[1], textBaseColor[2]);
+                doc.text("T.C. estimado:", boxLeft, currentY);
+                doc.text(`$${meta.tc.toFixed(2)} MXN`, boxRightAlign, currentY, { align: 'right' });
 
-            currentY += 8;
-            doc.setFontSize(12);
-            doc.setFont("helvetica", "bold");
-            doc.setTextColor(textStrongColor[0], textStrongColor[1], textStrongColor[2]);
-            doc.text("TOTAL (MXN):", boxLeft, currentY);
-            const totalMXN = totalUSD() * meta.tc;
-            doc.text(`MX$${totalMXN.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, boxRightAlign, currentY, { align: 'right' });
+                currentY += 8;
+                doc.setFontSize(12);
+                doc.setFont("helvetica", "bold");
+                doc.setTextColor(textStrongColor[0], textStrongColor[1], textStrongColor[2]);
+                doc.text("TOTAL (MXN):", boxLeft, currentY);
+                const totalMXN = totalUSD() * meta.tc;
+                doc.text(`MX$${totalMXN.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, boxRightAlign, currentY, { align: 'right' });
+            }
 
             const totalPagesExp = doc.internal.getNumberOfPages();
             for (let i = 1; i <= totalPagesExp; i++) {
@@ -1165,44 +1190,59 @@ export default function ChocoVer32Master({ theme, storageKey = 'choco34' }) {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row flex-wrap xl:justify-end gap-3 w-full xl:w-[40%] shrink-0 mt-4 xl:mt-0">
-                    <label className="flex-1 sm:flex-none flex justify-center items-center gap-2 px-5 py-3 bg-glass border border-glass-border rounded-xl font-bold text-sm tracking-wide transition-all hover:bg-glass-light hover:-translate-y-0.5 cursor-pointer text-gray-300 hover:text-white">
-                        <Upload className="w-4 h-4" /> Importar Plantilla
-                        <input type="file" accept=".csv" className="hidden" onChange={handleImportCSV} />
+                <div className="flex flex-col xl:items-end w-full xl:w-[40%] shrink-0 mt-4 xl:mt-0 gap-3">
+                    <div className="flex flex-col sm:flex-row flex-wrap justify-end gap-3 w-full">
+                        <label className="flex-1 sm:flex-none flex justify-center items-center gap-2 px-5 py-3 bg-glass border border-glass-border rounded-xl font-bold text-sm tracking-wide transition-all hover:bg-glass-light hover:-translate-y-0.5 cursor-pointer text-gray-300 hover:text-white">
+                            <Upload className="w-4 h-4" /> Importar Plantilla
+                            <input type="file" accept=".csv" className="hidden" onChange={handleImportCSV} />
+                        </label>
+
+                        <button
+                            onClick={exportExcel}
+                            className="flex-1 sm:flex-none flex justify-center items-center gap-2 px-5 py-3 bg-glass border border-glass-border rounded-xl font-bold text-sm tracking-wide transition-all hover:bg-glass-light hover:-translate-y-0.5"
+                            style={{ color: '#10B981' }} // Excel verde clásico
+                            title="Exportar Módulos a CSV para usarlos como Plantilla luego"
+                        >
+                            <FileSpreadsheet className="w-4 h-4" /> Exportar a CSV
+                        </button>
+
+                        <button
+                            onClick={exportInternalPDF}
+                            className="flex-1 sm:flex-none flex justify-center items-center gap-2 px-5 py-3 border rounded-xl font-bold text-sm tracking-wide transition-all shadow-glow-sm hover:scale-105 bg-glass border-glass-border hover:bg-glass-light text-gray-300 hover:text-white"
+                            title="Exportar documento en vista interna con detalle de costos y utilidad."
+                        >
+                            <FileText className="w-4 h-4" style={{ color: accentColor }} /> PDF Interno
+                        </button>
+
+                        <button
+                            onClick={exportSimpleListPDF}
+                            className="flex-1 sm:flex-none flex justify-center items-center gap-2 px-5 py-3 border rounded-xl font-bold text-sm tracking-wide transition-all shadow-glow-sm hover:scale-105 bg-glass border-glass-border hover:bg-glass-light text-gray-300 hover:text-white"
+                            title="Exportar un listado numerado de equipos y cantidades sin costos ni descripciones largas."
+                        >
+                            <ListChecks className="w-4 h-4" style={{ color: accentColor }} /> PDF Listado
+                        </button>
+
+                        <button
+                            onClick={exportPDF}
+                            className="flex-1 sm:flex-none flex justify-center items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm tracking-wide transition-all shadow-glow-sm hover:scale-105 relative overflow-hidden group"
+                            style={{ backgroundColor: accentColor, color: isLightText || primaryColor === '#3B3B3B' || accentColor.toUpperCase() === '#F2B705' ? '#000000' : '#FFFFFF', border: `1px solid ${accentColor}` }}
+                        >
+                            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform"></div>
+                            <Download className="w-4 h-4 relative z-10" /> <span className="relative z-10">PDF Formal</span>
+                        </button>
+                    </div>
+
+                    <label className="flex items-center gap-2 text-xs font-bold text-gray-400 cursor-pointer hover:text-white transition-colors bg-deep border border-glass-border px-3 py-1.5 rounded-lg border-dashed">
+                        <input
+                            type="checkbox"
+                            checked={meta.hidePrices || false}
+                            onChange={(e) => setMeta({ ...meta, hidePrices: e.target.checked })}
+                            className="w-4 h-4 rounded appearance-none border border-gray-600 checked:bg-current checked:border-current flex items-center justify-center relative cursor-pointer
+                                           before:content-[''] before:absolute before:w-1.5 before:h-2.5 before:border-r-2 before:border-b-2 before:border-white before:rotate-45 before:opacity-0 checked:before:opacity-100"
+                            style={{ color: accentColor }}
+                        />
+                        Aislar Modo de Carga (Ocultar Importes)
                     </label>
-
-                    <button
-                        onClick={exportExcel}
-                        className="flex-1 sm:flex-none flex justify-center items-center gap-2 px-5 py-3 bg-glass border border-glass-border rounded-xl font-bold text-sm tracking-wide transition-all hover:bg-glass-light hover:-translate-y-0.5"
-                        style={{ color: '#10B981' }} // Excel verde clásico
-                        title="Exportar Módulos a CSV para usarlos como Plantilla luego"
-                    >
-                        <FileSpreadsheet className="w-4 h-4" /> Exportar a CSV
-                    </button>
-
-                    <button
-                        onClick={exportInternalPDF}
-                        className="flex-1 sm:flex-none flex justify-center items-center gap-2 px-5 py-3 border rounded-xl font-bold text-sm tracking-wide transition-all shadow-glow-sm hover:scale-105 bg-glass border-glass-border hover:bg-glass-light text-gray-300 hover:text-white"
-                        title="Exportar documento en vista interna con detalle de costos y utilidad."
-                    >
-                        <FileText className="w-4 h-4" style={{ color: accentColor }} /> PDF Interno
-                    </button>
-
-                    <button
-                        onClick={exportSimpleListPDF}
-                        className="flex-1 sm:flex-none flex justify-center items-center gap-2 px-5 py-3 border rounded-xl font-bold text-sm tracking-wide transition-all shadow-glow-sm hover:scale-105 bg-glass border-glass-border hover:bg-glass-light text-gray-300 hover:text-white"
-                        title="Exportar un listado numerado de equipos y cantidades sin costos ni descripciones largas."
-                    >
-                        <ListChecks className="w-4 h-4" style={{ color: accentColor }} /> PDF Listado
-                    </button>
-
-                    <button
-                        onClick={exportPDF}
-                        className="flex-1 sm:flex-none flex justify-center items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm tracking-wide transition-all shadow-glow-sm hover:scale-105"
-                        style={{ backgroundColor: accentColor, color: isLightText || primaryColor === '#3B3B3B' || accentColor.toUpperCase() === '#F2B705' ? '#000000' : '#FFFFFF', border: `1px solid ${accentColor}` }}
-                    >
-                        <Download className="w-4 h-4" /> PDF Formal
-                    </button>
                 </div>
             </div>
 
@@ -1251,10 +1291,10 @@ export default function ChocoVer32Master({ theme, storageKey = 'choco34' }) {
                         />
                     </div>
                 </div>
-            </div>
+            </div >
 
             {/* TABS METRICS RESUMEN */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 shrink-0">
+            < div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 shrink-0" >
                 <div className="bg-glass-light border border-glass-border/50 p-6 rounded-2xl flex items-center justify-between transition-colors shadow-sm relative overflow-hidden group">
                     <div className="absolute top-0 right-0 w-24 h-24 rounded-bl-full bg-emerald-500/10 -z-0 group-hover:scale-110 transition-transform"></div>
                     <div className="relative z-10 w-full min-w-0">
@@ -1274,10 +1314,10 @@ export default function ChocoVer32Master({ theme, storageKey = 'choco34' }) {
                         </div>
                     </div>
                 </div>
-            </div>
+            </div >
 
             {/* CONTENT BUILDER MODULES - SCROLLABLE Y RESPONSIVO */}
-            <div className="w-full flex justify-end gap-3 mb-3">
+            < div className="w-full flex justify-end gap-3 mb-3" >
                 <button
                     onClick={() => toggleAllModules(false)}
                     className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-gray-400 hover:text-white bg-deep border border-glass-border hover:border-neon-cyan/50 rounded-lg transition-colors"
@@ -1292,7 +1332,7 @@ export default function ChocoVer32Master({ theme, storageKey = 'choco34' }) {
                     <FoldVertical className="w-4 h-4" />
                     Contraer Todos
                 </button>
-            </div>
+            </div >
 
             <div className="flex-1 w-full flex flex-col gap-6" style={{ minHeight: '600px' }}>
                 {modules.map((module, mIndex) => {
