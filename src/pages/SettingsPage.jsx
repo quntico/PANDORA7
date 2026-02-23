@@ -2,7 +2,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Sparkles, Database, Code, Palette, Shield, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Sparkles, Database, Code, Palette, Shield, Image as ImageIcon, Download, UploadCloud } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import APIConnectionCard from '@/components/APIConnectionCard';
 import ThemeSelector from '@/components/ThemeSelector';
@@ -13,6 +13,40 @@ import { useAPIConnections } from '@/hooks/useAPIConnections';
 function SettingsPage() {
   const navigate = useNavigate();
   const connectionHook = useAPIConnections();
+
+  const handleExportData = () => {
+    const data = JSON.stringify(localStorage);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pandora_backup_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportData = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const importedData = JSON.parse(event.target.result);
+        Object.keys(importedData).forEach(key => {
+          localStorage.setItem(key, importedData[key]);
+        });
+        alert("¡Datos restaurados con éxito! La página se recargará para aplicar los cambios.");
+        window.location.reload();
+      } catch (error) {
+        console.error("Error validando JSON:", error);
+        alert("Archivo de respaldo inválido o corrupto.");
+      }
+    };
+    reader.readAsText(file);
+  };
 
   const providers = [
     { id: 'OpenAI', icon: Sparkles, color: 'text-green-400 bg-green-400/10' },
@@ -31,8 +65,8 @@ function SettingsPage() {
         <main className="max-w-5xl mx-auto px-6 py-12">
           {/* Header */}
           <div className="flex items-center gap-4 mb-10">
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               onClick={() => navigate(-1)}
               className="text-gray-400 hover:text-white hover:bg-white/5 -ml-2 rounded-xl"
             >
@@ -94,7 +128,7 @@ function SettingsPage() {
               </section>
 
               <section className="p-6 rounded-2xl backdrop-blur-xl bg-gray-900/40 border border-cyan-500/20 shadow-[0_0_15px_rgba(6,182,212,0.1)]">
-                 <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-3">
+                <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-pink-900/20 text-pink-400">
                     <ImageIcon className="w-5 h-5" />
                   </div>
@@ -103,10 +137,46 @@ function SettingsPage() {
                 <LogoUploader />
               </section>
 
+              <section className="p-6 rounded-2xl backdrop-blur-xl bg-gray-900/40 border border-cyan-500/20 shadow-[0_0_15px_rgba(6,182,212,0.1)]">
+                <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-green-900/20 text-green-400">
+                    <Database className="w-5 h-5" />
+                  </div>
+                  Respaldo y Sincronización
+                </h2>
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-400">
+                    Transfiere todos los proyectos, clientes y configuraciones guardados en tu dispositivo a la plataforma en vivo.
+                  </p>
+                  <Button
+                    onClick={handleExportData}
+                    className="w-full bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 border border-cyan-500/50"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    1. Descargar Datos de Respaldo
+                  </Button>
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept=".json"
+                      onChange={handleImportData}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                    <Button
+                      variant="outline"
+                      className="w-full bg-transparent border border-gray-600 text-gray-300 hover:text-white"
+                    >
+                      <UploadCloud className="w-4 h-4 mr-2" />
+                      2. Subir Archivo de Respaldo
+                    </Button>
+                  </div>
+                </div>
+              </section>
+
               <div className="p-6 rounded-2xl bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border border-cyan-500/20">
-                <h3 className="font-semibold text-cyan-400 mb-2">PANDORA v1.0.0</h3>
+                <h3 className="font-semibold text-cyan-400 mb-2">PANDORA v7.5</h3>
                 <p className="text-sm text-gray-400 leading-relaxed">
-                  Plataforma avanzada de análisis financiero. 
+                  Plataforma avanzada de cotización industrial.
                   Privacidad y seguridad garantizadas.
                 </p>
               </div>
