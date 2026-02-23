@@ -483,14 +483,13 @@ export default function ChocoVer32Master({ theme }) {
                 const activeItems = module.items.filter(key => data[key]?.enabled !== false && (data[key]?.cost || 0) > 0);
                 if (activeItems.length > 0) {
                     // Header de Módulo
-                    rows.push([
-                        {
-                            content: sanitizePDFText(module.name).toUpperCase(),
-                            colSpan: 3,
-                            isModuleTitle: true,
-                            styles: { fontStyle: 'bold', fillColor: [40, 40, 40], fontSize: 13, textColor: accentRgb, halign: 'center', cellPadding: 4 }
-                        }
-                    ]);
+                    rows.push([{
+                        content: sanitizePDFText(module.name).toUpperCase(),
+                        colSpan: 3,
+                        styles: { fontStyle: 'bold', fillColor: [40, 40, 40], fontSize: 13, textColor: accentRgb, halign: 'center', cellPadding: 4 }
+                    }]);
+                    // Aplicar una regla estricta de no saltar página en el header si está pegado:
+                    rows[rows.length - 1][0].pageBreak = 'avoid';
 
                     activeItems.forEach((key) => {
                         const qty = data[key].qty || 1;
@@ -718,14 +717,13 @@ export default function ChocoVer32Master({ theme }) {
                 const activeItems = module.items.filter(key => data[key]?.enabled !== false && (data[key]?.cost || 0) > 0);
                 if (activeItems.length > 0) {
                     // Header de Módulo Interno
-                    rows.push([
-                        {
-                            content: sanitizePDFText(module.name).toUpperCase(),
-                            colSpan: 5,
-                            isModuleTitle: true,
-                            styles: { fontStyle: 'bold', fillColor: [40, 40, 40], fontSize: 13, textColor: accentRgb, halign: 'center', cellPadding: 4 }
-                        }
-                    ]);
+                    rows.push([{
+                        content: sanitizePDFText(module.name).toUpperCase(),
+                        colSpan: 5,
+                        isModuleTitle: true,
+                        styles: { fontStyle: 'bold', fillColor: [40, 40, 40], fontSize: 13, textColor: accentRgb, halign: 'center', cellPadding: 4 }
+                    }]);
+                    rows[rows.length - 1][0].pageBreak = 'avoid';
 
                     activeItems.forEach(key => {
                         const qty = data[key].qty || 1;
@@ -940,14 +938,13 @@ export default function ChocoVer32Master({ theme }) {
                 const activeItems = module.items.filter(key => data[key]?.enabled !== false);
                 if (activeItems.length > 0) {
                     // Header de Módulo Listado
-                    rows.push([
-                        {
-                            content: sanitizePDFText(module.name).toUpperCase(),
-                            colSpan: 3,
-                            isModuleTitle: true,
-                            styles: { fontStyle: 'bold', fillColor: [40, 40, 40], fontSize: 13, textColor: accentRgb, halign: 'center', cellPadding: 4 }
-                        }
-                    ]);
+                    rows.push([{
+                        content: sanitizePDFText(module.name).toUpperCase(),
+                        colSpan: 3,
+                        isModuleTitle: true,
+                        styles: { fontStyle: 'bold', fillColor: [40, 40, 40], fontSize: 13, textColor: accentRgb, halign: 'center', cellPadding: 4 }
+                    }]);
+                    rows[rows.length - 1][0].pageBreak = 'avoid';
 
                     activeItems.forEach(key => {
                         const qty = data[key]?.qty || 1;
