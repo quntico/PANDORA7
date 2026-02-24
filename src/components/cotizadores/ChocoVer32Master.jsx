@@ -1160,7 +1160,7 @@ export default function ChocoVer32Master({ theme, storageKey = 'choco34' }) {
             ];
 
             if (theme?.logoUrl && theme.logoUrl.startsWith('data:image')) {
-                masterObjects.push({ image: { data: theme.logoUrl, x: 0.5, y: isLandscape ? 0.2 : 0.3, w: 2.5, h: isLandscape ? 0.6 : 0.6, sizing: { type: 'contain', w: 2.5, h: isLandscape ? 0.6 : 0.6 } } });
+                masterObjects.push({ image: { data: theme.logoUrl, x: 0.5, y: isLandscape ? 0.2 : 0.3, h: 0.6 } });
             } else {
                 masterObjects.push({ text: { text: (theme?.name || "solifood").toUpperCase(), options: { x: 0.5, y: 0.25, w: 4, h: 0.5, color: pptAccent, bold: true, fontSize: 24, fontFace: 'Helvetica' } } });
             }
@@ -1268,24 +1268,24 @@ export default function ChocoVer32Master({ theme, storageKey = 'choco34' }) {
                 }
             });
 
-            // General Totals injected inside the table at the very end to keep format perfect
+            // Empty spacer row so the dark summary box stands out
             tableRows.push([
-                { text: "RESUMEN GENERAL", options: { colspan: meta.hidePrices ? 2 : 3, bold: true, fill: "000000", color: "FFFFFF", margin: 8, fontSize: 12, align: 'center' } }
+                { text: "", options: { colspan: meta.hidePrices ? 2 : 3, fill: "FFFFFF", margin: 5, border: { type: 'none' } } }
             ]);
 
             if (meta.hidePrices) {
                 tableRows.push([
-                    { text: "POTENCIA TOTAL CALCULADA:", options: { bold: true, align: 'right', fill: "F0F0F0", color: "333333", margin: 8, fontSize: 10 } },
-                    { text: `${totalKW().toFixed(2)} KW`, options: { bold: true, align: 'center', fill: "F0F0F0", color: pptAccent, margin: 8, fontSize: 12 } }
+                    { text: "POTENCIA TOTAL:", options: { bold: true, align: 'right', fill: "22242A", color: pptAccent, margin: { top: 15, bottom: 15, right: 10, left: 10 }, fontSize: 14 } },
+                    { text: `${totalKW().toFixed(2)} KW`, options: { bold: true, align: 'left', fill: "22242A", color: "FFFFFF", margin: { top: 15, bottom: 15, right: 10, left: 10 }, fontSize: 16 } }
                 ]);
             } else {
                 tableRows.push([
-                    { text: "POTENCIA TOTAL CALCULADA:", options: { colspan: 2, bold: true, align: 'right', fill: "F0F0F0", color: "333333", margin: 8, fontSize: 10 } },
-                    { text: `${totalKW().toFixed(2)} KW`, options: { bold: true, align: 'right', fill: "F0F0F0", color: "111111", margin: 8, fontSize: 10 } }
+                    { text: "POTENCIA TOTAL CALCULADA:", options: { colspan: 2, bold: true, align: 'right', fill: "22242A", color: "A0A0A0", margin: { top: 15, bottom: 5, right: 10 }, fontSize: 10 } },
+                    { text: `${totalKW().toFixed(2)} KW`, options: { bold: true, align: 'left', fill: "22242A", color: "FFFFFF", margin: { top: 15, bottom: 5, left: 10 }, fontSize: 12 } }
                 ]);
                 tableRows.push([
-                    { text: "INVERSIÓN TOTAL ESTIMADA (PRECIOS MÁS 16% I.V.A.)", options: { colspan: 2, bold: true, align: 'right', fill: "F0F0F0", color: "333333", margin: 8, fontSize: 10 } },
-                    { text: `$${totalUSD().toLocaleString("en-US", { minimumFractionDigits: 2 })}`, options: { bold: true, align: 'right', fill: "F0F0F0", color: pptAccent, margin: 8, fontSize: 14 } }
+                    { text: "INVERSIÓN TOTAL ESTIMADA:", options: { colspan: 2, bold: true, align: 'right', fill: "22242A", color: pptAccent, margin: { top: 2, bottom: 15, right: 10 }, fontSize: 12 } },
+                    { text: `$${totalUSD().toLocaleString("en-US", { minimumFractionDigits: 2 })}`, options: { bold: true, align: 'left', fill: "22242A", color: "FFFFFF", margin: { top: 2, bottom: 15, left: 10 }, fontSize: 18 } }
                 ]);
             }
 
