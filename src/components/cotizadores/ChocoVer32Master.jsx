@@ -1160,7 +1160,17 @@ export default function ChocoVer32Master({ theme, storageKey = 'choco34' }) {
             ];
 
             if (theme?.logoUrl && theme.logoUrl.startsWith('data:image')) {
-                masterObjects.push({ image: { data: theme.logoUrl, x: 0.5, y: isLandscape ? 0.2 : 0.3, h: 0.6 } });
+                let logoW = 2.5;
+                try {
+                    const img = new window.Image();
+                    img.src = theme.logoUrl;
+                    await new Promise(r => { img.onload = r; img.onerror = r; });
+                    if (img.width && img.height) {
+                        logoW = 0.6 * (img.width / img.height);
+                        if (logoW > 3.0) logoW = 3.0;
+                    }
+                } catch (e) { }
+                masterObjects.push({ image: { data: theme.logoUrl, x: 0.5, y: isLandscape ? 0.2 : 0.3, w: logoW, h: 0.6 } });
             } else {
                 masterObjects.push({ text: { text: (theme?.name || "solifood").toUpperCase(), options: { x: 0.5, y: 0.25, w: 4, h: 0.5, color: pptAccent, bold: true, fontSize: 24, fontFace: 'Helvetica' } } });
             }
@@ -1275,17 +1285,17 @@ export default function ChocoVer32Master({ theme, storageKey = 'choco34' }) {
 
             if (meta.hidePrices) {
                 tableRows.push([
-                    { text: "POTENCIA TOTAL:", options: { bold: true, align: 'right', fill: "22242A", color: pptAccent, margin: { top: 15, bottom: 15, right: 10, left: 10 }, fontSize: 14 } },
-                    { text: `${totalKW().toFixed(2)} KW`, options: { bold: true, align: 'left', fill: "22242A", color: "FFFFFF", margin: { top: 15, bottom: 15, right: 10, left: 10 }, fontSize: 16 } }
+                    { text: "POTENCIA TOTAL:", options: { bold: true, align: 'right', fill: "22242A", color: pptAccent, margin: [15, 10, 15, 10], fontSize: 14 } },
+                    { text: `${totalKW().toFixed(2)} KW`, options: { bold: true, align: 'left', fill: "22242A", color: "FFFFFF", margin: [15, 10, 15, 10], fontSize: 16 } }
                 ]);
             } else {
                 tableRows.push([
-                    { text: "POTENCIA TOTAL CALCULADA:", options: { colspan: 2, bold: true, align: 'right', fill: "22242A", color: "A0A0A0", margin: { top: 15, bottom: 5, right: 10 }, fontSize: 10 } },
-                    { text: `${totalKW().toFixed(2)} KW`, options: { bold: true, align: 'left', fill: "22242A", color: "FFFFFF", margin: { top: 15, bottom: 5, left: 10 }, fontSize: 12 } }
+                    { text: "POTENCIA TOTAL CALCULADA:", options: { colspan: 2, bold: true, align: 'right', fill: "22242A", color: "A0A0A0", margin: [15, 10, 5, 10], fontSize: 10 } },
+                    { text: `${totalKW().toFixed(2)} KW`, options: { bold: true, align: 'left', fill: "22242A", color: "FFFFFF", margin: [15, 10, 5, 10], fontSize: 12 } }
                 ]);
                 tableRows.push([
-                    { text: "INVERSIÓN TOTAL ESTIMADA:", options: { colspan: 2, bold: true, align: 'right', fill: "22242A", color: pptAccent, margin: { top: 2, bottom: 15, right: 10 }, fontSize: 12 } },
-                    { text: `$${totalUSD().toLocaleString("en-US", { minimumFractionDigits: 2 })}`, options: { bold: true, align: 'left', fill: "22242A", color: "FFFFFF", margin: { top: 2, bottom: 15, left: 10 }, fontSize: 18 } }
+                    { text: "INVERSIÓN TOTAL ESTIMADA:", options: { colspan: 2, bold: true, align: 'right', fill: "22242A", color: pptAccent, margin: [2, 10, 15, 10], fontSize: 12 } },
+                    { text: `$${totalUSD().toLocaleString("en-US", { minimumFractionDigits: 2 })}`, options: { bold: true, align: 'left', fill: "22242A", color: "FFFFFF", margin: [2, 10, 15, 10], fontSize: 18 } }
                 ]);
             }
 
