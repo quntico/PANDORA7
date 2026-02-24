@@ -83,7 +83,7 @@ function Header() {
                   }
                 }}
               >
-                VER 7.5
+                VER 7.51
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon-purple opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-neon-purple"></span>
