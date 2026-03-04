@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ColorThief from 'colorthief';
-import { ShieldAlert, DollarSign, Settings, Calculator, Building2, Package, FileText, Plus, Upload, Palette, ChevronLeft, ChevronRight, PanelLeftClose, PanelLeftOpen, Edit2, Trash2 } from 'lucide-react';
+import { ShieldAlert, DollarSign, Settings, Calculator, Building2, Package, FileText, Plus, Upload, Palette, ChevronLeft, ChevronRight, PanelLeftClose, PanelLeftOpen, Edit2, Trash2, Layers, Sparkles, Wand2, Target, CheckCircle2, Loader2, Download, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import ChocoVer32Master from '@/components/cotizadores/ChocoVer32Master';
@@ -23,6 +23,19 @@ function AdminCotizadorPage() {
     const [activeTemplate, setActiveTemplate] = useState('choco34');
     // Control collapse state of the history sidebar
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    // State for version files
+    const [versionFiles, setVersionFiles] = useState([]);
+    const [activeVersionId, setActiveVersionId] = useState('default');
+    const [editingVersionId, setEditingVersionId] = useState(null);
+    const [showMappingEditor, setShowMappingEditor] = useState(false);
+    const [selectedFields, setSelectedFields] = useState(['nombre_equipo', 'especificaciones_tecnicas', 'precio_unitario', 'imagen_referencial']);
+    const [isAutomating, setIsAutomating] = useState(false);
+    const [automationProgress, setAutomationProgress] = useState(0);
+    const [automationStatus, setAutomationStatus] = useState('');
+    const [automationCompleted, setAutomationCompleted] = useState(false);
+    const [messyText, setMessyText] = useState('');
+    const [isProcessingText, setIsProcessingText] = useState(false);
+    const fileInputRef = React.useRef(null);
 
     const [quotes, setQuotes] = useState(() => {
         const saved = localStorage.getItem('pandora_quotes');
@@ -57,6 +70,81 @@ function AdminCotizadorPage() {
         const newQuotesList = [newQuote, ...quotes];
         setQuotes(newQuotesList);
         setActiveTemplate(newId);
+    };
+
+    const handleFileUpload = (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length > 0) {
+            const newFiles = files.map(file => ({
+                id: `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                name: file.name,
+                type: file.type,
+                size: (file.size / 1024).toFixed(2),
+                date: Date.now()
+            }));
+            setVersionFiles(prev => [...newFiles, ...prev]);
+
+            toast({
+                title: "✅ Archivo subido",
+                description: `Se ha cargado "${files[0].name}" como base para la configuración.`
+            });
+        }
+    };
+
+    const handleOpenVersion = (vId) => {
+        setActiveVersionId(vId);
+        toast({
+            title: "📂 Versión Cargada",
+            description: "Ahora estás trabajando sobre esta configuración base.",
+        });
+        // Aquí podrías disparar lógica para cambiar la plantilla en ChocoVer32Master o similar
+    };
+
+    const handleRenameVersion = (vId, newName) => {
+        setVersionFiles(prev => prev.map(f => f.id === vId ? { ...f, name: newName } : f));
+        setEditingVersionId(null);
+    };
+
+    const startAutomation = async () => {
+        setIsAutomating(true);
+        setAutomationProgress(0);
+        setAutomationCompleted(false);
+
+        const steps = [
+            "Analizando estructura del archivo base...",
+            "Extrayendo contenedores de datos...",
+            "Mapeando campos seleccionados...",
+            "Sincronizando con catálogo de equipos...",
+            "Generando ficha 1/40: Cámara de Congelado",
+            "Generando ficha 5/40: Horno Convector",
+            "Generando ficha 12/40: Mesa de Trabajo",
+            "Generando ficha 20/40: Lavadero Industrial",
+            "Generando ficha 28/40: Estantería Acero",
+            "Generando ficha 35/40: Refrigerador Vertical",
+            "Generando ficha 40/40: Balanza Electrónica",
+            "Finalizando empaquetado de archivos..."
+        ];
+
+        for (let i = 0; i < steps.length; i++) {
+            setAutomationStatus(steps[i]);
+            setAutomationProgress(((i + 1) / steps.length) * 100);
+            await new Promise(resolve => setTimeout(resolve, 800));
+        }
+
+        setAutomationCompleted(true);
+        setIsAutomating(false);
+        toast({
+            title: "🎯 ¡Proceso Completado!",
+            description: "Se han generado las 40 fichas técnicas exitosamente.",
+        });
+    };
+
+    const handleDeleteVersionFile = (e, vId) => {
+        e.stopPropagation();
+        if (window.confirm("¿Seguro que deseas eliminar esta versión?")) {
+            setVersionFiles(prev => prev.filter(f => f.id !== vId));
+            if (activeVersionId === vId) setActiveVersionId('default');
+        }
     };
 
     const handleDeleteQuote = (e, idToDelete) => {
@@ -386,6 +474,17 @@ function AdminCotizadorPage() {
                                 >
                                     <FileText className="w-4 h-4" /> Cotizaciones
                                 </button>
+                                <button
+                                    onClick={() => setActiveCotizadorTab('versiones')}
+                                    className={cn(
+                                        "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap",
+                                        activeCotizadorTab === 'versiones'
+                                            ? "bg-neon-cyan/20 text-neon-cyan shadow-glow-sm"
+                                            : "text-gray-400 hover:text-white"
+                                    )}
+                                >
+                                    <Layers className="w-4 h-4" /> Versiones
+                                </button>
                             </div>
                         </div>
 
@@ -698,9 +797,349 @@ function AdminCotizadorPage() {
                             </div>
                         )}
 
+                        {/* Inner Content for Versiones de Cotización */}
+                        {activeCotizadorTab === 'versiones' && (
+                            <div className="animate-fade-in flex-1">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-xl font-semibold text-white">Versiones de Cotización</h3>
+                                    <div className="flex items-center gap-3">
+                                        <input
+                                            type="file"
+                                            className="hidden"
+                                            ref={fileInputRef}
+                                            onChange={handleFileUpload}
+                                            accept=".xlsx,.xls,.doc,.docx,.ppt,.pptx"
+                                        />
+                                        <button
+                                            onClick={() => fileInputRef.current.click()}
+                                            className="flex items-center gap-2 px-4 py-2 bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/50 rounded-lg font-medium hover:bg-neon-cyan hover:text-black transition-all"
+                                        >
+                                            <Plus className="w-4 h-4" />
+                                            Nueva Configuración
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {/* Default Version Card */}
+                                    <div className={cn(
+                                        "p-6 bg-glass border rounded-xl transition-all group relative overflow-hidden",
+                                        activeVersionId === 'default' ? "border-neon-cyan shadow-glow-sm" : "border-neon-cyan/30 opacity-60 hover:opacity-100"
+                                    )}>
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div className="p-3 bg-neon-cyan/10 rounded-lg">
+                                                <Layers className="w-6 h-6 text-neon-cyan" />
+                                            </div>
+                                            <span className={cn(
+                                                "text-xs px-2 py-1 rounded-full border font-bold uppercase tracking-wider",
+                                                activeVersionId === 'default' ? "bg-neon-cyan/20 text-neon-cyan border-neon-cyan/30" : "bg-white/5 text-gray-400 border-white/10"
+                                            )}>
+                                                {activeVersionId === 'default' ? 'ACTIVA' : 'ESTÁNDAR'}
+                                            </span>
+                                        </div>
+                                        <h4 className="text-lg font-bold text-white mb-2">Versión Estándar</h4>
+                                        <p className="text-sm text-gray-400">Plantilla base con listado predictivo y campos esenciales para propuestas corporativas.</p>
+                                        <div className="mt-4 pt-4 border-t border-glass-border flex justify-between items-center">
+                                            <span className="text-xs text-gray-500 italic">Preconfigurado</span>
+                                            <button
+                                                onClick={() => handleOpenVersion('default')}
+                                                className="text-xs text-neon-cyan hover:underline font-bold"
+                                            >
+                                                {activeVersionId === 'default' ? 'Configurar versión' : 'Abrir versión'}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Dynamically Loaded Version Files */}
+                                    {versionFiles.map(vFile => (
+                                        <div
+                                            key={vFile.id}
+                                            className={cn(
+                                                "p-6 bg-glass border rounded-xl transition-all group animate-scale-in relative overflow-hidden",
+                                                activeVersionId === vFile.id ? "border-neon-purple shadow-glow-sm" : "border-neon-purple/30 opacity-60 hover:opacity-100"
+                                            )}
+                                        >
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div className="p-3 bg-neon-purple/10 rounded-lg">
+                                                    <Upload className="w-6 h-6 text-neon-purple" />
+                                                </div>
+                                                <span className={cn(
+                                                    "text-[10px] px-2 py-1 rounded-full border font-bold uppercase",
+                                                    activeVersionId === vFile.id ? "bg-neon-purple/20 text-neon-purple border-neon-purple/30" : "bg-white/5 text-gray-400 border-white/10"
+                                                )}>
+                                                    {activeVersionId === vFile.id ? 'ACTIVA' : 'PROCESADA'}
+                                                </span>
+                                            </div>
+
+                                            {editingVersionId === vFile.id ? (
+                                                <input
+                                                    type="text"
+                                                    value={vFile.name}
+                                                    onChange={(e) => setVersionFiles(prev => prev.map(f => f.id === vFile.id ? { ...f, name: e.target.value } : f))}
+                                                    onBlur={() => setEditingVersionId(null)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') setEditingVersionId(null);
+                                                    }}
+                                                    autoFocus
+                                                    className="bg-deep border border-neon-purple/50 rounded px-2 py-1 text-white text-lg font-bold w-full mb-2 outline-none"
+                                                />
+                                            ) : (
+                                                <div className="flex items-center gap-2 mb-2 group/title">
+                                                    <h4 className="text-lg font-bold text-white truncate max-w-[80%]" title={vFile.name}>
+                                                        {vFile.name}
+                                                    </h4>
+                                                    <button
+                                                        onClick={() => setEditingVersionId(vFile.id)}
+                                                        className="p-1 rounded hover:bg-white/10 opacity-0 group-hover/title:opacity-100 transition-opacity"
+                                                    >
+                                                        <Edit2 className="w-3.5 h-3.5 text-gray-400" />
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            <p className="text-sm text-gray-400">Archivo base cargado para generar estructura de datos IA.</p>
+                                            <div className="mt-4 pt-4 border-t border-glass-border flex justify-between items-center">
+                                                <span className="text-xs text-gray-500">{vFile.size} KB</span>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => setShowMappingEditor(true)}
+                                                        className="text-[10px] px-3 py-1.5 bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan rounded font-bold hover:bg-neon-cyan hover:text-black transition-all flex items-center gap-1"
+                                                    >
+                                                        <Wand2 className="w-3 h-3" /> Configurar IA
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => handleDeleteVersionFile(e, vFile.id)}
+                                                        className="text-[10px] p-1.5 bg-glass-light border border-glass-border rounded hover:bg-red-500/20 hover:text-red-400 transition-colors"
+                                                    >
+                                                        <Trash2 className="w-3 h-3" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleOpenVersion(vFile.id)}
+                                                        className={cn(
+                                                            "text-[10px] px-3 py-1.5 border rounded font-bold transition-all",
+                                                            activeVersionId === vFile.id
+                                                                ? "bg-neon-purple text-white border-neon-purple shadow-glow-sm"
+                                                                : "bg-glass-light border-neon-purple/30 text-neon-purple hover:bg-neon-purple hover:text-white"
+                                                        )}
+                                                    >
+                                                        {activeVersionId === vFile.id ? 'Trabajando...' : 'Abrir'}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {/* Upload Trigger Area */}
+                                    <div
+                                        onClick={() => fileInputRef.current.click()}
+                                        className="p-6 bg-glass border border-dashed border-glass-border rounded-xl cursor-pointer hover:border-neon-blue/50 hover:bg-neon-blue/5 transition-all group flex flex-col items-center justify-center min-h-[220px]"
+                                    >
+                                        <div className="p-4 bg-white/5 rounded-full text-gray-500 group-hover:bg-neon-blue/10 group-hover:text-neon-blue transition-all group-hover:scale-110 mb-3">
+                                            <Upload className="w-8 h-8" />
+                                        </div>
+                                        <h4 className="text-lg font-bold text-gray-400 group-hover:text-white mb-1">Nueva Versión</h4>
+                                        <p className="text-xs text-gray-500 text-center">Sube tu Excel, Word o PPT para usarlo como base</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Modal: AI Mapping Editor */}
+                        <Dialog open={showMappingEditor} onOpenChange={setShowMappingEditor}>
+                            <DialogContent className="max-w-5xl bg-deep border-glass-border max-h-[90vh] overflow-y-auto custom-scrollbar">
+                                <DialogHeader>
+                                    <DialogTitle className="flex items-center gap-2 text-2xl text-neon-cyan">
+                                        <Sparkles className="w-6 h-6" />
+                                        Editor de Mapeo Inteligente (IA)
+                                    </DialogTitle>
+                                    <DialogDescription className="text-gray-400">
+                                        Configura la IA para procesar información desordenada y aplicarla a tu formato <span className="text-white font-bold">"{versionFiles.find(f => f.id === activeVersionId)?.name || 'Plantilla'}"</span>.
+                                    </DialogDescription>
+                                </DialogHeader>
+
+                                {/* New Section: Raw Data Input */}
+                                <div className="mt-6 p-4 bg-glass-light border border-neon-purple/20 rounded-xl relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-30 transition-opacity">
+                                        <Sparkles className="w-12 h-12 text-neon-purple" />
+                                    </div>
+                                    <h5 className="text-sm font-bold text-neon-purple mb-2 flex items-center gap-2">
+                                        <FileText className="w-4 h-4" /> 1. Pega tu Información Desordenada
+                                    </h5>
+                                    <textarea
+                                        className="w-full h-32 bg-deep/50 border border-glass-border rounded-lg p-3 text-xs text-gray-300 placeholder:text-gray-600 focus:border-neon-purple/50 outline-none transition-all resize-none"
+                                        placeholder="Pega aquí especificaciones técnicas, correos, notas de voz transcritas o cualquier texto sin formato sobre el equipo..."
+                                        value={messyText}
+                                        onChange={(e) => setMessyText(e.target.value)}
+                                    />
+                                    <div className="flex justify-end mt-2">
+                                        <button
+                                            onClick={async () => {
+                                                setIsProcessingText(true);
+                                                await new Promise(r => setTimeout(r, 1500));
+                                                setIsProcessingText(false);
+                                                toast({ title: "✨ IA Ejecutada", description: "Información organizada y mapeada al formato." });
+                                            }}
+                                            className="px-4 py-1.5 bg-neon-purple/20 text-neon-purple border border-neon-purple/50 rounded-lg text-[10px] font-bold hover:bg-neon-purple hover:text-white transition-all flex items-center gap-2"
+                                            disabled={!messyText || isProcessingText}
+                                        >
+                                            {isProcessingText ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                                            Organizar con IA
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mt-6">
+                                    {/* Left: Preview/Structure (4 columns) */}
+                                    <div className="md:col-span-4 space-y-4">
+                                        <div className="bg-glass-light border border-glass-border rounded-xl p-4">
+                                            <h5 className="text-xs font-bold text-gray-300 mb-4 flex items-center gap-2">
+                                                <Target className="w-4 h-4 text-neon-purple" />
+                                                2. Estructura del Formato
+                                            </h5>
+                                            <div className="space-y-2">
+                                                {['Header Corporativo', 'Tabla de Especificaciones', 'Bloque de Imágenes', 'Pie de Página'].map((item, idx) => (
+                                                    <div key={idx} className="flex items-center justify-between p-2.5 bg-deep rounded-lg border border-glass-border text-[10px] text-gray-400">
+                                                        <span>{item}</span>
+                                                        <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            <h5 className="text-xs font-bold text-gray-300 mb-2">3. Campos a Mapear</h5>
+                                            <div className="grid grid-cols-1 gap-2">
+                                                {[
+                                                    { id: 'nombre_equipo', label: 'Nombre Equipo' },
+                                                    { id: 'especificaciones_tecnicas', label: 'Ficha Técnica' },
+                                                    { id: 'imagen_referencial', label: 'Placeholder Img' }
+                                                ].map(field => (
+                                                    <label key={field.id} className="flex items-center gap-3 p-2.5 bg-glass-light border border-glass-border rounded-lg cursor-pointer hover:border-neon-cyan/40 transition-all">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedFields.includes(field.id)}
+                                                            onChange={() => {
+                                                                setSelectedFields(prev => prev.includes(field.id) ? prev.filter(i => i !== field.id) : [...prev, field.id]);
+                                                            }}
+                                                            className="w-3.5 h-3.5 rounded border-glass-border bg-deep text-neon-cyan focus:ring-neon-cyan/50"
+                                                        />
+                                                        <span className="text-[10px] font-bold text-white">{field.label}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Right: Visual Mockup (8 columns) */}
+                                    <div className="md:col-span-8 bg-glass-light border border-glass-border rounded-xl p-4 flex flex-col">
+                                        <h5 className="text-xs font-bold text-neon-cyan mb-4 flex items-center gap-2">
+                                            <Palette className="w-4 h-4" /> 4. Vista Previa de la Ficha (Referencia)
+                                        </h5>
+                                        <div className="flex-1 bg-deep/80 rounded-lg border border-glass-border p-6 font-mono text-[9px] relative overflow-hidden group/preview">
+                                            {/* Simulated Technical Sheet Layout */}
+                                            <div className="w-full h-8 border-b border-white/10 flex justify-between items-center mb-6">
+                                                <div className="w-16 h-4 bg-white/5 rounded"></div>
+                                                <div className="text-[8px] text-gray-600">PROYECTO: PANDORA-3.0</div>
+                                            </div>
+
+                                            <div className="mb-4">
+                                                <div className={cn("h-6 w-2/3 rounded mb-2 transition-all", messyText ? "bg-neon-cyan/20 border border-neon-cyan/30 flex items-center px-2 text-neon-cyan" : "bg-white/5")}>
+                                                    {messyText ? "SMART FREEZER XT-200" : "[NOMBRE DISPOSITIVO]"}
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4 mb-6">
+                                                <div className="space-y-2">
+                                                    <div className="h-2 w-full bg-white/5 rounded"></div>
+                                                    <div className="h-2 w-5/6 bg-white/5 rounded"></div>
+                                                    <div className="h-2 w-full bg-white/5 rounded"></div>
+                                                    <div className="h-2 w-4/6 bg-white/5 rounded"></div>
+                                                </div>
+                                                <div className="h-24 bg-white/5 border border-dashed border-white/10 rounded flex items-center justify-center text-gray-600">
+                                                    <Package className="w-8 h-8 opacity-20" />
+                                                </div>
+                                            </div>
+
+                                            <div className="w-full h-20 border border-neon-purple/20 bg-neon-purple/5 rounded p-2 overflow-hidden">
+                                                <div className="text-[7px] text-neon-purple/70 uppercase mb-1 font-bold">Especificaciones Generadas por IA:</div>
+                                                <div className="text-gray-400 space-y-1">
+                                                    {messyText ? (
+                                                        <>
+                                                            <div className="animate-fade-in-right">• Capacidad optimizada para alta frecuencia</div>
+                                                            <div className="animate-fade-in-right" style={{ animationDelay: '0.2s' }}>• Sensor inteligente de temperatura</div>
+                                                            <div className="animate-fade-in-right" style={{ animationDelay: '0.4s' }}>• Consumo energético Clase A++</div>
+                                                        </>
+                                                    ) : (
+                                                        <div className="text-gray-700 italic">Esperando entrada de información...</div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div className="absolute inset-0 bg-neon-cyan/5 opacity-0 group-hover/preview:opacity-100 transition-opacity pointer-events-none flex items-center justify-center">
+                                                <span className="bg-black/80 px-3 py-1 rounded-full border border-neon-cyan text-neon-cyan text-[8px]">MODELO DE VISTA EN VIVO</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="mt-8 flex justify-end gap-3 pt-4 border-t border-glass-border">
+                                    {isAutomating ? (
+                                        <div className="w-full space-y-4">
+                                            <div className="flex justify-between text-xs text-gray-400 mb-1">
+                                                <span>{automationStatus}</span>
+                                                <span className="font-bold text-neon-cyan">{Math.round(automationProgress)}%</span>
+                                            </div>
+                                            <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden border border-white/10">
+                                                <div
+                                                    className="h-full bg-gradient-to-r from-neon-cyan to-neon-blue transition-all duration-300"
+                                                    style={{ width: `${automationProgress}%` }}
+                                                />
+                                            </div>
+                                            <p className="text-[10px] text-center text-gray-500 italic">Por favor no cierres esta ventana mientras la IA procesa el formato...</p>
+                                        </div>
+                                    ) : automationCompleted ? (
+                                        <div className="w-full flex items-center justify-between p-4 bg-neon-cyan/10 border border-neon-cyan/30 rounded-xl animate-scale-in">
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2 bg-neon-cyan rounded-full">
+                                                    <Check className="w-4 h-4 text-black" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-bold text-white">¡40 Fichas Generadas!</p>
+                                                    <p className="text-[10px] text-gray-400">Archivos listos para descarga en formato PPTX.</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => setAutomationCompleted(false)}
+                                                    className="px-4 py-2 text-xs font-bold text-gray-400 hover:text-white transition-colors"
+                                                >
+                                                    Cerrar
+                                                </button>
+                                                <button className="flex items-center gap-2 px-4 py-2 bg-neon-cyan text-black font-bold rounded-lg hover:scale-105 transition-all text-xs">
+                                                    <Download className="w-3.5 h-3.5" /> Descargar Todo (.zip)
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <button
+                                                onClick={() => setShowMappingEditor(false)}
+                                                className="px-6 py-2 text-sm font-bold text-gray-400 hover:text-white transition-colors"
+                                            >
+                                                Cancelar
+                                            </button>
+                                            <button
+                                                onClick={startAutomation}
+                                                className="px-8 py-2 bg-gradient-to-r from-neon-cyan to-neon-blue text-black font-bold rounded-lg shadow-glow-sm hover:scale-105 transition-all flex items-center gap-2"
+                                            >
+                                                <Sparkles className="w-4 h-4" /> Empezar Automatización Masiva
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            </DialogContent>
+                        </Dialog>
                     </div>
                 )}
-
             </div>
 
             {/* Editing Company Settings Dialog */}
@@ -893,7 +1332,7 @@ function AdminCotizadorPage() {
                     </div>
                 </DialogContent>
             </Dialog>
-        </div >
+        </div>
     );
 }
 
