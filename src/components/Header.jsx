@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Settings, User, LayoutGrid, Calculator } from 'lucide-react';
 import { useProject } from '@/context/ProjectContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -8,7 +8,8 @@ import { useLogoManager } from '@/hooks/useLogoManager';
 import { cn } from '@/lib/utils';
 
 function Header() {
-  const { userMode, setUserMode } = useProject();
+  const { userMode, setUserMode, setAppMode } = useProject();
+  const navigate = useNavigate();
   const { logo, logoSize } = useLogoManager();
   const location = useLocation();
   const { toast } = useToast();
@@ -21,11 +22,11 @@ function Header() {
   };
 
   const navItems = [
-    { name: 'Evaluación', path: '/' },
-    { name: 'Simulación', path: '/analysis-input' },
-    { name: 'Análisis', path: '/analysis' },
-    { name: 'Historial', path: '/results' },
-    { name: 'Flow Designer', path: '/flow-designer' },
+    { name: 'Evaluación', path: '/alpha' },
+    { name: 'Simulación', path: '/alpha/analysis-input' },
+    { name: 'Análisis', path: '/alpha/analysis' },
+    { name: 'Historial', path: '/alpha/results' },
+    { name: 'Flow Designer', path: '/alpha/flow-designer' },
   ];
 
   return (
@@ -111,12 +112,12 @@ function Header() {
           </div>
 
           {/* Right Controls */}
-          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3">
             <Link
-              to="/admin-cotizador"
+              to="/alpha/admin-cotizador"
               className={cn(
                 "flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium transition-all border",
-                location.pathname === '/admin-cotizador'
+                location.pathname === '/alpha/admin-cotizador'
                   ? "bg-neon-purple/10 border-neon-purple/30 text-neon-purple shadow-glow-sm"
                   : "bg-glass-light border-glass-border text-gray-300 hover:text-white hover:border-neon-purple/20 hover:bg-glass-hover"
               )}
@@ -126,10 +127,10 @@ function Header() {
             </Link>
 
             <Link
-              to="/dashboard"
+              to="/alpha/dashboard"
               className={cn(
                 "flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium transition-all border",
-                location.pathname === '/dashboard'
+                location.pathname === '/alpha/dashboard'
                   ? "bg-neon-cyan/10 border-neon-cyan/30 text-neon-cyan shadow-glow-sm"
                   : "bg-glass-light border-glass-border text-gray-300 hover:text-white hover:border-neon-cyan/20 hover:bg-glass-hover"
               )}
@@ -137,6 +138,20 @@ function Header() {
               <LayoutGrid className="w-4 h-4" />
               <span className="hidden lg:inline">Panel</span>
             </Link>
+
+            <button
+              onClick={() => {
+                setAppMode('beta');
+                navigate('/');
+              }}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-bold transition-all border border-neon-purple/50 bg-neon-purple/10 text-neon-purple hover:bg-neon-purple/20 hover:shadow-glow-sm"
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon-purple opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-neon-purple"></span>
+              </span>
+              Beta System
+            </button>
 
             <div className="h-6 w-px bg-glass-border" />
 
@@ -152,7 +167,7 @@ function Header() {
 
             <div className="flex items-center gap-2">
               <Link
-                to="/settings"
+                to="/alpha/settings"
                 className="p-2 rounded-xl bg-glass-light border border-glass-border text-gray-400 hover:text-neon-cyan hover:border-neon-cyan/30 hover:bg-glass-hover transition-all"
                 title="Configuración"
               >

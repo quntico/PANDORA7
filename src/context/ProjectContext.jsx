@@ -30,49 +30,43 @@ export function ProjectProvider({ children }) {
   const saveProjectToSupabase = useCallback(async () => {
     if (isSaving) return;
     setIsSaving(true);
-
     try {
+      // Solo guardar columnas que existen en projects_beta:
+      // id, name, description, status, version, priority, created_at
       const payload = {
-        name: projectData.name,
-        description: projectData.description,
-        project_type: projectData.projectType,
-        investment_amount: projectData.investmentAmount,
-        timeline: projectData.timeline,
-        current_stage: projectData.currentStage,
-        calculator_metrics: calculatorMetrics,
-        analysis_results: analysisResults
+        name:        projectData.name        || '',
+        description: projectData.description || '',
+        status:      projectData.status      || 'active',
       };
 
       if (projectId) {
-        // Actualizar existente
         const { error } = await supabase
-          .from('projects')
+          .from('projects_beta')
           .update(payload)
           .eq('id', projectId);
         if (error) throw error;
       } else {
-        // Crear nuevo
         const { data, error } = await supabase
-          .from('projects')
+          .from('projects_beta')
           .insert([payload])
           .select()
           .single();
         if (error) throw error;
         if (data) setProjectId(data.id);
       }
-      console.log('[ProjectContext] Proyecto guardado en Supabase');
+      console.log('[ProjectContext] Proyecto guardado en Supabase (_beta)');
     } catch (err) {
       console.error('[ProjectContext] Error guardando proyecto:', err);
     } finally {
       setIsSaving(false);
     }
-  }, [projectId, projectData, calculatorMetrics, analysisResults, isSaving]);
+  }, [projectId, projectData, isSaving]);
 
   // Cargar proyecto desde Supabase (el más reciente)
   const loadLatestProject = useCallback(async () => {
     try {
       const { data, error } = await supabase
-        .from('projects')
+        .from('projects_beta')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(1)
@@ -92,7 +86,7 @@ export function ProjectProvider({ children }) {
         });
         setCalculatorMetrics(data.calculator_metrics || {});
         setAnalysisResults(data.analysis_results || null);
-        console.log('[ProjectContext] Proyecto cargado desde Supabase:', data.id);
+        console.log('[ProjectContext] Proyecto cargado desde Supabase (_beta):', data.id);
       }
     } catch (err) {
       console.error('[ProjectContext] Error cargando proyecto:', err);
@@ -128,6 +122,8 @@ export function ProjectProvider({ children }) {
     setSelectedScenario('realistic');
   };
 
+  const [appMode, setAppMode] = useState('beta'); // 'beta' por defecto para ser la página de inicio
+
   return (
     <ProjectContext.Provider
       value={{
@@ -142,6 +138,8 @@ export function ProjectProvider({ children }) {
         setAnalysisResults,
         userMode,
         setUserMode,
+        appMode,
+        setAppMode,
         selectedScenario,
         setSelectedScenario,
         contextData,

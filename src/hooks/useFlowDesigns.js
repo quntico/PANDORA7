@@ -12,7 +12,7 @@ export function useFlowDesigns() {
         setError(null);
         try {
             const { data, error: fetchError } = await supabase
-                .from('flow_designs')
+                .from('flow_designs_beta')
                 .select('id, name, description, created_at, updated_at')
                 .order('updated_at', { ascending: false });
 
@@ -32,7 +32,7 @@ export function useFlowDesigns() {
         setError(null);
         try {
             const { data, error: fetchError } = await supabase
-                .from('flow_designs')
+                .from('flow_designs_beta')
                 .select('*')
                 .eq('id', id)
                 .single();
@@ -49,12 +49,12 @@ export function useFlowDesigns() {
     }, []);
 
     // Guardar nuevo diseño
-    const saveDesign = useCallback(async (name, nodes, edges, customEquipments, description = '', layout = null) => {
+    const saveDesign = useCallback(async ({ name, nodes, edges, customEquipments, description = '', layout = null }) => {
         setIsLoading(true);
         setError(null);
         try {
             const { data, error: saveError } = await supabase
-                .from('flow_designs')
+                .from('flow_designs_beta')
                 .insert([{
                     name,
                     description,
@@ -78,21 +78,24 @@ export function useFlowDesigns() {
     }, []);
 
     // Actualizar diseño existente
-    const updateDesign = useCallback(async (id, name, nodes, edges, customEquipments, description = '', layout = null) => {
+    const updateDesign = useCallback(async (id, { name, nodes, edges, customEquipments, description = '', layout = null }) => {
         setIsLoading(true);
         setError(null);
         try {
+            // Preparar payload dinámico (solo actualizar lo que viene)
+            const payload = {
+                updated_at: new Date().toISOString()
+            };
+            if (name !== undefined) payload.name = name;
+            if (description !== undefined) payload.description = description;
+            if (nodes !== undefined) payload.nodes = nodes;
+            if (edges !== undefined) payload.edges = edges;
+            if (customEquipments !== undefined) payload.custom_equipments = customEquipments;
+            if (layout !== undefined) payload.layout = layout;
+
             const { data, error: updateError } = await supabase
-                .from('flow_designs')
-                .update({
-                    name,
-                    description,
-                    nodes,
-                    edges,
-                    custom_equipments: customEquipments,
-                    layout,
-                    updated_at: new Date().toISOString()
-                })
+                .from('flow_designs_beta')
+                .update(payload)
                 .eq('id', id)
                 .select()
                 .single();
@@ -113,8 +116,8 @@ export function useFlowDesigns() {
         setIsLoading(true);
         setError(null);
         try {
-            const { error: deleteError } = await supabase
-                .from('flow_designs')
+            const { data, error: deleteError } = await supabase
+                .from('flow_designs_beta')
                 .delete()
                 .eq('id', id);
 

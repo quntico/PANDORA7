@@ -670,14 +670,28 @@ function FlowDesignerPage() {
 
         if (currentDesignId) {
             // Actualizar existente
-            const result = await updateDesignInDb(currentDesignId, name, nodes, edges, customEquipments, description, layoutPayload);
+            const result = await updateDesignInDb(currentDesignId, { 
+                name, 
+                nodes, 
+                edges, 
+                customEquipments, 
+                description, 
+                layout: layoutPayload 
+            });
             if (result) {
                 setCurrentDesignName(name);
                 alert('✅ Diseño actualizado con éxito');
             }
         } else {
             // Crear nuevo
-            const result = await saveDesignToDb(name, nodes, edges, customEquipments, description, layoutPayload);
+            const result = await saveDesignToDb({ 
+                name, 
+                nodes, 
+                edges, 
+                customEquipments, 
+                description, 
+                layout: layoutPayload 
+            });
             if (result) {
                 setCurrentDesignId(result.id);
                 setCurrentDesignName(name);
@@ -774,8 +788,18 @@ function FlowDesignerPage() {
             };
 
             try {
-                // Actualizar en segundo plano sin bloquear
-                updateDesignInDb(currentDesignId, designData).then(() => {
+                // Actualizar en segundo plano sin bloquear (usando objeto de parámetros)
+                updateDesignInDb(currentDesignId, {
+                    name: currentDesignName,
+                    nodes,
+                    edges,
+                    layout: {
+                        viewMode,
+                        simulationConfig,
+                        currentLayout, 
+                        labelHeightOffset
+                    }
+                }).then(() => {
                     console.log("☁️ Diseño actualizado en nube");
                 });
             } catch (e) {

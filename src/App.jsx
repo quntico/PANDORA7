@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import ScrollToTop from '@/components/ScrollToTop';
 import { ProjectProvider } from '@/context/ProjectContext';
 import { useTheme } from '@/hooks/useTheme';
@@ -16,6 +16,9 @@ import ChatPage from '@/pages/ChatPage';
 import FlowDesignerPage from '@/pages/FlowDesignerPage';
 import AdminCotizadorPage from '@/pages/AdminCotizadorPage';
 
+import BetaLayout from '@/layouts/BetaLayout';
+import BetaDashboard from '@/pages/beta/BetaDashboard';
+
 function AppContent() {
   // Initialize theme and logo
   useTheme();
@@ -23,7 +26,12 @@ function AppContent() {
 
   return (
     <Routes>
-      <Route path='/' element={<MainLayout />}>
+      {/* Pandora Beta System - AHORA COMO MODO DE INICIO POR DEFECTO */}
+      <Route path='/' element={<BetaLayout />}>
+        <Route index element={<BetaDashboard />} />
+      </Route>
+
+      <Route path='/alpha' element={<MainLayout />}>
         <Route index element={<HomePage />} />
         <Route path='analysis-input' element={<InputPage />} />
         <Route path='analysis' element={<AnalysisPage />} />
@@ -34,6 +42,9 @@ function AppContent() {
         <Route path='flow-designer' element={<FlowDesignerPage />} />
         <Route path='admin-cotizador' element={<AdminCotizadorPage />} />
       </Route>
+
+      {/* Redirección de seguridad para compatibilidad */}
+      <Route path='/beta' element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

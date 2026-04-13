@@ -27,6 +27,14 @@ export default defineConfig({
 		}
 	},
 	server: {
-		host: true
+		host: true,
+		proxy: {
+			'/api': {
+				target: 'http://localhost:3010',
+				changeOrigin: true,
+				secure: false,
+			}
+		}
 	}
 });
+
