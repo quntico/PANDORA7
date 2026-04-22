@@ -15,6 +15,9 @@ import SettingsPage from '@/pages/SettingsPage';
 import ChatPage from '@/pages/ChatPage';
 import FlowDesignerPage from '@/pages/FlowDesignerPage';
 import AdminCotizadorPage from '@/pages/AdminCotizadorPage';
+import SimulatorsPage from '@/pages/SimulatorsPage';
+import RiderSimulatorPage from '@/pages/RiderSimulatorPage';
+
 
 import BetaLayout from '@/layouts/BetaLayout';
 import BetaDashboard from '@/pages/beta/BetaDashboard';
@@ -34,6 +37,10 @@ function AppContent() {
       <Route path='/alpha' element={<MainLayout />}>
         <Route index element={<HomePage />} />
         <Route path='analysis-input' element={<InputPage />} />
+        <Route path='simulators'>
+          <Route index element={<SimulatorsPage />} />
+          <Route path='rider' element={<RiderSimulatorPage />} />
+        </Route>
         <Route path='analysis' element={<AnalysisPage />} />
         <Route path='results' element={<ResultsPage />} />
         <Route path='dashboard' element={<DashboardPage />} />

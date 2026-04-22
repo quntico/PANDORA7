@@ -17,6 +17,7 @@ export function BetaProvider({ children }) {
   });
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('sandbox'); // sandbox | admin
+  const [focusMode, setFocusMode] = useState(false);
 
   // ID persistente para memoria aunque no haya login
   const [userId] = useState(() => {
@@ -253,7 +254,9 @@ export function BetaProvider({ children }) {
         fetchProjects,
         loading,
         viewMode,
-        setViewMode
+        setViewMode,
+        focusMode,
+        setFocusMode
       }}
     >
       {children}

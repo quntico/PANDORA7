@@ -2,6 +2,7 @@ import React from 'react';
 import BetaChat from '@/components/beta/BetaChat';
 import BetaAdmin from '@/components/beta/BetaAdmin';
 import ProjectVault from '@/components/beta/ProjectVault';
+import BetaSimulator from '@/components/beta/BetaSimulator';
 import { useBeta } from '@/context/BetaContext';
 import { Cpu } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -76,6 +77,19 @@ function BetaDashboard() {
             className="flex-1 bg-[#050505]"
           >
             <ProjectVault />
+          </motion.div>
+        )}
+
+        {viewMode === 'simulator' && (
+          <motion.div
+            key="simulator"
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.02 }}
+            transition={{ duration: 0.5, ease: 'circOut' }}
+            className="flex-1 bg-[#050505]"
+          >
+            <BetaSimulator />
           </motion.div>
         )}
 

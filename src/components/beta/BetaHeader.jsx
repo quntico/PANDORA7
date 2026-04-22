@@ -2,7 +2,8 @@ import React from 'react';
 import { 
   Share2, Download, ExternalLink, Activity, 
   ChevronRight, ArrowRightCircle, LogOut,
-  Monitor, Settings, ShieldCheck, FolderOpen
+  Monitor, Settings, ShieldCheck, FolderOpen,
+  Eye, EyeOff
 } from 'lucide-react';
 import { useBeta } from '@/context/BetaContext';
 import { useProject } from '@/context/ProjectContext';
@@ -10,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 function BetaHeader() {
-  const { activeProject, viewMode, setViewMode } = useBeta();
+  const { activeProject, viewMode, setViewMode, focusMode, setFocusMode } = useBeta();
   const { setAppMode } = useProject();
   const navigate = useNavigate();
 
@@ -39,58 +40,81 @@ function BetaHeader() {
         </div>
       </div>
 
-      {/* Central Navigation Toggle */}
-      <div className="flex items-center bg-[#0A0A0A] rounded-[20px] border border-[#1A1A1A] p-1.5 gap-2 shadow-inner">
-        <button 
-          onClick={() => setViewMode('sandbox')}
-          className={cn(
-            "flex items-center gap-3 px-6 py-2.5 rounded-[14px] text-[11px] font-black uppercase tracking-widest transition-all",
-            viewMode === 'sandbox' 
-              ? "bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 shadow-glow-sm" 
-              : "text-gray-500 hover:text-gray-300"
-          )}
-        >
-          <Monitor className="w-4 h-4" />
-          Sandbox
-        </button>
-        <button 
-          onClick={() => setViewMode('admin')}
-          className={cn(
-            "flex items-center gap-3 px-6 py-2.5 rounded-[14px] text-[11px] font-black uppercase tracking-widest transition-all",
-            viewMode === 'admin' 
-              ? "bg-neon-purple/10 text-neon-purple border border-neon-purple/30 shadow-glow-sm" 
-              : "text-gray-500 hover:text-gray-300"
-          )}
-        >
-          <Settings className="w-4 h-4" />
-          Administración
-        </button>
-        <button 
-          onClick={() => setViewMode('vault')}
-          className={cn(
-            "flex items-center gap-3 px-6 py-2.5 rounded-[14px] text-[11px] font-black uppercase tracking-widest transition-all",
-            viewMode === 'vault' 
-              ? "bg-yellow-400/10 text-yellow-400 border border-yellow-400/30 shadow-glow-sm" 
-              : "text-gray-500 hover:text-gray-300"
-          )}
-        >
-          <FolderOpen className="w-4 h-4" />
-          Bóveda
-        </button>
-      </div>
-
-      <div className="flex items-center gap-4">
-        <div className="hidden xl:flex items-center gap-2 px-4 py-2 rounded-xl bg-[#0A0A0A] border border-[#151515]">
-           <span className="w-2 h-2 rounded-full bg-green-500 shadow-glow-sm animate-pulse" />
-           <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">IA Sincronizada</span>
+      {/* Central Navigation Toggle — oculto en focusMode */}
+      {!focusMode && (
+        <div className="flex items-center bg-[#0A0A0A] rounded-[20px] border border-[#1A1A1A] p-1.5 gap-2 shadow-inner">
+          <button 
+            onClick={() => setViewMode('sandbox')}
+            className={cn(
+              "flex items-center gap-3 px-6 py-2.5 rounded-[14px] text-[11px] font-black uppercase tracking-widest transition-all",
+              viewMode === 'sandbox' 
+                ? "bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 shadow-glow-sm" 
+                : "text-gray-500 hover:text-gray-300"
+            )}
+          >
+            <Monitor className="w-4 h-4" />
+            Sandbox
+          </button>
+          <button 
+            onClick={() => setViewMode('admin')}
+            className={cn(
+              "flex items-center gap-3 px-6 py-2.5 rounded-[14px] text-[11px] font-black uppercase tracking-widest transition-all",
+              viewMode === 'admin' 
+                ? "bg-neon-purple/10 text-neon-purple border border-neon-purple/30 shadow-glow-sm" 
+                : "text-gray-500 hover:text-gray-300"
+            )}
+          >
+            <Settings className="w-4 h-4" />
+            Administración
+          </button>
+          <button 
+            onClick={() => setViewMode('vault')}
+            className={cn(
+              "flex items-center gap-3 px-6 py-2.5 rounded-[14px] text-[11px] font-black uppercase tracking-widest transition-all",
+              viewMode === 'vault' 
+                ? "bg-yellow-400/10 text-yellow-400 border border-yellow-400/30 shadow-glow-sm" 
+                : "text-gray-500 hover:text-gray-300"
+            )}
+          >
+            <FolderOpen className="w-4 h-4" />
+            Bóveda
+          </button>
         </div>
+      )}
+
+      {/* Right actions */}
+      <div className="flex items-center gap-3">
+        {/* Focus Mode toggle */}
+        <button
+          onClick={() => setFocusMode(f => !f)}
+          title={focusMode ? 'Mostrar interfaz completa' : 'Modo foco — ocultar paneles'}
+          className={cn(
+            "flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-black border transition-all group",
+            focusMode
+              ? "bg-[#00F0FF]/15 text-[#00F0FF] border-[#00F0FF]/50 shadow-[0_0_12px_#00F0FF44]"
+              : "bg-white/5 text-gray-500 border-white/10 hover:text-gray-200 hover:border-white/20"
+          )}
+        >
+          {focusMode
+            ? <Eye className="w-4 h-4 drop-shadow-[0_0_6px_#00F0FF]" />
+            : <EyeOff className="w-4 h-4" />
+          }
+          <span className="hidden xl:inline">{focusMode ? 'FOCO' : 'FOCO'}</span>
+        </button>
+
+        {!focusMode && (
+          <div className="hidden xl:flex items-center gap-2 px-4 py-2 rounded-xl bg-[#0A0A0A] border border-[#151515]">
+             <span className="w-2 h-2 rounded-full bg-green-500 shadow-glow-sm animate-pulse" />
+             <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">IA Sincronizada</span>
+          </div>
+        )}
 
         <button 
           onClick={handleExit}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black bg-neon-cyan/5 text-neon-cyan border border-neon-cyan/20 hover:border-neon-cyan/50 hover:bg-neon-cyan/10 transition-all group"
         >
           <ExternalLink className="w-4 h-4 group-hover:scale-110 transition-transform" />
-          <span>MODO ALPHA</span>
+          {!focusMode && <span>MODO ALPHA</span>}
         </button>
       </div>
     </header>
@@ -98,4 +122,3 @@ function BetaHeader() {
 }
 
 export default BetaHeader;
-

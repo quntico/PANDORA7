@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Database, Layout, Layers, Terminal, Bookmark, FileText, 
   History, CheckSquare, GitBranch, Settings, Plus, 
-  Box, Cpu, Globe, Share2, LogOut, ChevronRight, ShieldCheck
+  Box, Cpu, Globe, Share2, LogOut, ChevronRight, ShieldCheck, Activity
 } from 'lucide-react';
 import { useBeta } from '@/context/BetaContext';
 import { useProject } from '@/context/ProjectContext';
@@ -14,6 +14,15 @@ function BetaSidebar() {
     activeProject, setActiveProject, projects, createProject,
     viewMode, setViewMode 
   } = useBeta();
+
+  const [customLogo, setCustomLogo] = useState(null);
+
+  const handleLogoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setCustomLogo(URL.createObjectURL(file));
+    }
+  };
 
   const { setAppMode } = useProject();
   const navigate = useNavigate();
@@ -45,13 +54,40 @@ function BetaSidebar() {
   return (
     <aside className="w-[280px] h-full bg-[#050505] border-r border-[#151515] flex flex-col z-30 shadow-[4px_0_24px_rgba(0,0,0,0.5)]">
       {/* Beta Logo Section */}
-      <div className="p-6 border-b border-[#151515] bg-gradient-to-b from-[#0A0A0A] to-transparent">
+      <div 
+        className="p-6 border-b border-[#151515] bg-gradient-to-b from-[#0A0A0A] to-transparent cursor-pointer group hover:bg-[#111] transition-colors"
+        onClick={() => setViewMode('sandbox')}
+        title="Regresar a The Sandbox"
+      >
         <div className="flex items-center gap-3 mb-1">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-neon-purple to-neon-blue flex items-center justify-center shadow-glow-sm">
-            <span className="text-white font-black text-lg">P</span>
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-neon-purple to-neon-blue flex items-center justify-center shadow-glow-sm relative overflow-hidden group/logo">
+            {customLogo ? (
+              <img src={customLogo} alt="Logo" className="w-full h-full object-cover" />
+            ) : (
+              <img src="/cube-logo.png" alt="Pandora Logo" className="w-full h-full object-cover" />
+            )}
+            <input 
+              type="file" 
+              accept="image/*"
+              className="absolute inset-0 opacity-0 cursor-pointer z-10" 
+              title="Cambiar Logo"
+              onClick={(e) => e.stopPropagation()}
+              onChange={handleLogoUpload}
+            />
+            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/logo:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+              <Plus className="w-4 h-4 text-white" />
+            </div>
           </div>
           <div className="flex flex-col">
-            <span className="text-lg font-bold tracking-tight text-white leading-none">PANDORA</span>
+            <span 
+              className="text-lg font-bold tracking-tight text-white leading-none outline-none group-hover:text-neon-cyan transition-colors"
+              contentEditable
+              suppressContentEditableWarning
+              onClick={(e) => e.stopPropagation()}
+              title="Click para editar nombre"
+            >
+              PANDORA
+            </span>
             <span className="text-[10px] text-neon-purple font-black tracking-widest mt-0.5 uppercase">MODO BETA</span>
           </div>
         </div>
@@ -98,18 +134,32 @@ function BetaSidebar() {
           ))}
         </div>
 
-        <div className="pt-4 border-t border-[#151515]">
+        <div className="pt-4 border-t border-[#151515] flex flex-col gap-2">
           <button 
             onClick={() => setViewMode('admin')}
             className={cn(
-              "w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all border group shadow-lg",
+              "w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all border group",
               viewMode === 'admin' 
-                ? "bg-neon-purple/10 border-neon-purple/20 text-white" 
+                ? "bg-neon-purple/10 border-neon-purple/20 text-white shadow-lg" 
                 : "bg-[#0A0A0A] border-[#151515] text-gray-500 hover:border-[#333] hover:text-white"
             )}
           >
             <ShieldCheck className={cn("w-4 h-4", viewMode === 'admin' ? "text-neon-purple" : "text-gray-600")} />
             <span className="text-xs font-black uppercase tracking-widest">Administración</span>
+          </button>
+
+          <button 
+            onClick={() => setViewMode('simulator')}
+            className={cn(
+              "w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all border group relative overflow-hidden",
+              viewMode === 'simulator' 
+                ? "bg-neon-cyan/10 border-neon-cyan/20 text-white shadow-lg" 
+                : "bg-[#0A0A0A] border-[#151515] text-gray-500 hover:border-[#333] hover:text-white"
+            )}
+          >
+            {viewMode !== 'simulator' && <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-neon-cyan/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />}
+            <Activity className={cn("w-4 h-4 transition-colors", viewMode === 'simulator' ? "text-neon-cyan" : "text-gray-600 group-hover:text-neon-cyan/50")} />
+            <span className="text-xs font-black uppercase tracking-widest">Simulador</span>
           </button>
         </div>
       </div>
