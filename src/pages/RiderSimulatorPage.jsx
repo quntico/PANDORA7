@@ -3,7 +3,7 @@ import ResponseRenderer from '@/components/beta/renderers/ResponseRenderer';
 import { supabase } from '@/supabase';
 
 
-import { Activity, Box, Settings, Download, Trash2, Plus, ArrowLeft, RefreshCw, LayoutDashboard, Bot, User, Send, Loader2, X, Edit3, Minus, ChevronLeft, ChevronRight, Calendar, FileText, Table2, Lock, Unlock } from 'lucide-react';
+import { Activity, Box, Settings, Download, Trash2, Plus, ArrowLeft, RefreshCw, LayoutDashboard, Bot, User, Send, Loader2, X, Edit3, Minus, ChevronLeft, ChevronRight, Calendar, FileText, Table2, Lock, Unlock, Brain } from 'lucide-react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -51,7 +51,12 @@ const DEFAULT_SCENARIOS = {
 };
 
 const DEFAULT_MACHINE_CONFIGS = {
-  lavadoSecado: { machineName: 'Lavadora + Secadora', machineLengthM: 7.60, maxSpeedMMin: 140 / 60, nominalBoxesPerHour: 100 }
+  lavadoSecado: {
+    machineName: 'Lavadora + Secadora',
+    machineLengthM: 7.60,
+    maxSpeedMMin: 140 / 60,      // 2.3333 m/min
+    nominalBoxesPerHour: 200,    // Capacidad nominal ofertada (tope oficial)
+  }
 };
 
 // =========================
@@ -78,16 +83,17 @@ function computeBoxAdvance(box) {
 }
 
 function computeMachineCapacity(box, machineConfig) {
-  const advanceM     = computeBoxAdvance(box);
-  const pitchM       = advanceM + (box.gap || 0.10);
-  const speedMMin    = machineConfig.maxSpeedMMin;
-  const linearMh     = speedMMin * 60;
-  const geomBoxesHr  = pitchM > 0 ? linearMh / pitchM : 0;
-  // Use geometric capacity directly — nominalBoxesPerHour is a reference, not a hard cap
-  const actualBoxesHr = geomBoxesHr;
-  const residenceMin = speedMMin > 0 ? machineConfig.machineLengthM / speedMMin : 0;
-  const boxesInside  = pitchM > 0 ? machineConfig.machineLengthM / pitchM : 0;
-  return { advanceM, pitchM, speedMMin, linearMh, geomBoxesHr, actualBoxesHr, residenceMin, boxesInside };
+  const advanceM    = computeBoxAdvance(box);
+  const pitchM      = advanceM + (box.gap || 0.10);
+  const speedMMin   = machineConfig.maxSpeedMMin;
+  const linearMh    = speedMMin * 60;                         // m/h
+  const geomBoxesHr = pitchM > 0 ? linearMh / pitchM : 0;   // Cap. geométrica teórica
+  // Cap. real = min(nominalBoxesPerHour, geometrica)
+  const nominal       = machineConfig.nominalBoxesPerHour ?? 200;
+  const actualBoxesHr = Math.min(nominal, geomBoxesHr);      // Tope a 200 c/h (oficial)
+  const residenceMin  = speedMMin > 0 ? machineConfig.machineLengthM / speedMMin : 0;
+  const boxesInside   = pitchM > 0 ? machineConfig.machineLengthM / pitchM : 0;
+  return { advanceM, pitchM, speedMMin, linearMh, geomBoxesHr, actualBoxesHr, nominal, residenceMin, boxesInside };
 }
 
 // =========================
@@ -110,7 +116,7 @@ function compareScenarioAgainstMachine(box, machineKey, MACHINE_CONFIGS, CUSTOME
 export default function RiderSimulatorPage() {
   const [inputs, setInputs] = useState({
     machineName: 'PLD-120 / PLD-140',
-    nominalBoxes: 100,
+    nominalBoxes: 200,          // Capacidad nominal ofertada
     machineLength: 7.60,
     maxAdvance: 1.40,
     manualSpeed: 2.33,
@@ -202,12 +208,16 @@ export default function RiderSimulatorPage() {
   });
 
   const [boxes, setBoxes] = useState([
-    { id: 'ex0', label: 'A', name: 'Contenedor CHICO', l: 30.48, w: 38.1, h: 17.78, gap: 0.0952, advanceSide: 'length', color: '#6b7280' },
-    { id: 'ex1', label: 'B', name: 'Contenedor MEDIANO', l: 60.96, w: 38.1, h: 17.78, gap: 0.1004, advanceSide: 'length', color: '#8b5cf6' },
-    { id: 'ex2', label: 'C', name: 'Contenedor Rectangular', l: 60.96, w: 38.1, h: 35.56, gap: 0.0804, advanceSide: 'length', color: '#3b82f6' },
-    { id: 'ex3', label: 'D', name: 'Contenedor Cuadrado', l: 60.96, w: 55.88, h: 35.56, gap: 0.1004, advanceSide: 'length', color: '#10b981' },
-    { id: 'ex4', label: 'E', name: 'CONT-AIP-ABAT (bulk bote)', l: 114.3, w: 121.92, h: 86.36, gap: 0.097, advanceSide: 'length', color: '#f59e0b' },
-    { id: 'ex5', label: 'F', name: 'TAPA-AIP-ABAT (bulk bote)', l: 114.3, w: 121.92, h: 12.7, gap: 0.097, advanceSide: 'length', color: '#ec4899' }
+    // ── LAVADO Y SECADO ──────────────────────────────────────────────────────
+    { id:'ex0', label:'A', name:'Contenedor CHICO',       l:30.48, w:38.10, h:17.78, gap:0.095, advanceSide:'length', color:'#6b7280', maquina:'lavado_secado', suciedad:'Polvo',  included:true  },
+    { id:'ex1', label:'B', name:'Contenedor MEDIANO',     l:60.96, w:38.10, h:17.78, gap:0.100, advanceSide:'length', color:'#8b5cf6', maquina:'lavado_secado', suciedad:'Polvo',  included:true  },
+    { id:'ex2', label:'C', name:'Contenedor Rectangular', l:60.96, w:38.10, h:35.56, gap:0.080, advanceSide:'length', color:'#3b82f6', maquina:'lavado_secado', suciedad:'Polvo',  included:true  },
+    // ── SOLO SECADO ──────────────────────────────────────────────────────────
+    { id:'ex3', label:'D', name:'Contenedor Cuadrado',    l:60.96, w:55.88, h:35.56, gap:0.100, advanceSide:'length', color:'#10b981', maquina:'secado',        suciedad:'Grasa',  included:true  },
+    // ── EXCLUIDOS ─────────────────────────────────────────────────────────────
+    { id:'ex4', label:'E', name:'CONT-AIP-ABAT (bulk bote)', l:114.30, w:121.92, h:86.36, gap:0.097, advanceSide:'length', color:'#f59e0b', maquina:'no', suciedad:'Polvo', included:false },
+    { id:'ex5', label:'F', name:'TAPA-AIP-ABAT (bulk bote)', l:114.30, w:121.92, h:12.70, gap:0.097, advanceSide:'length', color:'#ec4899', maquina:'no', suciedad:'Polvo', included:false },
+    { id:'ex6', label:'G', name:'Tapas (separadores)',        l:0,      w:0,      h:0,     gap:0,     advanceSide:'length', color:'#94a3b8', maquina:'no', suciedad:'Polvo', included:false },
   ]);
 
   const [selectedId, setSelectedId] = useState(boxes[0]?.id || null);
@@ -304,10 +314,15 @@ export default function RiderSimulatorPage() {
     if (selectedId === id) setSelectedId(updated[0]?.id || null);
   };
 
-  // ── Req. Diario — clave estable: r.label (A, B, C...) ──
+  // ── Req. Diario — valores oficiales pre-cargados ──
+  const OFFICIAL_REQS = { A:1610, B:798, C:1064, D:574, E:82, F:82, G:0 };
   const LS_KEY = 'rider_daily_reqs_v2';
-  const [dailyReqs, setDailyReqs]   = useState(() => {
-    try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}'); } catch { return {}; }
+  const [dailyReqs, setDailyReqs] = useState(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+      // Merge: stored values override official defaults
+      return { ...OFFICIAL_REQS, ...stored };
+    } catch { return OFFICIAL_REQS; }
   });
   const [reqLocked,  setReqLocked]  = useState(() => {
     try { return JSON.parse(localStorage.getItem('rider_req_locked') || 'false'); } catch { return false; }
@@ -343,49 +358,91 @@ export default function RiderSimulatorPage() {
   }, [reqLocked]);
 
   // Computations
+  const NOMINAL_CAP = 200; // Capacidad nominal ofertada oficial
+
   const computedRows = useMemo(() => {
     return boxes.map(box => {
       let advance = box.l / 100;
       if (box.advanceSide === 'width') advance = box.w / 100;
-      if (box.advanceSide === 'auto') advance = Math.min(box.l / 100, box.w / 100);
+      if (box.advanceSide === 'auto')  advance = Math.min(box.l / 100, box.w / 100);
 
-      const pitch = advance + box.gap;
-      const speed = inputs.calcMode === 'derive_nominal'
+      const pitch   = advance + box.gap;
+      const speed   = inputs.calcMode === 'derive_nominal'
         ? (pitch * inputs.nominalBoxes) / 60
         : inputs.manualSpeed;
 
-      const linearMh = speed * 60;
-      const geometricBoxesHr = pitch > 0 ? linearMh / pitch : 0;
-      const realBoxesHr = geometricBoxesHr;
-      const residenceMin = speed > 0 ? inputs.machineLength / speed : 0;
-      const inside = pitch > 0 ? inputs.machineLength / pitch : 0;
+      const linearMh          = speed * 60;
+      const geometricBoxesHr  = pitch > 0 ? linearMh / pitch : 0;
+      // Cap. real = min(200, geometrica) — tope nominal ofertado
+      const realBoxesHr       = box.included ? Math.min(NOMINAL_CAP, geometricBoxesHr) : geometricBoxesHr;
+      const residenceMin      = speed > 0 ? inputs.machineLength / speed : 0;
+      const inside            = pitch > 0 ? inputs.machineLength / pitch : 0;
 
-      const boxesPerShift = realBoxesHr * inputs.hoursPerShift;
-      const boxesPerDay = boxesPerShift * inputs.shifts;
-      const boxesPerMonth = boxesPerDay * (inputs.daysPerMonth || 26);
-      const requiredDaily = dailyReqs[box.label] || 0;
-      const requiredHours = realBoxesHr > 0 ? requiredDaily / realBoxesHr : 0;
-      const totalHoursDay = inputs.shifts * inputs.hoursPerShift;
+      const boxesPerShift  = realBoxesHr * inputs.hoursPerShift;
+      const boxesPerDay    = boxesPerShift * inputs.shifts;
+      const boxesPerMonth  = boxesPerDay * (inputs.daysPerMonth || 26);
+      const requiredDaily  = dailyReqs[box.label] ?? (box.maquina === 'lavado_secado' ? 0 : box.maquina === 'secado' ? 0 : 0);
+      const requiredHours  = realBoxesHr > 0 ? requiredDaily / realBoxesHr : 0;
+      const totalHoursDay  = inputs.shifts * inputs.hoursPerShift;
 
       return {
         ...box,
-        advance, pitch, speed, linearMh, geometricBoxesHr, realBoxesHr, residenceMin, inside, boxesPerShift, boxesPerDay, boxesPerMonth, requiredDaily, requiredHours, totalHoursDay
+        advance, pitch, speed, linearMh, geometricBoxesHr, realBoxesHr, residenceMin, inside,
+        boxesPerShift, boxesPerDay, boxesPerMonth, requiredDaily, requiredHours, totalHoursDay
       };
     });
   }, [boxes, inputs, dailyReqs]);
 
   const selectedRow = computedRows.find(r => r.id === selectedId) || computedRows[0];
-  const largestRow = [...computedRows].sort((a, b) => b.advance - a.advance)[0];
+  const largestRow  = [...computedRows].sort((a,b) => b.advance - a.advance)[0];
   const currentSpeed = selectedRow?.speed ?? (140 / 60);
 
-  // scenarioOrchestrator — runs on selectedRow change
+  // ── Grupos por tipo de máquina ──────────────────────────────────────────
+  const lavadoRows   = computedRows.filter(r => r.maquina === 'lavado_secado' && r.included);
+  const secadoRows   = computedRows.filter(r => r.maquina === 'secado'        && r.included);
+  const excluidos    = computedRows.filter(r => !r.included || r.maquina === 'no');
+
+  // ── Horas totales requeridas por grupo (agregado) ───────────────────────
+  const totalHrsLavado = lavadoRows.reduce((s, r) => s + r.requiredHours, 0);
+  const totalHrsSecado = secadoRows.reduce((s, r) => s + r.requiredHours, 0);
+
+  // ── Viabilidad por mix (Y1-Y5) — no por producto individual ──────────────
+  const CLIENT_SCENARIOS = CUSTOMER_SCENARIOS.lavadoSecado?.scenarios ?? [];
+  const mixScenarioResults = useMemo(() => {
+    return CLIENT_SCENARIOS.map(sc => {
+      const avail = sc.effectiveHoursPerShift * sc.shifts;
+      return {
+        year:   sc.year,
+        hrsBase: sc.hrsBase,
+        effectiveHoursPerShift: sc.effectiveHoursPerShift,
+        shifts:  sc.shifts,
+        availableDailyTime: avail,
+        // Lavado+Secado
+        lavado: {
+          requiredHoursTotal: totalHrsLavado,
+          deficitOrSurplusHours: avail - totalHrsLavado,
+          linesRequired: avail > 0 ? Math.ceil(totalHrsLavado / avail) : 0,
+          status: avail >= totalHrsLavado ? 'VIABLE' : 'NO VIABLE',
+        },
+        // Solo Secado
+        secado: {
+          requiredHoursTotal: totalHrsSecado,
+          deficitOrSurplusHours: avail - totalHrsSecado,
+          linesRequired: avail > 0 ? Math.ceil(totalHrsSecado / avail) : 0,
+          status: avail >= totalHrsSecado ? 'VIABLE' : 'NO VIABLE',
+        },
+      };
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalHrsLavado, totalHrsSecado, JSON.stringify(CLIENT_SCENARIOS)]);
+
+  // ── Legacy scenarioResults (mantener por compatibilidad UI existente) ────
   const scenarioResults = useMemo(() => {
     if (!selectedRow) return { lavadoSecado: [] };
     return {
       lavadoSecado: compareScenarioAgainstMachine(selectedRow, 'lavadoSecado', MACHINE_CONFIGS, CUSTOMER_SCENARIOS),
     };
   }, [selectedRow, MACHINE_CONFIGS, CUSTOMER_SCENARIOS]);
-
 
   const worstLavado = scenarioResults.lavadoSecado.reduce((max, r) => r.requiredLines > max ? r.requiredLines : max, 0);
 
@@ -448,6 +505,110 @@ ${userMsg}
     } finally {
       setIsChatTyping(false);
     }
+  };
+
+  // ── exportForAI — Reporte Markdown para evaluación técnica por IA ───────────────────
+  const exportForAI = () => {
+    const ts = new Date().toLocaleString('es-MX');
+    const sc = CUSTOMER_SCENARIOS.lavadoSecado;
+    const machineCfg = MACHINE_CONFIGS.lavadoSecado;
+
+    let md = [];
+    md.push(`# PANDORA 3.0 — Reporte Técnico Rider Simulator`);
+    md.push(`**Exportado:** ${ts}  |  **Modelo seleccionado:** ${selectedRow?.name ?? '—'}  |  **Ver:** 7.61\n`);
+    md.push(`---`);
+    md.push(`\n## CONTEXTO DEL SISTEMA`);
+    md.push(`Este simulador calcula la capacidad operativa de una línea de lavado y secado industrial (tipo Rider/PLD).`);
+    md.push(`Evalúa si la máquina puede procesar el volumen de cajas requerido por el cliente bajo distintos escenarios de eficiencia anual (Y1–Y5).\n`);
+
+    // 1. Configuración de máquina
+    md.push(`## 1. CONFIGURACIÓN DE MÁQUINA (Lavadora + Secadora)`);
+    md.push(`| Parámetro | Valor |`);
+    md.push(`|---|---|`);
+    md.push(`| Nombre | ${machineCfg?.machineName ?? '—'} |`);
+    md.push(`| Longitud | ${machineCfg?.machineLengthM ?? '—'} m |`);
+    md.push(`| Vel. máx. configurada | ${(machineCfg?.maxSpeedMMin ?? 0).toFixed(4)} m/min (${((machineCfg?.maxSpeedMMin ?? 0) * 60).toFixed(1)} m/h) |`);
+    md.push(`| Vel. máx. física (physicalMaxMH) | ${physicalMaxMH.toFixed(1)} m/h |`);
+    md.push(`| Modo de cálculo | ${inputs.calcMode === 'manual' ? 'Manual (velocidad fija)' : 'Derivado de cajas nominales'} |`);
+    md.push(`| Velocidad operativa actual | ${(inputs.manualSpeed * 60).toFixed(2)} m/h |`);
+    md.push(`| Turnos | ${inputs.shifts} |`);
+    md.push(`| Horas/turno base | ${inputs.hoursPerShift} |`);
+    md.push(`| Días/mes | ${inputs.daysPerMonth} |\n`);
+
+    // 2. Modelos de caja evaluados
+    md.push(`## 2. MODELOS DE CAJA EVALUADOS (${computedRows.length} modelos)`);
+    md.push(`> **Fórmulas clave:**`);
+    md.push(`> - Avance = min(largo, ancho) en metros (lado menor de la caja)`);
+    md.push(`> - Paso (Pitch) = Avance + Gap`);
+    md.push(`> - Cap. Geom. (cajas/h) = Velocidad (m/h) ÷ Pitch (m)`);
+    md.push(`> - Residencia (min) = Longitud máquina ÷ Velocidad (m/min)`);
+    md.push(`> - Cajas dentro = Longitud máquina ÷ Pitch`);
+    md.push('');
+    md.push(`| Mod | Nombre | L(cm) | A(cm) | H(cm) | Avance(m) | Gap(m) | Pitch(m) | Vel(m/h) | Cap.Geom(c/h) | Cap.Real(c/h) | Resid(min) | Dentro | Req.Diário | Req(h) |`);
+    md.push(`|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|`);
+    computedRows.forEach(r => {
+      md.push(`| ${r.label} | ${r.name} | ${r.l} | ${r.w} | ${r.h} | ${r.advance.toFixed(3)} | ${r.gap.toFixed(3)} | ${r.pitch.toFixed(3)} | ${r.linearMh.toFixed(2)} | ${r.geometricBoxesHr.toFixed(1)} | ${r.realBoxesHr.toFixed(1)} | ${r.residenceMin.toFixed(2)} | ${r.inside.toFixed(1)} | ${r.requiredDaily.toLocaleString('es-MX')} | ${r.requiredHours.toFixed(2)} |`);
+    });
+    md.push('');
+
+    // 3. Escenario cliente Y1-Y5
+    md.push(`## 3. ESCENARIO CLIENTE — ${sc?.name ?? 'Lavado y Secado'}`);
+    md.push(`**Rate diario requerido:** ${(sc?.dailyRate ?? 0).toLocaleString('es-MX')} cajas/día`);
+    md.push('');
+    md.push(`| Año | Hrs.Base | Hrs.Ef/Turno | Turnos | Hrs.Efectivas/Día | Req/h (vs ${selectedRow?.name ?? 'modelo sel.'}) | Cap.Máq (c/h) | Líneas Req. | Cobertura | Δ Déficit |`);
+    md.push(`|---|---|---|---|---|---|---|---|---|---|`);
+    scenarioResults.lavadoSecado.forEach(r => {
+      const cov = (r.coverageRatio * 100).toFixed(1);
+      const delta = r.deficitOrSurplus >= 0 ? `+${r.deficitOrSurplus.toFixed(1)} (SUPERÁVIT)` : `${r.deficitOrSurplus.toFixed(1)} (DÉFICIT)`;
+      md.push(`| ${r.year} | ${r.hrsBase} | ${r.effectiveHoursPerShift.toFixed(2)} | ${r.shifts} | ${r.availableDailyTime.toFixed(2)} | ${r.requiredPerHour.toFixed(2)} | ${r.machineBoxesPerHour.toFixed(2)} | ${r.requiredLines} | ${cov}% | ${delta} |`);
+    });
+    md.push('');
+
+    // 4. Resumen de viabilidad
+    md.push(`## 4. RESUMEN DE VIABILIDAD`);
+    const best  = scenarioResults.lavadoSecado[0];
+    const worst = scenarioResults.lavadoSecado[scenarioResults.lavadoSecado.length - 1];
+    md.push(`| Métrica | Y1 (mejor caso) | Y5 (peor caso) |`);
+    md.push(`|---|---|---|`);
+    md.push(`| Cajas/h máquina | ${best?.machineBoxesPerHour?.toFixed(2) ?? '—'} | ${worst?.machineBoxesPerHour?.toFixed(2) ?? '—'} |`);
+    md.push(`| Req/h cliente | ${best?.requiredPerHour?.toFixed(2) ?? '—'} | ${worst?.requiredPerHour?.toFixed(2) ?? '—'} |`);
+    md.push(`| Líneas requeridas | ${best?.requiredLines ?? '—'} | ${worst?.requiredLines ?? '—'} |`);
+    md.push(`| Cobertura | ${best ? (best.coverageRatio * 100).toFixed(1) + '%' : '—'} | ${worst ? (worst.coverageRatio * 100).toFixed(1) + '%' : '—'} |`);
+    md.push(`| Estado | ${best?.coverageRatio >= 1 ? '✅ VIABLE' : '❌ INSUFICIENTE'} | ${worst?.coverageRatio >= 1 ? '✅ VIABLE' : '❌ INSUFICIENTE'} |`);
+    md.push('');
+
+    // 5. Requerimientos diarios por modelo
+    md.push(`## 5. REQUERIMIENTOS DIARIOS POR MODELO`);
+    md.push(`| Modelo | Req. Diario (cajas) | Cap. Real (c/h) | Horas necesarias |`);
+    md.push(`|---|---|---|---|`);
+    computedRows.forEach(r => {
+      md.push(`| ${r.label} — ${r.name} | ${r.requiredDaily.toLocaleString('es-MX')} | ${r.realBoxesHr.toFixed(1)} | ${r.requiredHours.toFixed(2)} h |`);
+    });
+    md.push('');
+
+    // 6. Prompt para IA
+    md.push(`---`);
+    md.push(`## 🤖 INSTRUCCIONES PARA EVALUACIÓN POR IA`);
+    md.push(`Por favor realiza una **evaluación técnica completa** de este reporte de simulación industrial. Analiza:`);
+    md.push(``);
+    md.push(`1. **Precisión de fórmulas**: ¿Son correctas las fórmulas de capacidad, residencia y paso? Revisa la coherencia entre Pitch = Avance + Gap y Cap. Geom. = Vel / Pitch.`);
+    md.push(`2. **Viabilidad del escenario**: Con los datos de Y1 a Y5, ¿puede una sola línea cubrir el rate diario del cliente? ¿En qué año se vuelve crítico?`);
+    md.push(`3. **Modelo crítico**: ¿Qué modelo de caja representa el cuello de botella más severo? ¿Por qué?`);
+    md.push(`4. **Consistencia de datos**: ¿Hay alguna incoherencia entre los valores calculados? (ej. horas requeridas > horas disponibles)`);
+    md.push(`5. **Recomendaciones**: Sugiere ajustes de parámetros (velocidad, turnos, horas efectivas) para maximizar la cobertura en Y5.`);
+    md.push(`6. **Riesgos operativos**: Identifica riesgos en la operación basado en los márgenes de cobertura.`);
+
+    const fullReport = md.join('\n');
+
+    // Descargar como .md
+    const blob = new Blob([fullReport], { type: 'text/markdown;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `PANDORA_AI_Report_${Date.now()}.md`;
+    link.click();
+
+    // También copiar al clipboard
+    navigator.clipboard?.writeText(fullReport).catch(() => {});
   };
 
   // ── exportPDF — Reporte Ejecutivo ──────────────────────────────
@@ -964,6 +1125,18 @@ ${userMsg}
             </button>
             <button onClick={exportPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 text-red-400 transition-all text-sm font-bold">
               <FileText className="w-4 h-4" /> PDF
+            </button>
+            <button
+              onClick={exportForAI}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all"
+              style={{
+                background: 'rgba(139, 92, 246, 0.12)',
+                border: '1px solid rgba(139, 92, 246, 0.35)',
+                color: '#A78BFA',
+              }}
+              title="Exporta un reporte Markdown para evaluación técnica por IA (descarga + copia al clipboard)"
+            >
+              <Brain className="w-4 h-4" /> Revisar con IA
             </button>
           </div>
         </div>
@@ -1589,135 +1762,143 @@ ${userMsg}
                 <table className="w-full text-left text-sm whitespace-nowrap">
                   <thead className="bg-[#111] sticky top-0 z-10 border-b border-[#222]">
                     <tr>
-                      <th onClick={() => setInfoModal('col_mod')} className="px-4 py-3 font-semibold text-gray-400 cursor-pointer hover:text-neon-cyan hover:bg-white/5 transition-colors">Mod</th>
-                      <th onClick={() => setInfoModal('col_nombre')} className="px-4 py-3 font-semibold text-gray-400 cursor-pointer hover:text-neon-cyan hover:bg-white/5 transition-colors">Nombre</th>
-                      <th onClick={() => setInfoModal('col_dim')} className="px-4 py-3 font-semibold text-gray-400 cursor-pointer hover:text-neon-cyan hover:bg-white/5 transition-colors">Dimensiones (cm)</th>
-                      <th onClick={() => setInfoModal('col_vel')} className="px-4 py-3 font-semibold text-gray-400 cursor-pointer hover:text-neon-cyan hover:bg-white/5 transition-colors">Vel. (m/h)</th>
-                      <th onClick={() => setInfoModal('col_cap')} className="px-4 py-3 font-semibold text-blue-400 cursor-pointer hover:text-neon-cyan hover:bg-white/5 transition-colors">Cap. Real</th>
-                      <th onClick={() => setInfoModal('col_cap_dia')} className="px-4 py-3 font-semibold text-gray-400 cursor-pointer hover:text-neon-cyan hover:bg-white/5 transition-colors">Cap. Día</th>
-                      <th onClick={() => setInfoModal('col_cap_mes')} className="px-4 py-3 font-semibold text-gray-400 cursor-pointer hover:text-neon-cyan hover:bg-white/5 transition-colors">Cap. Mes</th>
-                      <th className="px-4 py-3 font-semibold text-yellow-400">
-                        <span className="flex items-center gap-2">
+                      <th className="px-3 py-3 font-semibold text-gray-400">Mod</th>
+                      <th className="px-3 py-3 font-semibold text-gray-400">Máquina</th>
+                      <th className="px-3 py-3 font-semibold text-gray-400">Nombre</th>
+                      <th className="px-3 py-3 font-semibold text-gray-400 text-center">L&times;A&times;H (cm)</th>
+                      <th onClick={() => setInfoModal('col_vel')} className="px-3 py-3 font-semibold text-gray-400 cursor-pointer hover:text-neon-cyan text-center">Vel (m/h)</th>
+                      <th className="px-3 py-3 font-semibold text-gray-500 text-center">Cap.Geom (c/h)</th>
+                      <th onClick={() => setInfoModal('col_cap')} className="px-3 py-3 font-semibold text-blue-400 cursor-pointer hover:text-neon-cyan text-center">Cap.Real ≤200 (c/h)</th>
+                      <th className="px-3 py-3 font-semibold text-yellow-400 text-center">
+                        <span className="flex items-center gap-1 justify-center">
                           Req. Diario
-                          {/* Candado de bloqueo */}
                           <button
                             onClick={(e) => { e.stopPropagation(); setReqLocked(l => !l); }}
-                            title={reqLocked ? 'Datos bloqueados — click para editar' : 'Click para bloquear y guardar definitivamente'}
-                            className={`ml-1 p-0.5 rounded transition-all ${
-                              reqLocked
-                                ? 'text-yellow-400 drop-shadow-[0_0_6px_#facc15] hover:text-yellow-300'
-                                : 'text-gray-600 hover:text-yellow-400'
+                            title={reqLocked ? 'Bloqueado — click para editar' : 'Click para bloquear'}
+                            className={`p-0.5 rounded transition-all ${
+                              reqLocked ? 'text-yellow-400 drop-shadow-[0_0_6px_#facc15]' : 'text-gray-600 hover:text-yellow-400'
                             }`}
                           >
-                            {reqLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+                            {reqLocked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
                           </button>
-                          {/* Estado de guardado */}
                           {saveStatus === 'saving' && <span className="text-[9px] text-yellow-400 animate-pulse">↻</span>}
                           {saveStatus === 'saved'  && <span className="text-[9px] text-green-400">✓</span>}
                         </span>
                       </th>
-                      <th onClick={() => setInfoModal('col_estatus')} className="px-4 py-3 font-semibold text-gray-400 cursor-pointer hover:text-neon-cyan hover:bg-white/5 transition-colors">Estatus</th>
-                      <th onClick={() => setInfoModal('col_acc')} className="px-4 py-3 font-semibold text-gray-400 text-right cursor-pointer hover:text-neon-cyan hover:bg-white/5 transition-colors">Acciones</th>
+                      <th className="px-3 py-3 font-semibold text-purple-400 text-center">Horas Req.</th>
+                      <th className="px-3 py-3 font-semibold text-gray-400 text-center">Estado</th>
+                      <th className="px-3 py-3 font-semibold text-gray-400 text-right">Acciones</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#1A1A1A]">
-                    {computedRows.map((r) => (
-                      <tr 
-                        key={r.id} 
-                        className={cn(
-                          "transition-colors hover:bg-[#111] cursor-pointer",
-                          selectedId === r.id ? "bg-blue-500/5" : ""
-                        )}
+                    {/* ── Group header: LAVADO Y SECADO ── */}
+                    <tr><td colSpan={11} className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest" style={{color:'#00F0FF', background:'rgba(0,240,255,0.04)', borderBottom:'1px solid rgba(0,240,255,0.12)'}}>⬡ Lavado y Secado — {lavadoRows.length} productos — Total req: {lavadoRows.reduce((s,r)=>s+r.requiredDaily,0).toLocaleString('es-MX')} pzas/día</td></tr>
+                    {lavadoRows.map((r) => (
+                      <tr key={r.id}
+                        className={cn("transition-colors hover:bg-[#111] cursor-pointer", selectedId===r.id ? "bg-blue-500/5" : "")}
                         onClick={() => setSelectedId(r.id)}
                       >
-                        <td className="px-4 py-3">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); toggleMix(r.id); }}
-                            title={selectedMixIds.includes(r.id) ? 'Quitar del mix' : 'Agregar al mix de cálculo'}
-                            className="relative group/badge focus:outline-none"
-                          >
-                            <span
-                              className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black transition-all duration-300"
-                              style={
-                                selectedMixIds.includes(r.id)
-                                  // EN MIX: color del modelo + glow fuerte
-                                  ? { backgroundColor: r.color || '#3b82f6', color: '#fff', boxShadow: `0 0 14px ${r.color || '#3b82f6'}99` }
-                                  // SOLO SELECCIONADO (no en mix): borde de color, fondo oscuro
-                                  : selectedId === r.id
-                                    ? { backgroundColor: '#1a1a1a', color: r.color || '#888', border: `2px solid ${r.color || '#3b82f6'}80` }
-                                    // INACTIVO: gris neutro
-                                    : { backgroundColor: '#222', color: '#666', border: '2px solid transparent' }
-                              }
-                            >
-                              {r.label}
-                            </span>
-                            {/* Micro-indicador de estado mix */}
-                            <span
-                              className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full text-[8px] flex items-center justify-center font-black transition-all duration-200"
-                              style={selectedMixIds.includes(r.id)
-                                ? { backgroundColor: '#00F0FF', color: '#000' }
-                                : { backgroundColor: '#333', color: '#555' }}
-                            >
-                              {selectedMixIds.includes(r.id) ? '✓' : '+'}
-                            </span>
-                          </button>
+                        <td className="px-3 py-3">
+                          <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black" style={{backgroundColor: r.color||'#3b82f6',color:'#fff'}}>{r.label}</span>
                         </td>
-
-                        <td className="px-4 py-3 font-medium text-white">{r.name}</td>
-                        <td className="px-4 py-3 text-gray-300">{r.l} × {r.w} × {r.h}</td>
-                        <td className="px-4 py-3 text-gray-300">{formatNumber(r.linearMh)}</td>
-                        <td className="px-4 py-3 font-bold text-blue-400">{formatNumber(r.realBoxesHr, 1)} c/h</td>
-                        <td className="px-4 py-3 text-gray-300">{formatNumber(r.boxesPerDay, 0)}</td>
-                        <td className="px-4 py-3 text-gray-300">{formatNumber(r.boxesPerMonth, 0)}</td>
-                        <td className="px-4 py-3">
-                           <input 
-                             type="number" 
-                             value={dailyReqs[r.label] || ''} 
-                             placeholder="Ej. 1000"
-                             readOnly={reqLocked}
-                             onChange={(e) => updateBoxRequirement(r.label, Number(e.target.value))} 
-                             onClick={(e) => e.stopPropagation()}
-                             className={`w-24 bg-black border rounded-lg px-2 py-1 text-sm outline-none transition-colors ${
-                               reqLocked
-                                 ? 'border-yellow-500/40 text-yellow-400/60 cursor-not-allowed'
-                                 : 'border-[#333] focus:border-yellow-400 text-yellow-400'
-                             }`}
-                           />
+                        <td className="px-3 py-2"><span className="px-2 py-0.5 rounded-full text-[10px] font-bold" style={{background:'rgba(0,240,255,0.08)',color:'#00F0FF',border:'1px solid rgba(0,240,255,0.2)'}}>Lav+Sec</span></td>
+                        <td className="px-3 py-3 font-medium text-white text-sm">{r.name}</td>
+                        <td className="px-3 py-3 text-gray-400 text-xs text-center">{r.l}×{r.w}×{r.h}</td>
+                        <td className="px-3 py-3 text-gray-300 text-center text-xs">{formatNumber(r.linearMh,1)}</td>
+                        <td className="px-3 py-3 text-gray-500 text-center text-xs">{formatNumber(r.geometricBoxesHr,1)}</td>
+                        <td className="px-3 py-3 text-center">
+                          <span className="font-bold text-blue-400">{formatNumber(r.realBoxesHr,1)}</span>
+                          {r.geometricBoxesHr > NOMINAL_CAP && <span className="ml-1 text-[9px] text-orange-400" title="Limitado a 200 c/h nominal">↓200</span>}
                         </td>
-                        <td className="px-4 py-3">
-                           {dailyReqs[r.label] > 0 ? (
-                            <span className={cn(
-                              "font-bold",
-                              r.requiredHours > r.totalHoursDay ? "text-red-400" : "text-green-400"
-                            )}>
-                              {formatNumber(r.requiredHours, 1)}h / {r.totalHoursDay}h
-                            </span>
-                          ) : (
-                            <span className="text-gray-600">-</span>
-                          )}
+                        <td className="px-3 py-3">
+                          <input type="number" value={dailyReqs[r.label]??''} placeholder="Req" readOnly={reqLocked}
+                            onChange={(e) => updateBoxRequirement(r.label, Number(e.target.value))}
+                            onClick={(e) => e.stopPropagation()}
+                            className={`w-20 bg-black border rounded-lg px-2 py-1 text-xs outline-none transition-colors text-center ${
+                              reqLocked ? 'border-yellow-500/40 text-yellow-400/60 cursor-not-allowed' : 'border-[#333] focus:border-yellow-400 text-yellow-400'
+                            }`} />
                         </td>
-                        <td className="px-4 py-3 text-right">
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); openEditBoxModal(r); }}
-                            className="p-1.5 text-gray-500 hover:text-blue-400 hover:bg-blue-500/10 rounded transition-colors mr-1"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                          </button>
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); removeBox(r.id); }}
-                            className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                        <td className="px-3 py-3 text-center">
+                          {(dailyReqs[r.label]??0)>0
+                            ? <span className={`text-xs font-bold ${r.requiredHours > r.totalHoursDay ? 'text-red-400' : 'text-purple-400'}`}>{formatNumber(r.requiredHours,2)}h</span>
+                            : <span className="text-gray-600 text-xs">-</span>}
+                        </td>
+                        <td className="px-3 py-3 text-center">
+                          {(dailyReqs[r.label]??0)>0
+                            ? <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${r.requiredHours<=r.totalHoursDay?'bg-green-500/10 text-green-400 border border-green-500/30':'bg-red-500/10 text-red-400 border border-red-500/30'}`}>
+                                {r.requiredHours<=r.totalHoursDay?'✓ OK':'⚠ Excede'}
+                              </span>
+                            : <span className="text-gray-600 text-xs">-</span>}
+                        </td>
+                        <td className="px-3 py-3 text-right">
+                          <div className="flex gap-1 justify-end">
+                            <button onClick={(e)=>{e.stopPropagation();openEditBoxModal(r);}} className="p-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg transition-all"><Edit3 className="w-3 h-3"/></button>
+                            <button onClick={(e)=>{e.stopPropagation();removeBox(r.id);}} className="p-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-all"><Trash2 className="w-3 h-3"/></button>
+                          </div>
                         </td>
                       </tr>
                     ))}
-                    {computedRows.length === 0 && (
-                      <tr>
-                        <td colSpan="7" className="px-4 py-8 text-center text-gray-500">
-                          Agrega un modelo para comenzar la simulación.
+
+                    {/* ── Group header: SOLO SECADO ── */}
+                    <tr><td colSpan={11} className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest" style={{color:'#8B5CF6', background:'rgba(139,92,246,0.04)', borderBottom:'1px solid rgba(139,92,246,0.12)'}}>⬡ Solo Secado — {secadoRows.length} productos — Total req: {secadoRows.reduce((s,r)=>s+r.requiredDaily,0).toLocaleString('es-MX')} pzas/día</td></tr>
+                    {secadoRows.map((r) => (
+                      <tr key={r.id}
+                        className={cn("transition-colors hover:bg-[#111] cursor-pointer", selectedId===r.id ? "bg-purple-500/5" : "")}
+                        onClick={() => setSelectedId(r.id)}
+                      >
+                        <td className="px-3 py-3">
+                          <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black" style={{backgroundColor: r.color||'#8b5cf6',color:'#fff'}}>{r.label}</span>
+                        </td>
+                        <td className="px-3 py-2"><span className="px-2 py-0.5 rounded-full text-[10px] font-bold" style={{background:'rgba(139,92,246,0.08)',color:'#8B5CF6',border:'1px solid rgba(139,92,246,0.2)'}}>Secado</span></td>
+                        <td className="px-3 py-3 font-medium text-white text-sm">{r.name}</td>
+                        <td className="px-3 py-3 text-gray-400 text-xs text-center">{r.l}×{r.w}×{r.h}</td>
+                        <td className="px-3 py-3 text-gray-300 text-center text-xs">{formatNumber(r.linearMh,1)}</td>
+                        <td className="px-3 py-3 text-gray-500 text-center text-xs">{formatNumber(r.geometricBoxesHr,1)}</td>
+                        <td className="px-3 py-3 text-center">
+                          <span className="font-bold text-purple-400">{formatNumber(r.realBoxesHr,1)}</span>
+                          {r.geometricBoxesHr > NOMINAL_CAP && <span className="ml-1 text-[9px] text-orange-400">↓200</span>}
+                        </td>
+                        <td className="px-3 py-3">
+                          <input type="number" value={dailyReqs[r.label]??''} placeholder="Req" readOnly={reqLocked}
+                            onChange={(e) => updateBoxRequirement(r.label, Number(e.target.value))}
+                            onClick={(e) => e.stopPropagation()}
+                            className={`w-20 bg-black border rounded-lg px-2 py-1 text-xs outline-none transition-colors text-center ${
+                              reqLocked ? 'border-yellow-500/40 text-yellow-400/60 cursor-not-allowed' : 'border-[#333] focus:border-yellow-400 text-yellow-400'
+                            }`} />
+                        </td>
+                        <td className="px-3 py-3 text-center">
+                          {(dailyReqs[r.label]??0)>0
+                            ? <span className="text-xs font-bold text-purple-400">{formatNumber(r.requiredHours,2)}h</span>
+                            : <span className="text-gray-600 text-xs">-</span>}
+                        </td>
+                        <td className="px-3 py-3 text-center">
+                          {(dailyReqs[r.label]??0)>0
+                            ? <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${r.requiredHours<=r.totalHoursDay?'bg-green-500/10 text-green-400 border border-green-500/30':'bg-red-500/10 text-red-400 border border-red-500/30'}`}>
+                                {r.requiredHours<=r.totalHoursDay?'✓ OK':'⚠ Excede'}
+                              </span>
+                            : <span className="text-gray-600 text-xs">-</span>}
+                        </td>
+                        <td className="px-3 py-3 text-right">
+                          <div className="flex gap-1 justify-end">
+                            <button onClick={(e)=>{e.stopPropagation();openEditBoxModal(r);}} className="p-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg transition-all"><Edit3 className="w-3 h-3"/></button>
+                            <button onClick={(e)=>{e.stopPropagation();removeBox(r.id);}} className="p-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-all"><Trash2 className="w-3 h-3"/></button>
+                          </div>
                         </td>
                       </tr>
+                    ))}
+
+                    {/* ── Group header: EXCLUIDOS ── */}
+                    {excluidos.length > 0 && (
+                      <>
+                        <tr><td colSpan={11} className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest" style={{color:'#666', background:'rgba(255,255,255,0.02)', borderBottom:'1px solid rgba(255,255,255,0.06)'}}>⊘ Excluidos de evaluación — no entran en lavado ni secado</td></tr>
+                        {excluidos.map((r) => (
+                          <tr key={r.id} className="opacity-40 hover:opacity-70 transition-opacity">
+                            <td className="px-3 py-2"><span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black bg-[#222] text-gray-500">{r.label}</span></td>
+                            <td className="px-3 py-2"><span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-500/10 text-gray-500 border border-gray-500/20">Excluido</span></td>
+                            <td className="px-3 py-2 text-gray-500 text-sm" colSpan={9}>{r.name} &mdash; <span className="text-[11px]">{r.l > 0 ? `${r.l}×${r.w}×${r.h} cm` : 'Sin dimensiones'}</span></td>
+                          </tr>
+                        ))}
+                      </>
                     )}
                   </tbody>
                   {/* ─── FILA TOTAL REQ. DIARIO ─── */}
