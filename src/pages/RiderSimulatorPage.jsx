@@ -227,10 +227,14 @@ export default function RiderSimulatorPage() {
       `<p style="margin:0;color:#4f6377;font-size:12px;line-height:1.5">${c.text}</p></div>`
     ).join('');
 
-    // ── Build hidden continuous div ──────────────────────────────────────
-    const container = document.createElement('div');
-    container.style.cssText = 'position:fixed;left:-9999px;top:0;width:900px;background:#fff;font-family:Segoe UI,Arial,sans-serif;color:#1f2a37;padding:0;z-index:-1;';
-    container.innerHTML = `
+    // ── Build hidden pages ──────────────────────────────────────
+    const root = document.createElement('div');
+    root.style.cssText = 'position:fixed;left:-9999px;top:0;width:900px;z-index:-1;';
+    
+    // Page 1
+    const p1 = document.createElement('div');
+    p1.style.cssText = 'background:#fff;font-family:Segoe UI,Arial,sans-serif;color:#1f2a37;min-height:1100px;';
+    p1.innerHTML = `
       <div style="background:linear-gradient(90deg,#0b8ea0,#11b5c9 55%,#6dd5e3);padding:22px 36px 18px;display:flex;justify-content:space-between;align-items:center">
         <div style="color:#fff;font-weight:800;font-size:20px;letter-spacing:2px">RYDER <span style="font-size:10px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:4px;padding:2px 8px;letter-spacing:1px">PANDORA 3.0 · ${d.meta.version}</span></div>
         <div style="color:rgba(255,255,255,.8);font-size:12px;font-weight:600">Reporte de Simulación Industrial</div>
@@ -280,9 +284,17 @@ export default function RiderSimulatorPage() {
           <thead><tr>${['Mod','Nombre','Cap c/h','Cap/Día','Req/Día','Estado'].map(h=>`<th style="background:#f1f8fb;color:#122033;font-size:10px;text-transform:uppercase;letter-spacing:.4px;padding:7px 9px;border-bottom:1px solid #dbe5ee;text-align:left;font-weight:700">${h}</th>`).join('')}</tr></thead>
           <tbody>${modelRows}</tbody>
         </table>
+      </div>`;
+
+    // Page 2
+    const p2 = document.createElement('div');
+    p2.style.cssText = 'background:#fff;font-family:Segoe UI,Arial,sans-serif;color:#1f2a37;min-height:1100px;';
+    p2.innerHTML = `
+      <div style="background:#0f1c2e;padding:12px 36px;display:flex;justify-content:space-between;align-items:center">
+        <div style="color:rgba(255,255,255,.7);font-size:10px;font-weight:700;letter-spacing:1px">RYDER PANDORA 3.0</div>
+        <div style="color:rgba(255,255,255,.5);font-size:10px">Página 2 de 2</div>
       </div>
-      <div style="height:2px;background:#eef3f7;margin:0 36px"></div>
-      <div style="padding:20px 36px">
+      <div style="padding:32px 36px">
         <h2 style="font-size:20px;margin:0 0 5px;color:#122033">Lavado y Secado — Parámetros Y1–Y5</h2>
         <p style="font-size:11px;color:#6b7280;margin:0 0 10px">Ref: ${d.lavadoSecadoParams.referencia} · Rate base: ${N(d.lavadoSecadoParams.rateBase)} cajas/día</p>
         <table style="width:100%;border-collapse:collapse;font-size:11px">
@@ -297,7 +309,9 @@ export default function RiderSimulatorPage() {
         <p style="margin-top:18px;color:#9aabb8;font-size:10px;border-top:1px solid #e8eef4;padding-top:12px">Generado automáticamente · PANDORA 3.0 · RYDER Industrial Simulator · ${d.meta.fecha}</p>
       </div>`;
 
-    document.body.appendChild(container);
+    root.appendChild(p1);
+    root.appendChild(p2);
+    document.body.appendChild(root);
 
     try {
       const [html2canvas, { default: jsPDF }] = await Promise.all([
@@ -305,31 +319,32 @@ export default function RiderSimulatorPage() {
         import('jspdf'),
       ]);
 
-      const canvas = await html2canvas(container, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-        width: 900,
-      });
-
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
-      const imgW  = pageW;
-      const imgH  = (canvas.height * pageW) / canvas.width;
 
-      let y = 0;
-      while (y < imgH) {
-        if (y > 0) pdf.addPage();
-        pdf.addImage(imgData, 'JPEG', 0, -y, imgW, imgH, '', 'FAST');
-        y += pageH;
+      for (let i = 0; i < 2; i++) {
+        const pageNode = i === 0 ? p1 : p2;
+        const canvas = await html2canvas(pageNode, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          logging: false,
+          width: 900,
+        });
+
+        if (i > 0) pdf.addPage();
+        
+        const imgData = canvas.toDataURL('image/jpeg', 0.98);
+        const imgW  = pageW;
+        const imgH  = (canvas.height * pageW) / canvas.width;
+        
+        pdf.addImage(imgData, 'JPEG', 0, 0, imgW, imgH, '', 'FAST');
       }
 
       pdf.save(`RYDER_Informe_${d.meta.fecha.replace(/\//g, '-')}.pdf`);
     } finally {
-      document.body.removeChild(container);
+      document.body.removeChild(root);
     }
   };
 
