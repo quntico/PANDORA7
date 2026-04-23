@@ -711,12 +711,13 @@ ${userMsg}
       // Label
       text(...C.gray2); font('bold',5.5);
       lbl(k.l, x+4, curY+9.5);
-      // Value (colored)
+      // Value (colored) — measure width BEFORE changing font
       text(...k.ac); font('bold',14);
+      const valW = doc.getTextWidth(k.v);
       lbl(k.v, x+4, curY+23);
-      // Unit — same baseline as value, right of it
+      // Unit inline right, 3mm gap after number
       text(...C.gray2); font('normal',6);
-      lbl(k.u, x+5+doc.getTextWidth(k.v), curY+23);
+      lbl(k.u, x+4+valW+3, curY+23);
     });
     curY += kH+6;
 
