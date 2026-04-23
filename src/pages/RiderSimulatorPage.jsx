@@ -183,10 +183,12 @@ export default function RiderSimulatorPage() {
   const [reportModalData, setReportModalData] = useState(null);
   const [showPdfMenu, setShowPdfMenu] = useState(false);
   const [customFileName, setCustomFileName] = useState('');
+  const [showFileNameModal, setShowFileNameModal] = useState(false);
+  const [tempFileName, setTempFileName] = useState('');
 
   const handleSetFileName = () => {
-    const name = window.prompt("Nombre base para los archivos exportados (deja vacío para usar nombre por defecto):", customFileName);
-    if (name !== null) setCustomFileName(name.trim());
+    setTempFileName(customFileName);
+    setShowFileNameModal(true);
   };
 
   const buildReport = () => buildRyderReportData({
@@ -3162,6 +3164,78 @@ ${userMsg}
           reportData={reportModalData}
           onClose={() => setShowReportModal(false)}
         />
+      )}
+      {/* Modal de Cristal: Nombre de Exportación (Vidrio Biselado 30%) */}
+      {showFileNameModal && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+          onClick={() => setShowFileNameModal(false)}
+        >
+          <div 
+            className="w-full max-w-sm p-8 rounded-[32px] bg-white/10 backdrop-blur-2xl relative overflow-hidden"
+            style={{
+              borderTop: '1px solid rgba(255, 255, 255, 0.4)',
+              borderLeft: '1px solid rgba(255, 255, 255, 0.4)',
+              borderBottom: '1px solid rgba(0, 0, 0, 0.3)',
+              borderRight: '1px solid rgba(0, 0, 0, 0.3)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(255, 255, 255, 0.05)'
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Glossy Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
+
+            <div className="relative z-10">
+              <h3 className="text-xl font-black uppercase tracking-[0.2em] mb-2 text-white text-center">
+                Exportación
+              </h3>
+              <p className="text-[10px] text-gray-300 uppercase tracking-widest text-center mb-6 opacity-70">
+                Configurar nombre base del archivo
+              </p>
+
+              <div className="space-y-4">
+                <div className="relative group">
+                  <input
+                    type="text"
+                    value={tempFileName}
+                    onChange={e => setTempFileName(e.target.value)}
+                    placeholder="Nombre del archivo..."
+                    className="w-full px-5 py-4 rounded-2xl bg-black/40 border border-white/10 text-white placeholder-gray-500 
+                             focus:outline-none focus:border-[#00F0FF]/50 focus:shadow-[0_0_20px_rgba(0,240,255,0.1)] 
+                             transition-all duration-300 text-center font-medium"
+                    autoFocus
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        setCustomFileName(tempFileName.trim());
+                        setShowFileNameModal(false);
+                      } else if (e.key === 'Escape') {
+                        setShowFileNameModal(false);
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="mt-8 flex flex-col gap-3">
+                <button 
+                  onClick={() => { setCustomFileName(tempFileName.trim()); setShowFileNameModal(false); }} 
+                  className="w-full py-4 rounded-2xl text-xs font-black uppercase tracking-widest text-black 
+                           bg-[#00F0FF] hover:bg-[#00D0FF] shadow-[0_10px_20px_rgba(0,240,255,0.2)] 
+                           hover:scale-[1.02] active:scale-[0.98] transition-all duration-300"
+                >
+                  Guardar Cambios
+                </button>
+                <button 
+                  onClick={() => setShowFileNameModal(false)} 
+                  className="w-full py-3 rounded-2xl text-[10px] font-bold uppercase tracking-widest text-white/50 
+                           hover:text-white hover:bg-white/5 transition-all duration-300"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
