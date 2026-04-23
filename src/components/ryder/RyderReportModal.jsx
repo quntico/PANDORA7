@@ -62,22 +62,84 @@ export default function RyderReportModal({ reportData, onClose }) {
 
           {/* ── PAGE 1: Cover ── */}
           <div className="ry-page" style={S.page}>
-            <div style={{ height: 82, background: 'linear-gradient(90deg,#11b5c9 0%,#6dd5e3 100%)' }} />
-            <div className="ry-page-inner" style={{ ...S.inner, display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 28, alignItems: 'center' }}>
+            {/* Hero gradient top bar */}
+            <div style={{ height: 88, background: 'linear-gradient(90deg,#0b8ea0 0%,#11b5c9 55%,#6dd5e3 100%)', position: 'relative', overflow: 'hidden' }}>
+              {/* Subtle diagonal stripe overlay */}
+              <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(120deg, transparent, transparent 28px, rgba(255,255,255,0.04) 28px, rgba(255,255,255,0.04) 30px)' }} />
+              <div style={{ position: 'absolute', top: 24, left: 42, color: '#fff', fontWeight: 800, fontSize: 20, letterSpacing: 3, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 12 }}>
+                RYDER
+                <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1.5, background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.35)', borderRadius: 4, padding: '2px 8px' }}>
+                  PANDORA 3.0 · {meta.version}
+                </span>
+              </div>
+              <div style={{ position: 'absolute', bottom: 14, right: 42, color: 'rgba(255,255,255,0.75)', fontSize: 12, fontWeight: 600 }}>
+                Reporte de Simulación Industrial
+              </div>
+            </div>
+
+            <div className="ry-page-inner" style={{ ...S.inner, display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: 36, alignItems: 'center' }}>
+              {/* ── Left: Title block ── */}
               <div>
-                <div style={{ fontWeight: 800, fontSize: 11, color: '#11b5c9', letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 10 }}>RYDER / PANDORA 3.0 · {meta.version}</div>
-                <h1 style={{ fontSize: 36, margin: '0 0 14px', color: '#122033', lineHeight: 1.08 }}>SIMULACIÓN DE LÍNEA<br /><span style={{ color: '#11b5c9' }}>{meta.periodo}</span></h1>
-                <p style={{ fontSize: 15, color: '#415164', lineHeight: 1.6, margin: '0 0 24px' }}>{meta.subtitulo}</p>
-                {[['Máquina', meta.simulador], ['Proyecto', meta.proyecto], ['Fecha', meta.fecha]].map(([k, v]) => (
-                  <div key={k} style={{ fontSize: 13, color: '#122033', marginBottom: 6 }}>
-                    <b style={{ color: '#0b8ea0', minWidth: 110, display: 'inline-block' }}>{k}:</b> {v}
+                {/* Overline */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+                  <div style={{ width: 4, height: 48, background: 'linear-gradient(180deg,#11b5c9,#0b8ea0)', borderRadius: 4 }} />
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: '#11b5c9', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 3 }}>
+                      Informe Paramétrico de Simulación
+                    </div>
+                    {/* Main title */}
+                    <div style={{ fontSize: 42, fontWeight: 900, color: '#0f1c2e', lineHeight: 1.0, letterSpacing: -0.5 }}>
+                      SIMULACIÓN
+                    </div>
+                    <div style={{ fontSize: 42, fontWeight: 900, lineHeight: 1.0, letterSpacing: -0.5 }}>
+                      <span style={{ color: '#11b5c9' }}>DE LÍNEA</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Period badge */}
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#f0fbfd', border: '1.5px solid #b2e8f0', borderRadius: 50, padding: '5px 16px', marginBottom: 20 }}>
+                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#11b5c9' }} />
+                  <span style={{ fontSize: 13, fontWeight: 800, color: '#0b8ea0', letterSpacing: 1 }}>Horizonte {meta.periodo}</span>
+                </div>
+
+                {/* Subtitle */}
+                <p style={{ fontSize: 14, color: '#4d647a', lineHeight: 1.65, margin: '0 0 26px', maxWidth: 480 }}>
+                  {meta.subtitulo}
+                </p>
+
+                {/* Meta grid */}
+                <div style={{ display: 'grid', gap: 8, background: '#f7fbfd', border: '1px solid #dbe5ee', borderRadius: 12, padding: '14px 18px' }}>
+                  {[
+                    ['Máquina',  meta.simulador],
+                    ['Proyecto', meta.proyecto],
+                    ['Fecha',    meta.fecha],
+                  ].map(([k, v]) => (
+                    <div key={k} style={{ display: 'flex', alignItems: 'baseline', gap: 8, fontSize: 13 }}>
+                      <span style={{ fontWeight: 700, color: '#0b8ea0', minWidth: 80 }}>{k}</span>
+                      <span style={{ color: '#1f2a37', fontWeight: 500 }}>{v}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* ── Right: Data preview panel ── */}
+              <div style={{ background: 'linear-gradient(160deg,#f0fbfd 0%,#eef6fa 100%)', border: '1.5px solid #c2e8f2', borderRadius: 20, padding: 28, display: 'flex', flexDirection: 'column', gap: 18 }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: '#0b8ea0', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }}>Vista previa de resultados</div>
+                {[
+                  { label: 'Vel. de Banda', value: `${fmt(kpis.velocidadBandaMph, 1)} m/h`, sub: `Máx ${fmt(kpis.velocidadMaxMph)} m/h` },
+                  { label: 'Capacidad Promedio', value: `${fmt(kpis.capacidadPromHora)} c/h`, sub: 'Por hora' },
+                  { label: 'Req. Diario Total', value: `${fmt(kpis.requerimientoTotalDia)} cajas`, sub: 'Año 1' },
+                  { label: 'Cobertura Y1', value: `${fmt(kpis.coberturaY1, 1)}%`, sub: 'Del requerimiento' },
+                ].map((item, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 14, borderBottom: i < 3 ? '1px solid #d4edf5' : 'none' }}>
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#526678' }}>{item.label}</div>
+                      <div style={{ fontSize: 10, color: '#8fa8bf' }}>{item.sub}</div>
+                    </div>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: '#0b8ea0' }}>{item.value}</div>
                   </div>
                 ))}
-              </div>
-              <div style={{ background: 'linear-gradient(145deg,rgba(17,181,201,0.1),rgba(18,32,51,0.04))', border: '2px solid rgba(17,181,201,0.18)', borderRadius: 20, minHeight: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 28, textAlign: 'center', color: '#557086', fontWeight: 700, fontSize: 14, flexDirection: 'column', gap: 12 }}>
-                <div style={{ fontSize: 40 }}>📊</div>
-                <div>Informe generado automáticamente<br />con datos reales del simulador RYDER</div>
-                <div style={{ fontSize: 12, color: '#8fa8c0', marginTop: 8 }}>{meta.fecha}</div>
               </div>
             </div>
           </div>
