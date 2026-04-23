@@ -714,9 +714,9 @@ ${userMsg}
       // Value (colored)
       text(...k.ac); font('bold',14);
       lbl(k.v, x+4, curY+23);
-      // Unit
-      text(...C.gray2); font('normal',5);
-      lbl(k.u, x+4+doc.getTextWidth(k.v)*0.85, curY+21.5);
+      // Unit — same baseline as value, right of it
+      text(...C.gray2); font('normal',6);
+      lbl(k.u, x+5+doc.getTextWidth(k.v), curY+23);
     });
     curY += kH+6;
 
