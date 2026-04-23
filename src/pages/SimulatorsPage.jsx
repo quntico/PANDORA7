@@ -29,7 +29,7 @@ function SimulatorsPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pt-4">
-          {/* RIDER Simulator */}
+          {/* RYDER Simulator */}
           <Link to="/alpha/simulators/rider" className="flex flex-col items-center justify-center text-center h-[280px] p-8 rounded-3xl bg-gradient-to-b from-[#111] to-[#0A0A0A] border border-[#1A1A1A] hover:border-blue-500/50 hover:shadow-[0_0_30px_rgba(59,130,246,0.15)] transition-all group relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             
@@ -38,7 +38,7 @@ function SimulatorsPage() {
               <Activity className="w-8 h-8 text-blue-500 group-hover:scale-110 transition-transform" />
             </div>
             
-            <h3 className="text-xl font-black text-white tracking-widest uppercase">RIDER</h3>
+            <h3 className="text-xl font-black text-white tracking-widest uppercase">RYDER</h3>
             <p className="text-xs text-gray-500 mt-2 max-w-[220px] leading-relaxed group-hover:text-gray-400 transition-colors">
               Simulador de Velocidad vs Cajas para línea de lavado y secado (140 m/h max).
             </p>

@@ -86,14 +86,13 @@ function computeMachineCapacity(box, machineConfig) {
   const advanceM    = computeBoxAdvance(box);
   const pitchM      = advanceM + (box.gap || 0.10);
   const speedMMin   = machineConfig.maxSpeedMMin;
-  const linearMh    = speedMMin * 60;                         // m/h
-  const geomBoxesHr = pitchM > 0 ? linearMh / pitchM : 0;   // Cap. geométrica teórica
-  // Cap. real = min(nominalBoxesPerHour, geometrica)
-  const nominal       = machineConfig.nominalBoxesPerHour ?? 200;
-  const actualBoxesHr = Math.min(nominal, geomBoxesHr);      // Tope a 200 c/h (oficial)
+  const linearMh    = speedMMin * 60;                          // m/h
+  const geomBoxesHr = pitchM > 0 ? linearMh / pitchM : 0;    // Cap. real = velocidad banda ÷ pitch
+  // La capacidad la define la física de la banda, NO un tope nominal
+  const actualBoxesHr = geomBoxesHr;
   const residenceMin  = speedMMin > 0 ? machineConfig.machineLengthM / speedMMin : 0;
   const boxesInside   = pitchM > 0 ? machineConfig.machineLengthM / pitchM : 0;
-  return { advanceM, pitchM, speedMMin, linearMh, geomBoxesHr, actualBoxesHr, nominal, residenceMin, boxesInside };
+  return { advanceM, pitchM, speedMMin, linearMh, geomBoxesHr, actualBoxesHr, residenceMin, boxesInside };
 }
 
 // =========================
@@ -171,10 +170,13 @@ export default function RiderSimulatorPage() {
       if (editPct)             { setEditPct(false);            return; }
       if (editingSpeed)        { setEditingSpeed(false);       return; }
       if (editHrs)             { setEditHrs(false);            return; }
+      if (nominalCapInfo)      { setNominalCapInfo(null);      return; }
     };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
   }, [showCapModal, isConfigOpen, isModalOpen, infoModal, viabilityInfoModal, editPct, editingSpeed, editHrs]);
+
+  const [nominalCapInfo, setNominalCapInfo] = useState(null); // { id, geom, label }
 
   const openConfig = () => {
     setConfigDraft(JSON.parse(JSON.stringify({ scenarios: CUSTOMER_SCENARIOS, machines: MACHINE_CONFIGS })));
@@ -358,7 +360,7 @@ export default function RiderSimulatorPage() {
   }, [reqLocked]);
 
   // Computations
-  const NOMINAL_CAP = 200; // Capacidad nominal ofertada oficial
+  const NOMINAL_CAP = 200; // Referencia nominal del equipo (solo etiqueta, NO limita el cálculo)
 
   const computedRows = useMemo(() => {
     return boxes.map(box => {
@@ -373,15 +375,15 @@ export default function RiderSimulatorPage() {
 
       const linearMh          = speed * 60;
       const geometricBoxesHr  = pitch > 0 ? linearMh / pitch : 0;
-      // Cap. real = min(200, geometrica) — tope nominal ofertado
-      const realBoxesHr       = box.included ? Math.min(NOMINAL_CAP, geometricBoxesHr) : geometricBoxesHr;
+      // Cap. real = 100% geometrica — la banda define la capacidad, no un tope nominal
+      const realBoxesHr       = geometricBoxesHr;
       const residenceMin      = speed > 0 ? inputs.machineLength / speed : 0;
       const inside            = pitch > 0 ? inputs.machineLength / pitch : 0;
 
       const boxesPerShift  = realBoxesHr * inputs.hoursPerShift;
       const boxesPerDay    = boxesPerShift * inputs.shifts;
       const boxesPerMonth  = boxesPerDay * (inputs.daysPerMonth || 26);
-      const requiredDaily  = dailyReqs[box.label] ?? (box.maquina === 'lavado_secado' ? 0 : box.maquina === 'secado' ? 0 : 0);
+      const requiredDaily  = dailyReqs[box.label] ?? 0;
       const requiredHours  = realBoxesHr > 0 ? requiredDaily / realBoxesHr : 0;
       const totalHoursDay  = inputs.shifts * inputs.hoursPerShift;
 
@@ -457,7 +459,7 @@ export default function RiderSimulatorPage() {
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = 'RIDER_Simulador.csv';
+    link.download = 'RYDER_Simulador.csv';
     link.click();
   };
 
@@ -472,7 +474,7 @@ export default function RiderSimulatorPage() {
 
     try {
       const contextStr = `
-=== CONTEXTO DEL SIMULADOR RIDER ===
+=== CONTEXTO DEL SIMULADOR RYDER ===
 Configuración actual:
 ${JSON.stringify(inputs, null, 2)}
 Modelos activos (${boxes.length}):
@@ -490,7 +492,7 @@ ${userMsg}
         projectId: 'local-fallback-id',
         companyId: 'local_company',
         v2: true,
-        projectContext: { type: 'simulator', name: 'RIDER', data: inputs }
+        projectContext: { type: 'simulator', name: 'RYDER', data: inputs }
       });
 
       if (response.data && response.data.success) {
@@ -499,7 +501,7 @@ ${userMsg}
         setChatMessages(prev => [...prev, { role: 'assistant', content: 'Error: No se recibió una respuesta válida del motor.' }]);
       }
     } catch (error) {
-      console.error('PANDORA_RIDER_ERROR:', error);
+      console.error('PANDORA_RYDER_ERROR:', error);
       const errorMsg = error.response?.data?.error || error.response?.data?.message || error.message || 'Error desconocido';
       setChatMessages(prev => [...prev, { role: 'assistant', content: `❌ Error V3: ${errorMsg}` }]);
     } finally {
@@ -514,11 +516,11 @@ ${userMsg}
     const machineCfg = MACHINE_CONFIGS.lavadoSecado;
 
     let md = [];
-    md.push(`# PANDORA 3.0 — Reporte Técnico Rider Simulator`);
+    md.push(`# PANDORA 3.0 — Reporte Técnico RYDER Simulator`);
     md.push(`**Exportado:** ${ts}  |  **Modelo seleccionado:** ${selectedRow?.name ?? '—'}  |  **Ver:** 7.61\n`);
     md.push(`---`);
     md.push(`\n## CONTEXTO DEL SISTEMA`);
-    md.push(`Este simulador calcula la capacidad operativa de una línea de lavado y secado industrial (tipo Rider/PLD).`);
+    md.push(`Este simulador calcula la capacidad operativa de una línea de lavado y secado industrial (tipo RYDER/PLD).`);
     md.push(`Evalúa si la máquina puede procesar el volumen de cajas requerido por el cliente bajo distintos escenarios de eficiencia anual (Y1–Y5).\n`);
 
     // 1. Configuración de máquina
@@ -654,11 +656,11 @@ ${userMsg}
     // Header bar
     fill(...C.blue); rect(0,0,W,20);
     fill(...C.red); rect(0,19.2,W,0.8);
-    // Title — RIDER bold + subtitle normal, no overlap
+    // Title — RYDER bold + subtitle normal, no overlap
     text(...C.white);
     font('bold', 15);
-    lbl('RIDER', 12, 13);
-    const riderW = doc.getTextWidth('RIDER');
+    lbl('RYDER', 12, 13);
+    const riderW = doc.getTextWidth('RYDER');
     font('normal', 11);
     lbl('  —  Reporte de Simulacion Industrial', 12 + riderW, 13);
     // Right meta
@@ -799,7 +801,7 @@ ${userMsg}
     doc.addPage(); addBG();
     fill(...C.panel2); rect(0,0,W,14);
     fill(...C.blue); rect(0,13.5,W,0.6);
-    text(...C.white); font('bold',9); lbl('RIDER  -  Analisis de Escenarios Y1-Y5', 12, 9.5);
+    text(...C.white); font('bold',9); lbl('RYDER  -  Analisis de Escenarios Y1-Y5', 12, 9.5);
     text(...C.gray2); font('normal',6); lbl(ts, W-10, 9.5, {align:'right'});
     curY=20;
 
@@ -891,11 +893,11 @@ ${userMsg}
       fill(...C.blue); rect(0,H-7,W,0.4);
       fill(...C.red);  rect(0,H-7.2,W,0.25);   // red micro-line above
       text(...C.gray2); font('normal',5.5);
-      lbl('PANDORA 3.0  |  RIDER Industrial Simulator  |  Confidencial', 12, H-2.5);
+      lbl('PANDORA 3.0  |  RYDER Industrial Simulator  |  Confidencial', 12, H-2.5);
       lbl(`Pagina ${p} de ${pc}`, W-10, H-2.5, {align:'right'});
     }
 
-    doc.save(`RIDER_Analisis_${Date.now()}.pdf`);
+    doc.save(`RYDER_Analisis_${Date.now()}.pdf`);
   };
 
 
@@ -929,7 +931,7 @@ ${userMsg}
       XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(data), 'Lav+Sec');
     });
 
-    XLSX.writeFile(wb, `RIDER_Simulacion_${Date.now()}.xlsx`);
+    XLSX.writeFile(wb, `RYDER_Simulacion_${Date.now()}.xlsx`);
   };
 
   const kpiInfo = {
@@ -1107,7 +1109,7 @@ ${userMsg}
             </div>
             <div>
               <h1 className="text-2xl font-black tracking-tight text-white uppercase flex items-center gap-3">
-                RIDER
+                RYDER
                 <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[10px] tracking-widest uppercase">Simulador Activo</span>
               </h1>
               <p className="text-sm text-gray-500 font-medium">Línea de lavado y secado para pallets/cajas plásticas (140 m/h max)</p>
@@ -1759,7 +1761,7 @@ ${userMsg}
                 </div>
               </div>
               <div className="w-full overflow-x-auto">
-                <table className="w-full text-left text-sm whitespace-nowrap">
+                <table className="w-full text-left text-xs" style={{minWidth:'900px'}}>
                   <thead className="bg-[#111] sticky top-0 z-10 border-b border-[#222]">
                     <tr>
                       <th className="px-3 py-3 font-semibold text-gray-400">Mod</th>
@@ -1767,8 +1769,7 @@ ${userMsg}
                       <th className="px-3 py-3 font-semibold text-gray-400">Nombre</th>
                       <th className="px-3 py-3 font-semibold text-gray-400 text-center">L&times;A&times;H (cm)</th>
                       <th onClick={() => setInfoModal('col_vel')} className="px-3 py-3 font-semibold text-gray-400 cursor-pointer hover:text-neon-cyan text-center">Vel (m/h)</th>
-                      <th className="px-3 py-3 font-semibold text-gray-500 text-center">Cap.Geom (c/h)</th>
-                      <th onClick={() => setInfoModal('col_cap')} className="px-3 py-3 font-semibold text-blue-400 cursor-pointer hover:text-neon-cyan text-center">Cap.Real ≤200 (c/h)</th>
+                      <th className="px-3 py-3 font-semibold text-gray-500 text-center" title="Vel. banda ÷ Pitch — capacidad teórica pura">Cap. Real (c/h)</th>
                       <th className="px-3 py-3 font-semibold text-yellow-400 text-center">
                         <span className="flex items-center gap-1 justify-center">
                           Req. Diario
@@ -1805,10 +1806,8 @@ ${userMsg}
                         <td className="px-3 py-3 font-medium text-white text-sm">{r.name}</td>
                         <td className="px-3 py-3 text-gray-400 text-xs text-center">{r.l}×{r.w}×{r.h}</td>
                         <td className="px-3 py-3 text-gray-300 text-center text-xs">{formatNumber(r.linearMh,1)}</td>
-                        <td className="px-3 py-3 text-gray-500 text-center text-xs">{formatNumber(r.geometricBoxesHr,1)}</td>
                         <td className="px-3 py-3 text-center">
                           <span className="font-bold text-blue-400">{formatNumber(r.realBoxesHr,1)}</span>
-                          {r.geometricBoxesHr > NOMINAL_CAP && <span className="ml-1 text-[9px] text-orange-400" title="Limitado a 200 c/h nominal">↓200</span>}
                         </td>
                         <td className="px-3 py-3">
                           <input type="number" value={dailyReqs[r.label]??''} placeholder="Req" readOnly={reqLocked}
@@ -1853,10 +1852,8 @@ ${userMsg}
                         <td className="px-3 py-3 font-medium text-white text-sm">{r.name}</td>
                         <td className="px-3 py-3 text-gray-400 text-xs text-center">{r.l}×{r.w}×{r.h}</td>
                         <td className="px-3 py-3 text-gray-300 text-center text-xs">{formatNumber(r.linearMh,1)}</td>
-                        <td className="px-3 py-3 text-gray-500 text-center text-xs">{formatNumber(r.geometricBoxesHr,1)}</td>
                         <td className="px-3 py-3 text-center">
                           <span className="font-bold text-purple-400">{formatNumber(r.realBoxesHr,1)}</span>
-                          {r.geometricBoxesHr > NOMINAL_CAP && <span className="ml-1 text-[9px] text-orange-400">↓200</span>}
                         </td>
                         <td className="px-3 py-3">
                           <input type="number" value={dailyReqs[r.label]??''} placeholder="Req" readOnly={reqLocked}
