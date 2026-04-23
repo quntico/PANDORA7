@@ -722,30 +722,62 @@ ${userMsg}
     curY += kH+6;
 
 
-    // Speed bar
-    text(...C.accent1); font('bold',8);
-    lbl('VELOCIDAD DE LINEA  —  UTILIZACIÓN', 10, curY+4);
-    text(...C.gray2); font('normal',7);
-    lbl(`Banda: ${speedMH} m/h  |  Límite: 140 m/h  |  Uso: ${Math.min(100,(speedMH/140*100)).toFixed(1)}%`, 10, curY+9);
-    const sbX=10, sbY=curY+11, sbW=W-20, sbH=5;
-    fill(...C.panel2); rect(sbX,sbY,sbW,sbH);
+    // ── SPEED BAR — redesigned ────────────────────────────────────────
+    const useP = Math.min(100,(speedMH/140*100));
+    // Title (+30%: 8→10)
+    text(...C.accent1); font('bold',10);
+    lbl('VELOCIDAD DE LÍNEA  —  UTILIZACIÓN', 10, curY+5);
+    // Subtitle (+30%: 7→9)
+    text(...C.gray2); font('normal',9);
+    lbl(`Banda: ${speedMH} m/h  |  Límite: 140 m/h`, 10, curY+12);
+
+    // % Badge pill (top-right)
+    const bdgW=32, bdgH=16, bdgX=W-bdgW-10, bdgY=curY;
+    fill(...C.accent1); rrect(bdgX, bdgY, bdgW, bdgH, 3);
+    text(...C.white); font('bold',11);
+    lbl(`${useP.toFixed(1)}%`, bdgX+bdgW/2, bdgY+8, {align:'center'});
+    text(...C.white); font('normal',5.5);
+    lbl('UTILIZACIÓN', bdgX+bdgW/2, bdgY+13, {align:'center'});
+
+    // Bar track
+    const sbX=10, sbY=curY+16, sbW=W-20, sbH=14;
+    fill(...C.panel2); rrect(sbX,sbY,sbW,sbH,2);
+
+    // Gradient fill — cyan→blue→indigo
     const usedW = sbW * Math.min(1, speedMH/140);
-    const segs=60;
+    const segs=80;
     for(let s=0;s<segs;s++){
-      const sx=sbX+(sbW/segs)*s, sw=sbW/segs+0.2;
+      const sx=sbX+(sbW/segs)*s, sw=sbW/segs+0.15;
       if(sx-sbX<usedW){
         const t=s/segs;
-        fill(Math.round(0+t*80), Math.round(190-t*70), Math.round(220-t*30));
+        fill(Math.round(0+t*60), Math.round(185-t*65), Math.round(215-t*15));
         rect(sx,sbY,sw,sbH);
       }
     }
+    // Clear unfilled zone (overwrite with bg color for clean edge)
+    fill(...C.panel2); rect(sbX+usedW, sbY, sbW-usedW+0.5, sbH);
+    // Track border
+    stroke(...C.border); doc.setLineWidth(0.3); rrect(sbX,sbY,sbW,sbH,2,'S');
+
+    // Speed label inside bar (white)
+    if(usedW>25){
+      text(...C.white); font('bold',9);
+      lbl(`${speedMH} m/h`, sbX+usedW-3, sbY+9.5, {align:'right'});
+    }
+
+    // Vertical marker at usage point
+    stroke(...C.white); doc.setLineWidth(0.8);
+    doc.line(sbX+usedW, sbY+1, sbX+usedW, sbY+sbH-1);
+
+    // Tick marks + % labels (+30%: 5.2→7)
     for(let t=0;t<=10;t++){
       const tx=sbX+sbW*t/10;
-      fill(...C.gray3); rect(tx,sbY+sbH,0.3,1.5);
-      text(...C.gray2); font('normal',5.2);
-      lbl(t*10+'%', tx, sbY+sbH+4, {align:'center'});
+      stroke(...C.gray3); doc.setLineWidth(0.3);
+      doc.line(tx, sbY+sbH+0.5, tx, sbY+sbH+3);
+      text(...C.gray2); font('normal',7);
+      lbl(t*10+'%', tx, sbY+sbH+7.5, {align:'center'});
     }
-    curY += 22;
+    curY += sbH+20;
 
     // Products table
     text(...C.accent1); font('bold',8);
