@@ -390,15 +390,15 @@ export default function RiderSimulatorPage() {
 
   const [boxes, setBoxes] = useState([
     // ── LAVADO Y SECADO ──────────────────────────────────────────────────────
-    { id:'ex0', label:'A', name:'Contenedor CHICO',       l:30.48, w:38.10, h:17.78, gap:0.095, advanceSide:'length', color:'#6b7280', maquina:'lavado_secado', suciedad:'Polvo',  included:true  },
-    { id:'ex1', label:'B', name:'Contenedor MEDIANO',     l:60.96, w:38.10, h:17.78, gap:0.100, advanceSide:'length', color:'#8b5cf6', maquina:'lavado_secado', suciedad:'Polvo',  included:true  },
-    { id:'ex2', label:'C', name:'Contenedor Rectangular', l:60.96, w:38.10, h:35.56, gap:0.080, advanceSide:'length', color:'#3b82f6', maquina:'lavado_secado', suciedad:'Polvo',  included:true  },
+    { id:'ex0', name:'Contenedor CHICO',       l:30.48, w:38.10, h:17.78, gap:0.095, advanceSide:'length', color:'#6b7280', maquina:'lavado_secado', suciedad:'Polvo',  included:true  },
+    { id:'ex1', name:'Contenedor MEDIANO',     l:60.96, w:38.10, h:17.78, gap:0.100, advanceSide:'length', color:'#8b5cf6', maquina:'lavado_secado', suciedad:'Polvo',  included:true  },
+    { id:'ex2', name:'Contenedor Rectangular', l:60.96, w:38.10, h:35.56, gap:0.080, advanceSide:'length', color:'#3b82f6', maquina:'lavado_secado', suciedad:'Polvo',  included:true  },
     // ── SOLO SECADO ──────────────────────────────────────────────────────────
-    { id:'ex3', label:'D', name:'Contenedor Cuadrado',    l:60.96, w:55.88, h:35.56, gap:0.100, advanceSide:'length', color:'#10b981', maquina:'secado',        suciedad:'Grasa',  included:true  },
+    { id:'ex3', name:'Contenedor Cuadrado',    l:60.96, w:55.88, h:35.56, gap:0.100, advanceSide:'length', color:'#10b981', maquina:'secado',        suciedad:'Grasa',  included:true  },
     // ── ESPECIALES / BULK (Integrados en evaluación) ─────────────────────────
-    { id:'ex4', label:'E', name:'CONT-AIP-ABAT (bulk bote)', l:114.30, w:121.92, h:86.36, gap:0.097, advanceSide:'length', color:'#f59e0b', maquina:'lavado_secado', suciedad:'Polvo', included:true },
-    { id:'ex5', label:'F', name:'TAPA-AIP-ABAT (bulk bote)', l:114.30, w:121.92, h:12.70, gap:0.097, advanceSide:'length', color:'#ec4899', maquina:'lavado_secado', suciedad:'Polvo', included:true },
-    { id:'ex6', label:'G', name:'Tapas (separadores)',        l:0,      w:0,      h:0,     gap:0,     advanceSide:'length', color:'#94a3b8', maquina:'lavado_secado', suciedad:'Polvo', included:true },
+    { id:'ex4', name:'CONT-AIP-ABAT (bulk bote)', l:114.30, w:121.92, h:86.36, gap:0.097, advanceSide:'length', color:'#f59e0b', maquina:'lavado_secado', suciedad:'Polvo', included:true },
+    { id:'ex5', name:'TAPA-AIP-ABAT (bulk bote)', l:114.30, w:121.92, h:12.70, gap:0.097, advanceSide:'length', color:'#ec4899', maquina:'lavado_secado', suciedad:'Polvo', included:true },
+    { id:'ex6', name:'Tapas (separadores)',        l:0,      w:0,      h:0,     gap:0,     advanceSide:'length', color:'#94a3b8', maquina:'lavado_secado', suciedad:'Polvo', included:true },
   ]);
 
   const [selectedId, setSelectedId] = useState(boxes[0]?.id || null);
@@ -490,7 +490,7 @@ export default function RiderSimulatorPage() {
   };
 
   const removeBox = (id) => {
-    const updated = boxes.filter(b => b.id !== id).map((b, i) => ({ ...b, label: nextLetter(i) }));
+    const updated = boxes.filter(b => b.id !== id);
     setBoxes(updated);
     if (selectedId === id) setSelectedId(updated[0]?.id || null);
   };
@@ -499,8 +499,8 @@ export default function RiderSimulatorPage() {
     setBoxes(prev => prev.map(b => b.id === id ? { ...b, included: !b.included } : b));
   };
 
-  // ── Req. Diario — valores oficiales pre-cargados ──
-  const OFFICIAL_REQS = { A:1610, B:798, C:1064, D:574, E:82, F:82, G:0 };
+  // ── Req. Diario — valores oficiales pre-cargados (ahora por ID) ──
+  const OFFICIAL_REQS = { ex0:1610, ex1:798, ex2:1064, ex3:574, ex4:82, ex5:82, ex6:0 };
   const LS_KEY = 'rider_daily_reqs_v2';
   const [dailyReqs, setDailyReqs] = useState(() => {
     try {
@@ -526,16 +526,16 @@ export default function RiderSimulatorPage() {
   }, [reqLocked]);
 
   // Backup a Supabase (best-effort, no bloquea si falla)
-  const updateBoxRequirement = useCallback((label, reqDaily) => {
+  const updateBoxRequirement = useCallback((id, reqDaily) => {
     if (reqLocked) return;  // Bloqueado — no permitir cambios
-    setDailyReqs(prev => ({ ...prev, [label]: reqDaily }));
+    setDailyReqs(prev => ({ ...prev, [id]: reqDaily }));
     setSaveStatus('saving');
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(async () => {
       try {
         await supabase
           .from('rider_daily_reqs')
-          .upsert({ box_id: label, required_daily: reqDaily }, { onConflict: 'box_id' });
+          .upsert({ box_id: id, required_daily: reqDaily }, { onConflict: 'box_id' });
       } catch (_) {/* Supabase opcional */}
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 2000);
@@ -546,7 +546,11 @@ export default function RiderSimulatorPage() {
   const NOMINAL_CAP = 200; // Referencia nominal del equipo (solo etiqueta, NO limita el cálculo)
 
   const computedRows = useMemo(() => {
+    let activeIndex = 0;
     return boxes.map(box => {
+      // Cálculo dinámico de letra (Consecutiva solo para incluidos)
+      const dynamicLabel = box.included ? nextLetter(activeIndex++) : '-';
+      
       let advance = box.l / 100;
       if (box.advanceSide === 'width') advance = box.w / 100;
       if (box.advanceSide === 'auto')  advance = Math.min(box.l / 100, box.w / 100);
@@ -558,7 +562,6 @@ export default function RiderSimulatorPage() {
 
       const linearMh          = speed * 60;
       const geometricBoxesHr  = pitch > 0 ? linearMh / pitch : 0;
-      // Cap. real = 100% geometrica — la banda define la capacidad, no un tope nominal
       const realBoxesHr       = geometricBoxesHr;
       const residenceMin      = speed > 0 ? inputs.machineLength / speed : 0;
       const inside            = pitch > 0 ? inputs.machineLength / pitch : 0;
@@ -566,12 +569,13 @@ export default function RiderSimulatorPage() {
       const boxesPerShift  = realBoxesHr * inputs.hoursPerShift;
       const boxesPerDay    = boxesPerShift * inputs.shifts;
       const boxesPerMonth  = boxesPerDay * (inputs.daysPerMonth || 26);
-      const requiredDaily  = dailyReqs[box.label] ?? 0;
+      const requiredDaily  = dailyReqs[box.id] ?? 0;
       const requiredHours  = realBoxesHr > 0 ? requiredDaily / realBoxesHr : 0;
       const totalHoursDay  = inputs.shifts * inputs.hoursPerShift;
 
       return {
         ...box,
+        label: dynamicLabel,
         advance, pitch, speed, linearMh, geometricBoxesHr, realBoxesHr, residenceMin, inside,
         boxesPerShift, boxesPerDay, boxesPerMonth, requiredDaily, requiredHours, totalHoursDay
       };
@@ -2111,20 +2115,20 @@ ${userMsg}
                           <span className="font-bold text-blue-400">{formatNumber(r.realBoxesHr,1)}</span>
                         </td>
                         <td className="px-3 py-3">
-                          <input type="number" value={dailyReqs[r.label]??''} placeholder="Req" readOnly={reqLocked}
-                            onChange={(e) => updateBoxRequirement(r.label, Number(e.target.value))}
+                          <input type="number" value={dailyReqs[r.id]??''} placeholder="Req" readOnly={reqLocked}
+                            onChange={(e) => updateBoxRequirement(r.id, Number(e.target.value))}
                             onClick={(e) => e.stopPropagation()}
                             className={`w-20 bg-black border rounded-lg px-2 py-1 text-xs outline-none transition-colors text-center ${
                               reqLocked ? 'border-yellow-500/40 text-yellow-400/60 cursor-not-allowed' : 'border-[#333] focus:border-yellow-400 text-yellow-400'
                             }`} />
                         </td>
                         <td className="px-3 py-3 text-center">
-                          {(dailyReqs[r.label]??0)>0
+                          {(dailyReqs[r.id]??0)>0
                             ? <span className={`text-xs font-bold ${r.requiredHours > r.totalHoursDay ? 'text-red-400' : 'text-purple-400'}`}>{formatNumber(r.requiredHours,2)}h</span>
                             : <span className="text-gray-600 text-xs">-</span>}
                         </td>
                         <td className="px-3 py-3 text-center">
-                          {(dailyReqs[r.label]??0)>0
+                          {(dailyReqs[r.id]??0)>0
                             ? <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${r.requiredHours<=r.totalHoursDay?'bg-green-500/10 text-green-400 border border-green-500/30':'bg-red-500/10 text-red-400 border border-red-500/30'}`}>
                                 {r.requiredHours<=r.totalHoursDay?'✓ OK':'⚠ Excede'}
                               </span>
@@ -2166,20 +2170,20 @@ ${userMsg}
                           <span className="font-bold text-purple-400">{formatNumber(r.realBoxesHr,1)}</span>
                         </td>
                         <td className="px-3 py-3">
-                          <input type="number" value={dailyReqs[r.label]??''} placeholder="Req" readOnly={reqLocked}
-                            onChange={(e) => updateBoxRequirement(r.label, Number(e.target.value))}
+                          <input type="number" value={dailyReqs[r.id]??''} placeholder="Req" readOnly={reqLocked}
+                            onChange={(e) => updateBoxRequirement(r.id, Number(e.target.value))}
                             onClick={(e) => e.stopPropagation()}
                             className={`w-20 bg-black border rounded-lg px-2 py-1 text-xs outline-none transition-colors text-center ${
                               reqLocked ? 'border-yellow-500/40 text-yellow-400/60 cursor-not-allowed' : 'border-[#333] focus:border-yellow-400 text-yellow-400'
                             }`} />
                         </td>
                         <td className="px-3 py-3 text-center">
-                          {(dailyReqs[r.label]??0)>0
+                          {(dailyReqs[r.id]??0)>0
                             ? <span className="text-xs font-bold text-purple-400">{formatNumber(r.requiredHours,2)}h</span>
                             : <span className="text-gray-600 text-xs">-</span>}
                         </td>
                         <td className="px-3 py-3 text-center">
-                          {(dailyReqs[r.label]??0)>0
+                          {(dailyReqs[r.id]??0)>0
                             ? <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${r.requiredHours<=r.totalHoursDay?'bg-green-500/10 text-green-400 border border-green-500/30':'bg-red-500/10 text-red-400 border border-red-500/30'}`}>
                                 {r.requiredHours<=r.totalHoursDay?'✓ OK':'⚠ Excede'}
                               </span>
