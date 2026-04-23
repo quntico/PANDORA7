@@ -182,6 +182,12 @@ export default function RiderSimulatorPage() {
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportModalData, setReportModalData] = useState(null);
   const [showPdfMenu, setShowPdfMenu] = useState(false);
+  const [customFileName, setCustomFileName] = useState('');
+
+  const handleSetFileName = () => {
+    const name = window.prompt("Nombre base para los archivos exportados (deja vacío para usar nombre por defecto):", customFileName);
+    if (name !== null) setCustomFileName(name.trim());
+  };
 
   const buildReport = () => buildRyderReportData({
     inputs, computedRows, scenarioResults, mixScenarioResults,
@@ -342,7 +348,8 @@ export default function RiderSimulatorPage() {
         pdf.addImage(imgData, 'JPEG', 0, 0, imgW, imgH, '', 'FAST');
       }
 
-      pdf.save(`RYDER_Informe_${d.meta.fecha.replace(/\//g, '-')}.pdf`);
+      const defaultName = `RYDER_Informe_${d.meta.fecha.replace(/\//g, '-')}`;
+      pdf.save(`${customFileName || defaultName}.pdf`);
     } finally {
       document.body.removeChild(root);
     }
@@ -629,7 +636,7 @@ export default function RiderSimulatorPage() {
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = 'RYDER_Simulador.csv';
+    link.download = `${customFileName || 'RYDER_Simulador'}.csv`;
     link.click();
   };
 
@@ -1121,7 +1128,8 @@ ${userMsg}
       lbl(`Página ${p} de ${pc}`, W-10, H-2.5, {align:'right'});
     }
 
-    doc.save(`RYDER_Analisis_${Date.now()}.pdf`);
+    const defaultName = `RYDER_Analisis_${Date.now()}`;
+    doc.save(`${customFileName || defaultName}.pdf`);
   };
 
 
@@ -1155,7 +1163,8 @@ ${userMsg}
       XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(data), 'Lav+Sec');
     });
 
-    XLSX.writeFile(wb, `RYDER_Simulacion_${Date.now()}.xlsx`);
+    const defaultName = `RYDER_Simulacion_${Date.now()}`;
+    XLSX.writeFile(wb, `${customFileName || defaultName}.xlsx`);
   };
 
   const kpiInfo = {
@@ -1342,6 +1351,9 @@ ${userMsg}
           <div className="flex gap-3">
             <button onClick={openConfig} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#00F0FF]/10 border border-[#00F0FF]/30 hover:bg-[#00F0FF]/20 text-[#00F0FF] transition-all text-sm font-bold" title="Configuración del Simulador">
               <Settings className="w-4 h-4" /> Configurar
+            </button>
+            <button onClick={handleSetFileName} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/30 hover:bg-indigo-500/20 text-indigo-400 transition-all text-sm font-bold" title={customFileName ? `Archivo: ${customFileName}` : "Configurar nombre de exportación"}>
+              <Edit3 className="w-4 h-4" /> {customFileName ? 'Nombre OK' : 'Nombre'}
             </button>
             <button onClick={exportCsv} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-glass-light border border-glass-border hover:bg-glass-hover transition-all text-sm font-bold">
               <Download className="w-4 h-4" /> CSV
