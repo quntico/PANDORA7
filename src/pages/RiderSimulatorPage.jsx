@@ -723,9 +723,9 @@ ${userMsg}
 
 
     // Speed bar
-    text(...C.accent1); font('bold',7);
+    text(...C.accent1); font('bold',8);
     lbl('VELOCIDAD DE LINEA  —  UTILIZACIÓN', 10, curY+4);
-    text(...C.gray2); font('normal',6);
+    text(...C.gray2); font('normal',7);
     lbl(`Banda: ${speedMH} m/h  |  Límite: 140 m/h  |  Uso: ${Math.min(100,(speedMH/140*100)).toFixed(1)}%`, 10, curY+9);
     const sbX=10, sbY=curY+11, sbW=W-20, sbH=5;
     fill(...C.panel2); rect(sbX,sbY,sbW,sbH);
@@ -742,13 +742,13 @@ ${userMsg}
     for(let t=0;t<=10;t++){
       const tx=sbX+sbW*t/10;
       fill(...C.gray3); rect(tx,sbY+sbH,0.3,1.5);
-      text(...C.gray2); font('normal',4.5);
+      text(...C.gray2); font('normal',5.2);
       lbl(t*10+'%', tx, sbY+sbH+4, {align:'center'});
     }
     curY += 22;
 
     // Products table
-    text(...C.accent1); font('bold',7);
+    text(...C.accent1); font('bold',8);
     lbl('MODELOS  —  CAPACIDAD vs REQUERIMIENTO', 10, curY+4);
     curY += 6;
 
@@ -764,8 +764,8 @@ ${userMsg}
         r.requiredDaily>0 ? (r.requiredDaily/r.realBoxesHr).toFixed(1)+'h' : '--',
         r.requiredDaily>0 ? (r.requiredHours<=r.totalHoursDay?'VIABLE':'EXCEDE') : '--'
       ]),
-      styles:{fillColor:C.panel,textColor:C.gray1,fontSize:6.5,lineColor:C.border,lineWidth:0.2,cellPadding:2.2},
-      headStyles:{fillColor:C.header,textColor:C.accent1,fontStyle:'bold',fontSize:6.5,lineColor:C.accent1,lineWidth:0.3},
+      styles:{fillColor:C.panel,textColor:C.gray1,fontSize:7.5,lineColor:C.border,lineWidth:0.2,cellPadding:2.5},
+      headStyles:{fillColor:C.header,textColor:C.accent1,fontStyle:'bold',fontSize:7.5,lineColor:C.accent1,lineWidth:0.3},
       alternateRowStyles:{fillColor:C.panel2},
       didParseCell:(d)=>{
         // Accent first column (Mod label)
@@ -791,7 +791,7 @@ ${userMsg}
       const n=mixRows.length||1;
       const maxV=Math.max(...mixRows.map(r=>Math.max(r.boxesPerDay,r.requiredDaily||0)),1);
       const bGW=cW/n;
-      text(...C.accent1); font('bold',6);
+      text(...C.accent1); font('bold',7);
       lbl('GRÁFICO: CAPACIDAD DIARIA vs REQUERIMIENTO DIARIO (cajas/día)', cX, cY);
       const axY=cY+cH;
       stroke(...C.gray3); doc.setLineWidth(0.2);
@@ -799,7 +799,7 @@ ${userMsg}
       [25,50,75,100].forEach(p=>{
         const gy=axY-(cH-6)*p/100;
         stroke(...C.gray3); doc.setLineWidth(0.12); doc.line(cX,gy,cX+cW,gy);
-        text(...C.gray2); font('normal',4);
+        text(...C.gray2); font('normal',5);
         lbl(Math.round(maxV*p/100).toLocaleString('es-MX'), cX-1, gy+1, {align:'right'});
       });
       mixRows.forEach((r,idx)=>{
@@ -810,15 +810,15 @@ ${userMsg}
         fill(...C.accent1); rect(gx+bGW*0.08, axY-capH, bW, capH);
         // Req bar — orange
         fill(...C.accent4); rect(gx+bGW*0.08+bW+1, axY-reqH, bW, reqH);
-        text(...C.gray1); font('bold',5.5);
+        text(...C.gray1); font('bold',6.5);
         lbl(r.label, gx+bGW/2, axY+5, {align:'center'});
       });
       // Legend
       const lX=cX+cW-48, lY=cY+1;
       fill(...C.accent1); rect(lX,    lY, 5, 3);
-      text(...C.gray1); font('normal',5.5); lbl('Capacidad/día', lX+6.5,  lY+2.5);
+      text(...C.gray1); font('normal',6.5); lbl('Capacidad/día', lX+6.5,  lY+2.5);
       fill(...C.accent4); rect(lX+28, lY, 5, 3);
-      lbl('Req. diario',   lX+34.5, lY+2.5);
+      font('normal',6.5); lbl('Req. diario', lX+34.5, lY+2.5);
     }
 
     // ── PAGE 2 - Scenarios
@@ -835,9 +835,9 @@ ${userMsg}
       if(!rows.length) return;
       fill(...C.panel); rect(10,curY,W-20,9);
       fill(...C.accent1); rect(10,curY+8.5,W-20,0.6);
-      text(...C.accent1); font('bold',7.5);
+      text(...C.accent1); font('bold',8.5);
       lbl(`${sc.name.toUpperCase()}  —  RATE: ${sc.dailyRate.toLocaleString('es-MX')} cajas/día`, 13, curY+6);
-      text(...C.gray2); font('normal',6);
+      text(...C.gray2); font('normal',7);
       lbl(`Ref: ${selectedRow?.name??'Todos'}`, W-12, curY+6, {align:'right'});
       curY+=11;
       autoTable(doc,{
@@ -851,8 +851,8 @@ ${userMsg}
           (r.coverageRatio*100).toFixed(1)+'%',
           r.requiredLines+(r.requiredLines===1?' maq.':' maqs.')
         ]),
-        styles:{fillColor:C.panel,textColor:C.gray1,fontSize:7,lineColor:C.border,lineWidth:0.2,cellPadding:2.2},
-        headStyles:{fillColor:C.header,textColor:C.accent1,fontStyle:'bold',fontSize:7,lineColor:C.accent1,lineWidth:0.3},
+        styles:{fillColor:C.panel,textColor:C.gray1,fontSize:8,lineColor:C.border,lineWidth:0.2,cellPadding:2.5},
+        headStyles:{fillColor:C.header,textColor:C.accent1,fontStyle:'bold',fontSize:8,lineColor:C.accent1,lineWidth:0.3},
         alternateRowStyles:{fillColor:C.panel2},
         didParseCell:(d)=>{
           if(d.column.index===0){
