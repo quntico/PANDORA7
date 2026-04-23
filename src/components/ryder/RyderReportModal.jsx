@@ -270,7 +270,7 @@ export default function RyderReportModal({ reportData, onClose }) {
               <div style={S.panel}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
-                    <tr>{['Mod','Nombre','Cap c/h','Cap/Día','Req/Día','Hrs Req.','Estado'].map(h => (
+                    <tr>{['Mod','Nombre','Suciedad','Cap c/h','Cap/Día','Req/Día','Hrs Req.','Estado'].map(h => (
                       <th key={h} style={S.th}>{h}</th>
                     ))}</tr>
                   </thead>
@@ -279,6 +279,7 @@ export default function RyderReportModal({ reportData, onClose }) {
                       <tr key={r.mod} style={{ background: i % 2 === 0 ? '#fff' : '#f7fbfd' }}>
                         <td style={{ ...S.td, fontWeight: 800, color: '#0b8ea0' }}>{r.mod}</td>
                         <td style={S.td}>{r.nombre}</td>
+                        <td style={S.td}>{r.suciedad}</td>
                         <td style={S.td}>{fmt(r.capHora, 1)}</td>
                         <td style={S.td}>{fmt(r.capDia)}</td>
                         <td style={S.td}>{r.reqDia != null ? fmt(r.reqDia) : '—'}</td>

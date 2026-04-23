@@ -52,6 +52,7 @@ export function buildRyderReportData({
     capDia:  Math.round(r.boxesPerDay),
     reqDia:  r.requiredDaily > 0 ? r.requiredDaily : null,
     hrsReq:  r.requiredDaily > 0 ? +r.requiredHours.toFixed(1) : null,
+    suciedad: r.suciedad || 'Polvo',
     estado:  r.requiredDaily > 0
       ? (r.requiredHours <= r.totalHoursDay ? 'VIABLE' : 'EXCEDE')
       : 'N/A',
@@ -108,7 +109,7 @@ export function buildRyderReportData({
       periodo:   'Y1 – Y5',
       fecha:     new Date().toLocaleDateString('es-MX'),
       simulador: inputs.machineName || 'RYDER',
-      version:   'v7.61',
+      version:   'v7.70',
     },
     kpis: {
       velocidadBandaMph:      speedMH,

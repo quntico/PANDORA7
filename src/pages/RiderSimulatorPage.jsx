@@ -5,7 +5,7 @@ import RyderReportModal from '@/components/ryder/RyderReportModal';
 import { buildRyderReportData } from '@/utils/buildRyderReportData';
 
 
-import { Activity, ArrowLeft, Bot, Box, Brain, ChevronLeft, ChevronRight, Download, Edit3, Eye, FileText, LayoutDashboard, Lock, Minus, Plus, Send, Settings, Table2, Trash2, Unlock, Loader2, X, Play, RotateCcw, Copy, Maximize2, Power, Calculator, EyeOff, FileDigit, GripVertical, AlertTriangle, Printer, Truck, BarChart2, CheckCircle2, Factory, Layers } from 'lucide-react';
+import { Activity, ArrowLeft, Bot, Box, Brain, ChevronLeft, ChevronRight, Download, Edit3, Eye, FileText, LayoutDashboard, Lock, Minus, Plus, Send, Settings, Table2, Target, Trash2, Unlock, Loader2, X, Play, RotateCcw, Copy, Maximize2, Power, Calculator, EyeOff, FileDigit, GripVertical, AlertTriangle, Printer, Truck, BarChart2, CheckCircle2, Factory, Layers } from 'lucide-react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -379,13 +379,10 @@ export default function RiderSimulatorPage() {
   };
 
   const [boxInput, setBoxInput] = useState({
-    name: '',
-    l: 120,
-    w: 100,
-    h: 85,
-    gap: 0.10,
     advanceSide: 'length',
-    color: '#3b82f6'
+    color: '#3b82f6',
+    maquina: 'lavado_secado',
+    suciedad: 'Polvo'
   });
 
   const [boxes, setBoxes] = useState([
@@ -458,7 +455,17 @@ export default function RiderSimulatorPage() {
 
   const openNewBoxModal = () => {
     setEditingBoxId(null);
-    setBoxInput({ name: '', l: 120, w: 100, h: 85, gap: 0.10, advanceSide: 'length', color: '#3b82f6' });
+    setBoxInput({ 
+      name: '', 
+      l: 120, 
+      w: 100, 
+      h: 85, 
+      gap: 0.10, 
+      advanceSide: 'length', 
+      color: '#3b82f6',
+      maquina: 'lavado_secado',
+      suciedad: 'Polvo'
+    });
     setIsModalOpen(true);
   };
 
@@ -474,9 +481,9 @@ export default function RiderSimulatorPage() {
     } else {
       const newBox = {
         id: 'b' + Date.now(),
-        label: nextLetter(boxes.length),
-        name: boxInput.name || `Modelo ${nextLetter(boxes.length)}`,
-        ...boxInput
+        name: boxInput.name || `Modelo ${boxes.length + 1}`,
+        ...boxInput,
+        included: true // New boxes are included by default
       };
       setBoxes([...boxes, newBox]);
       if (!selectedId) setSelectedId(newBox.id);
@@ -497,6 +504,25 @@ export default function RiderSimulatorPage() {
 
   const toggleInclusion = (id) => {
     setBoxes(prev => prev.map(b => b.id === id ? { ...b, included: !b.included } : b));
+  };
+
+  const distributeGlobalRate = () => {
+    if (selectedMixIds.length === 0) return;
+    const globalRate = CUSTOMER_SCENARIOS.lavadoSecado.dailyRate;
+    const perBox = Math.floor(globalRate / selectedMixIds.length);
+    const newReqs = { ...dailyReqs };
+    selectedMixIds.forEach(id => {
+      newReqs[id] = perBox;
+    });
+    setDailyReqs(newReqs);
+    setSaveStatus('saving');
+    setTimeout(() => setSaveStatus('saved'), 600);
+  };
+
+  const loadOfficialReqs = () => {
+    setDailyReqs({ ...OFFICIAL_REQS });
+    setSaveStatus('saving');
+    setTimeout(() => setSaveStatus('saved'), 600);
   };
 
   // ── Req. Diario — valores oficiales pre-cargados (ahora por ID) ──
@@ -708,7 +734,7 @@ ${userMsg}
 
     let md = [];
     md.push(`# PANDORA 3.0 — Reporte Técnico RYDER Simulator`);
-    md.push(`**Exportado:** ${ts}  |  **Modelo seleccionado:** ${selectedRow?.name ?? '—'}  |  **Ver:** 7.61\n`);
+    md.push(`**Exportado:** ${ts}  |  **Modelo seleccionado:** ${selectedRow?.name ?? '—'}  |  **Ver:** 7.70\n`);
     md.push(`---`);
     md.push(`\n## CONTEXTO DEL SISTEMA`);
     md.push(`Este simulador calcula la capacidad operativa de una línea de lavado y secado industrial (tipo RYDER/PLD).`);
@@ -2051,6 +2077,9 @@ ${userMsg}
                   <button onClick={clearBoxes} className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl transition-all" title="Borrar Todos">
                     <Trash2 className="w-4 h-4" />
                   </button>
+                  <button onClick={loadOfficialReqs} className="flex items-center gap-2 px-3 py-2 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 rounded-xl transition-all text-[10px] font-black uppercase tracking-widest">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Oficiales
+                  </button>
                   <button onClick={openNewBoxModal} className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-400 text-white font-bold uppercase tracking-wider rounded-xl transition-all shadow-glow-sm">
                     <Plus className="w-4 h-4" /> Agregar Caja
                   </button>
@@ -2083,6 +2112,7 @@ ${userMsg}
                         </span>
                       </th>
                       <th className="px-3 py-3 font-semibold text-purple-400 text-center">Horas Req.</th>
+                      <th className="px-3 py-3 font-semibold text-gray-400 text-center">Suciedad</th>
                       <th className="px-3 py-3 font-semibold text-gray-400 text-center">Estado</th>
                       <th className="px-3 py-3 font-semibold text-gray-400 text-right">Acciones</th>
                     </tr>
@@ -2126,6 +2156,11 @@ ${userMsg}
                           {(dailyReqs[r.id]??0)>0
                             ? <span className={`text-xs font-bold ${r.requiredHours > r.totalHoursDay ? 'text-red-400' : 'text-purple-400'}`}>{formatNumber(r.requiredHours,2)}h</span>
                             : <span className="text-gray-600 text-xs">-</span>}
+                        </td>
+                        <td className="px-3 py-3 text-center">
+                          <span className="px-2 py-0.5 rounded-md bg-white/5 text-gray-400 text-[10px] font-bold border border-white/10 uppercase tracking-tighter">
+                            {r.suciedad || 'Polvo'}
+                          </span>
                         </td>
                         <td className="px-3 py-3 text-center">
                           {(dailyReqs[r.id]??0)>0
@@ -2181,6 +2216,11 @@ ${userMsg}
                           {(dailyReqs[r.id]??0)>0
                             ? <span className="text-xs font-bold text-purple-400">{formatNumber(r.requiredHours,2)}h</span>
                             : <span className="text-gray-600 text-xs">-</span>}
+                        </td>
+                        <td className="px-3 py-3 text-center">
+                          <span className="px-2 py-0.5 rounded-md bg-white/5 text-gray-400 text-[10px] font-bold border border-white/10 uppercase tracking-tighter">
+                            {r.suciedad || 'Polvo'}
+                          </span>
                         </td>
                         <td className="px-3 py-3 text-center">
                           {(dailyReqs[r.id]??0)>0
@@ -2592,7 +2632,12 @@ ${userMsg}
                         <h3 className="text-sm font-black uppercase tracking-widest text-yellow-400">
                           ◈ Análisis de Mix — Selecciona los modelos a producir hoy
                         </h3>
-                        <button onClick={() => setSelectedMixIds([])} className="text-[10px] text-gray-500 hover:text-white transition-colors">Limpiar</button>
+                        <div className="flex gap-3">
+                          <button onClick={distributeGlobalRate} className="text-[10px] font-black uppercase bg-yellow-400/10 text-yellow-400 border border-yellow-400/20 px-3 py-1 rounded-lg hover:bg-yellow-400 hover:text-black transition-all">
+                            Distribuir Rate Global
+                          </button>
+                          <button onClick={() => setSelectedMixIds([])} className="text-[10px] text-gray-500 hover:text-white transition-colors">Limpiar</button>
+                        </div>
                       </div>
                       {/* Selector de modelos */}
                       <div className="p-4 flex flex-wrap gap-2 border-b border-[#1A1A1A]">
@@ -2903,6 +2948,26 @@ ${userMsg}
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-gray-300 uppercase tracking-wider">Color (ID)</label>
                   <input type="color" value={boxInput.color || '#3b82f6'} onChange={(e) => handleBoxInputChange('color', e.target.value)} className="w-full h-[46px] bg-black/50 border border-white/10 rounded-xl px-2 py-1 cursor-pointer focus:border-blue-400 outline-none" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-300 uppercase tracking-wider">Tipo de Máquina</label>
+                  <select value={boxInput.maquina} onChange={(e) => handleBoxInputChange('maquina', e.target.value)} className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-blue-400 outline-none">
+                    <option value="lavado_secado">Lavado + Secado</option>
+                    <option value="secado">Solo Secado</option>
+                    <option value="no">Excluido / Otros</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-300 uppercase tracking-wider">Grado de Suciedad</label>
+                  <select value={boxInput.suciedad} onChange={(e) => handleBoxInputChange('suciedad', e.target.value)} className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-blue-400 outline-none">
+                    <option value="Polvo">Polvo (Ligero)</option>
+                    <option value="Grasa">Grasa (Medio)</option>
+                    <option value="Aceite">Aceite (Pesado)</option>
+                    <option value="Orgánico">Orgánico / Sangre</option>
+                  </select>
                 </div>
               </div>
             </div>
