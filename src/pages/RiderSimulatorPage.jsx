@@ -698,7 +698,7 @@ ${userMsg}
       ];
     })();
 
-    const kW=54, kH=30, kGap=2.5;
+    const kW=54, kH=36, kGap=2.5;
     kpiData.forEach((k,i)=>{
       const x = 10 + i*(kW+kGap);
       // Card bg
@@ -708,16 +708,16 @@ ${userMsg}
       fill(...k.ac); rect(x, curY+2, kW, 2);           // square bottom of accent
       // Subtle border
       stroke(...C.border); doc.setLineWidth(0.25); rrect(x,curY,kW,kH,1.5,'S');
-      // Label
-      text(...C.gray2); font('bold',5.5);
-      lbl(k.l, x+4, curY+9.5);
-      // Value (colored) — measure width BEFORE changing font
-      text(...k.ac); font('bold',14);
+      // Label (+20%: 5.5→6.5)
+      text(...C.gray2); font('bold',6.5);
+      lbl(k.l, x+4, curY+11);
+      // Value (+20%: 14→17) — measure width BEFORE changing font
+      text(...k.ac); font('bold',17);
       const valW = doc.getTextWidth(k.v);
-      lbl(k.v, x+4, curY+23);
-      // Unit inline right, 3mm gap after number
-      text(...C.gray2); font('normal',6);
-      lbl(k.u, x+4+valW+3, curY+23);
+      lbl(k.v, x+4, curY+28);
+      // Unit (+20%: 6→7) inline right, 3mm gap
+      text(...C.gray2); font('normal',7);
+      lbl(k.u, x+4+valW+3, curY+28);
     });
     curY += kH+6;
 
