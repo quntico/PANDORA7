@@ -777,7 +777,7 @@ ${userMsg}
       text(...C.gray2); font('normal',7);
       lbl(t*10+'%', tx, sbY+sbH+7.5, {align:'center'});
     }
-    curY += sbH+20;
+    curY += sbH+30;   // +10mm gap between chart and table
 
     // Products table
     text(...C.accent1); font('bold',8);
