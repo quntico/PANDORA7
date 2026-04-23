@@ -624,21 +624,26 @@ ${userMsg}
       ? computedRows.filter(r => selectedMixIds.includes(r.id))
       : computedRows;
 
-    // PALETTE — white page · black headers · red first-column accent
+
+    // PALETTE — dark premium executive
     const C = {
-      bg:     [255, 255, 255],   // page background: white
-      panel:  [255, 255, 255],   // cell fill: white
-      panel2: [245, 245, 248],   // alternating row: very light grey
-      border: [200, 200, 205],   // grid lines: light grey
-      blue:   [18,  18,  18],    // header bar: near-black
-      blue2:  [40,  40,  40],    // sub-header / section bar
-      lblue:  [255, 255, 255],   // text on dark headers: white
-      white:  [255, 255, 255],
-      gray1:  [30,  30,  30],    // primary data text: dark
-      gray2:  [90,  90,  90],    // secondary / label text
-      gray3:  [210, 210, 215],   // faint grid guides
-      red:    [185, 10,  10],    // first-column accent: red
-      redL:   [210, 20,  20],    // lighter red for alternating
+      bg:      [8,   10,  18],    // deep navy page bg
+      panel:   [14,  18,  30],    // card dark
+      panel2:  [20,  25,  40],    // alt row
+      card:    [18,  24,  42],    // KPI card
+      border:  [40,  50,  80],    // subtle border
+      header:  [10,  13,  24],    // header bg
+      accent1: [0,   190, 220],   // electric cyan
+      accent2: [80,  120, 240],   // blue
+      accent3: [130, 80,  230],   // purple
+      accent4: [240, 100, 60],    // orange
+      accent5: [50,  200, 130],   // green
+      white:   [255, 255, 255],
+      gray1:   [210, 215, 230],   // primary text
+      gray2:   [120, 130, 155],   // secondary text
+      gray3:   [50,  58,  85],    // divider
+      red:     [220, 45,  45],    // danger
+      redL:    [240, 60,  60],
     };
 
     const fill   = (...c) => doc.setFillColor(...c);
@@ -647,30 +652,37 @@ ${userMsg}
     const font   = (sty,sz) => { doc.setFont('helvetica', sty); doc.setFontSize(sz); };
     const rect   = (x,y,w,h,m='F') => doc.rect(x,y,w,h,m);
     const lbl    = (s,x,y,o={}) => doc.text(s,x,y,o);
+    const rrect  = (x,y,w,h,r,m='F') => doc.roundedRect(x,y,w,h,r,r,m);
 
-    const addBG = () => { fill(...C.bg); rect(0,0,W,H); };
+    const addBG = () => {
+      fill(...C.bg); rect(0,0,W,H);
+      // Subtle mesh lines
+      stroke(...C.border); doc.setLineWidth(0.08);
+      for(let i=0;i<W;i+=20){ doc.line(i,0,i,H); }
+      for(let j=0;j<H;j+=20){ doc.line(0,j,W,j); }
+    };
 
     // ── PAGE 1
     addBG();
 
-    // Header bar
-    fill(...C.blue); rect(0,0,W,20);
-    fill(...C.red); rect(0,19.2,W,0.8);
-    // Title — RYDER bold + subtitle normal, no overlap
-    text(...C.white);
-    font('bold', 15);
-    lbl('RYDER', 12, 13);
-    const riderW = doc.getTextWidth('RYDER');
-    font('normal', 11);
-    lbl('  —  Reporte de Simulacion Industrial', 12 + riderW, 13);
+    // ── Header gradient bar ──────────────────────────────────────────
+    fill(...C.header); rect(0,0,W,22);
+    // Cyan accent stripe
+    fill(...C.accent1); rect(0,21.5,W,0.8);
+    // Brand name
+    text(...C.accent1); font('bold',16);
+    lbl('RYDER', 12, 14);
+    const rW = doc.getTextWidth('RYDER');
+    text(...C.gray2); font('normal',10);
+    lbl('  —  Reporte de Simulacion Industrial', 12+rW, 14);
     // Right meta
-    font('normal', 6.5); text(...C.gray3);
-    lbl(`${inputs.machineName}  |  Velocidad: ${speedMH} m/h  |  ${ts}`, W-10, 7, {align:'right'});
-    lbl(`Mix: ${selectedMixIds.length>0 ? selectedMixIds.length+' modelo(s)' : 'Todos los modelos'}`, W-10, 15, {align:'right'});
+    text(...C.gray2); font('normal',6);
+    lbl(`${inputs.machineName}  |  Velocidad: ${speedMH} m/h  |  ${ts}`, W-10, 8, {align:'right'});
+    lbl(`Mix: ${selectedMixIds.length>0?selectedMixIds.length+' modelo(s)':'Todos los modelos'}`, W-10, 16, {align:'right'});
 
-    let curY = 24;
+    let curY = 28;
 
-    // KPI strip
+    // ── KPI Cards ────────────────────────────────────────────────────
     const kpiData = (() => {
       const avg = mixRows.length ? mixRows.reduce((s,r)=>s+r.realBoxesHr,0)/mixRows.length : 0;
       const tot = mixRows.reduce((s,r)=>s+(r.requiredDaily||0),0);
@@ -678,40 +690,51 @@ ${userMsg}
       const cap = avg*y1h;
       const cov = cap>0 ? Math.min(100,(cap/Math.max(1,tot))*100) : 0;
       return [
-        {l:'VEL. BANDA',       v:String(speedMH),              u:'m/h'},
-        {l:'CAP. PROM/H',      v:String(Math.round(avg)),      u:'cajas/h'},
-        {l:'CAP. DIA (Y1)',    v:Math.round(cap).toLocaleString('es-MX'), u:'cajas'},
-        {l:'REQ. TOTAL/DIA',   v:tot>0?tot.toLocaleString('es-MX'):'--', u:'cajas'},
-        {l:'COBERTURA Y1',     v:cov.toFixed(1),               u:'%'},
+        {l:'VEL. BANDA',      v:String(speedMH),                         u:'m/h',    ac:C.accent1},
+        {l:'CAP. PROM/H',     v:String(Math.round(avg)),                 u:'c/h',    ac:C.accent2},
+        {l:'CAP. DÍA (Y1)',   v:Math.round(cap).toLocaleString('es-MX'), u:'cajas',  ac:C.accent3},
+        {l:'REQ. TOTAL/DÍA',  v:tot>0?tot.toLocaleString('es-MX'):'--', u:'cajas',  ac:C.accent4},
+        {l:'COBERTURA Y1',    v:cov.toFixed(1),                          u:'%',      ac:C.accent5},
       ];
     })();
 
+    const kW=54, kH=30, kGap=2.5;
     kpiData.forEach((k,i)=>{
-      const x=10+i*57, kH=28;           // taller box
-      fill(...C.panel); rect(x,curY,54,kH);
-      stroke(...C.border); doc.setLineWidth(0.3); rect(x,curY,54,kH,'S');
-      fill(...C.red); rect(x,curY,2,kH);
-      fill(...C.blue); rect(x,curY,54,8); // label band
-      text(...C.white); font('bold',5.5); lbl(k.l, x+5, curY+5.5); // label in band
-      text(...C.gray1); font('bold',13);  lbl(k.v, x+5, curY+22);  // number below band
-      text(...C.gray2); font('normal',5); lbl(k.u, x+5+doc.getTextWidth(k.v)*0.85, curY+20.5); // unit
+      const x = 10 + i*(kW+kGap);
+      // Card bg
+      fill(...C.card); rrect(x, curY, kW, kH, 1.5);
+      // Top accent bar (color per card)
+      fill(...k.ac); rrect(x, curY, kW, 4, 1.5);
+      fill(...k.ac); rect(x, curY+2, kW, 2);           // square bottom of accent
+      // Subtle border
+      stroke(...C.border); doc.setLineWidth(0.25); rrect(x,curY,kW,kH,1.5,'S');
+      // Label
+      text(...C.gray2); font('bold',5.5);
+      lbl(k.l, x+4, curY+9.5);
+      // Value (colored)
+      text(...k.ac); font('bold',14);
+      lbl(k.v, x+4, curY+23);
+      // Unit
+      text(...C.gray2); font('normal',5);
+      lbl(k.u, x+4+doc.getTextWidth(k.v)*0.85, curY+21.5);
     });
-    curY += 33;
+    curY += kH+6;
+
 
     // Speed bar
-    font('bold',7); text(...C.lblue);
-    lbl('VELOCIDAD DE LINEA  -  UTILIZACION', 10, curY+4);
-    font('normal',6); text(...C.gray2);
-    lbl(`Banda: ${speedMH} m/h  |  Limite: 140 m/h  |  Uso: ${Math.min(100,(speedMH/140*100)).toFixed(1)}%`, 10, curY+9);
+    text(...C.accent1); font('bold',7);
+    lbl('VELOCIDAD DE LINEA  —  UTILIZACIÓN', 10, curY+4);
+    text(...C.gray2); font('normal',6);
+    lbl(`Banda: ${speedMH} m/h  |  Límite: 140 m/h  |  Uso: ${Math.min(100,(speedMH/140*100)).toFixed(1)}%`, 10, curY+9);
     const sbX=10, sbY=curY+11, sbW=W-20, sbH=5;
     fill(...C.panel2); rect(sbX,sbY,sbW,sbH);
     const usedW = sbW * Math.min(1, speedMH/140);
-    const segs=50;
+    const segs=60;
     for(let s=0;s<segs;s++){
       const sx=sbX+(sbW/segs)*s, sw=sbW/segs+0.2;
       if(sx-sbX<usedW){
         const t=s/segs;
-        fill(Math.round(30+t*180), Math.round(140-t*40), 220);
+        fill(Math.round(0+t*80), Math.round(190-t*70), Math.round(220-t*30));
         rect(sx,sbY,sw,sbH);
       }
     }
@@ -724,13 +747,13 @@ ${userMsg}
     curY += 22;
 
     // Products table
-    font('bold',7); text(...C.lblue);
-    lbl('MODELOS EN MIX  -  CAPACIDAD VS REQUERIMIENTO', 10, curY+4);
+    text(...C.accent1); font('bold',7);
+    lbl('MODELOS  —  CAPACIDAD vs REQUERIMIENTO', 10, curY+4);
     curY += 6;
 
     autoTable(doc,{
       startY: curY,
-      head:[['Mod','Nombre','Dim (cm)','Vel m/h','Cap c/h','Cap/Dia','Cap/Mes','Req/Dia','Req/h nec.','Estado']],
+      head:[['Mod','Nombre','Dim (cm)','Vel m/h','Cap c/h','Cap/Día','Cap/Mes','Req/Día','Hrs req.','Estado']],
       body: mixRows.map(r=>[
         r.label, r.name, `${r.l}x${r.w}x${r.h}`,
         r.linearMh.toFixed(1), r.realBoxesHr.toFixed(1),
@@ -740,19 +763,19 @@ ${userMsg}
         r.requiredDaily>0 ? (r.requiredDaily/r.realBoxesHr).toFixed(1)+'h' : '--',
         r.requiredDaily>0 ? (r.requiredHours<=r.totalHoursDay?'VIABLE':'EXCEDE') : '--'
       ]),
-      styles:{fillColor:C.panel,textColor:C.gray1,fontSize:6.5,lineColor:C.border,lineWidth:0.25,cellPadding:2.2},
-      headStyles:{fillColor:C.blue,textColor:C.white,fontStyle:'bold',fontSize:6.5},
+      styles:{fillColor:C.panel,textColor:C.gray1,fontSize:6.5,lineColor:C.border,lineWidth:0.2,cellPadding:2.2},
+      headStyles:{fillColor:C.header,textColor:C.accent1,fontStyle:'bold',fontSize:6.5,lineColor:C.accent1,lineWidth:0.3},
       alternateRowStyles:{fillColor:C.panel2},
       didParseCell:(d)=>{
-        // Red first column (Mod label)
+        // Accent first column (Mod label)
         if(d.column.index===0){
-          d.cell.styles.fillColor = C.red;
-          d.cell.styles.textColor = C.white;
+          d.cell.styles.fillColor = [10,13,24];
+          d.cell.styles.textColor = C.accent1;
           d.cell.styles.fontStyle = 'bold';
         }
         // Estado column
         if(d.section==='body'&&d.column.index===9){
-          d.cell.styles.textColor = d.cell.raw==='VIABLE' ? [0,120,50] : d.cell.raw==='EXCEDE' ? C.red : C.gray2;
+          d.cell.styles.textColor = d.cell.raw==='VIABLE' ? C.accent5 : d.cell.raw==='EXCEDE' ? C.red : C.gray2;
           d.cell.styles.fontStyle='bold';
         }
       },
@@ -767,8 +790,8 @@ ${userMsg}
       const n=mixRows.length||1;
       const maxV=Math.max(...mixRows.map(r=>Math.max(r.boxesPerDay,r.requiredDaily||0)),1);
       const bGW=cW/n;
-      font('bold',6); text(...C.gray2);
-      lbl('GRAFICO: CAPACIDAD DIARIA vs REQUERIMIENTO DIARIO (cajas/dia)', cX, cY);
+      text(...C.accent1); font('bold',6);
+      lbl('GRÁFICO: CAPACIDAD DIARIA vs REQUERIMIENTO DIARIO (cajas/día)', cX, cY);
       const axY=cY+cH;
       stroke(...C.gray3); doc.setLineWidth(0.2);
       doc.line(cX,cY+4,cX,axY); doc.line(cX,axY,cX+cW,axY);
@@ -782,26 +805,26 @@ ${userMsg}
         const gx=cX+idx*bGW, bW=bGW*0.32;
         const capH=(r.boxesPerDay/maxV)*(cH-8);
         const reqH=r.requiredDaily>0?(r.requiredDaily/maxV)*(cH-8):0;
-        // Cap bar — RED
-        fill(...C.red); rect(gx+bGW*0.08, axY-capH, bW, capH);
-        // Req bar — GREY
-        fill(145,145,148); rect(gx+bGW*0.08+bW+1, axY-reqH, bW, reqH);
+        // Cap bar — cyan
+        fill(...C.accent1); rect(gx+bGW*0.08, axY-capH, bW, capH);
+        // Req bar — orange
+        fill(...C.accent4); rect(gx+bGW*0.08+bW+1, axY-reqH, bW, reqH);
         text(...C.gray1); font('bold',5.5);
         lbl(r.label, gx+bGW/2, axY+5, {align:'center'});
       });
       // Legend
-      const lX=cX+cW-44, lY=cY+1;
-      fill(...C.red);      rect(lX,    lY, 5, 3);
-      text(...C.gray1); font('normal',5.5); lbl('Capacidad/dia', lX+6.5,  lY+2.5);
-      fill(145,145,148);   rect(lX+26, lY, 5, 3);
-      lbl('Req. diario',   lX+32.5, lY+2.5);
+      const lX=cX+cW-48, lY=cY+1;
+      fill(...C.accent1); rect(lX,    lY, 5, 3);
+      text(...C.gray1); font('normal',5.5); lbl('Capacidad/día', lX+6.5,  lY+2.5);
+      fill(...C.accent4); rect(lX+28, lY, 5, 3);
+      lbl('Req. diario',   lX+34.5, lY+2.5);
     }
 
     // ── PAGE 2 - Scenarios
     doc.addPage(); addBG();
-    fill(...C.panel2); rect(0,0,W,14);
-    fill(...C.blue); rect(0,13.5,W,0.6);
-    text(...C.white); font('bold',9); lbl('RYDER  -  Analisis de Escenarios Y1-Y5', 12, 9.5);
+    fill(...C.header); rect(0,0,W,14);
+    fill(...C.accent1); rect(0,13.5,W,0.7);
+    text(...C.accent1); font('bold',9); lbl('RYDER  —  Análisis de Escenarios Y1-Y5', 12, 9.5);
     text(...C.gray2); font('normal',6); lbl(ts, W-10, 9.5, {align:'right'});
     curY=20;
 
@@ -809,16 +832,16 @@ ${userMsg}
       const sc=CUSTOMER_SCENARIOS[key];
       const rows=scenarioResults[key];
       if(!rows.length) return;
-      fill(...C.blue); rect(10,curY,W-20,8);
-      fill(...C.red); rect(10,curY+7.5,W-20,0.6);  // red accent
-      text(...C.white); font('bold',7.5);
-      lbl(`${sc.name.toUpperCase()}  -  RATE: ${sc.dailyRate.toLocaleString('es-MX')} cajas/dia`, 13, curY+5.5);
-      text(...C.gray3); font('normal',6);
-      lbl(`Ref: ${selectedRow?.name??'Todos'}`, W-12, curY+5.5, {align:'right'});
-      curY+=10;
+      fill(...C.panel); rect(10,curY,W-20,9);
+      fill(...C.accent1); rect(10,curY+8.5,W-20,0.6);
+      text(...C.accent1); font('bold',7.5);
+      lbl(`${sc.name.toUpperCase()}  —  RATE: ${sc.dailyRate.toLocaleString('es-MX')} cajas/día`, 13, curY+6);
+      text(...C.gray2); font('normal',6);
+      lbl(`Ref: ${selectedRow?.name??'Todos'}`, W-12, curY+6, {align:'right'});
+      curY+=11;
       autoTable(doc,{
         startY:curY,
-        head:[['Ano','Hrs Base','Hrs Ef/T','Turnos','T.Disp h','Rate/Dia','Req/h','Cap c/h','Deficit/Superavit','Cobertura','Lineas']],
+        head:[['Año','Hrs Base','Hrs Ef/T','Turnos','T.Disp h','Rate/Día','Req/h','Cap c/h','Déficit/Superávit','Cobertura','Líneas']],
         body:rows.map(r=>[
           r.year, r.hrsBase, r.effectiveHoursPerShift.toFixed(2), r.shifts,
           r.availableDailyTime.toFixed(2), r.dailyRate.toLocaleString('es-MX'),
@@ -827,28 +850,27 @@ ${userMsg}
           (r.coverageRatio*100).toFixed(1)+'%',
           r.requiredLines+(r.requiredLines===1?' maq.':' maqs.')
         ]),
-        styles:{fillColor:C.panel,textColor:C.gray1,fontSize:7,lineColor:C.border,lineWidth:0.25,cellPadding:2.2},
-        headStyles:{fillColor:C.blue,textColor:C.white,fontStyle:'bold',fontSize:7},
+        styles:{fillColor:C.panel,textColor:C.gray1,fontSize:7,lineColor:C.border,lineWidth:0.2,cellPadding:2.2},
+        headStyles:{fillColor:C.header,textColor:C.accent1,fontStyle:'bold',fontSize:7,lineColor:C.accent1,lineWidth:0.3},
         alternateRowStyles:{fillColor:C.panel2},
         didParseCell:(d)=>{
-          // Red first column (Year)
           if(d.column.index===0){
-            d.cell.styles.fillColor = C.red;
-            d.cell.styles.textColor = C.white;
+            d.cell.styles.fillColor = [10,13,24];
+            d.cell.styles.textColor = C.accent1;
             d.cell.styles.fontStyle = 'bold';
           }
           if(d.section!=='body') return;
           const r=rows[d.row.index]; if(!r) return;
           if(d.column.index===8){
-            d.cell.styles.textColor = r.deficitOrSurplus>=0 ? [0,100,40] : C.red;
+            d.cell.styles.textColor = r.deficitOrSurplus>=0 ? C.accent5 : C.red;
             d.cell.styles.fontStyle='bold';
           }
           if(d.column.index===9){
             const cv = r.coverageRatio;
-            d.cell.styles.textColor = cv>=1 ? [0,100,40] : cv>=0.75 ? C.gray2 : C.red;
+            d.cell.styles.textColor = cv>=1 ? C.accent5 : cv>=0.75 ? C.accent4 : C.red;
           }
           if(d.column.index===10){
-            d.cell.styles.textColor = r.requiredLines<=1 ? [0,100,40] : r.requiredLines===2 ? C.gray2 : C.red;
+            d.cell.styles.textColor = r.requiredLines<=1 ? C.accent5 : r.requiredLines===2 ? C.accent4 : C.red;
             d.cell.styles.fontStyle='bold';
           }
         },
@@ -859,7 +881,7 @@ ${userMsg}
       // Mini coverage chart
       if(curY<H-42){
         const cX=10, cY=curY, cH=26, cW=W-20, n=rows.length, bW2=cW/n*0.5;
-        font('bold',5.5); text(...C.gray2); lbl('Cobertura % por escenario anual', cX, cY+4);
+        text(...C.accent1); font('bold',5.5); lbl('Cobertura % por escenario anual', cX, cY+4);
         const axY=cY+cH;
         [50,100,150].forEach(p=>{
           const gy=axY-(cH-6)*p/150;
@@ -871,30 +893,29 @@ ${userMsg}
           const pct=Math.min(150,r.coverageRatio*100);
           const bH2=(pct/150)*(cH-6);
           const t=Math.min(1,r.coverageRatio);
-          fill(Math.round(30+(1-t)*160), Math.round(100+t*50), 220);
+          fill(Math.round(0+t*50), Math.round(120+t*80), Math.round(130+t*90));
           rect(gx+(cW/n-bW2)/2, axY-bH2, bW2, bH2);
           text(...C.gray1); font('bold',5); lbl(r.year, gx+cW/n/2, axY+3.5, {align:'center'});
           if(bH2>5){ text(...C.white); font('normal',4.5); lbl((r.coverageRatio*100).toFixed(0)+'%', gx+cW/n/2, axY-bH2-1, {align:'center'}); }
         });
-        // 100% line
+        // 100% reference line
         const refY=axY-(cH-6)*(100/150);
-        stroke(...C.red); doc.setLineWidth(0.5); doc.line(cX,refY,cX+cW,refY);
-        text(...C.red); font('bold',4.5); lbl('100%  1 maquina suficiente', cX+cW-1, refY-1, {align:'right'});
+        stroke(...C.accent1); doc.setLineWidth(0.4); doc.line(cX,refY,cX+cW,refY);
+        text(...C.accent1); font('bold',4.5); lbl('100%  — 1 máquina suficiente', cX+cW-1, refY-1, {align:'right'});
         curY=axY+10;
       }
       curY+=3;
     });
 
-    // Footer — light grey bar with near-black top line
+    // Footer — dark bar matching header
     const pc=doc.getNumberOfPages();
     for(let p=1;p<=pc;p++){
       doc.setPage(p);
-      fill(235,235,238); rect(0,H-7,W,7);
-      fill(...C.blue); rect(0,H-7,W,0.4);
-      fill(...C.red);  rect(0,H-7.2,W,0.25);   // red micro-line above
+      fill(...C.header); rect(0,H-8,W,8);
+      fill(...C.accent1); rect(0,H-8,W,0.5);
       text(...C.gray2); font('normal',5.5);
       lbl('PANDORA 3.0  |  RYDER Industrial Simulator  |  Confidencial', 12, H-2.5);
-      lbl(`Pagina ${p} de ${pc}`, W-10, H-2.5, {align:'right'});
+      lbl(`Página ${p} de ${pc}`, W-10, H-2.5, {align:'right'});
     }
 
     doc.save(`RYDER_Analisis_${Date.now()}.pdf`);
