@@ -395,10 +395,10 @@ export default function RiderSimulatorPage() {
     { id:'ex2', label:'C', name:'Contenedor Rectangular', l:60.96, w:38.10, h:35.56, gap:0.080, advanceSide:'length', color:'#3b82f6', maquina:'lavado_secado', suciedad:'Polvo',  included:true  },
     // ── SOLO SECADO ──────────────────────────────────────────────────────────
     { id:'ex3', label:'D', name:'Contenedor Cuadrado',    l:60.96, w:55.88, h:35.56, gap:0.100, advanceSide:'length', color:'#10b981', maquina:'secado',        suciedad:'Grasa',  included:true  },
-    // ── EXCLUIDOS ─────────────────────────────────────────────────────────────
-    { id:'ex4', label:'E', name:'CONT-AIP-ABAT (bulk bote)', l:114.30, w:121.92, h:86.36, gap:0.097, advanceSide:'length', color:'#f59e0b', maquina:'no', suciedad:'Polvo', included:false },
-    { id:'ex5', label:'F', name:'TAPA-AIP-ABAT (bulk bote)', l:114.30, w:121.92, h:12.70, gap:0.097, advanceSide:'length', color:'#ec4899', maquina:'no', suciedad:'Polvo', included:false },
-    { id:'ex6', label:'G', name:'Tapas (separadores)',        l:0,      w:0,      h:0,     gap:0,     advanceSide:'length', color:'#94a3b8', maquina:'no', suciedad:'Polvo', included:false },
+    // ── ESPECIALES / BULK (Integrados en evaluación) ─────────────────────────
+    { id:'ex4', label:'E', name:'CONT-AIP-ABAT (bulk bote)', l:114.30, w:121.92, h:86.36, gap:0.097, advanceSide:'length', color:'#f59e0b', maquina:'lavado_secado', suciedad:'Polvo', included:true },
+    { id:'ex5', label:'F', name:'TAPA-AIP-ABAT (bulk bote)', l:114.30, w:121.92, h:12.70, gap:0.097, advanceSide:'length', color:'#ec4899', maquina:'lavado_secado', suciedad:'Polvo', included:true },
+    { id:'ex6', label:'G', name:'Tapas (separadores)',        l:0,      w:0,      h:0,     gap:0,     advanceSide:'length', color:'#94a3b8', maquina:'lavado_secado', suciedad:'Polvo', included:true },
   ]);
 
   const [selectedId, setSelectedId] = useState(boxes[0]?.id || null);
@@ -495,6 +495,10 @@ export default function RiderSimulatorPage() {
     if (selectedId === id) setSelectedId(updated[0]?.id || null);
   };
 
+  const toggleInclusion = (id) => {
+    setBoxes(prev => prev.map(b => b.id === id ? { ...b, included: !b.included } : b));
+  };
+
   // ── Req. Diario — valores oficiales pre-cargados ──
   const OFFICIAL_REQS = { A:1610, B:798, C:1064, D:574, E:82, F:82, G:0 };
   const LS_KEY = 'rider_daily_reqs_v2';
@@ -579,13 +583,15 @@ export default function RiderSimulatorPage() {
   const currentSpeed = selectedRow?.speed ?? (140 / 60);
 
   // ── Grupos por tipo de máquina ──────────────────────────────────────────
-  const lavadoRows   = computedRows.filter(r => r.maquina === 'lavado_secado' && r.included);
-  const secadoRows   = computedRows.filter(r => r.maquina === 'secado'        && r.included);
-  const excluidos    = computedRows.filter(r => !r.included || r.maquina === 'no');
+  const lavadoRows   = computedRows.filter(r => r.maquina === 'lavado_secado');
+  const secadoRows   = computedRows.filter(r => r.maquina === 'secado');
+  const excluidos    = computedRows.filter(r => r.maquina === 'no');
 
-  // ── Horas totales requeridas por grupo (agregado) ───────────────────────
-  const totalHrsLavado = lavadoRows.reduce((s, r) => s + r.requiredHours, 0);
-  const totalHrsSecado = secadoRows.reduce((s, r) => s + r.requiredHours, 0);
+  // ── Horas totales requeridas por grupo (solo si están INCLUIDOS) ──────────
+  const totalHrsLavado = lavadoRows.filter(r => r.included).reduce((s, r) => s + r.requiredHours, 0);
+  const totalHrsSecado = secadoRows.filter(r => r.included).reduce((s, r) => s + r.requiredHours, 0);
+  const totalLavadoReq = lavadoRows.filter(r => r.included).reduce((s, r) => s + r.requiredDaily, 0);
+  const totalSecadoReq = secadoRows.filter(r => r.included).reduce((s, r) => s + r.requiredDaily, 0);
 
   // ── Viabilidad por mix (Y1-Y5) — no por producto individual ──────────────
   const CLIENT_SCENARIOS = CUSTOMER_SCENARIOS.lavadoSecado?.scenarios ?? [];
@@ -620,10 +626,12 @@ export default function RiderSimulatorPage() {
   // ── Legacy scenarioResults (mantener por compatibilidad UI existente) ────
   const scenarioResults = useMemo(() => {
     if (!selectedRow) return { lavadoSecado: [] };
+    // Override the dailyRate with the dynamic total for the group
+    const scLavado = { ...CUSTOMER_SCENARIOS.lavadoSecado, dailyRate: totalLavadoReq };
     return {
-      lavadoSecado: compareScenarioAgainstMachine(selectedRow, 'lavadoSecado', MACHINE_CONFIGS, CUSTOMER_SCENARIOS),
+      lavadoSecado: compareScenarioAgainstMachine(selectedRow, 'lavadoSecado', MACHINE_CONFIGS, { lavadoSecado: scLavado }),
     };
-  }, [selectedRow, MACHINE_CONFIGS, CUSTOMER_SCENARIOS]);
+  }, [selectedRow, MACHINE_CONFIGS, CUSTOMER_SCENARIOS, totalLavadoReq]);
 
   const worstLavado = scenarioResults.lavadoSecado.reduce((max, r) => r.requiredLines > max ? r.requiredLines : max, 0);
 
@@ -2077,14 +2085,23 @@ ${userMsg}
                   </thead>
                   <tbody className="divide-y divide-[#1A1A1A]">
                     {/* ── Group header: LAVADO Y SECADO ── */}
-                    <tr><td colSpan={11} className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest" style={{color:'#00F0FF', background:'rgba(0,240,255,0.04)', borderBottom:'1px solid rgba(0,240,255,0.12)'}}>⬡ Lavado y Secado — {lavadoRows.length} productos — Total req: {lavadoRows.reduce((s,r)=>s+r.requiredDaily,0).toLocaleString('es-MX')} pzas/día</td></tr>
+                    <tr><td colSpan={11} className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest" style={{color:'#00F0FF', background:'rgba(0,240,255,0.04)', borderBottom:'1px solid rgba(0,240,255,0.12)'}}>⬡ Lavado y Secado — {lavadoRows.filter(r=>r.included).length} productos — Total req: {lavadoRows.filter(r=>r.included).reduce((s,r)=>s+r.requiredDaily,0).toLocaleString('es-MX')} pzas/día</td></tr>
                     {lavadoRows.map((r) => (
                       <tr key={r.id}
-                        className={cn("transition-colors hover:bg-[#111] cursor-pointer", selectedId===r.id ? "bg-blue-500/5" : "")}
+                        className={cn("transition-all hover:bg-[#111] cursor-pointer", selectedId===r.id ? "bg-blue-500/5" : "", !r.included && "opacity-30 grayscale")}
                         onClick={() => setSelectedId(r.id)}
                       >
                         <td className="px-3 py-3">
-                          <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black" style={{backgroundColor: r.color||'#3b82f6',color:'#fff'}}>{r.label}</span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); toggleInclusion(r.id); }}
+                              className={cn("p-1 rounded-md transition-all", r.included ? "text-cyan-400 hover:bg-cyan-400/10" : "text-gray-600 hover:bg-white/5")}
+                              title={r.included ? "Desactivar de evaluación" : "Activar para evaluación"}
+                            >
+                              <Power className="w-3 h-3" />
+                            </button>
+                            <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shrink-0" style={{backgroundColor: r.color||'#3b82f6',color:'#fff'}}>{r.label}</span>
+                          </div>
                         </td>
                         <td className="px-3 py-2"><span className="px-2 py-0.5 rounded-full text-[10px] font-bold" style={{background:'rgba(0,240,255,0.08)',color:'#00F0FF',border:'1px solid rgba(0,240,255,0.2)'}}>Lav+Sec</span></td>
                         <td className="px-3 py-3 font-medium text-white text-sm">{r.name}</td>
@@ -2123,14 +2140,23 @@ ${userMsg}
                     ))}
 
                     {/* ── Group header: SOLO SECADO ── */}
-                    <tr><td colSpan={11} className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest" style={{color:'#8B5CF6', background:'rgba(139,92,246,0.04)', borderBottom:'1px solid rgba(139,92,246,0.12)'}}>⬡ Solo Secado — {secadoRows.length} productos — Total req: {secadoRows.reduce((s,r)=>s+r.requiredDaily,0).toLocaleString('es-MX')} pzas/día</td></tr>
+                    <tr><td colSpan={11} className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest" style={{color:'#8B5CF6', background:'rgba(139,92,246,0.04)', borderBottom:'1px solid rgba(139,92,246,0.12)'}}>⬡ Solo Secado — {secadoRows.filter(r=>r.included).length} productos — Total req: {secadoRows.filter(r=>r.included).reduce((s,r)=>s+r.requiredDaily,0).toLocaleString('es-MX')} pzas/día</td></tr>
                     {secadoRows.map((r) => (
                       <tr key={r.id}
-                        className={cn("transition-colors hover:bg-[#111] cursor-pointer", selectedId===r.id ? "bg-purple-500/5" : "")}
+                        className={cn("transition-all hover:bg-[#111] cursor-pointer", selectedId===r.id ? "bg-purple-500/5" : "", !r.included && "opacity-30 grayscale")}
                         onClick={() => setSelectedId(r.id)}
                       >
                         <td className="px-3 py-3">
-                          <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black" style={{backgroundColor: r.color||'#8b5cf6',color:'#fff'}}>{r.label}</span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); toggleInclusion(r.id); }}
+                              className={cn("p-1 rounded-md transition-all", r.included ? "text-purple-400 hover:bg-purple-400/10" : "text-gray-600 hover:bg-white/5")}
+                              title={r.included ? "Desactivar de evaluación" : "Activar para evaluación"}
+                            >
+                              <Power className="w-3 h-3" />
+                            </button>
+                            <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shrink-0" style={{backgroundColor: r.color||'#8b5cf6',color:'#fff'}}>{r.label}</span>
+                          </div>
                         </td>
                         <td className="px-3 py-2"><span className="px-2 py-0.5 rounded-full text-[10px] font-bold" style={{background:'rgba(139,92,246,0.08)',color:'#8B5CF6',border:'1px solid rgba(139,92,246,0.2)'}}>Secado</span></td>
                         <td className="px-3 py-3 font-medium text-white text-sm">{r.name}</td>
@@ -2168,10 +2194,10 @@ ${userMsg}
                       </tr>
                     ))}
 
-                    {/* ── Group header: EXCLUIDOS ── */}
+                    {/* ── Group header: EXCLUIDOS (Vaciado por petición de usuario) ── */}
                     {excluidos.length > 0 && (
                       <>
-                        <tr><td colSpan={11} className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest" style={{color:'#666', background:'rgba(255,255,255,0.02)', borderBottom:'1px solid rgba(255,255,255,0.06)'}}>⊘ Excluidos de evaluación — no entran en lavado ni secado</td></tr>
+                        <tr><td colSpan={11} className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest" style={{color:'#666', background:'rgba(255,255,255,0.02)', borderBottom:'1px solid rgba(255,255,255,0.06)'}}>⊘ Otros / Especiales</td></tr>
                         {excluidos.map((r) => (
                           <tr key={r.id} className="opacity-40 hover:opacity-70 transition-opacity">
                             <td className="px-3 py-2"><span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black bg-[#222] text-gray-500">{r.label}</span></td>
@@ -2735,7 +2761,7 @@ ${userMsg}
                   <div key={key} className={`rounded-2xl bg-[#0A0A0A] border ${accent} overflow-hidden shadow-xl`}>
                     <div className="px-5 py-3 border-b border-[#1A1A1A] bg-[#050505] flex items-center justify-between">
                       <h3 className="text-sm font-bold text-white uppercase tracking-wider">{label}</h3>
-                      <span className="text-[11px] text-gray-500">Rate diario: <strong className="text-white">{CUSTOMER_SCENARIOS[key].dailyRate.toLocaleString('es-MX')}</strong> piezas/día</span>
+                      <span className="text-[11px] text-gray-500">Rate diario: <strong className="text-white">{(key === 'lavadoSecado' ? totalLavadoReq : totalSecadoReq).toLocaleString('es-MX')}</strong> piezas/día</span>
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-xs whitespace-nowrap">

@@ -129,7 +129,7 @@ export function buildRyderReportData({
     modelTable,
     lavadoSecadoParams: {
       referencia: selectedRow?.name ?? 'N/A',
-      rateBase:   CUSTOMER_SCENARIOS?.lavadoSecado?.dailyRate ?? 0,
+      rateBase:   reqTotalDia,
       rows:       scenRows,
     },
     conclusions,
