@@ -687,16 +687,16 @@ ${userMsg}
     })();
 
     kpiData.forEach((k,i)=>{
-      const x=10+i*57, kH=22;
+      const x=10+i*57, kH=28;           // taller box
       fill(...C.panel); rect(x,curY,54,kH);
       stroke(...C.border); doc.setLineWidth(0.3); rect(x,curY,54,kH,'S');
       fill(...C.red); rect(x,curY,2,kH);
-      fill(...C.blue); rect(x,curY,54,7);
-      text(...C.white); font('bold',6); lbl(k.l, x+5, curY+5);
-      text(...C.gray1); font('bold',15); lbl(k.v, x+5, curY+18);
-      text(...C.gray2); font('normal',5.5); lbl(k.u, x+4+doc.getTextWidth(k.v)*0.9, curY+16);
+      fill(...C.blue); rect(x,curY,54,8); // label band
+      text(...C.white); font('bold',5.5); lbl(k.l, x+5, curY+5.5); // label in band
+      text(...C.gray1); font('bold',13);  lbl(k.v, x+5, curY+22);  // number below band
+      text(...C.gray2); font('normal',5); lbl(k.u, x+5+doc.getTextWidth(k.v)*0.85, curY+20.5); // unit
     });
-    curY += 26;
+    curY += 33;
 
     // Speed bar
     font('bold',7); text(...C.lblue);
