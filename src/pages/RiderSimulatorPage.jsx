@@ -1201,14 +1201,7 @@ ${userMsg}
             <button onClick={exportPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 text-red-400 transition-all text-sm font-bold">
               <FileText className="w-4 h-4" /> PDF
             </button>
-            <button
-              onClick={openReportModal}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all"
-              style={{ background: 'rgba(17,181,201,0.13)', border: '1px solid rgba(17,181,201,0.35)', color: '#11b5c9' }}
-              title="Genera un informe ejecutivo completo con datos reales de la simulación"
-            >
-              <FileText className="w-4 h-4" /> Informe PDF
-            </button>
+
             <button
               onClick={exportForAI}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all"
