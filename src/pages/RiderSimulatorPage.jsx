@@ -5,7 +5,7 @@ import RyderReportModal from '@/components/ryder/RyderReportModal';
 import { buildRyderReportData } from '@/utils/buildRyderReportData';
 
 
-import { Activity, Box, Settings, Download, Trash2, Plus, ArrowLeft, RefreshCw, LayoutDashboard, Bot, User, Send, Loader2, X, Edit3, Minus, ChevronLeft, ChevronRight, Calendar, FileText, Table2, Lock, Unlock, Brain } from 'lucide-react';
+import { Copy, Plus, Trash2, Maximize2, Settings, FileText, Table2, Play, ChevronDown, ChevronRight, X, Power, Calculator, Download, Eye, Minus, EyeOff, FileDigit, GripVertical, AlertTriangle, Printer, RotateCcw, Box, Truck, BarChart2, CheckCircle2, Factory, Brain, Layers } from 'lucide-react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -1367,27 +1367,31 @@ ${userMsg}
                 <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, minWidth: 230, background: '#0f1c2e', border: '1px solid rgba(17,181,201,0.28)', borderRadius: 12, padding: 6, zIndex: 9990, boxShadow: '0 16px 48px rgba(0,0,0,0.55)' }}>
                   <button
                     onMouseDown={openReportModal}
-                    style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '10px 14px', background: 'transparent', border: 0, borderRadius: 8, color: '#e2eaf4', fontSize: 14, fontWeight: 600, cursor: 'pointer', textAlign: 'left' }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 14, width: '100%', padding: '12px 14px', background: 'transparent', border: 0, borderRadius: 8, color: '#e2eaf4', cursor: 'pointer', textAlign: 'left', transition: 'background 0.2s' }}
                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(17,181,201,0.12)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
-                    <span style={{ fontSize: 20 }}>👁️</span>
+                    <div style={{ background: 'rgba(17,181,201,0.1)', padding: 8, borderRadius: 8, display: 'flex' }}>
+                      <Eye size={18} color="#11b5c9" />
+                    </div>
                     <div>
-                      <div style={{ fontWeight: 700, color: '#11b5c9', fontSize: 13 }}>Ver Informe</div>
-                      <div style={{ fontSize: 11, color: '#6b8599', marginTop: 1 }}>Previsualiza el reporte en pantalla</div>
+                      <div style={{ fontWeight: 700, color: '#11b5c9', fontSize: 13, marginBottom: 2 }}>Ver Informe</div>
+                      <div style={{ fontSize: 11, color: '#6b8599', lineHeight: 1.2 }}>Previsualiza el reporte en pantalla</div>
                     </div>
                   </button>
-                  <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '3px 0' }} />
+                  <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
                   <button
                     onMouseDown={directExportPDF}
-                    style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '10px 14px', background: 'transparent', border: 0, borderRadius: 8, color: '#e2eaf4', fontSize: 14, fontWeight: 600, cursor: 'pointer', textAlign: 'left' }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 14, width: '100%', padding: '12px 14px', background: 'transparent', border: 0, borderRadius: 8, color: '#e2eaf4', cursor: 'pointer', textAlign: 'left', transition: 'background 0.2s' }}
                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(17,181,201,0.12)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
-                    <span style={{ fontSize: 20 }}>⬇️</span>
+                    <div style={{ background: 'rgba(17,181,201,0.1)', padding: 8, borderRadius: 8, display: 'flex' }}>
+                      <Download size={18} color="#11b5c9" />
+                    </div>
                     <div>
-                      <div style={{ fontWeight: 700, color: '#11b5c9', fontSize: 13 }}>Descargar PDF</div>
-                      <div style={{ fontSize: 11, color: '#6b8599', marginTop: 1 }}>Exporta directamente a PDF descargable</div>
+                      <div style={{ fontWeight: 700, color: '#11b5c9', fontSize: 13, marginBottom: 2 }}>Descargar PDF</div>
+                      <div style={{ fontSize: 11, color: '#6b8599', lineHeight: 1.2 }}>Exporta directamente a PDF descargable</div>
                     </div>
                   </button>
                 </div>
