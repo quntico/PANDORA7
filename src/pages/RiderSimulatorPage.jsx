@@ -5,7 +5,7 @@ import RyderReportModal from '@/components/ryder/RyderReportModal';
 import { buildRyderReportData } from '@/utils/buildRyderReportData';
 
 
-import { Copy, Plus, Trash2, Maximize2, Settings, FileText, Table2, Play, ChevronDown, ChevronRight, X, Power, Calculator, Download, Eye, Minus, EyeOff, FileDigit, GripVertical, AlertTriangle, Printer, RotateCcw, Box, Truck, BarChart2, CheckCircle2, Factory, Brain, Layers } from 'lucide-react';
+import { ArrowLeft, RefreshCw, LayoutDashboard, Bot, User, Send, Loader2, Edit3, Calendar, Lock, Unlock, Copy, Plus, Trash2, Maximize2, Settings, FileText, Table2, Play, ChevronDown, ChevronRight, X, Power, Calculator, Download, Eye, Minus, EyeOff, FileDigit, GripVertical, AlertTriangle, Printer, RotateCcw, Box, Truck, BarChart2, CheckCircle2, Factory, Brain, Layers } from 'lucide-react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
