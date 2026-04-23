@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RYDER - Informe Paramétrico de Simulación</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #eef3f7; --page: #ffffff; --ink: #1f2a37; --muted: #6b7280;
+      --teal: #11b5c9; --teal-dark: #0b8ea0; --navy: #122033;
+      --green: #22c55e; --amber: #f59e0b; --red: #ef4444;
+      --line: #dbe5ee; --soft: #f5f9fc;
+      --shadow: 0 10px 30px rgba(18,32,51,0.08);
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:"Segoe UI",Arial,Helvetica,sans-serif; background:var(--bg); color:var(--ink); }
+    .toolbar { position:sticky; top:0; z-index:20; display:flex; gap:12px; align-items:center; justify-content:space-between; padding:14px 18px; background:rgba(18,32,51,0.96); color:#fff; box-shadow:var(--shadow); }
+    .toolbar h1 { margin:0; font-size:16px; font-weight:700; }
+    .toolbar .actions { display:flex; gap:10px; flex-wrap:wrap; }
+    button { border:0; border-radius:10px; padding:10px 14px; font-weight:700; cursor:pointer; transition:0.2s ease; }
+    .btn-primary { background:var(--teal); color:#fff; }
+    .btn-secondary { background:#fff; color:var(--navy); }
+    .btn-primary:hover,.btn-secondary:hover { transform:translateY(-1px); }
+    .report { width:1280px; max-width:calc(100vw - 32px); margin:24px auto 48px; display:grid; gap:24px; }
+    .page { background:var(--page); border-radius:22px; overflow:hidden; box-shadow:var(--shadow); min-height:720px; position:relative; page-break-after:always; }
+    .page-inner { padding:34px 42px 38px; }
+    .hero { min-height:720px; display:grid; grid-template-rows:auto 1fr auto; background:linear-gradient(135deg,rgba(17,181,201,0.08),rgba(18,32,51,0.02)),linear-gradient(180deg,#ffffff 0%,#eef6fb 100%); }
+    .hero-top { height:84px; background:linear-gradient(90deg,var(--teal) 0%,#6dd5e3 100%); }
+    .brand-row { display:flex; align-items:center; justify-content:space-between; padding:28px 42px 0; }
+    .brand { font-size:20px; font-weight:800; color:var(--navy); letter-spacing:1px; }
+    .hero-content { display:grid; grid-template-columns:1.2fr 1fr; gap:24px; align-items:center; padding:16px 42px 42px; }
+    .hero h2 { font-size:42px; line-height:1.08; margin:0 0 18px; color:var(--navy); }
+    .hero p { font-size:18px; color:#415164; line-height:1.5; margin:0; max-width:640px; }
+    .meta { margin-top:28px; display:grid; gap:8px; font-size:15px; color:var(--navy); }
+    .meta b { display:inline-block; min-width:200px; color:var(--teal-dark); }
+    .cover-graphic { background:linear-gradient(145deg,rgba(17,181,201,0.18),rgba(18,32,51,0.06)); border:2px solid rgba(17,181,201,0.18); border-radius:28px; min-height:420px; padding:24px; display:grid; place-items:center; }
+    .cover-graphic .placeholder { width:100%; height:100%; border:2px dashed rgba(17,181,201,0.35); border-radius:22px; display:grid; place-items:center; text-align:center; padding:20px; font-weight:700; color:#557086; background:rgba(255,255,255,0.6); }
+    .page-no { position:absolute; right:28px; bottom:20px; color:#7a8da1; font-size:13px; font-weight:700; }
+    .section-title { font-size:34px; margin:0 0 18px; color:var(--navy); line-height:1.1; }
+    .section-subtitle { margin:-6px 0 24px; color:#5f7286; font-size:16px; }
+    .kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:18px; }
+    .kpi { background:linear-gradient(180deg,#fbfdff,#f3f8fc); border:1px solid var(--line); border-radius:18px; padding:18px; }
+    .kpi .value { font-size:36px; font-weight:800; color:var(--teal-dark); line-height:1; margin-bottom:10px; }
+    .kpi .label { font-size:15px; font-weight:700; color:var(--navy); }
+    .kpi .hint { font-size:13px; color:var(--muted); margin-top:6px; line-height:1.4; }
+    .two-col { display:grid; grid-template-columns:1.1fr 0.9fr; gap:26px; align-items:start; }
+    .panel { background:#fff; border:1px solid var(--line); border-radius:18px; padding:18px 18px 14px; }
+    .panel h3 { margin:0 0 12px; color:var(--navy); font-size:20px; }
+    .util-box { background:linear-gradient(135deg,rgba(17,181,201,0.1),rgba(17,181,201,0.02)); border:1px solid rgba(17,181,201,0.22); border-radius:20px; padding:24px; }
+    .util-box .big { font-size:54px; font-weight:800; color:var(--teal-dark); line-height:1; margin-bottom:8px; }
+    .util-box .note { font-size:15px; color:#526678; line-height:1.55; }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th,td { border-bottom:1px solid var(--line); padding:10px; text-align:left; vertical-align:middle; }
+    th { background:#f1f8fb; color:var(--navy); font-size:13px; text-transform:uppercase; letter-spacing:0.4px; }
+    .status-ok { color:var(--green); font-weight:800; }
+    .status-warn { color:var(--amber); font-weight:800; }
+    .status-bad { color:var(--red); font-weight:800; }
+    .chart-wrap { height:330px; position:relative; }
+    .caption { margin-top:10px; color:#5c7083; font-size:14px; line-height:1.5; }
+    .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+    .callouts { display:grid; gap:16px; margin-top:20px; }
+    .callout { border-radius:18px; padding:18px 18px 16px; border:1px solid var(--line); background:#fbfdff; }
+    .callout.ok { border-left:6px solid var(--green); }
+    .callout.warn { border-left:6px solid var(--amber); }
+    .callout.bad { border-left:6px solid var(--red); }
+    .callout h4 { margin:0 0 8px; font-size:18px; color:var(--navy); }
+    .callout p { margin:0; color:#4f6377; line-height:1.55; font-size:14px; }
+    .footer-note { margin-top:18px; color:#73869a; font-size:12px; }
+    @media print {
+      body { background:#fff; }
+      .toolbar { display:none !important; }
+      .report { width:100%; max-width:none; margin:0; gap:0; }
+      .page { border-radius:0; box-shadow:none; min-height:100vh; break-after:page; }
+      .page-inner { padding:26px 32px 30px; }
+      .hero-content { padding:16px 32px 34px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <h1>RYDER — Informe Paramétrico de Simulación</h1>
+    <div class="actions">
+      <button class="btn-secondary" onclick="loadSampleData()">Cargar ejemplo</button>
+      <button class="btn-secondary" onclick="rebuildReport()">Actualizar reporte</button>
+      <button class="btn-primary" onclick="window.print()">Exportar PDF</button>
+    </div>
+  </div>
+  <div class="report" id="report"></div>
+  <script>
+    const reportData = {
+      meta: {
+        empresa:'RYDER', cliente:'Enrique Vargas',
+        proyecto:'Informe Paramétrico de Simulación',
+        subtitulo:'Análisis de capacidad, velocidad de línea y cobertura operativa para el sistema de lavado y secado de contenedores.',
+        periodo:'Y1 – Y5', fecha:'22 abril 2026', simulador:'RYDER', version:'v7.61'
+      },
+      cover: {
+        title:'SIMULACIÓN DE LÍNEA', subtitle:'Y1 – Y5',
+        rightBoxText:'Inserta aquí imagen del equipo, render, captura del simulador o branding del proyecto.'
+      },
+      kpis: {
+        velocidadBandaMph:139.8, velocidadMaxMph:140,
+        capacidadPromHora:167, capacidadDiaY1:2207,
+        requerimientoTotalDia:4210, coberturaY1:52.4
+      },
+      lineUtilization: {
+        actualMph:139.8, maxMph:140,
+        interpretation:'La banda opera prácticamente al límite de su capacidad nominal. Con solo 0.2 m/h de margen, el sistema no tiene espacio para absorber variaciones o picos de demanda sin intervención. Operar al 99.9% implica riesgo operativo ante cualquier variación de velocidad o carga.'
+      },
+      modelsEvaluatedText:'Se analizaron 6 modelos de contenedores (A–F) más tapas separadoras. Todos los modelos activos resultaron VIABLES a la velocidad de banda de 139.8 m/h.',
+      modelTable:[
+        {mod:'A',nombre:'Contenedor CHICO',capHora:349.7,capDia:5595,reqDia:1610,hrsReq:4.6,estado:'VIABLE'},
+        {mod:'B',nombre:'Contenedor MEDIANO',capHora:197.0,capDia:3152,reqDia:798,hrsReq:4.1,estado:'VIABLE'},
+        {mod:'C',nombre:'Cont. Rectangular',capHora:202.7,capDia:3244,reqDia:1064,hrsReq:5.2,estado:'VIABLE'},
+        {mod:'D',nombre:'Cont. Cuadrado',capHora:197.0,capDia:3152,reqDia:574,hrsReq:2.9,estado:'VIABLE'},
+        {mod:'E',nombre:'CONT-AIP-ABAT',capHora:112.7,capDia:1804,reqDia:82,hrsReq:0.7,estado:'VIABLE'},
+        {mod:'F',nombre:'TAPA-AIP-ABAT',capHora:112.7,capDia:1804,reqDia:82,hrsReq:0.7,estado:'VIABLE'}
+      ],
+      lavadoSecadoParams:{
+        referencia:'Contenedor CHICO', rateBase:3472,
+        rows:[
+          {year:'Y1',hrsBase:48,hrsEfTurno:6.59,turnos:2,tiempoDisponible:13.18,reqHora:263.4,capHora:350.2,balance:86.7,lineas:'1 maq.'},
+          {year:'Y2',hrsBase:46,hrsEfTurno:6.26,turnos:2,tiempoDisponible:12.52,reqHora:277.3,capHora:350.2,balance:72.9,lineas:'1 maq.'},
+          {year:'Y3',hrsBase:44,hrsEfTurno:5.94,turnos:2,tiempoDisponible:11.88,reqHora:292.3,capHora:350.2,balance:57.9,lineas:'1 maq.'},
+          {year:'Y4',hrsBase:42,hrsEfTurno:5.61,turnos:2,tiempoDisponible:11.22,reqHora:309.4,capHora:350.2,balance:40.7,lineas:'1 maq.'},
+          {year:'Y5',hrsBase:40,hrsEfTurno:5.28,turnos:2,tiempoDisponible:10.56,reqHora:328.8,capHora:350.2,balance:21.4,lineas:'1 maq.'}
+        ]
+      },
+      conclusions:[
+        {type:'ok',title:'Velocidad de Banda al Límite',text:'La banda opera al 99.9% de utilización (139.8 de 140 m/h). Todos los modelos A–F son viables bajo esta velocidad.'},
+        {type:'ok',title:'Todos los Modelos son Viables',text:'Los 6 modelos de contenedores evaluados presentan capacidad diaria superior al requerimiento, con horas requeridas manejables (0.7h – 5.2h).'},
+        {type:'ok',title:'1 Máquina Suficiente (Y1–Y5)',text:'El sistema cubre el rate de 3,472 cajas/día con una sola máquina en todos los escenarios, con cobertura mínima de 106.5% en Y5.'},
+        {type:'warn',title:'Cobertura Global Y1: 52.4%',text:'La cobertura total en Y1 es del 52.4% (2,207 cajas producidas vs. 4,210 requeridas), indicando oportunidad de expansión de capacidad global.'}
+      ]
+    };
+
+    const fmt = (v,d=0) => new Intl.NumberFormat('es-MX',{minimumFractionDigits:d,maximumFractionDigits:d}).format(v);
+    const coverageTrend = () => reportData.lavadoSecadoParams.rows.map(r=>(r.capHora/r.reqHora)*100);
+    const speedUtil = () => (reportData.lineUtilization.actualMph/reportData.lineUtilization.maxMph)*100;
+
+    function buildReportMarkup(){
+      const k=reportData.kpis, util=speedUtil();
+      const modelRows=reportData.modelTable.map(r=>`<tr><td>${r.mod}</td><td>${r.nombre}</td><td>${fmt(r.capHora,1)}</td><td>${fmt(r.capDia)}</td><td>${fmt(r.reqDia)}</td><td>${fmt(r.hrsReq,1)}h</td><td class="status-ok">✅ ${r.estado}</td></tr>`).join('');
+      const lsRows=reportData.lavadoSecadoParams.rows.map(r=>`<tr><td>${r.year}</td><td>${fmt(r.hrsBase)}</td><td>${fmt(r.hrsEfTurno,2)}</td><td>${r.turnos}</td><td>${fmt(r.tiempoDisponible,2)}</td><td>${fmt(r.reqHora,1)}</td><td>${fmt(r.capHora,1)}</td><td class="${r.balance>=0?'status-ok':'status-bad'}">${r.balance>=0?'+':''}${fmt(r.balance,1)}</td><td>${r.lineas}</td></tr>`).join('');
+      const conclusionCards=reportData.conclusions.map(c=>`<div class="callout ${c.type}"><h4>${c.type==='ok'?'✅':c.type==='warn'?'⚠️':'❌'} ${c.title}</h4><p>${c.text}</p></div>`).join('');
+
+      return `
+        <section class="page hero">
+          <div class="hero-top"></div>
+          <div class="brand-row"><div class="brand">RYDER / ANTIGRAVITY</div><div style="color:#5e7388;font-weight:700;">${reportData.meta.version}</div></div>
+          <div class="hero-content">
+            <div>
+              <h2>${reportData.cover.title}<br>${reportData.cover.subtitle}</h2>
+              <p>${reportData.meta.subtitulo}</p>
+              <div class="meta">
+                <div><b>Cliente:</b> ${reportData.meta.cliente}</div>
+                <div><b>Empresa:</b> ${reportData.meta.empresa}</div>
+                <div><b>Fecha:</b> ${reportData.meta.fecha}</div>
+                <div><b>Simulador:</b> ${reportData.meta.simulador}</div>
+                <div><b>Proyecto:</b> ${reportData.meta.proyecto}</div>
+              </div>
+            </div>
+            <div class="cover-graphic"><div class="placeholder">${reportData.cover.rightBoxText}</div></div>
+          </div>
+          <div class="page-no">1</div>
+        </section>
+
+        <section class="page">
+          <div class="page-inner">
+            <h2 class="section-title">Indicadores Clave de Operación</h2>
+            <p class="section-subtitle">Resumen ejecutivo de velocidad, capacidad y cobertura inicial.</p>
+            <div class="kpis">
+              <div class="kpi"><div class="value">${fmt(k.velocidadBandaMph,1)}</div><div class="label">Vel. Banda (m/h)</div><div class="hint">Límite: ${fmt(k.velocidadMaxMph)} m/h</div></div>
+              <div class="kpi"><div class="value">${fmt(k.capacidadPromHora)}</div><div class="label">Cap. Prom/h (c/h)</div><div class="hint">Capacidad promedio por hora</div></div>
+              <div class="kpi"><div class="value">${fmt(k.capacidadDiaY1)}</div><div class="label">Cap. Día Y1 (cajas)</div><div class="hint">Producción diaria año 1</div></div>
+              <div class="kpi"><div class="value">${fmt(k.requerimientoTotalDia)}</div><div class="label">Req. Total/Día</div><div class="hint">Requerimiento diario total</div></div>
+            </div>
+            <div class="kpis" style="grid-template-columns:1fr;margin-top:18px;">
+              <div class="kpi" style="max-width:290px;"><div class="value">${fmt(k.coberturaY1,1)}%</div><div class="label">Cobertura Y1</div><div class="hint">Porcentaje de cobertura año 1</div></div>
+            </div>
+          </div>
+          <div class="page-no">2</div>
+        </section>
+
+        <section class="page">
+          <div class="page-inner">
+            <div class="two-col">
+              <div class="util-box">
+                <div style="font-size:18px;font-weight:800;color:var(--navy);margin-bottom:8px;">Velocidad de Línea — Utilización</div>
+                <div class="big">${fmt(util,1)}%</div>
+                <div style="font-weight:700;color:var(--navy);margin-bottom:10px;">Banda Actual</div>
+                <div class="note">${fmt(reportData.lineUtilization.actualMph,1)} m/h de ${fmt(reportData.lineUtilization.maxMph)} m/h límite</div>
+                <div class="caption" style="margin-top:16px;">${reportData.lineUtilization.interpretation}</div>
+              </div>
+              <div class="panel"><h3>Utilización visual</h3><div class="chart-wrap"><canvas id="speedChart"></canvas></div></div>
+            </div>
+          </div>
+          <div class="page-no">3</div>
+        </section>
+
+        <section class="page">
+          <div class="page-inner">
+            <h2 class="section-title">Modelos de Contenedores Evaluados</h2>
+            <p class="section-subtitle">${reportData.modelsEvaluatedText}</p>
+            <div class="panel">
+              <table>
+                <thead><tr><th>Mod</th><th>Nombre</th><th>Cap c/h</th><th>Cap/Día</th><th>Req/Día</th><th>Hrs Req.</th><th>Estado</th></tr></thead>
+                <tbody>${modelRows}</tbody>
+              </table>
+            </div>
+          </div>
+          <div class="page-no">4</div>
+        </section>
+
+        <section class="page">
+          <div class="page-inner">
+            <div class="grid-2">
+              <div class="panel">
+                <h3>Capacidad por Modelo — Comparativa Visual</h3>
+                <div class="chart-wrap"><canvas id="modelCompareChart"></canvas></div>
+                <div class="caption">En todos los modelos la capacidad diaria supera el requerimiento, confirmando viabilidad operativa.</div>
+              </div>
+              <div class="panel">
+                <h3>Lavado y Secado — Parámetros del Sistema</h3>
+                <div class="caption" style="margin:0 0 12px;">Ref: ${reportData.lavadoSecadoParams.referencia} | Rate base: ${fmt(reportData.lavadoSecadoParams.rateBase)} cajas/día</div>
+                <table>
+                  <thead><tr><th>Año</th><th>Hrs Base</th><th>Hrs Ef/T</th><th>Turnos</th><th>T. Disp</th><th>Req/h</th><th>Cap c/h</th><th>Déficit/Superávit</th><th>Líneas</th></tr></thead>
+                  <tbody>${lsRows}</tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="page-no">5</div>
+        </section>
+
+        <section class="page">
+          <div class="page-inner">
+            <div class="grid-2">
+              <div class="panel">
+                <h3>Cobertura Anual — Lavado y Secado (Y1–Y5)</h3>
+                <div class="chart-wrap"><canvas id="coverageChart"></canvas></div>
+                <div class="caption">La cobertura se mantiene sobre 100% en todos los años. 1 máquina es suficiente en todo el horizonte.</div>
+              </div>
+              <div class="panel">
+                <h3>Tendencia de Cobertura Y1–Y5</h3>
+                <div class="chart-wrap"><canvas id="coverageTrendChart"></canvas></div>
+                <div class="caption">La cobertura decrece progresivamente pero mantiene superávit positivo en todo el horizonte.</div>
+              </div>
+            </div>
+          </div>
+          <div class="page-no">6</div>
+        </section>
+
+        <section class="page">
+          <div class="page-inner">
+            <h2 class="section-title">Conclusiones del Informe</h2>
+            <div class="callouts">${conclusionCards}</div>
+            <div class="footer-note">Plantilla editable RYDER: modifica el objeto reportData y ejecuta rebuildReport(). Exporta con window.print().</div>
+          </div>
+          <div class="page-no">7</div>
+        </section>`;
+    }
+
+    function destroyCharts(){
+      if(window.__charts) window.__charts.forEach(c=>c.destroy());
+      window.__charts=[];
+    }
+
+    function buildCharts(){
+      destroyCharts();
+      Chart.defaults.font.family='Segoe UI,Arial,sans-serif';
+      Chart.defaults.color='#42566a';
+      Chart.defaults.plugins.legend.labels.usePointStyle=true;
+
+      const util=speedUtil();
+      const coverage=coverageTrend();
+      const years=reportData.lavadoSecadoParams.rows.map(r=>r.year);
+      const balances=reportData.lavadoSecadoParams.rows.map(r=>r.balance);
+      const modelD={labels:reportData.modelTable.map(r=>r.mod),cap:reportData.modelTable.map(r=>r.capDia),req:reportData.modelTable.map(r=>r.reqDia)};
+
+      window.__charts.push(new Chart(document.getElementById('speedChart'),{
+        type:'doughnut',
+        data:{labels:['Utilizado','Margen'],datasets:[{data:[util,Math.max(0,100-util)],backgroundColor:['#11b5c9','#dbe5ee'],borderWidth:0}]},
+        options:{responsive:true,maintainAspectRatio:false,cutout:'74%',plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${fmt(ctx.raw,1)}%`}}}},
+        plugins:[{id:'centerText',afterDraw(chart){const{ctx,chartArea}=chart;if(!chartArea)return;const x=(chartArea.left+chartArea.right)/2,y=(chartArea.top+chartArea.bottom)/2;ctx.save();ctx.textAlign='center';ctx.fillStyle='#122033';ctx.font='700 30px Segoe UI';ctx.fillText(`${fmt(util,1)}%`,x,y+10);ctx.restore();}}]
+      }));
+
+      window.__charts.push(new Chart(document.getElementById('modelCompareChart'),{
+        type:'bar',
+        data:{labels:modelD.labels,datasets:[{label:'Cap/Día',data:modelD.cap,backgroundColor:'#11b5c9',borderRadius:8},{label:'Req/Día',data:modelD.req,backgroundColor:'#122033',borderRadius:8}]},
+        options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,grid:{color:'#e8eef4'}},x:{grid:{display:false}}},plugins:{legend:{position:'bottom'}}}
+      }));
+
+      window.__charts.push(new Chart(document.getElementById('coverageChart'),{
+        type:'bar',
+        data:{labels:years,datasets:[{label:'Cobertura %',data:coverage,backgroundColor:'#11b5c9',borderRadius:10}]},
+        options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,suggestedMax:Math.max(...coverage)+20,grid:{color:'#e8eef4'},ticks:{callback:v=>`${v}%`}},x:{grid:{display:false}}},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`Cobertura: ${fmt(ctx.raw,1)}%`}}}}
+      }));
+
+      window.__charts.push(new Chart(document.getElementById('coverageTrendChart'),{
+        type:'line',
+        data:{labels:years,datasets:[{label:'Cobertura %',data:coverage,borderColor:'#11b5c9',backgroundColor:'rgba(17,181,201,0.15)',fill:true,tension:0.35,pointRadius:4,pointBackgroundColor:'#11b5c9'},{label:'Superávit (c/h)',data:balances,borderColor:'#122033',backgroundColor:'rgba(18,32,51,0.06)',fill:false,tension:0.35,pointRadius:4,pointBackgroundColor:'#122033',yAxisID:'y1'}]},
+        options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,grid:{color:'#e8eef4'},ticks:{callback:v=>`${v}%`}},y1:{beginAtZero:true,position:'right',grid:{display:false}},x:{grid:{display:false}}},plugins:{legend:{position:'bottom'}}}
+      }));
+    }
+
+    function rebuildReport(){
+      document.getElementById('report').innerHTML=buildReportMarkup();
+      buildCharts();
+    }
+
+    function loadSampleData(){
+      reportData.meta.fecha=new Date().toLocaleDateString('es-MX');
+      rebuildReport();
+    }
+
+    rebuildReport();
+  </script>
+</body>
+</html>
