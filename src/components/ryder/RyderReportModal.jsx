@@ -9,12 +9,80 @@ const fmt = (v, d = 0) =>
   new Intl.NumberFormat('es-MX', { minimumFractionDigits: d, maximumFractionDigits: d }).format(v ?? 0);
 
 export default function RyderReportModal({ reportData, onClose }) {
+  const reportRef = React.useRef(null);
+
   // ESC closes
   React.useEffect(() => {
     const h = e => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
   }, [onClose]);
+
+  // Open print window with cloned report content
+  const printReport = () => {
+    const node = reportRef.current;
+    if (!node) return;
+
+    const pw = window.open('', '_blank', 'width=1200,height=900');
+    if (!pw) { alert('Permite pop-ups para exportar el PDF'); return; }
+
+    pw.document.write(`
+      <!DOCTYPE html>
+      <html lang="es">
+      <head>
+        <meta charset="UTF-8" />
+        <title>RYDER — Informe Paramétrico de Simulación</title>
+        <style>
+          *, *::before, *::after { box-sizing: border-box; }
+          body {
+            margin: 0;
+            font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
+            background: #eef3f7;
+            color: #1f2a37;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          .ry-report-wrap {
+            width: 1100px;
+            max-width: 100%;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+            padding: 28px 0 60px;
+          }
+          @media print {
+            body { background: #fff; }
+            .ry-report-wrap { width: 100%; padding: 0; gap: 0; }
+            .ry-page { break-after: page; border-radius: 0 !important; box-shadow: none !important; }
+            .ry-page-inner { padding: 24px 32px !important; }
+            .no-print { display: none !important; }
+          }
+          /* recharts SVG text */
+          .recharts-text { fill: #42566a; font-family: 'Segoe UI', Arial, sans-serif; }
+        </style>
+      </head>
+      <body>
+        <div class="ry-report-wrap">${node.innerHTML}</div>
+        <div class="no-print" style="text-align:center;padding:20px">
+          <button onclick="window.print();" style="padding:12px 28px;background:#11b5c9;color:#fff;border:0;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;">
+            ⬇ Descargar / Imprimir PDF
+          </button>
+          <button onclick="window.close();" style="margin-left:12px;padding:12px 20px;background:#e5e7eb;color:#1f2a37;border:0;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">
+            Cerrar
+          </button>
+        </div>
+        <script>
+          // Auto-trigger print after load (optional — remove if you prefer manual)
+          window.addEventListener('load', () => {
+            // Small delay so Recharts SVGs can finish rendering
+            setTimeout(() => window.print(), 600);
+          });
+        <\/script>
+      </body></html>
+    `);
+    pw.document.close();
+  };
 
   if (!reportData) return null;
   const { meta, kpis, lineUtilization, modelTable, lavadoSecadoParams, conclusions } = reportData;
@@ -30,16 +98,6 @@ export default function RyderReportModal({ reportData, onClose }) {
 
   return (
     <>
-      <style>{`
-        @media print {
-          body > *:not(#ry-modal-root) { display: none !important; }
-          #ry-modal-root { position: static !important; background: #fff !important; overflow: visible !important; }
-          .ry-no-print { display: none !important; }
-          .ry-page { box-shadow: none !important; border-radius: 0 !important; break-after: page; }
-          .ry-page-inner { padding: 24px 32px !important; }
-        }
-      `}</style>
-
       <div
         id="ry-modal-root"
         style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(8,12,28,0.75)', overflow: 'auto', backdropFilter: 'blur(5px)' }}
@@ -48,7 +106,7 @@ export default function RyderReportModal({ reportData, onClose }) {
         <div className="ry-no-print" style={{ position: 'sticky', top: 0, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 22px', background: 'rgba(15,20,40,0.97)', borderBottom: '1px solid rgba(17,181,201,0.25)' }}>
           <span style={{ fontWeight: 800, fontSize: 15, color: '#fff', letterSpacing: 0.3 }}>📋 RYDER — Informe Paramétrico · {meta.version}</span>
           <div style={{ display: 'flex', gap: 10 }}>
-            <button onClick={() => window.print()} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#11b5c9', color: '#fff', border: 0, borderRadius: 8, padding: '8px 18px', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>
+            <button onClick={printReport} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#11b5c9', color: '#fff', border: 0, borderRadius: 8, padding: '8px 18px', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>
               <Printer size={15} /> Exportar PDF
             </button>
             <button onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.08)', color: '#fff', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '8px 14px', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>
@@ -57,8 +115,8 @@ export default function RyderReportModal({ reportData, onClose }) {
           </div>
         </div>
 
-        {/* Report container */}
-        <div style={{ width: 1120, maxWidth: 'calc(100vw - 32px)', margin: '28px auto 80px', display: 'flex', flexDirection: 'column', gap: 22 }}>
+        {/* Report container — cloned into print window */}
+        <div ref={reportRef} style={{ width: 1120, maxWidth: 'calc(100vw - 32px)', margin: '28px auto 80px', display: 'flex', flexDirection: 'column', gap: 22 }}>
 
           {/* ── PAGE 1: Cover ── */}
           <div className="ry-page" style={S.page}>
