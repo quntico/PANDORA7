@@ -625,25 +625,25 @@ ${userMsg}
       : computedRows;
 
 
-    // PALETTE — dark premium executive
+    // PALETTE — light premium (white bg, dark text, colored accents)
     const C = {
-      bg:      [8,   10,  18],    // deep navy page bg
-      panel:   [14,  18,  30],    // card dark
-      panel2:  [20,  25,  40],    // alt row
-      card:    [18,  24,  42],    // KPI card
-      border:  [40,  50,  80],    // subtle border
-      header:  [10,  13,  24],    // header bg
-      accent1: [0,   190, 220],   // electric cyan
-      accent2: [80,  120, 240],   // blue
-      accent3: [130, 80,  230],   // purple
-      accent4: [240, 100, 60],    // orange
-      accent5: [50,  200, 130],   // green
+      bg:      [252, 252, 255],   // off-white page
+      panel:   [255, 255, 255],   // card white
+      panel2:  [245, 247, 252],   // alt row light blue-gray
+      card:    [248, 250, 255],   // KPI card very light
+      border:  [220, 225, 238],   // soft border
+      header:  [15,  20,  40],    // header bar dark navy
+      accent1: [0,   170, 200],   // cyan
+      accent2: [60,  100, 220],   // blue
+      accent3: [110, 65,  210],   // purple
+      accent4: [220, 85,  30],    // orange
+      accent5: [30,  170, 100],   // green
       white:   [255, 255, 255],
-      gray1:   [210, 215, 230],   // primary text
-      gray2:   [120, 130, 155],   // secondary text
-      gray3:   [50,  58,  85],    // divider
-      red:     [220, 45,  45],    // danger
-      redL:    [240, 60,  60],
+      gray1:   [20,  25,  40],    // primary text dark
+      gray2:   [90,  100, 130],   // secondary text
+      gray3:   [200, 205, 220],   // divider
+      red:     [200, 35,  35],    // danger
+      redL:    [220, 50,  50],
     };
 
     const fill   = (...c) => doc.setFillColor(...c);
@@ -656,8 +656,8 @@ ${userMsg}
 
     const addBG = () => {
       fill(...C.bg); rect(0,0,W,H);
-      // Subtle mesh lines
-      stroke(...C.border); doc.setLineWidth(0.08);
+      // Very subtle mesh
+      stroke(230,232,242); doc.setLineWidth(0.06);
       for(let i=0;i<W;i+=20){ doc.line(i,0,i,H); }
       for(let j=0;j<H;j+=20){ doc.line(0,j,W,j); }
     };
