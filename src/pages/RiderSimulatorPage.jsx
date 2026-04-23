@@ -181,20 +181,150 @@ export default function RiderSimulatorPage() {
   const [nominalCapInfo, setNominalCapInfo] = useState(null); // { id, geom, label }
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportModalData, setReportModalData] = useState(null);
+  const [showPdfMenu, setShowPdfMenu] = useState(false);
+
+  const buildReport = () => buildRyderReportData({
+    inputs, computedRows, scenarioResults, mixScenarioResults,
+    CUSTOMER_SCENARIOS, MACHINE_CONFIGS, selectedRow, physicalMaxMH,
+  });
 
   const openReportModal = () => {
-    const data = buildRyderReportData({
-      inputs,
-      computedRows,
-      scenarioResults,
-      mixScenarioResults,
-      CUSTOMER_SCENARIOS,
-      MACHINE_CONFIGS,
-      selectedRow,
-      physicalMaxMH,
-    });
-    setReportModalData(data);
+    setReportModalData(buildReport());
     setShowReportModal(true);
+    setShowPdfMenu(false);
+  };
+
+  const directExportPDF = () => {
+    setShowPdfMenu(false);
+    const d = buildReport();
+    const N = (v, dec = 0) => Number(v ?? 0).toLocaleString('es-MX', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+    const modelRows = d.modelTable.map(r =>
+      `<tr><td style="padding:8px 10px;border-bottom:1px solid #dbe5ee;font-weight:800;color:#0b8ea0">${r.mod}</td>` +
+      `<td style="padding:8px 10px;border-bottom:1px solid #dbe5ee">${r.nombre}</td>` +
+      `<td style="padding:8px 10px;border-bottom:1px solid #dbe5ee">${N(r.capHora, 1)}</td>` +
+      `<td style="padding:8px 10px;border-bottom:1px solid #dbe5ee">${N(r.capDia)}</td>` +
+      `<td style="padding:8px 10px;border-bottom:1px solid #dbe5ee">${r.reqDia != null ? N(r.reqDia) : '—'}</td>` +
+      `<td style="padding:8px 10px;border-bottom:1px solid #dbe5ee;color:${r.estado === 'VIABLE' ? '#16a34a' : r.estado === 'EXCEDE' ? '#dc2626' : '#6b7280'};font-weight:700">${r.estado === 'VIABLE' ? '✅' : r.estado === 'EXCEDE' ? '❌' : '—'} ${r.estado}</td></tr>`
+    ).join('');
+    const scenRows = d.lavadoSecadoParams.rows.map(r =>
+      `<tr><td style="padding:7px 8px;border-bottom:1px solid #dbe5ee;font-weight:800;color:#0b8ea0">${r.year}</td>` +
+      `<td style="padding:7px 8px;border-bottom:1px solid #dbe5ee">${r.hrsBase}</td>` +
+      `<td style="padding:7px 8px;border-bottom:1px solid #dbe5ee">${N(r.hrsEfTurno, 2)}</td>` +
+      `<td style="padding:7px 8px;border-bottom:1px solid #dbe5ee">${r.turnos}</td>` +
+      `<td style="padding:7px 8px;border-bottom:1px solid #dbe5ee">${N(r.tiempoDisponible, 2)}</td>` +
+      `<td style="padding:7px 8px;border-bottom:1px solid #dbe5ee">${N(r.reqHora, 1)}</td>` +
+      `<td style="padding:7px 8px;border-bottom:1px solid #dbe5ee">${N(r.capHora, 1)}</td>` +
+      `<td style="padding:7px 8px;border-bottom:1px solid #dbe5ee;color:${r.balance >= 0 ? '#16a34a' : '#dc2626'};font-weight:700">${r.balance >= 0 ? '+' : ''}${N(r.balance, 1)}</td>` +
+      `<td style="padding:7px 8px;border-bottom:1px solid #dbe5ee;color:${r.cobertura >= 100 ? '#16a34a' : '#f59e0b'};font-weight:700">${N(r.cobertura, 1)}%</td>` +
+      `<td style="padding:7px 8px;border-bottom:1px solid #dbe5ee">${r.lineas}</td></tr>`
+    ).join('');
+    const conclusions = d.conclusions.map(c =>
+      `<div style="border-radius:12px;padding:14px 16px;border:1px solid #dbe5ee;background:#fbfdff;border-left:5px solid ${c.type === 'ok' ? '#22c55e' : c.type === 'warn' ? '#f59e0b' : '#ef4444'};margin-bottom:10px">` +
+      `<div style="font-weight:700;font-size:15px;color:#122033;margin-bottom:4px">${c.type === 'ok' ? '✅' : c.type === 'warn' ? '⚠️' : '❌'} ${c.title}</div>` +
+      `<p style="margin:0;color:#4f6377;font-size:13px;line-height:1.55">${c.text}</p></div>`
+    ).join('');
+
+    const pw = window.open('', '_blank', 'width=1200,height=900');
+    if (!pw) { alert('Permite pop-ups para exportar el PDF'); return; }
+
+    pw.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/>
+<title>RYDER — Informe Paramétrico</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin:0; font-family:'Segoe UI',Arial,sans-serif; background:#eef3f7; color:#1f2a37; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .wrap { width:1050px; max-width:100%; margin:0 auto; padding:24px 0 60px; display:flex; flex-direction:column; gap:20px; }
+  .page { background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 8px 28px rgba(0,0,0,.1); }
+  .inner { padding:28px 36px; }
+  .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:14px; }
+  .kpi { background:linear-gradient(180deg,#fbfdff,#f3f8fc); border:1px solid #dbe5ee; border-radius:14px; padding:16px; }
+  .kpi-v { font-size:30px; font-weight:800; color:#0b8ea0; line-height:1; margin-bottom:6px; }
+  .kpi-l { font-size:13px; font-weight:700; color:#122033; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { background:#f1f8fb; color:#122033; font-size:11px; text-transform:uppercase; letter-spacing:.4px; padding:8px 10px; border-bottom:1px solid #dbe5ee; text-align:left; font-weight:700; white-space:nowrap; }
+  @media print {
+    body { background:#fff; }
+    .wrap { width:100%; padding:0; gap:0; }
+    .page { border-radius:0!important; box-shadow:none!important; break-after:page; }
+    .inner { padding:22px 30px!important; }
+    .no-print { display:none!important; }
+  }
+</style></head><body><div class="wrap">
+
+  <div class="page">
+    <div style="height:78px;background:linear-gradient(90deg,#0b8ea0,#11b5c9 55%,#6dd5e3);position:relative">
+      <div style="position:absolute;top:22px;left:36px;color:#fff;font-weight:800;font-size:18px;letter-spacing:2px">
+        RYDER <span style="font-size:10px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:4px;padding:2px 8px;letter-spacing:1px">PANDORA 3.0 · ${d.meta.version}</span>
+      </div>
+      <div style="position:absolute;bottom:12px;right:36px;color:rgba(255,255,255,.75);font-size:12px;font-weight:600">Reporte de Simulación Industrial</div>
+    </div>
+    <div class="inner" style="display:grid;grid-template-columns:1.2fr 1fr;gap:28px;align-items:start">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+          <div style="width:4px;height:44px;background:linear-gradient(180deg,#11b5c9,#0b8ea0);border-radius:4px"></div>
+          <div>
+            <div style="font-size:10px;font-weight:800;color:#11b5c9;letter-spacing:3px;text-transform:uppercase;margin-bottom:2px">Informe Paramétrico de Simulación</div>
+            <div style="font-size:38px;font-weight:900;color:#0f1c2e;line-height:1">SIMULACIÓN</div>
+            <div style="font-size:38px;font-weight:900;color:#11b5c9;line-height:1">DE LÍNEA</div>
+          </div>
+        </div>
+        <div style="display:inline-flex;align-items:center;gap:8px;background:#f0fbfd;border:1.5px solid #b2e8f0;border-radius:50px;padding:5px 16px;margin-bottom:18px">
+          <div style="width:7px;height:7px;border-radius:50%;background:#11b5c9"></div>
+          <span style="font-size:13px;font-weight:800;color:#0b8ea0;letter-spacing:1px">Horizonte ${d.meta.periodo}</span>
+        </div>
+        <p style="font-size:13px;color:#4d647a;line-height:1.6;margin:0 0 18px">${d.meta.subtitulo}</p>
+        <div style="background:#f7fbfd;border:1px solid #dbe5ee;border-radius:10px;padding:12px 16px">
+          <div style="font-size:12px;color:#122033;margin-bottom:5px"><span style="font-weight:700;color:#0b8ea0;min-width:70px;display:inline-block">Máquina</span>${d.meta.simulador}</div>
+          <div style="font-size:12px;color:#122033;margin-bottom:5px"><span style="font-weight:700;color:#0b8ea0;min-width:70px;display:inline-block">Proyecto</span>${d.meta.proyecto}</div>
+          <div style="font-size:12px;color:#122033"><span style="font-weight:700;color:#0b8ea0;min-width:70px;display:inline-block">Fecha</span>${d.meta.fecha}</div>
+        </div>
+      </div>
+      <div style="background:linear-gradient(160deg,#f0fbfd,#eef6fa);border:1.5px solid #c2e8f2;border-radius:16px;padding:22px">
+        <div style="font-size:10px;font-weight:800;color:#0b8ea0;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px">Vista Previa de Resultados</div>
+        <div style="padding-bottom:12px;border-bottom:1px solid #d4edf5;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center"><div style="font-size:12px;color:#526678">Vel. de Banda</div><div style="font-size:20px;font-weight:800;color:#0b8ea0">${N(d.kpis.velocidadBandaMph, 1)} m/h</div></div>
+        <div style="padding-bottom:12px;border-bottom:1px solid #d4edf5;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center"><div style="font-size:12px;color:#526678">Capacidad Promedio</div><div style="font-size:20px;font-weight:800;color:#0b8ea0">${N(d.kpis.capacidadPromHora)} c/h</div></div>
+        <div style="padding-bottom:12px;border-bottom:1px solid #d4edf5;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center"><div style="font-size:12px;color:#526678">Req. Diario Total</div><div style="font-size:20px;font-weight:800;color:#0b8ea0">${N(d.kpis.requerimientoTotalDia)} cajas</div></div>
+        <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:12px;color:#526678">Cobertura Y1</div><div style="font-size:20px;font-weight:800;color:#0b8ea0">${N(d.kpis.coberturaY1, 1)}%</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page"><div class="inner">
+    <h2 style="font-size:26px;margin:0 0 6px;color:#122033">Indicadores Clave de Operación</h2>
+    <p style="margin:0 0 18px;color:#5f7286;font-size:14px">Resumen ejecutivo de velocidad, capacidad y cobertura inicial.</p>
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-v">${N(d.kpis.velocidadBandaMph, 1)}</div><div class="kpi-l">Vel. Banda (m/h)</div><div style="font-size:11px;color:#6b7280;margin-top:4px">Máx: ${N(d.kpis.velocidadMaxMph)} m/h</div></div>
+      <div class="kpi"><div class="kpi-v">${N(d.kpis.capacidadPromHora)}</div><div class="kpi-l">Cap. Prom/h (c/h)</div></div>
+      <div class="kpi"><div class="kpi-v">${N(d.kpis.capacidadDiaY1)}</div><div class="kpi-l">Cap. Día Y1 (cajas)</div></div>
+      <div class="kpi"><div class="kpi-v">${N(d.kpis.requerimientoTotalDia)}</div><div class="kpi-l">Req. Total/Día</div></div>
+    </div>
+    <div class="kpi" style="max-width:240px"><div class="kpi-v">${N(d.kpis.coberturaY1, 1)}%</div><div class="kpi-l">Cobertura Y1</div></div>
+  </div></div>
+
+  <div class="page"><div class="inner">
+    <h2 style="font-size:26px;margin:0 0 14px;color:#122033">Modelos de Contenedores Evaluados</h2>
+    <table><thead><tr><th>Mod</th><th>Nombre</th><th>Cap c/h</th><th>Cap/Día</th><th>Req/Día</th><th>Estado</th></tr></thead><tbody>${modelRows}</tbody></table>
+  </div></div>
+
+  <div class="page"><div class="inner">
+    <h2 style="font-size:26px;margin:0 0 6px;color:#122033">Lavado y Secado — Parámetros Y1–Y5</h2>
+    <p style="font-size:12px;color:#6b7280;margin:0 0 12px">Ref: ${d.lavadoSecadoParams.referencia} · Rate base: ${N(d.lavadoSecadoParams.rateBase)} cajas/día</p>
+    <table><thead><tr><th>Año</th><th>Hrs B</th><th>Ef/T</th><th>Turn</th><th>T.Disp</th><th>Req/h</th><th>Cap/h</th><th>Bal.</th><th>Cob.</th><th>Líneas</th></tr></thead><tbody>${scenRows}</tbody></table>
+  </div></div>
+
+  <div class="page"><div class="inner">
+    <h2 style="font-size:26px;margin:0 0 14px;color:#122033">Conclusiones del Informe</h2>
+    ${conclusions}
+    <p style="margin-top:24px;color:#9aabb8;font-size:11px;border-top:1px solid #e8eef4;padding-top:14px">Generado automáticamente · PANDORA 3.0 · RYDER Industrial Simulator · ${d.meta.fecha}</p>
+  </div></div>
+
+</div>
+<div class="no-print" style="text-align:center;padding:24px">
+  <button onclick="window.print()" style="padding:12px 32px;background:#11b5c9;color:#fff;border:0;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer">⬇ Descargar PDF</button>
+  <button onclick="window.close()" style="margin-left:12px;padding:12px 20px;background:#e5e7eb;color:#1f2a37;border:0;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer">Cerrar</button>
+</div>
+<script>setTimeout(()=>window.print(),700)<\/script>
+</body></html>`);
+    pw.document.close();
   };
 
   const openConfig = () => {
@@ -1201,14 +1331,47 @@ ${userMsg}
             <button onClick={exportPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 text-red-400 transition-all text-sm font-bold">
               <FileText className="w-4 h-4" /> PDF
             </button>
-            <button
-              onClick={openReportModal}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all"
-              style={{ background: 'rgba(17,181,201,0.13)', border: '1px solid rgba(17,181,201,0.35)', color: '#11b5c9' }}
-              title="Informe ejecutivo completo con datos reales de la simulación"
-            >
-              <FileText className="w-4 h-4" /> Informe PDF
-            </button>
+            {/* ── Informe PDF: choice dropdown ── */}
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setShowPdfMenu(v => !v)}
+                onBlur={() => setTimeout(() => setShowPdfMenu(false), 160)}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all"
+                style={{ background: 'rgba(17,181,201,0.13)', border: '1px solid rgba(17,181,201,0.35)', color: '#11b5c9' }}
+              >
+                <FileText className="w-4 h-4" /> Informe PDF
+                <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}><path d="M2 4l4 4 4-4"/></svg>
+              </button>
+              {showPdfMenu && (
+                <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, minWidth: 230, background: '#0f1c2e', border: '1px solid rgba(17,181,201,0.28)', borderRadius: 12, padding: 6, zIndex: 9990, boxShadow: '0 16px 48px rgba(0,0,0,0.55)' }}>
+                  <button
+                    onMouseDown={openReportModal}
+                    style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '10px 14px', background: 'transparent', border: 0, borderRadius: 8, color: '#e2eaf4', fontSize: 14, fontWeight: 600, cursor: 'pointer', textAlign: 'left' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(17,181,201,0.12)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <span style={{ fontSize: 20 }}>👁️</span>
+                    <div>
+                      <div style={{ fontWeight: 700, color: '#11b5c9', fontSize: 13 }}>Ver Informe</div>
+                      <div style={{ fontSize: 11, color: '#6b8599', marginTop: 1 }}>Previsualiza el reporte en pantalla</div>
+                    </div>
+                  </button>
+                  <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '3px 0' }} />
+                  <button
+                    onMouseDown={directExportPDF}
+                    style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '10px 14px', background: 'transparent', border: 0, borderRadius: 8, color: '#e2eaf4', fontSize: 14, fontWeight: 600, cursor: 'pointer', textAlign: 'left' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(17,181,201,0.12)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <span style={{ fontSize: 20 }}>⬇️</span>
+                    <div>
+                      <div style={{ fontWeight: 700, color: '#11b5c9', fontSize: 13 }}>Descargar PDF</div>
+                      <div style={{ fontSize: 11, color: '#6b8599', marginTop: 1 }}>Exporta directamente a PDF descargable</div>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
 
             <button
               onClick={exportForAI}
