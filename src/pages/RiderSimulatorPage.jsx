@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import ResponseRenderer from '@/components/beta/renderers/ResponseRenderer';
 import { supabase } from '@/supabase';
+import RyderReportModal from '@/components/ryder/RyderReportModal';
+import { buildRyderReportData } from '@/utils/buildRyderReportData';
 
 
 import { Activity, Box, Settings, Download, Trash2, Plus, ArrowLeft, RefreshCw, LayoutDashboard, Bot, User, Send, Loader2, X, Edit3, Minus, ChevronLeft, ChevronRight, Calendar, FileText, Table2, Lock, Unlock, Brain } from 'lucide-react';
@@ -177,6 +179,23 @@ export default function RiderSimulatorPage() {
   }, [showCapModal, isConfigOpen, isModalOpen, infoModal, viabilityInfoModal, editPct, editingSpeed, editHrs]);
 
   const [nominalCapInfo, setNominalCapInfo] = useState(null); // { id, geom, label }
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportModalData, setReportModalData] = useState(null);
+
+  const openReportModal = () => {
+    const data = buildRyderReportData({
+      inputs,
+      computedRows,
+      scenarioResults,
+      mixScenarioResults,
+      CUSTOMER_SCENARIOS,
+      MACHINE_CONFIGS,
+      selectedRow,
+      physicalMaxMH,
+    });
+    setReportModalData(data);
+    setShowReportModal(true);
+  };
 
   const openConfig = () => {
     setConfigDraft(JSON.parse(JSON.stringify({ scenarios: CUSTOMER_SCENARIOS, machines: MACHINE_CONFIGS })));
@@ -1181,6 +1200,14 @@ ${userMsg}
             </button>
             <button onClick={exportPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 text-red-400 transition-all text-sm font-bold">
               <FileText className="w-4 h-4" /> PDF
+            </button>
+            <button
+              onClick={openReportModal}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all"
+              style={{ background: 'rgba(17,181,201,0.13)', border: '1px solid rgba(17,181,201,0.35)', color: '#11b5c9' }}
+              title="Genera un informe ejecutivo completo con datos reales de la simulación"
+            >
+              <FileText className="w-4 h-4" /> Informe PDF
             </button>
             <button
               onClick={exportForAI}
@@ -2926,6 +2953,14 @@ ${userMsg}
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── RYDER Informe PDF Modal ─────────────────────────────────────── */}
+      {showReportModal && (
+        <RyderReportModal
+          reportData={reportModalData}
+          onClose={() => setShowReportModal(false)}
+        />
       )}
     </div>
   );
