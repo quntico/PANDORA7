@@ -3,11 +3,15 @@ import ResponseRenderer from '@/components/beta/renderers/ResponseRenderer';
 import { supabase } from '@/supabase';
 import RyderReportModal from '@/components/ryder/RyderReportModal';
 import { buildRyderReportData } from '@/utils/buildRyderReportData';
+import SharedTwinViewer3D from '@/components/flow/SharedTwinViewer3D';
+import { useFlowDesigns } from '@/hooks/useFlowDesigns';
+import FlowDesignsLibrary from '@/components/flow/FlowDesignsLibrary';
+import { FolderOpen, Upload, Check, Sliders, Pencil, Link2, Droplets, Zap, Wind, Navigation, Cpu, Warehouse, Wrench, Anchor } from 'lucide-react';
 
 
 import { Activity, ArrowLeft, Bot, Box, Brain, ChevronLeft, ChevronRight, Download, Edit3, Eye, FileText, LayoutDashboard, Lock, Minus, Plus, Send, Settings, Table2, Target, Trash2, Unlock, Loader2, X, Play, RotateCcw, Copy, Maximize2, Power, Calculator, EyeOff, FileDigit, GripVertical, AlertTriangle, Printer, Truck, BarChart2, CheckCircle2, Factory, Layers } from 'lucide-react';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -100,40 +104,141 @@ function computeMachineCapacity(box, machineConfig) {
 // =========================
 // comparisonEngine
 // =========================
-function compareScenarioAgainstMachine(box, machineKey, MACHINE_CONFIGS, CUSTOMER_SCENARIOS) {
+function compareScenarioAgainstMachine(box, machineKey, MACHINE_CONFIGS, CUSTOMER_SCENARIOS, manualLinesUsed) {
   const machineConfig = MACHINE_CONFIGS[machineKey];
   const machineScenario = CUSTOMER_SCENARIOS[machineKey];
   if (!machineConfig || !machineScenario) return [];
   const machine = computeMachineCapacity(box, machineConfig);
   const scenarioRows = computeCustomerScenarioTable(machineScenario);
   return scenarioRows.map(row => {
-    const deficitOrSurplus = machine.actualBoxesHr - row.requiredPerHour;
-    const coverageRatio = row.requiredPerHour > 0 ? machine.actualBoxesHr / row.requiredPerHour : 0;
-    const requiredLines = row.requiredPerHour > 0 ? Math.ceil(row.requiredPerHour / machine.actualBoxesHr) : 0;
+    const requiredLines = (manualLinesUsed !== null && manualLinesUsed !== undefined) 
+      ? manualLinesUsed 
+      : (row.requiredPerHour > 0 ? Math.ceil(row.requiredPerHour / machine.actualBoxesHr) : 0);
+      
+    const totalBoxesHr = requiredLines * machine.actualBoxesHr;
+    const deficitOrSurplus = totalBoxesHr - row.requiredPerHour;
+    const coverageRatio = row.requiredPerHour > 0 ? totalBoxesHr / row.requiredPerHour : 0;
+    
     return { ...row, machineBoxesPerHour: machine.actualBoxesHr, deficitOrSurplus, coverageRatio, requiredLines };
   });
 }
 
+const checkIsGusi = (simId) => {
+  if (simId === 'grupo-gusi') return true;
+  try {
+    const list = JSON.parse(localStorage.getItem('pandora_simulators') || '[]');
+    const meta = list.find(s => s.id === simId);
+    return !!(meta && meta.name && meta.name.toUpperCase().includes('GUSI'));
+  } catch {
+    return false;
+  }
+};
+
 export default function RiderSimulatorPage() {
-  const [inputs, setInputs] = useState({
-    machineName: 'PLD-120 / PLD-140',
-    nominalBoxes: 200,          // Capacidad nominal ofertada
-    machineLength: 7.60,
-    maxAdvance: 1.40,
-    manualSpeed: 2.33,
-    defaultGap: 0.10,
-    calcMode: 'manual',
-    shifts: 2,
-    hoursPerShift: 8,
-    daysPerMonth: 26
+  const { id } = useParams();
+  const simulatorId = id || 'rider';
+  const isGusi = checkIsGusi(simulatorId);
+
+  // Cargar metadatos del simulador desde localStorage
+  const simulatorMeta = useMemo(() => {
+    try {
+      const list = JSON.parse(localStorage.getItem('pandora_simulators') || '[]');
+      return list.find(s => s.id === simulatorId) || { name: 'RYDER', description: 'Línea de lavado y secado para pallets/cajas plásticas (140 m/h max)' };
+    } catch {
+      return { name: 'RYDER', description: 'Línea de lavado y secado para pallets/cajas plásticas (140 m/h max)' };
+    }
+  }, [simulatorId]);
+
+  const [inputs, setInputs] = useState(() => {
+    const savedInputs = localStorage.getItem(`sim_${simulatorId}_inputs`);
+    if (savedInputs) {
+      try {
+        const parsed = JSON.parse(savedInputs);
+        // Auto-sanar el machineName si es Gusi pero dice PLD
+        if (isGusi && parsed.machineName !== 'BWD-200') {
+          parsed.machineName = 'BWD-200';
+          parsed.manualSpeed = 2.5; // 150 / 60
+          localStorage.setItem(`sim_${simulatorId}_inputs`, JSON.stringify(parsed));
+        }
+        return parsed;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    const savedLimit = parseFloat(localStorage.getItem(simulatorId === 'rider' ? 'rider_physical_max_mh' : `sim_${simulatorId}_physical_max_mh`));
+    const limit = isNaN(savedLimit) ? (isGusi ? 150 : 140) : savedLimit;
+    
+    if (isGusi) {
+      return {
+        machineName: 'BWD-200',
+        nominalBoxes: 200,          // Capacidad nominal ofertada
+        machineLength: 7.60,
+        maxAdvance: 1.40,
+        manualSpeed: limit / 60,
+        defaultGap: 0.10,
+        calcMode: 'manual',
+        shifts: 2,
+        hoursPerShift: 8,
+        daysPerMonth: 26
+      };
+    }
+    
+    return {
+      machineName: 'PLD-120 / PLD-140',
+      nominalBoxes: 200,          // Capacidad nominal ofertada
+      machineLength: 7.60,
+      maxAdvance: 1.40,
+      manualSpeed: limit / 60,
+      defaultGap: 0.10,
+      calcMode: 'manual',
+      shifts: 2,
+      hoursPerShift: 8,
+      daysPerMonth: 26
+    };
   });
 
   const [CUSTOMER_SCENARIOS, setCustomerScenarios] = useState(() => {
-    // Sanitize: only keep lavadoSecado, drop any stale secado data from HMR state
+    const savedScenarios = localStorage.getItem(`sim_${simulatorId}_customer_scenarios`);
+    if (savedScenarios) {
+      try {
+        const parsed = JSON.parse(savedScenarios);
+        if (isGusi && parsed.lavadoSecado && parsed.lavadoSecado.dailyRate !== 2200) {
+          parsed.lavadoSecado.dailyRate = 2200;
+          localStorage.setItem(`sim_${simulatorId}_customer_scenarios`, JSON.stringify(parsed));
+        }
+        return parsed;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    if (isGusi) {
+      return {
+        lavadoSecado: {
+          ...DEFAULT_SCENARIOS.lavadoSecado,
+          dailyRate: 2200
+        }
+      };
+    }
     return { lavadoSecado: DEFAULT_SCENARIOS.lavadoSecado };
   });
+
   const [MACHINE_CONFIGS, setMachineConfigs] = useState(() => {
-    return { lavadoSecado: DEFAULT_MACHINE_CONFIGS.lavadoSecado };
+    const savedConfigs = localStorage.getItem(`sim_${simulatorId}_machine_configs`);
+    if (savedConfigs) {
+      try {
+        return JSON.parse(savedConfigs);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    const savedLimit = parseFloat(localStorage.getItem(simulatorId === 'rider' ? 'rider_physical_max_mh' : `sim_${simulatorId}_physical_max_mh`));
+    const limit = isNaN(savedLimit) ? (isGusi ? 150 : 140) : savedLimit;
+    return { 
+      lavadoSecado: { 
+        ...DEFAULT_MACHINE_CONFIGS.lavadoSecado, 
+        maxSpeedMMin: limit / 60 
+      } 
+    };
   });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -154,17 +259,75 @@ export default function RiderSimulatorPage() {
   const [showCapModal, setShowCapModal] = useState(false);
   // physicalMaxMH: velocidad máxima absoluta de la máquina (fija, no cambia al ajustar %)
   const [physicalMaxMH, setPhysicalMaxMH] = useState(() => {
-    const saved = parseFloat(localStorage.getItem('rider_physical_max_mh'));
-    return isNaN(saved) ? 140 : saved;
+    const key = simulatorId === 'rider' ? 'rider_physical_max_mh' : `sim_${simulatorId}_physical_max_mh`;
+    const saved = parseFloat(localStorage.getItem(key));
+    return isNaN(saved) ? (isGusi ? 150 : 140) : saved;
   });
   const [editHrs, setEditHrs]           = useState(false);
   const [hrsDraft, setHrsDraft]         = useState(null); // [{year,effectiveHoursPerShift,shifts}]
+
+  const [installedPowerKw, setInstalledPowerKw] = useState(() => {
+    const key = `sim_${simulatorId}_installed_power`;
+    const saved = parseFloat(localStorage.getItem(key));
+    return isNaN(saved) ? 89.5 : saved;
+  });
+  const [isEditingPower, setIsEditingPower] = useState(false);
+  const [powerDraft, setPowerDraft] = useState('');
+
+  const [manualLinesUsed, setManualLinesUsed] = useState(() => {
+    const key = `sim_${simulatorId}_manual_lines_used`;
+    const saved = localStorage.getItem(key);
+    return saved !== null && saved !== 'null' ? parseInt(saved, 10) : null;
+  });
+
+  useEffect(() => {
+    const key = `sim_${simulatorId}_manual_lines_used`;
+    if (manualLinesUsed === null) {
+      localStorage.removeItem(key);
+    } else {
+      localStorage.setItem(key, manualLinesUsed.toString());
+    }
+  }, [manualLinesUsed, simulatorId]);
+
+  const [clientName, setClientName] = useState(() => {
+    const saved = localStorage.getItem(`sim_${simulatorId}_client_name`);
+    if (saved) return saved;
+    return isGusi 
+      ? 'MÁQUINA EN EVALUACIÓN - BWD 200 | GRUPO GUSI' 
+      : 'MÁQUINA EN EVALUACIÓN - PLD-140 | RYDER';
+  });
+
+  // ── Estados para el Módulo Hídrico y Sustentabilidad ──
+  const [washFlowLh, setWashFlowLh] = useState(() => {
+    const saved = parseFloat(localStorage.getItem(`sim_${simulatorId}_wash_flow_lh`));
+    return isNaN(saved) ? 1000 : saved;
+  });
+  const [waterReplenishLh, setWaterReplenishLh] = useState(() => {
+    const saved = parseFloat(localStorage.getItem(`sim_${simulatorId}_water_replenish_lh`));
+    return isNaN(saved) ? 150 : saved;
+  });
+  const [tankCapacityL, setTankCapacityL] = useState(() => {
+    const saved = parseFloat(localStorage.getItem(`sim_${simulatorId}_tank_capacity_l`));
+    return isNaN(saved) ? 1200 : saved;
+  });
+  const [waterChangeDays, setWaterChangeDays] = useState(() => {
+    return localStorage.getItem(`sim_${simulatorId}_water_change_days`) || '3–5';
+  });
+
+  const [isEditingWashFlow, setIsEditingWashFlow] = useState(false);
+  const [washFlowDraft, setWashFlowDraft] = useState('');
+  const [isEditingReplenish, setIsEditingReplenish] = useState(false);
+  const [replenishDraft, setReplenishDraft] = useState('');
+  const [isEditingTank, setIsEditingTank] = useState(false);
+  const [tankDraft, setTankDraft] = useState('');
+  const [isEditingChangeDays, setIsEditingChangeDays] = useState(false);
+  const [changeDaysDraft, setChangeDaysDraft] = useState('');
 
   // ── ESC cierra cualquier modal abierto ──────────────────────────────────
   useEffect(() => {
     const handleEsc = (e) => {
       if (e.key !== 'Escape') return;
-      if (showCapModal)        { setShowCapModal(false);       return; }
+       if (showCapModal)        { setShowCapModal(false);       return; }
       if (isConfigOpen)        { setIsConfigOpen(false);       return; }
       if (isModalOpen)         { setIsModalOpen(false);        return; }
       if (infoModal)           { setInfoModal(null);           return; }
@@ -173,190 +336,126 @@ export default function RiderSimulatorPage() {
       if (editingSpeed)        { setEditingSpeed(false);       return; }
       if (editHrs)             { setEditHrs(false);            return; }
       if (nominalCapInfo)      { setNominalCapInfo(null);      return; }
+      if (isEditingWashFlow)   { setIsEditingWashFlow(false);   return; }
+      if (isEditingReplenish)  { setIsEditingReplenish(false);  return; }
+      if (isEditingTank)       { setIsEditingTank(false);       return; }
+      if (isEditingChangeDays) { setIsEditingChangeDays(false); return; }
     };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
-  }, [showCapModal, isConfigOpen, isModalOpen, infoModal, viabilityInfoModal, editPct, editingSpeed, editHrs]);
+  }, [showCapModal, isConfigOpen, isModalOpen, infoModal, viabilityInfoModal, editPct, editingSpeed, editHrs, isEditingWashFlow, isEditingReplenish, isEditingTank, isEditingChangeDays]);
 
   const [nominalCapInfo, setNominalCapInfo] = useState(null); // { id, geom, label }
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportModalData, setReportModalData] = useState(null);
+  const [printWindow, setPrintWindow] = useState(null);
+  const [autoPrintReport, setAutoPrintReport] = useState(false);
   const [showPdfMenu, setShowPdfMenu] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [exportProgress, setExportProgress] = useState('');
   const [customFileName, setCustomFileName] = useState('');
   const [showFileNameModal, setShowFileNameModal] = useState(false);
   const [tempFileName, setTempFileName] = useState('');
+  const [pdfPendingAction, setPdfPendingAction] = useState(false);
 
   const handleSetFileName = () => {
     setTempFileName(customFileName);
+    setPdfPendingAction(false);
     setShowFileNameModal(true);
   };
 
   const buildReport = () => buildRyderReportData({
     inputs, computedRows, scenarioResults, mixScenarioResults,
     CUSTOMER_SCENARIOS, MACHINE_CONFIGS, selectedRow, physicalMaxMH,
+    simulatorName: simulatorMeta.name,
+    installedPowerKw,
+    washFlowLh,
+    waterReplenishLh,
+    tankCapacityL,
+    waterChangeDays,
+    clientName
   });
 
   const openReportModal = () => {
     setReportModalData(buildReport());
+    setPrintWindow(null);
     setShowReportModal(true);
     setShowPdfMenu(false);
   };
 
-  const directExportPDF = async () => {
+  const directExportPDF = () => {
     setShowPdfMenu(false);
-    const d = buildReport();
-    const N = (v, dec = 0) => Number(v ?? 0).toLocaleString('es-MX', { minimumFractionDigits: dec, maximumFractionDigits: dec });
-
-    const modelRows = d.modelTable.map(r =>
-      `<tr><td style="padding:8px 10px;border-bottom:1px solid #dbe5ee;font-weight:800;color:#0b8ea0">${r.mod}</td>` +
-      `<td style="padding:8px 10px;border-bottom:1px solid #dbe5ee">${r.nombre}</td>` +
-      `<td style="padding:8px 10px;border-bottom:1px solid #dbe5ee">${N(r.capHora,1)}</td>` +
-      `<td style="padding:8px 10px;border-bottom:1px solid #dbe5ee">${N(r.capDia)}</td>` +
-      `<td style="padding:8px 10px;border-bottom:1px solid #dbe5ee">${r.reqDia!=null?N(r.reqDia):'—'}</td>` +
-      `<td style="padding:8px 10px;border-bottom:1px solid #dbe5ee;color:${r.estado==='VIABLE'?'#16a34a':r.estado==='EXCEDE'?'#dc2626':'#6b7280'};font-weight:700">${r.estado==='VIABLE'?'✅':r.estado==='EXCEDE'?'❌':'—'} ${r.estado}</td></tr>`
-    ).join('');
-
-    const scenRows = d.lavadoSecadoParams.rows.map(r =>
-      `<tr><td style="padding:7px 8px;border-bottom:1px solid #dbe5ee;font-weight:800;color:#0b8ea0">${r.year}</td>` +
-      `<td style="padding:7px 8px;border-bottom:1px solid #dbe5ee">${r.hrsBase}</td>` +
-      `<td style="padding:7px 8px;border-bottom:1px solid #dbe5ee">${N(r.hrsEfTurno,2)}</td>` +
-      `<td style="padding:7px 8px;border-bottom:1px solid #dbe5ee">${r.turnos}</td>` +
-      `<td style="padding:7px 8px;border-bottom:1px solid #dbe5ee">${N(r.tiempoDisponible,2)}</td>` +
-      `<td style="padding:7px 8px;border-bottom:1px solid #dbe5ee">${N(r.reqHora,1)}</td>` +
-      `<td style="padding:7px 8px;border-bottom:1px solid #dbe5ee">${N(r.capHora,1)}</td>` +
-      `<td style="padding:7px 8px;border-bottom:1px solid #dbe5ee;color:${r.balance>=0?'#16a34a':'#dc2626'};font-weight:700">${r.balance>=0?'+':''}${N(r.balance,1)}</td>` +
-      `<td style="padding:7px 8px;border-bottom:1px solid #dbe5ee;color:${r.cobertura>=100?'#16a34a':'#f59e0b'};font-weight:700">${N(r.cobertura,1)}%</td>` +
-      `<td style="padding:7px 8px;border-bottom:1px solid #dbe5ee">${r.lineas}</td></tr>`
-    ).join('');
-
-    const conclusionCards = d.conclusions.map(c =>
-      `<div style="border-radius:10px;padding:12px 14px;border:1px solid #dbe5ee;background:#fbfdff;border-left:5px solid ${c.type==='ok'?'#22c55e':c.type==='warn'?'#f59e0b':'#ef4444'};margin-bottom:9px">` +
-      `<div style="font-weight:700;font-size:14px;color:#122033;margin-bottom:3px">${c.type==='ok'?'✅':c.type==='warn'?'⚠️':'❌'} ${c.title}</div>` +
-      `<p style="margin:0;color:#4f6377;font-size:12px;line-height:1.5">${c.text}</p></div>`
-    ).join('');
-
-    // ── Build hidden pages ──────────────────────────────────────
-    const root = document.createElement('div');
-    root.style.cssText = 'position:fixed;left:-9999px;top:0;width:900px;z-index:-1;';
-    
-    // Page 1
-    const p1 = document.createElement('div');
-    p1.style.cssText = 'background:#fff;font-family:Segoe UI,Arial,sans-serif;color:#1f2a37;min-height:1100px;';
-    p1.innerHTML = `
-      <div style="background:linear-gradient(90deg,#0b8ea0,#11b5c9 55%,#6dd5e3);padding:22px 36px 18px;display:flex;justify-content:space-between;align-items:center">
-        <div style="color:#fff;font-weight:800;font-size:20px;letter-spacing:2px">RYDER <span style="font-size:10px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:4px;padding:2px 8px;letter-spacing:1px">PANDORA 3.0 · ${d.meta.version}</span></div>
-        <div style="color:rgba(255,255,255,.8);font-size:12px;font-weight:600">Reporte de Simulación Industrial</div>
-      </div>
-      <div style="padding:24px 36px;display:grid;grid-template-columns:1.2fr 1fr;gap:24px;align-items:start">
-        <div>
-          <div style="display:flex;align-items:center;gap:9px;margin-bottom:14px">
-            <div style="width:4px;height:40px;background:linear-gradient(180deg,#11b5c9,#0b8ea0);border-radius:4px"></div>
-            <div>
-              <div style="font-size:9px;font-weight:800;color:#11b5c9;letter-spacing:3px;text-transform:uppercase;margin-bottom:2px">Informe Paramétrico de Simulación</div>
-              <div style="font-size:32px;font-weight:900;color:#0f1c2e;line-height:1">SIMULACIÓN</div>
-              <div style="font-size:32px;font-weight:900;color:#11b5c9;line-height:1">DE LÍNEA</div>
-            </div>
-          </div>
-          <div style="display:inline-flex;align-items:center;gap:7px;background:#f0fbfd;border:1.5px solid #b2e8f0;border-radius:50px;padding:4px 14px;margin-bottom:14px">
-            <div style="width:6px;height:6px;border-radius:50%;background:#11b5c9"></div>
-            <span style="font-size:12px;font-weight:800;color:#0b8ea0">Horizonte ${d.meta.periodo}</span>
-          </div>
-          <p style="font-size:12px;color:#4d647a;line-height:1.55;margin:0 0 14px">${d.meta.subtitulo}</p>
-          <div style="background:#f7fbfd;border:1px solid #dbe5ee;border-radius:9px;padding:10px 14px">
-            <div style="font-size:11px;color:#122033;margin-bottom:4px"><span style="font-weight:700;color:#0b8ea0;min-width:65px;display:inline-block">Máquina</span>${d.meta.simulador}</div>
-            <div style="font-size:11px;color:#122033;margin-bottom:4px"><span style="font-weight:700;color:#0b8ea0;min-width:65px;display:inline-block">Proyecto</span>${d.meta.proyecto}</div>
-            <div style="font-size:11px;color:#122033"><span style="font-weight:700;color:#0b8ea0;min-width:65px;display:inline-block">Fecha</span>${d.meta.fecha}</div>
-          </div>
-        </div>
-        <div style="background:linear-gradient(160deg,#f0fbfd,#eef6fa);border:1.5px solid #c2e8f2;border-radius:14px;padding:18px">
-          <div style="font-size:9px;font-weight:800;color:#0b8ea0;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px">Vista Previa de Resultados</div>
-          ${[['Vel. de Banda',`${N(d.kpis.velocidadBandaMph,1)} m/h`],['Capacidad Promedio',`${N(d.kpis.capacidadPromHora)} c/h`],['Req. Diario Total',`${N(d.kpis.requerimientoTotalDia)} cajas`],['Cobertura Y1',`${N(d.kpis.coberturaY1,1)}%`]].map(([l,v],i,a)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;${i<a.length-1?'border-bottom:1px solid #d4edf5;margin-bottom:10px':''}"><div style="font-size:11px;color:#526678">${l}</div><div style="font-size:18px;font-weight:800;color:#0b8ea0">${v}</div></div>`).join('')}
-        </div>
-      </div>
-      <div style="height:2px;background:#eef3f7;margin:0 36px"></div>
-      <div style="padding:20px 36px">
-        <h2 style="font-size:20px;margin:0 0 5px;color:#122033">Indicadores Clave de Operación</h2>
-        <p style="margin:0 0 14px;color:#5f7286;font-size:12px">Resumen ejecutivo de velocidad, capacidad y cobertura inicial.</p>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px">
-          ${[{v:N(d.kpis.velocidadBandaMph,1),l:'Vel. Banda (m/h)',h:`Máx: ${N(d.kpis.velocidadMaxMph)} m/h`},{v:N(d.kpis.capacidadPromHora),l:'Cap. Prom/h (c/h)',h:''},{v:N(d.kpis.capacidadDiaY1),l:'Cap. Día Y1 (cajas)',h:''},{v:N(d.kpis.requerimientoTotalDia),l:'Req. Total/Día',h:''}].map(k=>`<div style="background:linear-gradient(180deg,#fbfdff,#f3f8fc);border:1px solid #dbe5ee;border-radius:12px;padding:14px"><div style="font-size:26px;font-weight:800;color:#0b8ea0;line-height:1;margin-bottom:5px">${k.v}</div><div style="font-size:12px;font-weight:700;color:#122033">${k.l}</div>${k.h?`<div style="font-size:10px;color:#6b7280;margin-top:3px">${k.h}</div>`:''}</div>`).join('')}
-        </div>
-        <div style="background:linear-gradient(180deg,#fbfdff,#f3f8fc);border:1px solid #dbe5ee;border-radius:12px;padding:14px;max-width:200px">
-          <div style="font-size:26px;font-weight:800;color:#0b8ea0;line-height:1;margin-bottom:5px">${N(d.kpis.coberturaY1,1)}%</div>
-          <div style="font-size:12px;font-weight:700;color:#122033">Cobertura Y1</div>
-        </div>
-      </div>
-      <div style="height:2px;background:#eef3f7;margin:0 36px"></div>
-      <div style="padding:20px 36px">
-        <h2 style="font-size:20px;margin:0 0 12px;color:#122033">Modelos de Contenedores Evaluados</h2>
-        <table style="width:100%;border-collapse:collapse;font-size:12px">
-          <thead><tr>${['Mod','Nombre','Cap c/h','Cap/Día','Req/Día','Estado'].map(h=>`<th style="background:#f1f8fb;color:#122033;font-size:10px;text-transform:uppercase;letter-spacing:.4px;padding:7px 9px;border-bottom:1px solid #dbe5ee;text-align:left;font-weight:700">${h}</th>`).join('')}</tr></thead>
-          <tbody>${modelRows}</tbody>
-        </table>
-      </div>`;
-
-    // Page 2
-    const p2 = document.createElement('div');
-    p2.style.cssText = 'background:#fff;font-family:Segoe UI,Arial,sans-serif;color:#1f2a37;min-height:1100px;';
-    p2.innerHTML = `
-      <div style="background:#0f1c2e;padding:12px 36px;display:flex;justify-content:space-between;align-items:center">
-        <div style="color:rgba(255,255,255,.7);font-size:10px;font-weight:700;letter-spacing:1px">RYDER PANDORA 3.0</div>
-        <div style="color:rgba(255,255,255,.5);font-size:10px">Página 2 de 2</div>
-      </div>
-      <div style="padding:32px 36px">
-        <h2 style="font-size:20px;margin:0 0 5px;color:#122033">Lavado y Secado — Parámetros Y1–Y5</h2>
-        <p style="font-size:11px;color:#6b7280;margin:0 0 10px">Ref: ${d.lavadoSecadoParams.referencia} · Rate base: ${N(d.lavadoSecadoParams.rateBase)} cajas/día</p>
-        <table style="width:100%;border-collapse:collapse;font-size:11px">
-          <thead><tr>${['Año','Hrs B','Ef/T','Turn','T.Disp','Req/h','Cap/h','Bal.','Cob.','Líneas'].map(h=>`<th style="background:#f1f8fb;color:#122033;font-size:10px;text-transform:uppercase;padding:6px 7px;border-bottom:1px solid #dbe5ee;text-align:left;font-weight:700;white-space:nowrap">${h}</th>`).join('')}</tr></thead>
-          <tbody>${scenRows}</tbody>
-        </table>
-      </div>
-      <div style="height:2px;background:#eef3f7;margin:0 36px"></div>
-      <div style="padding:20px 36px">
-        <h2 style="font-size:20px;margin:0 0 12px;color:#122033">Conclusiones del Informe</h2>
-        ${conclusionCards}
-        <p style="margin-top:18px;color:#9aabb8;font-size:10px;border-top:1px solid #e8eef4;padding-top:12px">Generado automáticamente · PANDORA 3.0 · RYDER Industrial Simulator · ${d.meta.fecha}</p>
-      </div>`;
-
-    root.appendChild(p1);
-    root.appendChild(p2);
-    document.body.appendChild(root);
-
-    try {
-      const [html2canvas, { default: jsPDF }] = await Promise.all([
-        import('html2canvas').then(m => m.default),
-        import('jspdf'),
-      ]);
-
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const pageW = pdf.internal.pageSize.getWidth();
-      const pageH = pdf.internal.pageSize.getHeight();
-
-      for (let i = 0; i < 2; i++) {
-        const pageNode = i === 0 ? p1 : p2;
-        const canvas = await html2canvas(pageNode, {
-          scale: 2,
-          useCORS: true,
-          backgroundColor: '#ffffff',
-          logging: false,
-          width: 900,
-        });
-
-        if (i > 0) pdf.addPage();
-        
-        const imgData = canvas.toDataURL('image/jpeg', 0.98);
-        const imgW  = pageW;
-        const imgH  = (canvas.height * pageW) / canvas.width;
-        
-        pdf.addImage(imgData, 'JPEG', 0, 0, imgW, imgH, '', 'FAST');
-      }
-
-      const defaultName = `RYDER_Informe_${d.meta.fecha.replace(/\//g, '-')}`;
-      pdf.save(`${customFileName || defaultName}.pdf`);
-    } finally {
-      document.body.removeChild(root);
-    }
+    setTempFileName(customFileName || `${simulatorMeta.name}_Informe_Parametrico`);
+    setPdfPendingAction(true);
+    setShowFileNameModal(true);
   };
 
+  const performActualPdfExport = async (nameToUse) => {
+    setIsExportingPdf(true);
+    setExportProgress('Preparando datos...');
+    setReportModalData(buildReport());
+    
+    setTimeout(async () => {
+      try {
+        const [html2canvas, { default: jsPDF }] = await Promise.all([
+          import('html2canvas').then(m => m.default),
+          import('jspdf'),
+        ]);
+
+        const reportContainer = document.getElementById('ry-export-hidden-root');
+        if (!reportContainer) {
+          throw new Error('No se encontró el contenedor de exportación.');
+        }
+
+        const pages = reportContainer.querySelectorAll('.ry-page');
+        if (pages.length === 0) {
+          throw new Error('No se encontraron las páginas del informe.');
+        }
+
+        const pdf = new jsPDF({
+          orientation: 'landscape',
+          unit: 'mm',
+          format: 'a4'
+        });
+
+        for (let i = 0; i < pages.length; i++) {
+          setExportProgress(`Procesando página ${i + 1} de ${pages.length}...`);
+          
+          const pageNode = pages[i];
+          const canvas = await html2canvas(pageNode, {
+            scale: 2.5,
+            useCORS: true,
+            allowTaint: true,
+            logging: false,
+            backgroundColor: '#ffffff'
+          });
+
+          const imgData = canvas.toDataURL('image/jpeg', 0.95);
+          if (i > 0) {
+            pdf.addPage();
+          }
+          pdf.addImage(imgData, 'JPEG', 0, 0, 297, 210);
+        }
+
+        setExportProgress('Generando y descargando PDF...');
+        
+        const fileName = nameToUse 
+          ? `${nameToUse.replace(/\.[^/.]+$/, "")}.pdf`
+          : `${simulatorMeta.name}_Informe_Parametrico.pdf`;
+          
+        pdf.save(fileName);
+        
+        setExportProgress('¡Completado con éxito!');
+        setTimeout(() => {
+          setIsExportingPdf(false);
+        }, 800);
+      } catch (err) {
+        console.error('Error generating PDF:', err);
+        alert('Ocurrió un error al generar el PDF. Por favor, intenta de nuevo.');
+        setIsExportingPdf(false);
+      }
+    }, 1500);
+  };
   const openConfig = () => {
     setConfigDraft(JSON.parse(JSON.stringify({ scenarios: CUSTOMER_SCENARIOS, machines: MACHINE_CONFIGS })));
     setConfigTab('maquina');
@@ -385,20 +484,440 @@ export default function RiderSimulatorPage() {
     suciedad: 'Polvo'
   });
 
-  const [boxes, setBoxes] = useState([
-    // ── LAVADO Y SECADO ──────────────────────────────────────────────────────
-    { id:'ex0', name:'Contenedor CHICO',       l:30.48, w:38.10, h:17.78, gap:0.095, advanceSide:'length', color:'#6b7280', maquina:'lavado_secado', suciedad:'Polvo',  included:true  },
-    { id:'ex1', name:'Contenedor MEDIANO',     l:60.96, w:38.10, h:17.78, gap:0.100, advanceSide:'length', color:'#8b5cf6', maquina:'lavado_secado', suciedad:'Polvo',  included:true  },
-    { id:'ex2', name:'Contenedor Rectangular', l:60.96, w:38.10, h:35.56, gap:0.080, advanceSide:'length', color:'#3b82f6', maquina:'lavado_secado', suciedad:'Polvo',  included:true  },
-    // ── SOLO SECADO ──────────────────────────────────────────────────────────
-    { id:'ex3', name:'Contenedor Cuadrado',    l:60.96, w:55.88, h:35.56, gap:0.100, advanceSide:'length', color:'#10b981', maquina:'secado',        suciedad:'Grasa',  included:true  },
-    // ── ESPECIALES / BULK (Integrados en evaluación) ─────────────────────────
-    { id:'ex4', name:'CONT-AIP-ABAT (bulk bote)', l:114.30, w:121.92, h:86.36, gap:0.097, advanceSide:'length', color:'#f59e0b', maquina:'lavado_secado', suciedad:'Polvo', included:true },
-    { id:'ex5', name:'TAPA-AIP-ABAT (bulk bote)', l:114.30, w:121.92, h:12.70, gap:0.097, advanceSide:'length', color:'#ec4899', maquina:'lavado_secado', suciedad:'Polvo', included:true },
-    { id:'ex6', name:'Tapas (separadores)',        l:0,      w:0,      h:0,     gap:0,     advanceSide:'length', color:'#94a3b8', maquina:'lavado_secado', suciedad:'Polvo', included:true },
-  ]);
+  const [boxes, setBoxes] = useState(() => {
+    const savedBoxes = localStorage.getItem(`sim_${simulatorId}_boxes`);
+    if (savedBoxes) {
+      try {
+        const parsed = JSON.parse(savedBoxes);
+        const hasRiderBoxes = parsed.some(b => b.id.startsWith('ex') && !b.id.startsWith('gusi_ex'));
+        const hasGusiBoxes = parsed.some(b => b.id.startsWith('gusi_ex'));
+        // Si el simulador es Gusi pero tiene cajas vacías o de rider, auto-sanar con las de Gusi
+        if (isGusi && (hasRiderBoxes || !hasGusiBoxes || parsed.length === 0)) {
+          const gusiDefaults = [
+            { id:'gusi_ex0', name:'Canastilla Negra CHICA',  l:60.00, w:40.00, h:26.60, gap:0.100, advanceSide:'length', color:'#6b7280', maquina:'lavado_secado', suciedad:'Polvo', included:true },
+            { id:'gusi_ex1', name:'Canastilla Negra GRANDE', l:60.00, w:39.00, h:21.40, gap:0.100, advanceSide:'length', color:'#8b5cf6', maquina:'lavado_secado', suciedad:'Polvo', included:true },
+            { id:'gusi_ex2', name:'Canastilla AMARILLA',     l:60.00, w:40.00, h:28.00, gap:0.100, advanceSide:'length', color:'#f59e0b', maquina:'lavado_secado', suciedad:'Polvo', included:true },
+            { id:'gusi_ex3', name:'Canastilla Verde',        l:59.00, w:39.00, h:22.30, gap:0.100, advanceSide:'length', color:'#10b981', maquina:'lavado_secado', suciedad:'Polvo', included:true },
+          ];
+          localStorage.setItem(`sim_${simulatorId}_boxes`, JSON.stringify(gusiDefaults));
+          return gusiDefaults;
+        }
+        return parsed;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    
+    if (isGusi) {
+      const gusiDefaults = [
+        { id:'gusi_ex0', name:'Canastilla Negra CHICA',  l:60.00, w:40.00, h:26.60, gap:0.100, advanceSide:'length', color:'#6b7280', maquina:'lavado_secado', suciedad:'Polvo', included:true },
+        { id:'gusi_ex1', name:'Canastilla Negra GRANDE', l:60.00, w:39.00, h:21.40, gap:0.100, advanceSide:'length', color:'#8b5cf6', maquina:'lavado_secado', suciedad:'Polvo', included:true },
+        { id:'gusi_ex2', name:'Canastilla AMARILLA',     l:60.00, w:40.00, h:28.00, gap:0.100, advanceSide:'length', color:'#f59e0b', maquina:'lavado_secado', suciedad:'Polvo', included:true },
+        { id:'gusi_ex3', name:'Canastilla Verde',        l:59.00, w:39.00, h:22.30, gap:0.100, advanceSide:'length', color:'#10b981', maquina:'lavado_secado', suciedad:'Polvo', included:true },
+      ];
+      return gusiDefaults;
+    }
+    
+    return [
+      // ── LAVADO Y SECADO ──────────────────────────────────────────────────────
+      { id:'ex0', name:'Contenedor CHICO',       l:30.48, w:38.10, h:17.78, gap:0.095, advanceSide:'length', color:'#6b7280', maquina:'lavado_secado', suciedad:'Polvo',  included:true  },
+      { id:'ex1', name:'Contenedor MEDIANO',     l:60.96, w:38.10, h:17.78, gap:0.100, advanceSide:'length', color:'#8b5cf6', maquina:'lavado_secado', suciedad:'Polvo',  included:true  },
+      { id:'ex2', name:'Contenedor Rectangular', l:60.96, w:38.10, h:35.56, gap:0.080, advanceSide:'length', color:'#3b82f6', maquina:'lavado_secado', suciedad:'Polvo',  included:true  },
+      // ── SOLO SECADO ──────────────────────────────────────────────────────────
+      { id:'ex3', name:'Contenedor Cuadrado',    l:60.96, w:55.88, h:35.56, gap:0.100, advanceSide:'length', color:'#10b981', maquina:'secado',        suciedad:'Grasa',  included:true  },
+      // ── ESPECIALES / BULK (Integrados en evaluación) ─────────────────────────
+      { id:'ex4', name:'CONT-AIP-ABAT (bulk bote)', l:114.30, w:121.92, h:86.36, gap:0.097, advanceSide:'length', color:'#f59e0b', maquina:'lavado_secado', suciedad:'Polvo', included:true },
+      { id:'ex5', name:'TAPA-AIP-ABAT (bulk bote)', l:114.30, w:121.92, h:12.70, gap:0.097, advanceSide:'length', color:'#ec4899', maquina:'lavado_secado', suciedad:'Polvo', included:true },
+      { id:'ex6', name:'Tapas (separadores)',        l:0,      w:0,      h:0,     gap:0,     advanceSide:'length', color:'#94a3b8', maquina:'lavado_secado', suciedad:'Polvo', included:true },
+    ];
+  });
 
-  const [selectedId, setSelectedId] = useState(boxes[0]?.id || null);
+  const [selectedId, setSelectedId] = useState(() => {
+    const savedBoxes = localStorage.getItem(`sim_${simulatorId}_boxes`);
+    if (savedBoxes) {
+      try {
+        const parsed = JSON.parse(savedBoxes);
+        return parsed[0]?.id || null;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return isGusi ? 'gusi_ex0' : 'ex0';
+  });
+
+  // ── Hook de Librería de Diseños 3D de Supabase ──
+  const { loadDesign: fetchDesignFromDb, saveDesign: saveDesignToDb } = useFlowDesigns();
+
+  // ── Estados del Twin Digital 3D Independiente para este Simulador ──
+  const [twinNodes, setTwinNodes] = useState(() => {
+    const saved = localStorage.getItem(`sim_${simulatorId}_twin_nodes`);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (e) { console.error(e); }
+    }
+    return [];
+  });
+
+  const [twinEdges, setTwinEdges] = useState(() => {
+    const saved = localStorage.getItem(`sim_${simulatorId}_twin_edges`);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (e) { console.error(e); }
+    }
+    return [];
+  });
+
+  const [twinLayout, setTwinLayout] = useState(() => {
+    const saved = localStorage.getItem(`sim_${simulatorId}_twin_layout`);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { console.error(e); }
+    }
+    // Fallback inteligente: Tomar el modelo 3D del Flow Designer si no hay uno propio
+    const fallbackLayout = localStorage.getItem('flowDesigner_currentLayout');
+    if (fallbackLayout) {
+      try { return JSON.parse(fallbackLayout); } catch (e) { console.error(e); }
+    }
+    return null;
+  });
+
+  const [twinLabelHeightOffset, setTwinLabelHeightOffset] = useState(() => {
+    const saved = localStorage.getItem(`sim_${simulatorId}_twin_label_height_offset`);
+    return saved !== null ? Number(saved) : 0.2;
+  });
+
+  const [twinLabelsCollapsed, setTwinLabelsCollapsed] = useState(() => {
+    const saved = localStorage.getItem(`sim_${simulatorId}_twin_labels_collapsed`);
+    return saved !== null ? saved === 'true' : false;
+  });
+
+  // Elevación del piso del modelo 3D + Candado
+  const [twinFloorElevation, setTwinFloorElevation] = useState(() => {
+    const saved = localStorage.getItem(`sim_${simulatorId}_twin_floor_elevation`);
+    return saved !== null ? Number(saved) : 0;
+  });
+  const [twinFloorLocked, setTwinFloorLocked] = useState(() => {
+    const saved = localStorage.getItem(`sim_${simulatorId}_twin_floor_locked`);
+    return saved === 'true';
+  });
+
+  const [isTwinEditMode, setIsTwinEditMode] = useState(false);
+  const [selectedTwinNodeId, setSelectedTwinNodeId] = useState(null);
+  const [isDesignsLibraryOpen, setIsDesignsLibraryOpen] = useState(false);
+  const [currentDesignId, setCurrentDesignId] = useState(null);
+
+  // Guardar estados del Twin en LocalStorage en cambio
+  useEffect(() => {
+    localStorage.setItem(`sim_${simulatorId}_twin_nodes`, JSON.stringify(twinNodes));
+  }, [twinNodes, simulatorId]);
+
+  useEffect(() => {
+    localStorage.setItem(`sim_${simulatorId}_twin_edges`, JSON.stringify(twinEdges));
+  }, [twinEdges, simulatorId]);
+
+  useEffect(() => {
+    if (twinLayout) {
+      localStorage.setItem(`sim_${simulatorId}_twin_layout`, JSON.stringify(twinLayout));
+    } else {
+      localStorage.removeItem(`sim_${simulatorId}_twin_layout`);
+    }
+  }, [twinLayout, simulatorId]);
+
+  useEffect(() => {
+    localStorage.setItem(`sim_${simulatorId}_twin_label_height_offset`, String(twinLabelHeightOffset));
+  }, [twinLabelHeightOffset, simulatorId]);
+
+  useEffect(() => {
+    localStorage.setItem(`sim_${simulatorId}_twin_labels_collapsed`, String(twinLabelsCollapsed));
+  }, [twinLabelsCollapsed, simulatorId]);
+
+  useEffect(() => {
+    localStorage.setItem(`sim_${simulatorId}_twin_floor_elevation`, String(twinFloorElevation));
+  }, [twinFloorElevation, simulatorId]);
+
+  useEffect(() => {
+    localStorage.setItem(`sim_${simulatorId}_twin_floor_locked`, String(twinFloorLocked));
+  }, [twinFloorLocked, simulatorId]);
+
+  const handleLoadDesignFromLibrary = async (designId) => {
+    const design = await fetchDesignFromDb(designId);
+    if (design) {
+      // Solo cargamos el modelo 3D (layout). Los nodos y edges del usuario se mantienen.
+      if (design.layout) setTwinLayout(design.layout);
+      setCurrentDesignId(designId);
+      setIsDesignsLibraryOpen(false);
+    }
+  };
+
+  // Estado para el modelo pendiente de nombrar y guardar
+  const [pendingUpload, setPendingUpload] = useState(null); // { file, processedResult }
+  const [uploadModelName, setUploadModelName] = useState('');
+  const [isSavingToCloud, setIsSavingToCloud] = useState(false);
+
+  // Paso 1: Leer el archivo y mostrar el modal de nombre
+  const handleTwinModelUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    // Reset input
+    e.target.value = '';
+    try {
+      const { process3DFile } = await import('@/utils/fileProcessor');
+      const result = await process3DFile(file);
+      // Sugerir nombre basado en el nombre del archivo (sin extensión)
+      const suggestedName = file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
+      setUploadModelName(suggestedName);
+      setPendingUpload({ file, processedResult: result });
+    } catch (err) {
+      console.error(err);
+      alert('Error procesando el archivo 3D: ' + err.message);
+    }
+  };
+
+  // Paso 2: Guardar en la nube y en la librería local
+  const handleConfirmUploadToLibrary = async () => {
+    if (!pendingUpload) return;
+    const { file, processedResult } = pendingUpload;
+    const modelName = uploadModelName.trim() || processedResult.name;
+    setIsSavingToCloud(true);
+    try {
+      // Subir archivo binario a Supabase Storage
+      const ext = file.name.split('.').pop().toLowerCase();
+      const storagePath = `twin-models/${Date.now()}_${modelName.replace(/\s+/g, '_')}.${ext}`;
+      const { data: storageData, error: storageError } = await supabase
+        .storage
+        .from('flow-assets')
+        .upload(storagePath, file, { upsert: false, contentType: file.type || 'application/octet-stream' });
+
+      let publicUrl = processedResult.url; // Fallback a blob URL si falla el storage
+      if (!storageError && storageData) {
+        const { data: urlData } = supabase.storage.from('flow-assets').getPublicUrl(storagePath);
+        if (urlData?.publicUrl) publicUrl = urlData.publicUrl;
+      } else {
+        console.warn('[Storage] No se pudo subir, usando blob local:', storageError?.message);
+      }
+
+      // Crear la configuración de layout con la URL pública (o blob)
+      const layoutRecord = {
+        ...processedResult,
+        url: publicUrl,
+        name: modelName,
+        storagePath: storageData?.path || null,
+      };
+
+      // Guardar en flow_designs_beta como diseño con solo el layout 3D
+      const savedDesign = await saveDesignToDb({
+        name: modelName,
+        description: `Modelo 3D subido desde el simulador (${ext.toUpperCase()})`,
+        nodes: [],
+        edges: [],
+        layout: layoutRecord,
+        customEquipments: null,
+      });
+
+      // Aplicar el layout al visor del simulador y limpiar etiquetas anteriores
+      setTwinLayout(layoutRecord);
+      setTwinNodes([]);
+      setTwinEdges([]);
+      if (savedDesign?.id) setCurrentDesignId(savedDesign.id);
+
+      setPendingUpload(null);
+      setUploadModelName('');
+    } catch (err) {
+      console.error(err);
+      alert('Error guardando en la nube: ' + err.message);
+    } finally {
+      setIsSavingToCloud(false);
+    }
+  };
+
+  // Cancelar el modal de nombre
+  const handleCancelUpload = () => {
+    if (pendingUpload?.processedResult?.url?.startsWith('blob:')) {
+      URL.revokeObjectURL(pendingUpload.processedResult.url);
+    }
+    setPendingUpload(null);
+    setUploadModelName('');
+  };
+
+  // ── Anclar modelo + etiquetas a este simulador (guardar en la nube) ──
+  const [isAnchoring, setIsAnchoring] = useState(false);
+
+  const handleAnchorToSimulator = async () => {
+    if (!twinLayout) return;
+    setIsAnchoring(true);
+    try {
+      const anchorData = {
+        name: `Twin · ${simulatorId}`,
+        description: `Configuración anclada al simulador ${simulatorId}`,
+        nodes: twinNodes,
+        edges: twinEdges,
+        layout: { ...twinLayout, elevation: twinFloorElevation },
+        custom_equipments: null,
+      };
+
+      if (currentDesignId) {
+        // Actualizar el diseño existente en la nube
+        const { updateDesign } = await import('@/hooks/useFlowDesigns').then(m => {
+          const hook = m.useFlowDesigns;
+          return hook;
+        }).catch(() => null);
+        
+        // Usar supabase directo para update
+        const { error } = await supabase
+          .from('flow_designs_beta')
+          .update({
+            nodes: twinNodes,
+            edges: twinEdges,
+            layout: { ...twinLayout, elevation: twinFloorElevation },
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', currentDesignId);
+
+        if (error) throw error;
+      } else {
+        // Crear nuevo registro vinculado a este simulador
+        const { data, error } = await supabase
+          .from('flow_designs_beta')
+          .insert([anchorData])
+          .select()
+          .single();
+
+        if (error) throw error;
+        if (data?.id) setCurrentDesignId(data.id);
+      }
+
+      // Guardar también en localStorage la referencia
+      localStorage.setItem(`sim_${simulatorId}_twin_anchor_id`, currentDesignId || '');
+    } catch (err) {
+      console.error('[Anchor] Error:', err);
+      alert('Error al guardar en la nube: ' + err.message);
+    } finally {
+      setIsAnchoring(false);
+    }
+  };
+
+  const handleUpdateTwinNode = (nodeId, updatedData) => {
+    setTwinNodes(prev => prev.map(node => {
+      if (node.id === nodeId) {
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            ...updatedData
+          }
+        };
+      }
+      return node;
+    }));
+  };
+
+  const handleDeleteTwinNode = (nodeId) => {
+    setTwinNodes(prev => prev.filter(n => n.id !== nodeId));
+    setTwinEdges(prev => prev.filter(e => e.source !== nodeId && e.target !== nodeId));
+    if (selectedTwinNodeId === nodeId) setSelectedTwinNodeId(null);
+  };
+
+  // ── Editor de Fichas y Conectores del Twin ──────────────────────────────────
+  const TWIN_CATEGORIES = [
+    { key: 'water',       label: 'Agua',         emoji: '💧', color: '#3b82f6' },
+    { key: 'electricity', label: 'Electricidad',  emoji: '⚡', color: '#eab308' },
+    { key: 'air',         label: 'Aire',          emoji: '🌀', color: '#06b6d4' },
+    { key: 'direction',   label: 'Dirección',     emoji: '↗',  color: '#10b981' },
+    { key: 'machine',     label: 'Máquina',       emoji: '🏭', color: '#8B5CF6' },
+    { key: 'storage',     label: 'Almacén',       emoji: '📦', color: '#f97316' },
+    { key: 'process',     label: 'Proceso',       emoji: '🔧', color: '#ec4899' },
+  ];
+  const COLOR_SWATCHES = ['#00F0FF','#10b981','#8B5CF6','#ec4899','#3b82f6','#f97316','#eab308','#ef4444','#ffffff','#06b6d4'];
+
+  const [showTwinNodeEditor, setShowTwinNodeEditor] = useState(false);
+  const [showTwinEdgeEditor, setShowTwinEdgeEditor] = useState(false);
+  const [editingTwinNodeId, setEditingTwinNodeId] = useState(null);
+  const [twinNodeForm, setTwinNodeForm] = useState({ label: '', type: 'Equipo', category: 'process', color: '#00F0FF', capacity: '', power: '' });
+  const [twinEdgeForm, setTwinEdgeForm] = useState({ source: '', target: '', color: '#00F0FF' });
+
+  const resetTwinNodeForm = () => {
+    setTwinNodeForm({ label: '', type: 'Equipo', category: 'process', color: '#00F0FF', capacity: '', power: '' });
+    setEditingTwinNodeId(null);
+  };
+
+  const openAddTwinNode = () => {
+    resetTwinNodeForm();
+    setShowTwinEdgeEditor(false);
+    setShowTwinNodeEditor(true);
+  };
+
+  const openEditTwinNode = (node) => {
+    setEditingTwinNodeId(node.id);
+    setTwinNodeForm({
+      label:    node.data?.label    || '',
+      type:     node.data?.type     || 'Equipo',
+      category: node.data?.category || 'process',
+      color:    node.data?.color    || '#00F0FF',
+      capacity: String(node.data?.capacity || ''),
+      power:    String(node.data?.power    || ''),
+    });
+    setShowTwinEdgeEditor(false);
+    setShowTwinNodeEditor(true);
+  };
+
+  const handleSaveTwinNode = () => {
+    if (editingTwinNodeId) {
+      // Editar nodo existente
+      setTwinNodes(prev => prev.map(n => n.id === editingTwinNodeId
+        ? { ...n, data: { ...n.data, ...twinNodeForm, capacity: Number(twinNodeForm.capacity) || 0, power: Number(twinNodeForm.power) || 0 } }
+        : n
+      ));
+    } else {
+      // Agregar nuevo nodo
+      const cat = TWIN_CATEGORIES.find(c => c.key === twinNodeForm.category);
+      const newNode = {
+        id: `twin_node_${Date.now()}`,
+        type: 'custom',
+        data: {
+          label:    twinNodeForm.label || cat?.label || 'Nuevo Equipo',
+          type:     twinNodeForm.type,
+          category: twinNodeForm.category,
+          color:    twinNodeForm.color,
+          capacity: Number(twinNodeForm.capacity) || 0,
+          power:    Number(twinNodeForm.power)    || 0,
+          position3D: { x: (Math.random() - 0.5) * 12, y: 0.2, z: (Math.random() - 0.5) * 8 }
+        }
+      };
+      setTwinNodes(prev => [...prev, newNode]);
+    }
+    setShowTwinNodeEditor(false);
+    resetTwinNodeForm();
+  };
+
+  const handleAddTwinEdge = () => {
+    if (!twinEdgeForm.source || !twinEdgeForm.target || twinEdgeForm.source === twinEdgeForm.target) return;
+    const newEdge = {
+      id:     `twin_edge_${Date.now()}`,
+      source: twinEdgeForm.source,
+      target: twinEdgeForm.target,
+      color:  twinEdgeForm.color,
+    };
+    setTwinEdges(prev => [...prev, newEdge]);
+    setTwinEdgeForm({ source: '', target: '', color: '#00F0FF' });
+    setShowTwinEdgeEditor(false);
+  };
+
+  const handleSyncFromFlowDesigner = () => {
+    if (!window.confirm("¿Seguro que deseas sobrescribir el Twin Digital de este simulador con el diseño global del Flow Designer?")) return;
+    
+    const fdNodes = localStorage.getItem('flowDesigner_nodes');
+    const fdEdges = localStorage.getItem('flowDesigner_edges');
+    const fdLayout = localStorage.getItem('flowDesigner_currentLayout');
+
+    if (fdNodes) setTwinNodes(JSON.parse(fdNodes));
+    if (fdEdges) setTwinEdges(JSON.parse(fdEdges));
+    if (fdLayout) setTwinLayout(JSON.parse(fdLayout));
+    
+    alert("¡Twin Digital sincronizado correctamente con Flow Designer!");
+  };
 
   const [chatMessages, setChatMessages] = useState([
     { role: 'assistant', content: 'Hola, soy PANDORA. Puedo analizar los datos actuales del simulador o ayudarte a interpretar los resultados. ¿Qué necesitas?' }
@@ -411,14 +930,20 @@ export default function RiderSimulatorPage() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
   useEffect(() => {
-    scrollToChatBottom();
+    if (chatMessages.length > 1) {
+      scrollToChatBottom();
+    }
   }, [chatMessages, isChatTyping]);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0 });
+  }, []);
 
   const handleInputChange = (field, value) => {
     setInputs(prev => {
       const updated = { ...prev, [field]: value };
       if (field === 'manualSpeed' && updated.calcMode === 'manual') {
-        updated.manualSpeed = Math.min(value, 140 / 60);
+        updated.manualSpeed = Math.min(value, physicalMaxMH / 60);
       }
       return updated;
     });
@@ -436,7 +961,8 @@ export default function RiderSimulatorPage() {
     }));
     // Actualiza el máximo físico cuando se establece manualmente
     setPhysicalMaxMH(clamped);
-    localStorage.setItem('rider_physical_max_mh', String(clamped));
+    const key = simulatorId === 'rider' ? 'rider_physical_max_mh' : `sim_${simulatorId}_physical_max_mh`;
+    localStorage.setItem(key, String(clamped));
   };
 
   // Solo mueve la velocidad operativa como % del physicalMaxMH
@@ -526,17 +1052,24 @@ export default function RiderSimulatorPage() {
   };
 
   // ── Req. Diario — valores oficiales pre-cargados (ahora por ID) ──
-  const OFFICIAL_REQS = { ex0:1610, ex1:798, ex2:1064, ex3:574, ex4:82, ex5:82, ex6:0 };
-  const LS_KEY = 'rider_daily_reqs_v2';
+  const OFFICIAL_REQS = isGusi
+    ? { gusi_ex0: 500, gusi_ex1: 500, gusi_ex2: 600, gusi_ex3: 600 }
+    : { ex0:1610, ex1:798, ex2:1064, ex3:574, ex4:82, ex5:82, ex6:0 };
+  const LS_KEY = simulatorId === 'rider' ? 'rider_daily_reqs_v2' : `sim_${simulatorId}_daily_reqs`;
   const [dailyReqs, setDailyReqs] = useState(() => {
     try {
       const stored = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+      const hasRiderKeys = Object.keys(stored).some(k => k.startsWith('ex') && !k.startsWith('gusi_ex'));
+      if (isGusi && hasRiderKeys) {
+        localStorage.setItem(LS_KEY, JSON.stringify(OFFICIAL_REQS));
+        return OFFICIAL_REQS;
+      }
       // Merge: stored values override official defaults
       return { ...OFFICIAL_REQS, ...stored };
     } catch { return OFFICIAL_REQS; }
   });
   const [reqLocked,  setReqLocked]  = useState(() => {
-    try { return JSON.parse(localStorage.getItem('rider_req_locked') || 'false'); } catch { return false; }
+    try { return JSON.parse(localStorage.getItem(`sim_${simulatorId}_req_locked`) || 'false'); } catch { return false; }
   });
   const [saveStatus, setSaveStatus] = useState('idle');
   const saveTimer = useRef(null);
@@ -544,12 +1077,34 @@ export default function RiderSimulatorPage() {
   // Guardar en localStorage siempre que cambie dailyReqs
   useEffect(() => {
     localStorage.setItem(LS_KEY, JSON.stringify(dailyReqs));
-  }, [dailyReqs]);
+  }, [dailyReqs, LS_KEY]);
 
   // Guardar estado del candado
   useEffect(() => {
-    localStorage.setItem('rider_req_locked', JSON.stringify(reqLocked));
-  }, [reqLocked]);
+    localStorage.setItem(`sim_${simulatorId}_req_locked`, JSON.stringify(reqLocked));
+  }, [reqLocked, simulatorId]);
+
+  // Guardar todos los estados sincronizados a localStorage en cambio
+  useEffect(() => {
+    localStorage.setItem(`sim_${simulatorId}_inputs`, JSON.stringify(inputs));
+  }, [inputs, simulatorId]);
+
+  useEffect(() => {
+    localStorage.setItem(`sim_${simulatorId}_customer_scenarios`, JSON.stringify(CUSTOMER_SCENARIOS));
+  }, [CUSTOMER_SCENARIOS, simulatorId]);
+
+  useEffect(() => {
+    localStorage.setItem(`sim_${simulatorId}_machine_configs`, JSON.stringify(MACHINE_CONFIGS));
+  }, [MACHINE_CONFIGS, simulatorId]);
+
+  useEffect(() => {
+    localStorage.setItem(`sim_${simulatorId}_boxes`, JSON.stringify(boxes));
+  }, [boxes, simulatorId]);
+
+  useEffect(() => {
+    const key = simulatorId === 'rider' ? 'rider_physical_max_mh' : `sim_${simulatorId}_physical_max_mh`;
+    localStorage.setItem(key, String(physicalMaxMH));
+  }, [physicalMaxMH, simulatorId]);
 
   // Backup a Supabase (best-effort, no bloquea si falla)
   const updateBoxRequirement = useCallback((id, reqDaily) => {
@@ -610,18 +1165,19 @@ export default function RiderSimulatorPage() {
 
   const selectedRow = computedRows.find(r => r.id === selectedId) || computedRows[0];
   const largestRow  = [...computedRows].sort((a,b) => b.advance - a.advance)[0];
-  const currentSpeed = selectedRow?.speed ?? (140 / 60);
+  const currentSpeed = selectedRow?.speed ?? (physicalMaxMH / 60);
 
   // ── Grupos por tipo de máquina ──────────────────────────────────────────
   const lavadoRows   = computedRows.filter(r => r.maquina === 'lavado_secado');
   const secadoRows   = computedRows.filter(r => r.maquina === 'secado');
   const excluidos    = computedRows.filter(r => r.maquina === 'no');
 
-  // ── Horas totales requeridas por grupo (solo si están INCLUIDOS) ──────────
-  const totalHrsLavado = lavadoRows.filter(r => r.included).reduce((s, r) => s + r.requiredHours, 0);
-  const totalHrsSecado = secadoRows.filter(r => r.included).reduce((s, r) => s + r.requiredHours, 0);
-  const totalLavadoReq = lavadoRows.filter(r => r.included).reduce((s, r) => s + r.requiredDaily, 0);
-  const totalSecadoReq = secadoRows.filter(r => r.included).reduce((s, r) => s + r.requiredDaily, 0);
+  // ── Horas totales requeridas por grupo (basado estricatmente en la SELECCIÓN del Mix) ──
+  const selectedMixRows = computedRows.filter(r => selectedMixIds.includes(r.id));
+  const totalHrsLavado = selectedMixRows.filter(r => r.maquina === 'lavado_secado').reduce((s, r) => s + r.requiredHours, 0);
+  const totalHrsSecado = selectedMixRows.filter(r => r.maquina === 'secado').reduce((s, r) => s + r.requiredHours, 0);
+  const totalLavadoReq = selectedMixRows.filter(r => r.maquina === 'lavado_secado').reduce((s, r) => s + r.requiredDaily, 0);
+  const totalSecadoReq = selectedMixRows.filter(r => r.maquina === 'secado').reduce((s, r) => s + r.requiredDaily, 0);
 
   // ── Viabilidad por mix (Y1-Y5) — no por producto individual ──────────────
   const CLIENT_SCENARIOS = CUSTOMER_SCENARIOS.lavadoSecado?.scenarios ?? [];
@@ -656,12 +1212,16 @@ export default function RiderSimulatorPage() {
   // ── Legacy scenarioResults (mantener por compatibilidad UI existente) ────
   const scenarioResults = useMemo(() => {
     if (!selectedRow) return { lavadoSecado: [] };
-    // Override the dailyRate with the dynamic total for the group
-    const scLavado = { ...CUSTOMER_SCENARIOS.lavadoSecado, dailyRate: totalLavadoReq };
+    const sc = CUSTOMER_SCENARIOS.lavadoSecado;
+    const isAuto = sc?.mode === 'auto';
+    const sumAllModels = computedRows.reduce((s, r) => s + (r.requiredDaily || 0), 0);
+    const rateToUse = isAuto ? sumAllModels : (sc?.dailyRate ?? 3472);
+
+    const scLavado = { ...sc, dailyRate: rateToUse };
     return {
-      lavadoSecado: compareScenarioAgainstMachine(selectedRow, 'lavadoSecado', MACHINE_CONFIGS, { lavadoSecado: scLavado }),
+      lavadoSecado: compareScenarioAgainstMachine(selectedRow, 'lavadoSecado', MACHINE_CONFIGS, { lavadoSecado: scLavado }, manualLinesUsed),
     };
-  }, [selectedRow, MACHINE_CONFIGS, CUSTOMER_SCENARIOS, totalLavadoReq]);
+  }, [selectedRow, MACHINE_CONFIGS, CUSTOMER_SCENARIOS, computedRows, manualLinesUsed]);
 
   const worstLavado = scenarioResults.lavadoSecado.reduce((max, r) => r.requiredLines > max ? r.requiredLines : max, 0);
 
@@ -676,7 +1236,7 @@ export default function RiderSimulatorPage() {
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `${customFileName || 'RYDER_Simulador'}.csv`;
+    link.download = `${customFileName || `${simulatorMeta.name}_Simulador`}.csv`;
     link.click();
   };
 
@@ -691,7 +1251,7 @@ export default function RiderSimulatorPage() {
 
     try {
       const contextStr = `
-=== CONTEXTO DEL SIMULADOR RYDER ===
+=== CONTEXTO DEL SIMULADOR ${simulatorMeta.name} ===
 Configuración actual:
 ${JSON.stringify(inputs, null, 2)}
 Modelos activos (${boxes.length}):
@@ -709,7 +1269,7 @@ ${userMsg}
         projectId: 'local-fallback-id',
         companyId: 'local_company',
         v2: true,
-        projectContext: { type: 'simulator', name: 'RYDER', data: inputs }
+        projectContext: { type: 'simulator', name: simulatorMeta.name, data: inputs }
       });
 
       if (response.data && response.data.success) {
@@ -733,11 +1293,11 @@ ${userMsg}
     const machineCfg = MACHINE_CONFIGS.lavadoSecado;
 
     let md = [];
-    md.push(`# PANDORA 3.0 — Reporte Técnico RYDER Simulator`);
-    md.push(`**Exportado:** ${ts}  |  **Modelo seleccionado:** ${selectedRow?.name ?? '—'}  |  **Ver:** 7.70\n`);
+    md.push(`# PANDORA 3.0 — Reporte Técnico ${simulatorMeta.name} Simulator`);
+    md.push(`**Exportado:** ${ts}  |  **Modelo seleccionado:** ${selectedRow?.name ?? '—'}  |  **Ver:** 7.75\n`);
     md.push(`---`);
     md.push(`\n## CONTEXTO DEL SISTEMA`);
-    md.push(`Este simulador calcula la capacidad operativa de una línea de lavado y secado industrial (tipo RYDER/PLD).`);
+    md.push(`Este simulador calcula la capacidad operativa de una línea de lavado y secado industrial (tipo ${simulatorMeta.name}/PLD).`);
     md.push(`Evalúa si la máquina puede procesar el volumen de cajas requerido por el cliente bajo distintos escenarios de eficiencia anual (Y1–Y5).\n`);
 
     // 1. Configuración de máquina
@@ -755,7 +1315,8 @@ ${userMsg}
     md.push(`| Días/mes | ${inputs.daysPerMonth} |\n`);
 
     // 2. Modelos de caja evaluados
-    md.push(`## 2. MODELOS DE CAJA EVALUADOS (${computedRows.length} modelos)`);
+    const selectedMixRows = computedRows.filter(r => selectedMixIds.includes(r.id));
+    md.push(`## 2. MODELOS DE CAJA EVALUADOS (${selectedMixRows.length} modelos seleccionados)`);
     md.push(`> **Fórmulas clave:**`);
     md.push(`> - Avance = min(largo, ancho) en metros (lado menor de la caja)`);
     md.push(`> - Paso (Pitch) = Avance + Gap`);
@@ -765,7 +1326,7 @@ ${userMsg}
     md.push('');
     md.push(`| Mod | Nombre | L(cm) | A(cm) | H(cm) | Avance(m) | Gap(m) | Pitch(m) | Vel(m/h) | Cap.Geom(c/h) | Cap.Real(c/h) | Resid(min) | Dentro | Req.Diário | Req(h) |`);
     md.push(`|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|`);
-    computedRows.forEach(r => {
+    selectedMixRows.forEach(r => {
       md.push(`| ${r.label} | ${r.name} | ${r.l} | ${r.w} | ${r.h} | ${r.advance.toFixed(3)} | ${r.gap.toFixed(3)} | ${r.pitch.toFixed(3)} | ${r.linearMh.toFixed(2)} | ${r.geometricBoxesHr.toFixed(1)} | ${r.realBoxesHr.toFixed(1)} | ${r.residenceMin.toFixed(2)} | ${r.inside.toFixed(1)} | ${r.requiredDaily.toLocaleString('es-MX')} | ${r.requiredHours.toFixed(2)} |`);
     });
     md.push('');
@@ -800,16 +1361,13 @@ ${userMsg}
     md.push(`## 5. REQUERIMIENTOS DIARIOS POR MODELO`);
     md.push(`| Modelo | Req. Diario (cajas) | Cap. Real (c/h) | Horas necesarias |`);
     md.push(`|---|---|---|---|`);
-    computedRows.forEach(r => {
+    selectedMixRows.forEach(r => {
       md.push(`| ${r.label} — ${r.name} | ${r.requiredDaily.toLocaleString('es-MX')} | ${r.realBoxesHr.toFixed(1)} | ${r.requiredHours.toFixed(2)} h |`);
     });
     md.push('');
 
     // 6. Prompt para IA
     md.push(`---`);
-    md.push(`## 🤖 INSTRUCCIONES PARA EVALUACIÓN POR IA`);
-    md.push(`Por favor realiza una **evaluación técnica completa** de este reporte de simulación industrial. Analiza:`);
-    md.push(``);
     md.push(`1. **Precisión de fórmulas**: ¿Son correctas las fórmulas de capacidad, residencia y paso? Revisa la coherencia entre Pitch = Avance + Gap y Cap. Geom. = Vel / Pitch.`);
     md.push(`2. **Viabilidad del escenario**: Con los datos de Y1 a Y5, ¿puede una sola línea cubrir el rate diario del cliente? ¿En qué año se vuelve crítico?`);
     md.push(`3. **Modelo crítico**: ¿Qué modelo de caja representa el cuello de botella más severo? ¿Por qué?`);
@@ -888,8 +1446,8 @@ ${userMsg}
     fill(...C.accent1); rect(0,21.5,W,0.8);
     // Brand name
     text(...C.accent1); font('bold',16);
-    lbl('RYDER', 12, 14);
-    const rW = doc.getTextWidth('RYDER');
+    lbl(simulatorMeta.name, 12, 14);
+    const rW = doc.getTextWidth(simulatorMeta.name);
     text(...C.gray2); font('normal',10);
     lbl('  —  Reporte de Simulacion Industrial', 12+rW, 14);
     // Right meta
@@ -940,13 +1498,13 @@ ${userMsg}
 
 
     // ── SPEED BAR — redesigned ────────────────────────────────────────
-    const useP = Math.min(100,(speedMH/140*100));
+    const useP = Math.min(100,(speedMH/physicalMaxMH*100));
     // Title (+30%: 8→10)
     text(...C.accent1); font('bold',10);
     lbl('VELOCIDAD DE LÍNEA  —  UTILIZACIÓN', 10, curY+5);
     // Subtitle (+30%: 7→9)
     text(...C.gray2); font('normal',9);
-    lbl(`Banda: ${speedMH} m/h  |  Límite: 140 m/h`, 10, curY+12);
+    lbl(`Banda: ${speedMH} m/h  |  Límite: ${physicalMaxMH} m/h`, 10, curY+12);
 
     // % Badge pill (top-right)
     const bdgW=32, bdgH=16, bdgX=W-bdgW-10, bdgY=curY;
@@ -961,7 +1519,7 @@ ${userMsg}
     fill(...C.panel2); rrect(sbX,sbY,sbW,sbH,2);
 
     // Gradient fill — cyan→blue→indigo
-    const usedW = sbW * Math.min(1, speedMH/140);
+    const usedW = sbW * Math.min(1, speedMH/physicalMaxMH);
     const segs=80;
     for(let s=0;s<segs;s++){
       const sx=sbX+(sbW/segs)*s, sw=sbW/segs+0.15;
@@ -1074,7 +1632,7 @@ ${userMsg}
     doc.addPage(); addBG();
     fill(...C.header); rect(0,0,W,14);
     fill(...C.accent1); rect(0,13.5,W,0.7);
-    text(...C.accent1); font('bold',9); lbl('RYDER  —  Análisis de Escenarios Y1-Y5', 12, 9.5);
+    text(...C.accent1); font('bold',9); lbl(`${simulatorMeta.name}  —  Análisis de Escenarios Y1-Y5`, 12, 9.5);
     text(...C.gray2); font('normal',6); lbl(ts, W-10, 9.5, {align:'right'});
     curY=20;
 
@@ -1164,11 +1722,11 @@ ${userMsg}
       fill(...C.header); rect(0,H-8,W,8);
       fill(...C.accent1); rect(0,H-8,W,0.5);
       text(...C.gray2); font('normal',5.5);
-      lbl('PANDORA 3.0  |  RYDER Industrial Simulator  |  Confidencial', 12, H-2.5);
+      lbl(`PANDORA 3.0  |  ${simulatorMeta.name} Industrial Simulator  |  Confidencial`, 12, H-2.5);
       lbl(`Página ${p} de ${pc}`, W-10, H-2.5, {align:'right'});
     }
 
-    const defaultName = `RYDER_Analisis_${Date.now()}`;
+    const defaultName = `${simulatorMeta.name}_Analisis_${Date.now()}`;
     doc.save(`${customFileName || defaultName}.pdf`);
   };
 
@@ -1203,7 +1761,7 @@ ${userMsg}
       XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(data), 'Lav+Sec');
     });
 
-    const defaultName = `RYDER_Simulacion_${Date.now()}`;
+    const defaultName = `${simulatorMeta.name}_Simulacion_${Date.now()}`;
     XLSX.writeFile(wb, `${customFileName || defaultName}.xlsx`);
   };
 
@@ -1382,10 +1940,28 @@ ${userMsg}
             </div>
             <div>
               <h1 className="text-2xl font-black tracking-tight text-white uppercase flex items-center gap-3">
-                RYDER
+                {simulatorMeta.name}
                 <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[10px] tracking-widest uppercase">Simulador Activo</span>
+                <span className="flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded font-black tracking-normal uppercase animate-pulse">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  Auto-guardado
+                </span>
               </h1>
-              <p className="text-sm text-gray-500 font-medium">Línea de lavado y secado para pallets/cajas plásticas (140 m/h max)</p>
+              <p className="text-sm text-gray-500 font-medium">{simulatorMeta.description} ({physicalMaxMH} m/h max)</p>
+              <div className="flex items-center gap-2 mt-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl max-w-[360px]">
+                <Edit3 className="w-3.5 h-3.5 text-cyan-400" />
+                <span className="text-[10px] font-black tracking-wider uppercase text-cyan-400">Evaluación:</span>
+                <input
+                  type="text"
+                  value={clientName}
+                  onChange={(e) => {
+                    setClientName(e.target.value);
+                    localStorage.setItem(`sim_${simulatorId}_client_name`, e.target.value);
+                  }}
+                  className="bg-transparent text-xs font-bold text-white border-none outline-none focus:outline-none focus:ring-0 p-0 m-0 w-56"
+                  placeholder="Máquina en Evaluación..."
+                />
+              </div>
             </div>
           </div>
           <div className="flex gap-3">
@@ -1401,9 +1977,7 @@ ${userMsg}
             <button onClick={exportExcel} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 text-emerald-400 transition-all text-sm font-bold">
               <Table2 className="w-4 h-4" /> Excel
             </button>
-            <button onClick={exportPDF} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 text-red-400 transition-all text-sm font-bold">
-              <FileText className="w-4 h-4" /> PDF
-            </button>
+
             {/* ── Informe PDF: choice dropdown ── */}
             <div style={{ position: 'relative' }}>
               <button
@@ -1521,7 +2095,7 @@ ${userMsg}
             </div>
             <div className="flex flex-col gap-1">
               <button 
-                onClick={() => { handleInputChange('calcMode', 'manual'); handleInputChange('manualSpeed', Math.min(140/60, inputs.manualSpeed + 0.05)); }}
+                onClick={() => { handleInputChange('calcMode', 'manual'); handleInputChange('manualSpeed', Math.min(physicalMaxMH/60, inputs.manualSpeed + 0.05)); }}
                 className="p-1 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white rounded transition-colors"
                 title="Aumentar Velocidad"
               >
@@ -1538,13 +2112,15 @@ ${userMsg}
           </div>
           {/* ── CAP. MÁQ. / DÍA (Y1) — Clicable ── */}
           {(() => {
-            const mixR     = selectedMixIds.length > 0 ? computedRows.filter(r => selectedMixIds.includes(r.id)) : computedRows;
-            const avgCap   = mixR.length ? mixR.reduce((s,r) => s + r.realBoxesHr, 0) / mixR.length : 0;
-            const y1Sc     = CUSTOMER_SCENARIOS.lavadoSecado.scenarios[0];
-            const y1Efs    = y1Sc.effectiveHoursPerShift;
-            const y1Shifts = y1Sc.shifts;
-            const y1H      = y1Efs * y1Shifts;
-            const capDay   = Math.round(avgCap * y1H);
+    const mixR      = computedRows.filter(r => selectedMixIds.includes(r.id));
+    const finalMix  = mixR.length ? mixR : (selectedRow ? [selectedRow] : []);
+    const avgPitch  = finalMix.length ? (finalMix.reduce((s,r) => s + r.pitch, 0) / finalMix.length) : 0;
+    const avgCapH   = avgPitch > 0 ? (physicalMaxMH / avgPitch) : 0;
+    const y1Sc      = CUSTOMER_SCENARIOS.lavadoSecado.scenarios[0];
+    const y1Efs     = y1Sc.effectiveHoursPerShift;
+    const y1Shifts  = y1Sc.shifts;
+    const y1H       = y1Efs * y1Shifts;
+    const capDay    = Math.round(avgCapH * y1H);
             return (
               <>
                 {/* Card */}
@@ -1564,7 +2140,7 @@ ${userMsg}
                     <span className="text-xs text-gray-500 ml-1">cajas</span>
                   </div>
                   <span className="text-[10px] text-gray-500">
-                    {formatNumber(avgCap,1)} c/h × {formatNumber(y1H,1)} h (Y1)
+                    {formatNumber(avgCapH,1)} c/h × {formatNumber(y1H,1)} h (Y1)
                   </span>
                   <span className="absolute top-2 right-3 text-[9px] text-gray-700 group-hover:text-[#00F0FF]/50 transition-colors">ℹ cómo se calcula</span>
                 </div>
@@ -1595,19 +2171,30 @@ ${userMsg}
                       <div className="space-y-3">
                         {/* Step 1 */}
                         <div className="bg-[#111] rounded-xl p-3 border border-[#1A1A1A]">
-                          <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Paso 1 — Velocidad promedio del mix</p>
+                          <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Paso 1 — Promedio lineal del mix</p>
                           <p className="text-xs text-gray-300">
-                            Promedio de Cap. Real de los {mixR.length} modelo(s) en mix:
+                            Paso promedio (Pitch) de los {mixR.length} modelo(s) en mix:
                           </p>
                           <div className="mt-1 space-y-0.5">
                             {mixR.map(r => (
                               <p key={r.id} className="text-[10px] text-gray-500">
-                                &nbsp;&nbsp;{r.label}. {r.name} → <span className="text-white">{formatNumber(r.realBoxesHr,1)} c/h</span>
+                                &nbsp;&nbsp;{r.label}. {r.name} → <span className="text-white">{formatNumber(r.pitch,3)} m</span>
                               </p>
                             ))}
                           </div>
                           <p className="text-xs text-[#00F0FF] font-bold mt-2">
-                            Promedio = {formatNumber(avgCap,2)} c/h
+                            Promedio = {formatNumber(avgPitch,3)} m
+                          </p>
+                        </div>
+
+                        {/* Step 1.1 — Cap/h */}
+                        <div className="bg-[#111] rounded-xl p-3 border border-[#1A1A1A]">
+                          <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Paso 1.1 — Cajas por Hora (Máx)</p>
+                          <p className="text-xs text-gray-300">
+                            Velocidad Máx ({physicalMaxMH} m/h) ÷ Paso Promedio ({formatNumber(avgPitch,3)} m):
+                          </p>
+                          <p className="text-xs text-[#00F0FF] font-bold mt-2">
+                            {formatNumber(avgCapH,1)} cajas/h
                           </p>
                         </div>
 
@@ -1703,7 +2290,7 @@ ${userMsg}
                         <div className="bg-[#00F0FF]/5 rounded-xl p-3 border border-[#00F0FF]/20">
                           <p className="text-[10px] text-gray-400 uppercase font-bold mb-1">Resultado</p>
                           <p className="text-xs text-gray-300">
-                            {formatNumber(avgCap,2)} c/h × {formatNumber(y1H,2)} h
+                            {formatNumber(avgCapH,2)} c/h × {formatNumber(y1H,2)} h
                           </p>
                           <p className="text-2xl font-black text-[#00F0FF] mt-1 drop-shadow-[0_0_8px_#00F0FF88]">
                             = {capDay.toLocaleString('es-MX')} <span className="text-sm font-normal text-gray-400">cajas / día</span>
@@ -1720,9 +2307,20 @@ ${userMsg}
           {/* ── Carga de Máquina — LEDs azul eléctrico + modal cristal ── */}
           {(() => {
 
-            // Usa physicalMaxMH como denominador fijo — no cambia con el % operativo
-            const maxMH = physicalMaxMH;
-            const pct   = Math.min(100, Math.max(0, Math.round((inputs.manualSpeed * 60 / maxMH) * 100)));
+            const sc = CUSTOMER_SCENARIOS.lavadoSecado;
+            const isAuto = sc?.mode === 'auto';
+            const sumAllModels = computedRows.reduce((s, r) => s + (r.requiredDaily || 0), 0);
+            const mixSelected = computedRows.filter(r => selectedMixIds.includes(r.id));
+            const mixTotalReq = mixSelected.reduce((s, r) => s + (r.requiredDaily || 0), 0);
+            const effectiveReq = mixSelected.length > 0 && mixTotalReq > 0 
+              ? mixTotalReq 
+              : (isAuto ? sumAllModels : (sc?.dailyRate ?? 3472));
+
+            const bestRow = scenarioResults.lavadoSecado?.[0];
+            const machineDailyBest = bestRow ? bestRow.machineBoxesPerHour * bestRow.availableDailyTime : 0;
+            
+            const displayPct = machineDailyBest > 0 ? Math.round((effectiveReq / machineDailyBest) * 100) : 0;
+            const pct = Math.min(100, displayPct);
 
             // Paleta LED nítida — azul acero con buen contraste
             const getLedColor = (i, isActive, isHover) => {
@@ -1753,8 +2351,16 @@ ${userMsg}
                     background: 'linear-gradient(180deg, #050E1C 0%, #061220 100%)',
                     boxShadow: '0 2px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(58,158,190,0.12)'
                   }}
-                  onClick={() => setShowCapModal(true)}
-                  title="Click para configurar velocidad"
+                  onClick={() => setViabilityInfoModal({
+                    title: 'Carga de Máquina',
+                    formula: 'Representa el porcentaje de la capacidad máxima de la máquina al que se debe trabajar para cumplir con el requerimiento diario en el Año 1.',
+                    steps: [
+                      `Requerimiento Diario: ${effectiveReq.toLocaleString('es-MX')} cajas/día`,
+                      `Capacidad Máxima Y1: ${Math.round(machineDailyBest).toLocaleString('es-MX')} cajas/día (${Math.round(bestRow?.machineBoxesPerHour || 0)} c/h × ${bestRow?.availableDailyTime?.toFixed(2)} h)`,
+                      `Porcentaje de Carga = (${effectiveReq.toLocaleString('es-MX')} ÷ ${Math.round(machineDailyBest).toLocaleString('es-MX')}) × 100 = ${displayPct}%`
+                    ]
+                  })}
+                  title="Click para ver detalle del cálculo"
                 >
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-black uppercase tracking-widest"
@@ -1762,12 +2368,10 @@ ${userMsg}
                       Carga de Máquina
                     </span>
                     <span
-                      className="text-sm font-black cursor-pointer transition-all"
+                      className="text-sm font-black transition-all"
                       style={{ color: '#5AACCC', textShadow: 'none' }}
-                      onClick={(e) => { e.stopPropagation(); setPctDraft(String(pct)); setEditPct(true); }}
-                      title="Click para editar %"
                     >
-                      {hoverLed !== null ? `${Math.round(((hoverLed + 1) / 20) * 100)}%` : `${pct}%`}
+                      {displayPct}%
                     </span>
                   </div>
 
@@ -1780,39 +2384,34 @@ ${userMsg}
                     {Array.from({ length: 20 }).map((_, i) => {
                       const segPct   = ((i + 1) / 20) * 100;
                       const isActive = i < (pct / 100) * 20;
-                      const isHover  = hoverLed !== null && i <= hoverLed;
-                      const color    = getLedColor(i, isActive, isHover);
+                      const color    = getLedColor(i, isActive, false);
                       return (
                         <div
                           key={i}
-                          title={`${Math.round(segPct)}% — ${(maxMH * segPct / 100).toFixed(1)} m/h`}
-                          className="relative flex-1 cursor-pointer transition-all duration-75"
+                          title={`Segmento ${Math.round(segPct)}% — Capacidad de Carga`}
+                          className="relative flex-1 transition-all duration-75"
                           style={{
                             borderRadius: '2px 2px 1px 1px',
                             backgroundColor: color,
-                            boxShadow: (isActive || isHover) ? getLedGlow(color) : 'none',
-                            opacity: (!isActive && !isHover) ? 0.12 : 1,
-                            transform: isHover ? 'scaleY(1.12)' : 'scaleY(1)',
+                            boxShadow: isActive ? getLedGlow(color) : 'none',
+                            opacity: !isActive ? 0.12 : 1,
                             transformOrigin: 'bottom',
                           }}
-                          onMouseEnter={() => setHoverLed(i)}
-                          onMouseLeave={() => setHoverLed(null)}
-                          onClick={() => setOperatingPct(Math.round(((i + 1) / 20) * 100))}
                         >
                           {/* Highlight cúpula */}
                           <div className="absolute inset-0 pointer-events-none" style={{
                             borderRadius: '2px 2px 0 0',
-                            background: getLedHighlight(isActive, isHover),
+                            background: getLedHighlight(isActive, false),
                           }} />
                         </div>
                       );
                     })}
                   </div>
 
-                  {/* Hint hover */}
-                  <div className={`text-[9px] text-right mt-1 transition-all duration-150 ${hoverLed !== null ? 'opacity-100' : 'opacity-0'}`}
-                    style={{ color: '#5A8FAA' }}>
-                    {hoverLed !== null ? `→ ${((maxMH * ((hoverLed + 1) / 20)).toFixed(1))} m/h` : '\u00a0'}
+                  <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mt-2.5 flex items-center justify-between">
+                    <span>0% (Sin Carga)</span>
+                    <span className="text-gray-400">Cap. Máx Y1: {Math.round(machineDailyBest).toLocaleString('es-MX')} c/d</span>
+                    <span>100%+ (Full)</span>
                   </div>
                 </div>
 
@@ -1913,7 +2512,7 @@ ${userMsg}
                           defaultValue={physicalMaxMH.toFixed(1)}
                           className="flex-1 rounded-xl px-3 py-2 text-sm font-bold outline-none"
                           style={{ background:'rgba(74,140,180,0.05)', border:'1px solid rgba(74,140,180,0.20)', color:'#5AACCC' }}
-                          placeholder="ej. 140"
+                          placeholder={`ej. ${physicalMaxMH}`}
                         />
                         <button
                           onClick={(e) => {
@@ -1979,7 +2578,7 @@ ${userMsg}
               <div className="space-y-1.5 pt-2">
                 <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Modo de Cálculo</label>
                 <select value={inputs.calcMode} onChange={(e) => handleInputChange('calcMode', e.target.value)} className="w-full bg-[#111] border border-[#222] rounded-lg px-3 py-2 text-sm text-white focus:border-neon-cyan outline-none">
-                  <option value="manual">Velocidad Fija (Max 140 m/h)</option>
+                  <option value="manual">{`Velocidad Fija (Max ${physicalMaxMH} m/h)`}</option>
                   <option value="derive_nominal">Autocalcular Vel. para cumplir capacidad</option>
                 </select>
               </div>
@@ -2067,6 +2666,526 @@ ${userMsg}
                 <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest group-hover:text-gray-300 transition-colors">Cajas Dentro</span>
                 <div className="text-3xl font-black text-white mt-1">{selectedRow ? formatNumber(selectedRow.inside) : '-'} <span className="text-sm text-gray-500 font-medium">pzs</span></div>
               </div>
+            </div>
+
+            {/* Twin Digital 3D */}
+            <div className="rounded-2xl bg-gradient-to-b from-[#111] to-[#0A0A0A] border border-[#1A1A1A] p-5 shadow-xl">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                <div>
+                  <h3 className="text-sm font-black uppercase tracking-widest text-[#00F0FF] flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-[#00F0FF] animate-pulse" />
+                    Twin Digital 3D de la Línea
+                  </h3>
+                  <p className="text-[10px] text-gray-400 mt-0.5">
+                    Gemelo digital interactivo y trayectorias de flujo en tiempo real.
+                  </p>
+                </div>
+                
+                {/* Controles de la Librería y Twin */}
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <button 
+                    onClick={() => setIsDesignsLibraryOpen(true)}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-neon-cyan/10 hover:bg-neon-cyan/20 text-[#00F0FF] border border-neon-cyan/30 rounded-xl transition-all font-black uppercase tracking-widest text-[9px]"
+                    title="Abrir librería de twins guardados"
+                  >
+                    <FolderOpen className="w-3.5 h-3.5" /> Librería
+                  </button>
+
+                  <label 
+                    htmlFor="twin-upload-file"
+                    className="flex items-center gap-1.5 px-3 py-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-xl cursor-pointer transition-all font-black uppercase tracking-widest text-[9px]"
+                    title="Subir archivo 3D de la planta (.glb, .gltf o .fbx)"
+                  >
+                    <Upload className="w-3.5 h-3.5" /> Subir 3D
+                  </label>
+                  <input 
+                    type="file" 
+                    id="twin-upload-file" 
+                    className="hidden" 
+                    accept=".glb,.gltf,.fbx" 
+                    onChange={handleTwinModelUpload} 
+                  />
+
+                  <button 
+                    onClick={() => setIsTwinEditMode(!isTwinEditMode)}
+                    className={`flex items-center gap-1.5 px-3 py-2 border rounded-xl transition-all font-black uppercase tracking-widest text-[9px] ${
+                      isTwinEditMode 
+                        ? 'bg-yellow-500/20 border-yellow-500 text-yellow-400' 
+                        : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'
+                    }`}
+                    title="Acomodar fichas de movimiento y máquinas en 3D"
+                  >
+                    <Sliders className="w-3.5 h-3.5" /> {isTwinEditMode ? 'Listo' : 'Ajustes'}
+                  </button>
+
+                  <button 
+                    onClick={handleSyncFromFlowDesigner}
+                    className="flex items-center justify-center p-2 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white border border-white/10 rounded-xl transition-all"
+                    title="Sincronizar con el Flow Designer global"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  </button>
+
+                  {/* Anclar modelo + etiquetas a este simulador */}
+                  {twinLayout && (
+                    <button 
+                      onClick={handleAnchorToSimulator}
+                      disabled={isAnchoring}
+                      className={`flex items-center gap-1.5 px-3 py-2 border rounded-xl transition-all font-black uppercase tracking-widest text-[9px] ${
+                        isAnchoring
+                          ? 'bg-green-500/10 border-green-500/30 text-green-400 opacity-70'
+                          : 'bg-green-500/10 hover:bg-green-500/20 text-green-400 border border-green-500/30'
+                      }`}
+                      title="Guardar modelo, etiquetas y conectores en la nube para este simulador"
+                    >
+                      {isAnchoring ? (
+                        <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Guardando...</>
+                      ) : (
+                        <><Anchor className="w-3.5 h-3.5" /> Anclar</>
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Panel de Ajustes del Twin / Fichas de Movimiento */}
+              {isTwinEditMode && (
+                <div className="mb-4 p-4 rounded-xl bg-black/40 border border-white/5 backdrop-blur-md space-y-4">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs">
+                    {/* Altura de Fichas Slider */}
+                    <div className="flex-1 space-y-1">
+                      <div className="flex justify-between items-center text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                        <span>Altura de Fichas de Movimiento:</span>
+                        <span className="text-[#00F0FF]">{formatNumber(twinLabelHeightOffset, 1)} m</span>
+                      </div>
+                      <input 
+                        type="range" 
+                        min="-2.0" 
+                        max="5.0" 
+                        step="0.1" 
+                        value={twinLabelHeightOffset} 
+                        onChange={(e) => setTwinLabelHeightOffset(Number(e.target.value))}
+                        className="w-full h-1.5 bg-[#222] rounded-lg appearance-none cursor-pointer accent-[#00F0FF]"
+                      />
+                    </div>
+
+                    {/* Mostrar/Colapsar Fichas Toggle */}
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Modo Compacto:</span>
+                      <button 
+                        onClick={() => setTwinLabelsCollapsed(!twinLabelsCollapsed)}
+                        className={`px-3 py-1.5 rounded-lg border text-[9px] font-black uppercase tracking-wider transition-all ${
+                          twinLabelsCollapsed 
+                            ? 'bg-neon-cyan/20 border-neon-cyan text-neon-cyan' 
+                            : 'bg-white/5 border-white/10 text-gray-400'
+                        }`}
+                      >
+                        {twinLabelsCollapsed ? 'Activado' : 'Desactivado'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* ── Elevación del Piso del Modelo 3D + Candado ── */}
+                  {twinLayout && (
+                    <div className="border-t border-white/5 pt-3 space-y-1.5">
+                      <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider">
+                        <span className={`${twinFloorLocked ? 'text-yellow-400' : 'text-gray-400'}`}>
+                          {twinFloorLocked ? '🔒' : '📐'} Elevación del Piso:
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[#00F0FF] tabular-nums">{formatNumber(twinFloorElevation, 1)} m</span>
+                          <button
+                            onClick={() => setTwinFloorLocked(l => !l)}
+                            className={`p-1.5 rounded-lg border text-[10px] transition-all ${
+                              twinFloorLocked
+                                ? 'bg-yellow-500/20 border-yellow-500/60 text-yellow-400'
+                                : 'bg-white/5 border-white/10 text-gray-500 hover:text-white hover:border-white/30'
+                            }`}
+                            title={twinFloorLocked ? 'Desbloquear elevación del piso' : 'Bloquear elevación del piso'}
+                          >
+                            {twinFloorLocked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
+                          </button>
+                        </div>
+                      </div>
+                      <input 
+                        type="range" 
+                        min="-10.0" 
+                        max="10.0" 
+                        step="0.1" 
+                        value={twinFloorElevation} 
+                        onChange={(e) => { if (!twinFloorLocked) setTwinFloorElevation(Number(e.target.value)); }}
+                        disabled={twinFloorLocked}
+                        className={`w-full h-1.5 rounded-lg appearance-none transition-opacity ${
+                          twinFloorLocked 
+                            ? 'bg-yellow-900/30 cursor-not-allowed opacity-50 accent-yellow-500' 
+                            : 'bg-[#222] cursor-pointer accent-[#00F0FF]'
+                        }`}
+                      />
+                      <p className="text-[9px] text-gray-600 italic">
+                        {twinFloorLocked 
+                          ? '🔒 Elevación bloqueada. Haz clic en el candado para ajustar de nuevo.' 
+                          : '📐 Desliza para encontrar la altura correcta, luego bloquea con el candado.'}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* ── Lista de Fichas / Equipos ───────────────────────── */}
+                  <div className="border-t border-white/5 pt-3 space-y-2">
+                    <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider flex items-center justify-between">
+                      <span>Equipos en el Twin:</span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={openAddTwinNode}
+                          className="flex items-center gap-1 px-2 py-1 bg-[#00F0FF]/10 hover:bg-[#00F0FF]/20 text-[#00F0FF] border border-[#00F0FF]/30 rounded-lg text-[9px] font-black uppercase transition-all"
+                          title="Agregar nueva ficha / equipo"
+                        >
+                          <Plus className="w-3 h-3" /> Ficha
+                        </button>
+                        <button
+                          onClick={() => { setShowTwinEdgeEditor(e => !e); setShowTwinNodeEditor(false); }}
+                          className="flex items-center gap-1 px-2 py-1 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-lg text-[9px] font-black uppercase transition-all"
+                          title="Agregar conector / flujo entre fichas"
+                        >
+                          <Link2 className="w-3 h-3" /> Conector
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Lista de fichas existentes */}
+                    <div className="flex flex-wrap gap-1.5">
+                      {twinNodes.map((node) => (
+                        <div
+                          key={node.id}
+                          className={`flex items-center rounded-lg border overflow-hidden transition-all ${
+                            selectedTwinNodeId === node.id
+                              ? 'border-[#00F0FF] bg-[#00F0FF]/15'
+                              : 'border-[#252525] bg-[#111] hover:border-[#333]'
+                          }`}
+                        >
+                          {/* Dot de color */}
+                          <span
+                            className="w-2 h-2 rounded-full mx-1.5 flex-shrink-0"
+                            style={{ backgroundColor: node.data?.color || '#00F0FF' }}
+                          />
+                          {/* Nombre → selecciona para mover */}
+                          <button
+                            onClick={() => setSelectedTwinNodeId(selectedTwinNodeId === node.id ? null : node.id)}
+                            className={`py-1.5 pr-1 text-[10px] font-medium transition-colors ${
+                              selectedTwinNodeId === node.id ? 'text-white font-bold' : 'text-gray-400 hover:text-white'
+                            }`}
+                            title="Seleccionar para mover en 3D"
+                          >
+                            {node.data?.label || node.data?.type || 'Equipo'}
+                          </button>
+                          {/* Editar */}
+                          <button
+                            onClick={() => openEditTwinNode(node)}
+                            className="px-1.5 py-1.5 text-gray-600 hover:text-[#00F0FF] transition-all"
+                            title="Editar propiedades"
+                          >
+                            <Pencil className="w-2.5 h-2.5" />
+                          </button>
+                          {/* Quitar (sin confirmación) */}
+                          <button
+                            onClick={() => handleDeleteTwinNode(node.id)}
+                            className="px-1.5 py-1.5 border-l border-[#222] text-gray-600 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                            title="Quitar del Twin"
+                          >
+                            <X className="w-2.5 h-2.5" />
+                          </button>
+                        </div>
+                      ))}
+                      {twinNodes.length === 0 && (
+                        <p className="text-[10px] text-gray-600 italic">Sin equipos. Usa "+ Ficha" para agregar o sincroniza con Flow Designer.</p>
+                      )}
+                    </div>
+
+                    {/* ── Formulario Agregar/Editar Ficha ─────────────────── */}
+                    {showTwinNodeEditor && (
+                      <div className="mt-2 p-3 rounded-xl bg-black/60 border border-[#00F0FF]/20 space-y-3">
+                        <div className="text-[10px] font-black uppercase tracking-widest text-[#00F0FF]">
+                          {editingTwinNodeId ? '✏️ Editar Ficha' : '➕ Nueva Ficha'}
+                        </div>
+
+                        {/* Nombre */}
+                        <div className="space-y-1">
+                          <label className="text-[9px] text-gray-500 uppercase tracking-wider">Nombre / Etiqueta</label>
+                          <input
+                            value={twinNodeForm.label}
+                            onChange={e => setTwinNodeForm(f => ({ ...f, label: e.target.value }))}
+                            placeholder="Ej: Bomba Hidráulica"
+                            className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-[#00F0FF]/50"
+                          />
+                        </div>
+
+                        {/* Categoría / Acción */}
+                        <div className="space-y-1">
+                          <label className="text-[9px] text-gray-500 uppercase tracking-wider">Tipo / Acción</label>
+                          <div className="flex flex-wrap gap-1.5">
+                            {TWIN_CATEGORIES.map(cat => (
+                              <button
+                                key={cat.key}
+                                onClick={() => setTwinNodeForm(f => ({ ...f, category: cat.key, type: cat.label, color: twinNodeForm.color === '#00F0FF' ? cat.color : twinNodeForm.color }))}
+                                className={`px-2 py-1 rounded-lg text-[9px] font-bold border transition-all ${
+                                  twinNodeForm.category === cat.key
+                                    ? 'text-white border-white/40 bg-white/10'
+                                    : 'text-gray-500 border-[#2a2a2a] hover:border-gray-500 hover:text-gray-300'
+                                }`}
+                              >
+                                {cat.emoji} {cat.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Color */}
+                        <div className="space-y-1">
+                          <label className="text-[9px] text-gray-500 uppercase tracking-wider">Color</label>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {COLOR_SWATCHES.map(c => (
+                              <button
+                                key={c}
+                                onClick={() => setTwinNodeForm(f => ({ ...f, color: c }))}
+                                className={`w-5 h-5 rounded-full border-2 transition-transform ${
+                                  twinNodeForm.color === c ? 'border-white scale-125' : 'border-transparent hover:scale-110'
+                                }`}
+                                style={{ backgroundColor: c }}
+                              />
+                            ))}
+                            <input
+                              type="color"
+                              value={twinNodeForm.color}
+                              onChange={e => setTwinNodeForm(f => ({ ...f, color: e.target.value }))}
+                              className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent"
+                              title="Color personalizado"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Capacidad y Potencia */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <label className="text-[9px] text-gray-500 uppercase tracking-wider">Capacidad</label>
+                            <input
+                              type="number"
+                              value={twinNodeForm.capacity}
+                              onChange={e => setTwinNodeForm(f => ({ ...f, capacity: e.target.value }))}
+                              placeholder="0"
+                              className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-[#00F0FF]/50"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[9px] text-gray-500 uppercase tracking-wider">Potencia / kW</label>
+                            <input
+                              type="number"
+                              value={twinNodeForm.power}
+                              onChange={e => setTwinNodeForm(f => ({ ...f, power: e.target.value }))}
+                              placeholder="0"
+                              className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-[#00F0FF]/50"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Acciones */}
+                        <div className="flex gap-2 pt-1">
+                          <button
+                            onClick={handleSaveTwinNode}
+                            className="flex-1 py-1.5 bg-[#00F0FF] hover:bg-[#00d8e8] text-black font-black text-[9px] uppercase tracking-widest rounded-lg transition-all"
+                          >
+                            {editingTwinNodeId ? 'Guardar Cambios' : 'Agregar al Twin'}
+                          </button>
+                          <button
+                            onClick={() => { setShowTwinNodeEditor(false); resetTwinNodeForm(); }}
+                            className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-gray-400 border border-white/10 text-[9px] uppercase tracking-widest rounded-lg transition-all"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── Formulario Agregar Conector ──────────────────────── */}
+                    {showTwinEdgeEditor && (
+                      <div className="mt-2 p-3 rounded-xl bg-black/60 border border-purple-500/20 space-y-3">
+                        <div className="text-[10px] font-black uppercase tracking-widest text-purple-400">↔ Nuevo Conector / Flujo</div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <label className="text-[9px] text-gray-500 uppercase tracking-wider">Desde</label>
+                            <select
+                              value={twinEdgeForm.source}
+                              onChange={e => setTwinEdgeForm(f => ({ ...f, source: e.target.value }))}
+                              className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500/50"
+                            >
+                              <option value="">Seleccionar...</option>
+                              {twinNodes.map(n => <option key={n.id} value={n.id}>{n.data?.label || n.id}</option>)}
+                            </select>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[9px] text-gray-500 uppercase tracking-wider">Hasta</label>
+                            <select
+                              value={twinEdgeForm.target}
+                              onChange={e => setTwinEdgeForm(f => ({ ...f, target: e.target.value }))}
+                              className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500/50"
+                            >
+                              <option value="">Seleccionar...</option>
+                              {twinNodes.filter(n => n.id !== twinEdgeForm.source).map(n => <option key={n.id} value={n.id}>{n.data?.label || n.id}</option>)}
+                            </select>
+                          </div>
+                        </div>
+
+                        {/* Color del conector */}
+                        <div className="space-y-1">
+                          <label className="text-[9px] text-gray-500 uppercase tracking-wider">Color del flujo</label>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {COLOR_SWATCHES.map(c => (
+                              <button
+                                key={c}
+                                onClick={() => setTwinEdgeForm(f => ({ ...f, color: c }))}
+                                className={`w-5 h-5 rounded-full border-2 transition-transform ${
+                                  twinEdgeForm.color === c ? 'border-white scale-125' : 'border-transparent hover:scale-110'
+                                }`}
+                                style={{ backgroundColor: c }}
+                              />
+                            ))}
+                            <input
+                              type="color"
+                              value={twinEdgeForm.color}
+                              onChange={e => setTwinEdgeForm(f => ({ ...f, color: e.target.value }))}
+                              className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2 pt-1">
+                          <button
+                            onClick={handleAddTwinEdge}
+                            disabled={!twinEdgeForm.source || !twinEdgeForm.target}
+                            className="flex-1 py-1.5 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white font-black text-[9px] uppercase tracking-widest rounded-lg transition-all"
+                          >
+                            Agregar Conector
+                          </button>
+                          <button
+                            onClick={() => setShowTwinEdgeEditor(false)}
+                            className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-gray-400 border border-white/10 text-[9px] uppercase tracking-widest rounded-lg transition-all"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <p className="text-[9px] text-gray-600 italic mt-1">
+                      💡 Clic en nombre → mover en 3D · ✏️ editar · ✕ quitar
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Visor 3D */}
+              <div className="relative rounded-xl overflow-hidden border border-white/5 bg-[#05070f]">
+                <SharedTwinViewer3D 
+                  height="390px" 
+                  customNodes={twinNodes}
+                  customEdges={twinEdges}
+                  customLayout={twinLayout ? { ...twinLayout, elevation: twinFloorElevation } : null}
+                  editMode={isTwinEditMode}
+                  selectedNodeId={selectedTwinNodeId}
+                  onSelectNode={setSelectedTwinNodeId}
+                  onUpdateNode={handleUpdateTwinNode}
+                  labelHeightOffset={twinLabelHeightOffset}
+                  labelsCollapsed={twinLabelsCollapsed}
+                  showControls={!isTwinEditMode}
+                />
+              </div>
+
+              {/* Portal de la Librería de Diseños */}
+              <FlowDesignsLibrary 
+                isOpen={isDesignsLibraryOpen}
+                onClose={() => setIsDesignsLibraryOpen(false)}
+                onLoad={handleLoadDesignFromLibrary}
+                onNewDesign={() => {
+                  alert("Para crear un nuevo diseño desde cero, por favor ingresa a la pestaña del Flow Designer en el menú principal.");
+                  setIsDesignsLibraryOpen(false);
+                }}
+                currentDesignId={currentDesignId}
+                activeLayout={twinLayout}
+              />
+
+              {/* ── Modal: Nombrar y Guardar Modelo 3D Subido ─────────────── */}
+              {pendingUpload && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backdropFilter: 'blur(12px)', backgroundColor: 'rgba(0,0,0,0.65)' }}>
+                  <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0a0c14]/95 backdrop-blur-2xl shadow-2xl overflow-hidden">
+                    {/* Header */}
+                    <div className="px-6 py-4 border-b border-white/5 flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-purple-500/20 flex items-center justify-center">
+                        <Upload className="w-4 h-4 text-purple-400" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-black uppercase tracking-widest text-white">Guardar en Librería</h3>
+                        <p className="text-[10px] text-gray-500">El modelo se guardará en la nube y quedará disponible desde cualquier simulador.</p>
+                      </div>
+                    </div>
+
+                    {/* Body */}
+                    <div className="px-6 py-5 space-y-4">
+                      {/* Info del archivo */}
+                      <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5">
+                        <div className="text-2xl">
+                          {pendingUpload.processedResult?.type === 'fbx' ? '🏭' 
+                          : pendingUpload.processedResult?.type === 'glb' || pendingUpload.processedResult?.type === 'gltf' ? '📦'
+                          : '🗂️'}
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-white">{pendingUpload.file?.name}</p>
+                          <p className="text-[10px] text-gray-500">
+                            {(pendingUpload.file?.size / 1024 / 1024).toFixed(2)} MB · {pendingUpload.processedResult?.type?.toUpperCase()}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Campo de nombre */}
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-[#00F0FF]">
+                          Nombre del Modelo / Planta
+                        </label>
+                        <input
+                          type="text"
+                          value={uploadModelName}
+                          onChange={e => setUploadModelName(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') handleConfirmUploadToLibrary(); if (e.key === 'Escape') handleCancelUpload(); }}
+                          placeholder="Ej: Planta Lavado BWD-200"
+                          autoFocus
+                          className="w-full bg-[#111] border border-[#2a2a2a] focus:border-[#00F0FF]/60 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none transition-colors"
+                        />
+                        <p className="text-[9px] text-gray-600">Este nombre aparecerá en la Librería de Twins para identificarlo fácilmente.</p>
+                      </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="px-6 pb-5 flex gap-3">
+                      <button
+                        onClick={handleConfirmUploadToLibrary}
+                        disabled={isSavingToCloud || !uploadModelName.trim()}
+                        className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#00F0FF] hover:bg-[#00d8e8] disabled:opacity-50 text-black font-black text-xs uppercase tracking-widest rounded-xl transition-all"
+                      >
+                        {isSavingToCloud ? (
+                          <><Loader2 className="w-4 h-4 animate-spin" /> Guardando...</>
+                        ) : (
+                          <><Check className="w-4 h-4" /> Guardar en Librería</>
+                        )}
+                      </button>
+                      <button
+                        onClick={handleCancelUpload}
+                        disabled={isSavingToCloud}
+                        className="px-4 py-3 bg-white/5 hover:bg-white/10 text-gray-400 border border-white/10 text-xs uppercase tracking-widest rounded-xl transition-all"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Table */}
@@ -2254,7 +3373,8 @@ ${userMsg}
                   </tbody>
                   {/* ─── FILA TOTAL REQ. DIARIO ─── */}
                   {(() => {
-                    const totalReq = computedRows.reduce((s, r) => s + (r.requiredDaily || 0), 0);
+                    const selectedMixRows = computedRows.filter(r => selectedMixIds.includes(r.id));
+                    const totalReq = selectedMixRows.reduce((s, r) => s + (r.requiredDaily || 0), 0);
                     if (totalReq === 0) return null;
                     const bestY1 = scenarioResults.lavadoSecado[0];
                     const machCapDay = bestY1 ? bestY1.machineBoxesPerHour * bestY1.availableDailyTime : 0;
@@ -2263,7 +3383,7 @@ ${userMsg}
                     return (
                       <tfoot>
                         <tr className="border-t-2 border-[#00F0FF]/20 bg-[#0A0A0A]">
-                          <td colSpan={3} className="px-4 py-3 text-xs font-black uppercase tracking-widest" style={{color:'#00F0FF'}}>Total req. diario (todos los modelos)</td>
+                          <td colSpan={3} className="px-4 py-3 text-xs font-black uppercase tracking-widest" style={{color:'#00F0FF'}}>Total req. diario (Mix seleccionado)</td>
                           <td colSpan={3} />
                           <td className="px-4 py-3">
                             <span className="text-lg font-black" style={{color:'#F59E0B'}}>{totalReq.toLocaleString('es-MX')}</span>
@@ -2288,10 +3408,8 @@ ${userMsg}
             {/* ════ PANEL VIABILIDAD TOTAL REQ. DIARIO ════ */}
             {(() => {
               // ── Base: modelos en mix o todos si no hay selección ──
-              const mixRows  = selectedMixIds.length > 0
-                ? computedRows.filter(r => selectedMixIds.includes(r.id))
-                : computedRows;
-              const usingMix = selectedMixIds.length > 0;
+              const mixRows  = computedRows.filter(r => selectedMixIds.includes(r.id));
+              const usingMix = true; // Forzamos a que siempre se considere 'Mix' (aunque sea de 1 o 0 ítems)
 
               // 1) Total req/día = suma de requiredDaily de los modelos del mix
               const totalReq = mixRows.reduce((s, r) => s + (r.requiredDaily || 0), 0);
@@ -2343,16 +3461,16 @@ ${userMsg}
                       ]
                     })} className="p-4 rounded-xl bg-[#0A0A0A] border border-[#1A1A1A] text-center cursor-pointer hover:border-yellow-400/40 hover:bg-yellow-400/5 transition-all duration-200">
                       <div className="text-[9px] text-yellow-400 uppercase font-bold tracking-wider mb-1">Total Req. / Día</div>
-                      <div className="text-2xl font-black text-white">{totalReq.toLocaleString('es-MX')}</div>
-                      <div className="text-[9px] text-gray-500">{usingMix ? `cajas/día (${selectedMixIds.length} modelo${selectedMixIds.length>1?'s':''} en mix)` : 'cajas/día (suma todos)'}</div>
+                      <div className="text-2xl font-black text-white">{totalLavadoReq.toLocaleString('es-MX')}</div>
+                      <div className="text-[9px] text-gray-500">{`cajas/día (${selectedMixIds.length} modelo${selectedMixIds.length>1?'s':''} seleccionados)`}</div>
                     </div>
                     {/* KPI 2 — Cap. Máq./Día */}
                     <div onClick={() => setViabilityInfoModal({
                       title: 'Cap. Máq. / Día (Y1)',
                       formula: 'Promedio de Cap. Real/h de los modelos en el mix × Horas disponibles Y1. El promedio refleja el ritmo mixto real de producción.',
                       steps: [
-                        `Modelos en mix: ${mixRows.map(r=>`${r.label} ${r.name} (${r.realBoxesHr.toFixed(1)} c/h)`).join(' | ')}`,
-                        `Promedio cap/h = (${mixRows.map(r=>r.realBoxesHr.toFixed(1)).join(' + ')}) ÷ ${mixRows.length} = ${machCapHour} c/h`,
+                        `Modelos en mix: ${selectedMixRows.map(r=>`${r.label} ${r.name} (${r.realBoxesHr.toFixed(1)} c/h)`).join(' | ')}`,
+                        `Promedio cap/h = (${selectedMixRows.map(r=>r.realBoxesHr.toFixed(1)).join(' + ')}) ÷ ${selectedMixRows.length} = ${machCapHour} c/h`,
                         `Tiempo disponible Y1: ${y1Hours.toFixed(2)} h/día`,
                         `Cap./día = ${machCapHour} × ${y1Hours.toFixed(2)} = ${machCapDay.toLocaleString('es-MX')} cajas/día`
                       ]
@@ -2462,15 +3580,68 @@ ${userMsg}
                   <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#2A2A2A] to-transparent" />
                 </div>
 
-                {/* Worst-case badges */}
+                 {/* Worst-case badges */}
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 rounded-2xl bg-gradient-to-b from-[#111] to-[#0A0A0A] border border-[#222] flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                      <Activity className="w-5 h-5 text-blue-400" />
+                  <div className="p-4 rounded-2xl bg-gradient-to-b from-[#111] to-[#0A0A0A] border border-[#222] flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                        <Activity className="w-5 h-5 text-blue-400" />
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest flex items-center gap-2">
+                          Líneas Req. — Lavado y Secado
+                          <span className={`text-[8px] px-1.5 py-0.5 rounded font-black tracking-normal uppercase ${manualLinesUsed !== null ? 'bg-amber-500/20 text-amber-400 border border-amber-500/25' : 'bg-blue-500/20 text-blue-400 border border-blue-500/25'}`}>
+                            {manualLinesUsed !== null ? 'Fijo / Manual' : 'Cálculo Auto'}
+                          </span>
+                        </div>
+                        <div className="text-2xl font-black text-white mt-0.5">
+                          {worstLavado} <span className="text-xs text-gray-500 font-medium">línea(s) peor escenario</span>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Líneas Req. — Lavado y Secado</div>
-                      <div className="text-2xl font-black text-white">{worstLavado} <span className="text-xs text-gray-500 font-medium">línea(s) peor escenario</span></div>
+
+                    {/* Controles de Líneas Manuales */}
+                    <div className="flex items-center gap-1.5 bg-black/50 p-1.5 rounded-xl border border-white/5">
+                      {manualLinesUsed !== null ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setManualLinesUsed(prev => Math.max(1, prev - 1)); }}
+                            className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 active:scale-95 text-white font-black flex items-center justify-center transition-all text-xs"
+                            title="Disminuir líneas"
+                          >
+                            -
+                          </button>
+                          <span className="w-6 text-center font-mono font-black text-amber-400 text-sm">
+                            {manualLinesUsed}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setManualLinesUsed(prev => prev + 1); }}
+                            className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 active:scale-95 text-white font-black flex items-center justify-center transition-all text-xs"
+                            title="Aumentar líneas"
+                          >
+                            +
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setManualLinesUsed(null); }}
+                            className="text-[9px] px-2 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 active:scale-95 border border-red-500/25 text-red-400 uppercase tracking-widest font-black transition-all ml-1"
+                            title="Restablecer a cálculo automático"
+                          >
+                            Auto
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setManualLinesUsed(worstLavado || 1); }}
+                          className="px-3 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 active:scale-95 border border-blue-500/25 text-blue-400 text-[10px] font-black uppercase tracking-wider transition-all"
+                          title="Establecer líneas manualmente"
+                        >
+                          Fijar
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -2487,9 +3658,13 @@ ${userMsg}
                     const machineDailyWorst = worstRow ? worstRow.machineBoxesPerHour * worstRow.availableDailyTime : 0;
 
                     // ── Si hay modelos en el mix, usar su suma de requiredDaily ──
+                    const isAuto = sc?.mode === 'auto';
+                    const sumAllModels = computedRows.reduce((s, r) => s + (r.requiredDaily || 0), 0);
                     const mixSelected = computedRows.filter(r => selectedMixIds.includes(r.id));
                     const mixTotalReq = mixSelected.reduce((s, r) => s + (r.requiredDaily || 0), 0);
-                    const effectiveReq = mixSelected.length > 0 && mixTotalReq > 0 ? mixTotalReq : sc.dailyRate;
+                    const effectiveReq = mixSelected.length > 0 && mixTotalReq > 0 
+                      ? mixTotalReq 
+                      : (isAuto ? sumAllModels : sc.dailyRate);
                     const usingMix = mixSelected.length > 0 && mixTotalReq > 0;
 
                     const pct = machineDailyBest > 0 ? Math.min(100, (machineDailyBest / effectiveReq) * 100) : 0;
@@ -2500,51 +3675,113 @@ ${userMsg}
                         className="group p-5 rounded-2xl bg-[#0C0C0C] border border-[#1E1E1E] space-y-4 cursor-default
                                    hover:border-[#00F0FF]/30 transition-all duration-300"
                       >
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between border-b border-[#1E1E1E]/50 pb-3">
                           <h4 className="text-xs font-black uppercase tracking-widest text-gray-400 group-hover:text-[#00F0FF] transition-colors duration-300">
                             ◈ {sc.name} — Resumen Diario
                           </h4>
-                          <span className="text-[10px] text-gray-600">Modelo: {selectedRow?.name}</span>
+                          
+                          {/* Segment controller right in the header! */}
+                          <div className="flex bg-[#121212] border border-[#222] p-0.5 rounded-lg gap-1">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCustomerScenarios(prev => ({
+                                  ...prev,
+                                  [key]: { ...prev[key], mode: 'manual' }
+                                }));
+                              }}
+                              className={`px-2 py-0.5 text-[9px] font-extrabold uppercase rounded transition-all duration-150 ${
+                                sc.mode !== 'auto'
+                                  ? 'bg-[#00F0FF]/15 text-[#00F0FF] border border-[#00F0FF]/30 font-black'
+                                  : 'text-gray-500 hover:text-gray-300 border border-transparent'
+                              }`}
+                            >
+                              Manual
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCustomerScenarios(prev => ({
+                                  ...prev,
+                                  [key]: { ...prev[key], mode: 'auto' }
+                                }));
+                              }}
+                              className={`px-2 py-0.5 text-[9px] font-extrabold uppercase rounded transition-all duration-150 ${
+                                sc.mode === 'auto'
+                                  ? 'bg-[#00F0FF]/15 text-[#00F0FF] border border-[#00F0FF]/30 font-black'
+                                  : 'text-gray-500 hover:text-gray-300 border border-transparent'
+                              }`}
+                            >
+                              Tabla (Auto)
+                            </button>
+                          </div>
                         </div>
 
                         <div className="grid grid-cols-3 gap-3">
-                          {/* Req. Diario — dinámico según mix */}
+                          {/* Req. Diario — Toggleable and inline editable */}
                           <div
                             onClick={() => setViabilityInfoModal({
                               title: `Req. Diario — ${sc.name}`,
-                              formula: usingMix
-                                ? 'Suma de los Req. Diario de los modelos seleccionados en el mix (círculos activos en la tabla).'
-                                : 'Volumen de producción diario del cliente para esta línea (valor de configuración).',
-                              steps: usingMix
+                              formula: sc.mode === 'auto'
+                                ? 'Suma de los Req. Diario de TODOS los modelos con requerimiento en la tabla.'
+                                : 'Volumen de producción diario ingresado de forma manual directamente en esta tarjeta.',
+                              steps: sc.mode === 'auto'
                                 ? [
-                                    `Modelos en mix: ${mixSelected.map(r=>`${r.label} - ${r.name} (${(r.requiredDaily||0).toLocaleString('es-MX')} cajas)`).join(', ')}`,
-                                    `Total mix = ${mixSelected.map(r=>r.requiredDaily||0).join(' + ')} = ${effectiveReq.toLocaleString('es-MX')} cajas/día`,
-                                    `Req/h (Y1) = ${effectiveReq} ÷ ${bestRow?.availableDailyTime?.toFixed(2)} h = ${bestRow ? (effectiveReq / bestRow.availableDailyTime).toFixed(1) : '-'} c/h`,
-                                    `Req/h (Y5) = ${effectiveReq} ÷ ${worstRow?.availableDailyTime?.toFixed(2)} h = ${worstRow ? (effectiveReq / worstRow.availableDailyTime).toFixed(1) : '-'} c/h`
+                                    `Modelos con req: ${computedRows.filter(r=>r.requiredDaily>0).map(r=>`${r.label} - ${r.name} (${(r.requiredDaily||0).toLocaleString('es-MX')} cajas)`).join(', ')}`,
+                                    `Total Suma = ${computedRows.filter(r=>r.requiredDaily>0).map(r=>r.requiredDaily||0).join(' + ')} = ${effectiveReq.toLocaleString('es-MX')} cajas/día`,
+                                    `Req/h (Y1) = ${effectiveReq} ÷ ${bestRow?.availableDailyTime?.toFixed(2)} h = ${bestRow ? (effectiveReq / bestRow.availableDailyTime).toFixed(1) : '-'} c/h`
                                   ]
                                 : [
-                                    `Dato del cliente para ${sc.name}: ${sc.dailyRate.toLocaleString('es-MX')} cajas/día`,
-                                    `No hay modelos seleccionados en el mix → se usa el req. de configuración.`,
-                                    `Req/h (Y1) = ${sc.dailyRate} ÷ ${bestRow?.availableDailyTime?.toFixed(2)} h = ${bestRow ? (sc.dailyRate / bestRow.availableDailyTime).toFixed(1) : '-'} c/h`,
-                                    `Para activar el mix: haz click en los círculos (A, B, C…) de la tabla de modelos.`
+                                    `Dato manual ingresado: ${sc.dailyRate?.toLocaleString('es-MX')} cajas/día`,
+                                    `Req/h (Y1) = ${sc.dailyRate} ÷ ${bestRow?.availableDailyTime?.toFixed(2)} h = ${bestRow ? (sc.dailyRate / bestRow.availableDailyTime).toFixed(1) : '-'} c/h`
                                   ]
                             })}
                             className={`p-3 rounded-xl border text-center cursor-pointer transition-all duration-200 ${
-                              usingMix
+                              sc.mode === 'auto'
                                 ? 'bg-[#00F0FF]/5 border-[#00F0FF]/40 hover:border-[#00F0FF]/70'
                                 : 'bg-[#141414] border-[#1E1E1E] hover:border-[#00F0FF]/40 hover:bg-[#00F0FF]/5'
                             }`}
                           >
-                            <div className="flex items-center justify-center gap-1 mb-1">
-                              <div className="text-[9px] text-gray-500 uppercase font-bold tracking-wider">Req. Diario</div>
-                              {usingMix && (
-                                <span className="text-[8px] font-black px-1.5 py-0.5 rounded-full" style={{backgroundColor:'#00F0FF', color:'#000'}}>MIX</span>
+                            <div className="flex flex-col items-center justify-between h-full">
+                              <div className="text-[9px] text-gray-500 uppercase font-bold tracking-wider mb-1">
+                                Req. Diario
+                              </div>
+                              {sc.mode === 'auto' ? (
+                                <div className="space-y-0.5">
+                                  <div className="text-xl font-black text-[#00F0FF] transition-colors duration-300">
+                                    {effectiveReq.toLocaleString('es-MX')}
+                                  </div>
+                                  <div className="text-[8px] text-gray-500 font-extrabold uppercase tracking-wider">
+                                    [Tabla]
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="space-y-1 flex flex-col items-center">
+                                  <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
+                                    value={sc.dailyRate ?? 0}
+                                    onClick={(e) => e.stopPropagation()} // Evita abrir el modal de información al hacer click
+                                    onChange={(e) => {
+                                      const val = Math.max(0, parseInt(e.target.value.replace(/\D/g, '')) || 0);
+                                      setCustomerScenarios(prev => ({
+                                        ...prev,
+                                        [key]: {
+                                          ...prev[key],
+                                          dailyRate: val
+                                        }
+                                      }));
+                                    }}
+                                    className="w-24 bg-[#181818] border border-[#333] text-center text-white font-black text-lg rounded px-1 py-0.5 focus:border-[#00F0FF] focus:outline-none transition-colors"
+                                  />
+                                  <div className="text-[8px] text-gray-500 font-extrabold uppercase tracking-wider">
+                                    [Manual]
+                                  </div>
+                                </div>
                               )}
+                              <div className="text-[9px] text-gray-600 mt-1">cajas/día</div>
                             </div>
-                            <div className={`text-xl font-black transition-colors duration-300 ${usingMix ? 'text-[#00F0FF]' : 'text-white group-hover:text-[#00F0FF]'}`}>
-                              {effectiveReq.toLocaleString('es-MX')}
-                            </div>
-                            <div className="text-[9px] text-gray-600">cajas/día{usingMix ? ` (${mixSelected.length} modelo${mixSelected.length>1?'s':''})` : ''}</div>
                           </div>
 
                           {/* Cap. Máx Y1 */}
@@ -2754,6 +3991,396 @@ ${userMsg}
                   );
                 })()}
 
+                {/* ── IMPACTO ENERGÉTICO Y COSTOS ── */}
+                {(() => {
+                  const totalPowerKw = installedPowerKw;
+                  const activeLoadFactor = 0.85;
+                  const avgHourlyKwh = totalPowerKw * activeLoadFactor;
+                  const avgHourlyCostMxn = avgHourlyKwh * 2.50;
+                  
+                  const dailyHours = scenarioResults.lavadoSecado?.[0]?.availableDailyTime ?? 16;
+                  const dailyKwh = avgHourlyKwh * dailyHours;
+                  const dailyCostMxn = dailyKwh * 2.50;
+                  const annualCostMxn = dailyCostMxn * (inputs.daysPerMonth || 26) * 12;
+                  
+                  const pumpsKw = totalPowerKw * (30.0 / 89.5);
+                  const blowersKw = totalPowerKw * (22.0 / 89.5);
+                  const beltKw = totalPowerKw * (1.5 / 89.5);
+                  const heatingKw = totalPowerKw * (36.0 / 89.5);
+                  
+                  const boxKwh = selectedRow && selectedRow.realBoxesHr > 0 ? avgHourlyKwh / selectedRow.realBoxesHr : 0;
+                  const boxCost = boxKwh * 2.50;
+                  
+                  return (
+                    <div className="rounded-2xl bg-[#0C0C0C] border border-[#1E1E1E] overflow-hidden p-5">
+                      <div className="flex items-center justify-between border-b border-[#1E1E1E] pb-3 mb-4">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
+                          <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                            ⚡ Impacto Energético e Indicadores de Consumo
+                          </h3>
+                        </div>
+                        <span className="text-[10px] bg-amber-500/10 border border-amber-500/20 text-amber-400 px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">Línea Wash & Dry</span>
+                      </div>
+
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                        <div className="p-4 rounded-xl bg-gradient-to-b from-[#141414] to-[#0A0A0A] border border-[#1E1E1E]">
+                          <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Potencia Instalada</div>
+                          {isEditingPower ? (
+                            <form onSubmit={(e) => {
+                              e.preventDefault();
+                              const val = parseFloat(powerDraft);
+                              if (!isNaN(val) && val > 0) {
+                                setInstalledPowerKw(val);
+                                localStorage.setItem(`sim_${simulatorId}_installed_power`, val.toString());
+                              }
+                              setIsEditingPower(false);
+                            }} className="mt-1 flex items-center gap-1.5">
+                              <input
+                                type="number"
+                                step="0.1"
+                                autoFocus
+                                value={powerDraft}
+                                onChange={(e) => setPowerDraft(e.target.value)}
+                                onBlur={() => {
+                                  const val = parseFloat(powerDraft);
+                                  if (!isNaN(val) && val > 0) {
+                                    setInstalledPowerKw(val);
+                                    localStorage.setItem(`sim_${simulatorId}_installed_power`, val.toString());
+                                  }
+                                  setIsEditingPower(false);
+                                }}
+                                className="w-20 px-1.5 py-0.5 bg-[#1F1F1F] border border-amber-500/50 rounded-lg text-white font-black text-lg outline-none focus:ring-1 focus:ring-amber-500"
+                              />
+                              <span className="text-xs text-gray-400 font-medium">kW</span>
+                            </form>
+                          ) : (
+                            <div 
+                              onClick={() => {
+                                setPowerDraft(totalPowerKw.toString());
+                                setIsEditingPower(true);
+                              }}
+                              className="text-xl font-black text-white mt-1 cursor-pointer hover:text-amber-400 transition-colors flex items-baseline gap-1 group/btn"
+                              title="Haz clic para editar manualmente la potencia instalada"
+                            >
+                              {formatNumber(totalPowerKw, 1)} <span className="text-xs text-gray-500 font-medium">kW</span>
+                              <Edit3 className="w-3.5 h-3.5 opacity-40 group-hover/btn:opacity-100 text-amber-400 transition-opacity ml-1.5" />
+                            </div>
+                          )}
+                          <div className="text-[10px] text-gray-400 mt-1">Haz clic para editar</div>
+                        </div>
+                        <div className="p-4 rounded-xl bg-gradient-to-b from-[#141414] to-[#0A0A0A] border border-[#1E1E1E]">
+                          <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Consumo Promedio</div>
+                          <div className="text-xl font-black text-amber-400 mt-1">{formatNumber(avgHourlyKwh, 1)} <span className="text-xs text-gray-400 font-medium">kWh</span></div>
+                          <div className="text-[10px] text-gray-400 mt-1">A 85% de factor de carga</div>
+                        </div>
+                        <div className="p-4 rounded-xl bg-gradient-to-b from-[#141414] to-[#0A0A0A] border border-[#1E1E1E]">
+                          <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Costo Operativo/h</div>
+                          <div className="text-xl font-black text-emerald-400 mt-1">${formatNumber(avgHourlyCostMxn, 1)} <span className="text-xs text-gray-400 font-medium">MXN</span></div>
+                          <div className="text-[10px] text-gray-400 mt-1">Ref Tarifa: $2.50 / kWh</div>
+                        </div>
+                        <div className="p-4 rounded-xl bg-gradient-to-b from-[#141414] to-[#0A0A0A] border border-[#1E1E1E]">
+                          <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Costo Energético Anual</div>
+                          <div className="text-xl font-black text-red-500 mt-1">
+                            ${Number(annualCostMxn).toLocaleString('es-MX', { maximumFractionDigits: 0 })} <span className="text-xs text-gray-400 font-medium">MXN</span>
+                          </div>
+                          <div className="text-[10px] text-gray-400 mt-1">312 días de operación Y1</div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="p-4 rounded-xl bg-[#141414]/30 border border-[#1E1E1E]">
+                          <div className="text-xs font-bold text-gray-300 mb-2 uppercase tracking-wider">◈ Desglose Técnico de Potencia</div>
+                          <div className="space-y-2 text-xs">
+                            <div className="flex justify-between items-center py-1 border-b border-[#1E1E1E]">
+                              <span className="text-gray-400">🔥 Calentamiento de Agua:</span>
+                              <span className="font-bold text-white">{formatNumber(heatingKw, 1)} kW <span className="text-gray-500 font-normal">(40.2%)</span></span>
+                            </div>
+                            <div className="flex justify-between items-center py-1 border-b border-[#1E1E1E]">
+                              <span className="text-gray-400">💧 Bombas de Lavado:</span>
+                              <span className="font-bold text-white">{formatNumber(pumpsKw, 1)} kW <span className="text-gray-500 font-normal">(33.5%)</span></span>
+                            </div>
+                            <div className="flex justify-between items-center py-1 border-b border-[#1E1E1E]">
+                              <span className="text-gray-400">🌀 Secado (Turbinas Sopladoras):</span>
+                              <span className="font-bold text-white">{formatNumber(blowersKw, 1)} kW <span className="text-gray-500 font-normal">(24.6%)</span></span>
+                            </div>
+                            <div className="flex justify-between items-center py-1">
+                              <span className="text-gray-400">⚙ Motor Banda Transportadora:</span>
+                              <span className="font-bold text-white">{formatNumber(beltKw, 1)} kW <span className="text-gray-500 font-normal">(1.7%)</span></span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-[#141414]/30 border border-[#1E1E1E] flex flex-col justify-between">
+                          <div>
+                            <div className="text-xs font-bold text-gray-300 mb-2 uppercase tracking-wider">◈ Huella Energética por Caja</div>
+                            <p className="text-xs text-gray-400 leading-relaxed">
+                              Con una capacidad real de <span className="text-white font-bold">{selectedRow ? formatNumber(selectedRow.realBoxesHr, 0) : '-'} cajas/hora</span> y un consumo promedio de <span className="text-white font-bold">{formatNumber(avgHourlyKwh, 1)} kWh</span>, cada caja lavada y secada tiene un consumo eléctrico neto estimado de <span className="text-amber-400 font-black">{boxKwh > 0 ? formatNumber(boxKwh, 2) : '-'} kWh/caja</span>.
+                            </p>
+                          </div>
+                          <div className="mt-3 pt-3 border-t border-[#1E1E1E] flex justify-between items-center text-xs">
+                            <span className="text-gray-500">Costo energético neto unitario:</span>
+                            <span className="font-black text-emerald-400">
+                              ${boxCost > 0 ? formatNumber(boxCost, 2) : '-'} MXN / caja
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* ── 💧 BALANCE HÍDRICO Y SUSTENTABILIDAD (NUEVO PANEL CORPORATIVO) ── */}
+                {(() => {
+                  const y1Sc = CUSTOMER_SCENARIOS.lavadoSecado.scenarios[0];
+                  const y1Hours = y1Sc ? (y1Sc.effectiveHoursPerShift * y1Sc.shifts) : 10;
+                  
+                  // Consumo diario (m³/día) = (waterReplenishLh * horas) / 1000
+                  const dailyWaterM3 = (waterReplenishLh * y1Hours) / 1000;
+                  
+                  // Consumo semanal (m³/semana) = dailyWaterM3 * 6 días
+                  const weeklyWaterM3 = dailyWaterM3 * 6;
+                  
+                  // Recirculación (%) = ((Caudal - Reposición) / Caudal) * 100
+                  const recircPct = washFlowLh > 0 ? ((washFlowLh - waterReplenishLh) / washFlowLh) * 100 : 0;
+                  
+                  // Consumo unitario por caja (L/caja)
+                  const unitWaterL = selectedRow && selectedRow.realBoxesHr > 0 ? (waterReplenishLh / selectedRow.realBoxesHr) : 0;
+
+                  return (
+                    <div className="rounded-2xl bg-[#0C0C0C] border border-[#1E1E1E] overflow-hidden p-5">
+                      <div className="flex items-center justify-between border-b border-[#1E1E1E] pb-3 mb-4">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse" />
+                          <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                            💧 Balance Hídrico e Indicadores de Consumo de Agua
+                          </h3>
+                        </div>
+                        <span className="text-[10px] bg-blue-500/10 border border-blue-500/20 text-blue-400 px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">Sustentabilidad</span>
+                      </div>
+
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                        <div className="p-4 rounded-xl bg-gradient-to-b from-[#141414] to-[#0A0A0A] border border-[#1E1E1E]">
+                          <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Caudal Lavado Interno</div>
+                          {isEditingWashFlow ? (
+                            <form onSubmit={(e) => {
+                              e.preventDefault();
+                              const val = parseFloat(washFlowDraft);
+                              if (!isNaN(val) && val > 0) {
+                                setWashFlowLh(val);
+                                localStorage.setItem(`sim_${simulatorId}_wash_flow_lh`, val.toString());
+                              }
+                              setIsEditingWashFlow(false);
+                            }} className="mt-1 flex items-center gap-1.5">
+                              <input
+                                type="number"
+                                step="1"
+                                autoFocus
+                                value={washFlowDraft}
+                                onChange={(e) => setWashFlowDraft(e.target.value)}
+                                onBlur={() => {
+                                  const val = parseFloat(washFlowDraft);
+                                  if (!isNaN(val) && val > 0) {
+                                    setWashFlowLh(val);
+                                    localStorage.setItem(`sim_${simulatorId}_wash_flow_lh`, val.toString());
+                                  }
+                                  setIsEditingWashFlow(false);
+                                }}
+                                className="w-20 px-1.5 py-0.5 bg-[#1F1F1F] border border-blue-500/50 rounded-lg text-white font-black text-lg outline-none focus:ring-1 focus:ring-blue-500"
+                              />
+                              <span className="text-xs text-gray-400 font-medium">L/h</span>
+                            </form>
+                          ) : (
+                            <div 
+                              onClick={() => {
+                                setWashFlowDraft(washFlowLh.toString());
+                                setIsEditingWashFlow(true);
+                              }}
+                              className="text-xl font-black text-white mt-1 cursor-pointer hover:text-blue-400 transition-colors flex items-baseline gap-1 group/btn"
+                              title="Haz clic para editar manualmente el caudal de lavado"
+                            >
+                              {formatNumber(washFlowLh, 0)} <span className="text-xs text-gray-500 font-medium">L/h</span>
+                              <Edit3 className="w-3.5 h-3.5 opacity-40 group-hover/btn:opacity-100 text-blue-400 transition-opacity ml-1.5" />
+                            </div>
+                          )}
+                          <div className="text-[10px] text-gray-400 mt-1">Haz clic para editar</div>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-gradient-to-b from-[#141414] to-[#0A0A0A] border border-[#1E1E1E]">
+                          <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Reposición Real de Agua</div>
+                          {isEditingReplenish ? (
+                            <form onSubmit={(e) => {
+                              e.preventDefault();
+                              const val = parseFloat(replenishDraft);
+                              if (!isNaN(val) && val > 0) {
+                                setWaterReplenishLh(val);
+                                localStorage.setItem(`sim_${simulatorId}_water_replenish_lh`, val.toString());
+                              }
+                              setIsEditingReplenish(false);
+                            }} className="mt-1 flex items-center gap-1.5">
+                              <input
+                                type="number"
+                                step="1"
+                                autoFocus
+                                value={replenishDraft}
+                                onChange={(e) => setReplenishDraft(e.target.value)}
+                                onBlur={() => {
+                                  const val = parseFloat(replenishDraft);
+                                  if (!isNaN(val) && val > 0) {
+                                    setWaterReplenishLh(val);
+                                    localStorage.setItem(`sim_${simulatorId}_water_replenish_lh`, val.toString());
+                                  }
+                                  setIsEditingReplenish(false);
+                                }}
+                                className="w-20 px-1.5 py-0.5 bg-[#1F1F1F] border border-blue-500/50 rounded-lg text-white font-black text-lg outline-none focus:ring-1 focus:ring-blue-500"
+                              />
+                              <span className="text-xs text-gray-400 font-medium">L/h</span>
+                            </form>
+                          ) : (
+                            <div 
+                              onClick={() => {
+                                setReplenishDraft(waterReplenishLh.toString());
+                                setIsEditingReplenish(true);
+                              }}
+                              className="text-xl font-black text-blue-400 mt-1 cursor-pointer hover:text-blue-300 transition-colors flex items-baseline gap-1 group/btn"
+                              title="Haz clic para editar manualmente la reposición de agua"
+                            >
+                              {formatNumber(waterReplenishLh, 0)} <span className="text-xs text-gray-500 font-medium">L/h</span>
+                              <Edit3 className="w-3.5 h-3.5 opacity-40 group-hover/btn:opacity-100 text-blue-300 transition-opacity ml-1.5" />
+                            </div>
+                          )}
+                          <div className="text-[10px] text-gray-400 mt-1">Haz clic para editar</div>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-gradient-to-b from-[#141414] to-[#0A0A0A] border border-[#1E1E1E]">
+                          <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Consumo Nominal Diario</div>
+                          <div className="text-xl font-black text-white mt-1">
+                            {formatNumber(dailyWaterM3, 2)} <span className="text-xs text-gray-400 font-medium">m³/día</span>
+                          </div>
+                          <div className="text-[10px] text-gray-400 mt-1">Para {y1Hours} hrs de operación Y1</div>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-gradient-to-b from-[#141414] to-[#0A0A0A] border border-[#1E1E1E]">
+                          <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Consumo Nominal Semanal</div>
+                          <div className="text-xl font-black text-[#11b5c9] mt-1">
+                            {formatNumber(weeklyWaterM3, 1)} <span className="text-xs text-gray-400 font-medium">m³/sem</span>
+                          </div>
+                          <div className="text-[10px] text-gray-400 mt-1">Basado en 6 días/semana</div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="p-4 rounded-xl bg-[#141414]/30 border border-[#1E1E1E]">
+                          <div className="text-xs font-bold text-gray-300 mb-3 uppercase tracking-wider">◈ Configuración de Recirculación y Filtros</div>
+                          <div className="space-y-2.5 text-xs">
+                            <div className="flex justify-between items-center py-1 border-b border-[#1E1E1E]">
+                              <span className="text-gray-400">♻ Tasa de Recirculación:</span>
+                              <span className="font-black text-[#11b5c9]">{formatNumber(recircPct, 1)}% <span className="text-gray-500 font-normal">(Ahorro de agua limpia)</span></span>
+                            </div>
+                            <div className="flex justify-between items-center py-1 border-b border-[#1E1E1E]">
+                              <span className="text-gray-400">📦 Capacidad del Tanque:</span>
+                              {isEditingTank ? (
+                                <form onSubmit={(e) => {
+                                  e.preventDefault();
+                                  const val = parseFloat(tankDraft);
+                                  if (!isNaN(val) && val > 0) {
+                                    setTankCapacityL(val);
+                                    localStorage.setItem(`sim_${simulatorId}_tank_capacity_l`, val.toString());
+                                  }
+                                  setIsEditingTank(false);
+                                }} className="flex items-center gap-1.5">
+                                  <input
+                                    type="number"
+                                    autoFocus
+                                    value={tankDraft}
+                                    onChange={(e) => setTankDraft(e.target.value)}
+                                    onBlur={() => {
+                                      const val = parseFloat(tankDraft);
+                                      if (!isNaN(val) && val > 0) {
+                                        setTankCapacityL(val);
+                                        localStorage.setItem(`sim_${simulatorId}_tank_capacity_l`, val.toString());
+                                      }
+                                      setIsEditingTank(false);
+                                    }}
+                                    className="w-16 px-1.5 py-0.5 bg-[#1F1F1F] border border-blue-500/50 rounded-lg text-white font-black text-xs outline-none focus:ring-1 focus:ring-blue-500"
+                                  />
+                                </form>
+                              ) : (
+                                <span 
+                                  onClick={() => {
+                                    setTankDraft(tankCapacityL.toString());
+                                    setIsEditingTank(true);
+                                  }}
+                                  className="font-bold text-white cursor-pointer hover:text-blue-400 transition-colors flex items-center gap-1"
+                                  title="Haz clic para editar"
+                                >
+                                  {formatNumber(tankCapacityL, 0)} L
+                                  <Edit3 className="w-3 h-3 opacity-40 text-blue-400" />
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex justify-between items-center py-1">
+                              <span className="text-gray-400">📅 Cambio de Agua Recomendado:</span>
+                              {isEditingChangeDays ? (
+                                <form onSubmit={(e) => {
+                                  e.preventDefault();
+                                  if (changeDaysDraft.trim()) {
+                                    setWaterChangeDays(changeDaysDraft.trim());
+                                    localStorage.setItem(`sim_${simulatorId}_water_change_days`, changeDaysDraft.trim());
+                                  }
+                                  setIsEditingChangeDays(false);
+                                }} className="flex items-center gap-1.5">
+                                  <input
+                                    type="text"
+                                    autoFocus
+                                    value={changeDaysDraft}
+                                    onChange={(e) => setChangeDaysDraft(e.target.value)}
+                                    onBlur={() => {
+                                      if (changeDaysDraft.trim()) {
+                                        setWaterChangeDays(changeDaysDraft.trim());
+                                        localStorage.setItem(`sim_${simulatorId}_water_change_days`, changeDaysDraft.trim());
+                                      }
+                                      setIsEditingChangeDays(false);
+                                    }}
+                                    className="w-16 px-1.5 py-0.5 bg-[#1F1F1F] border border-blue-500/50 rounded-lg text-white font-black text-xs outline-none focus:ring-1 focus:ring-blue-500"
+                                  />
+                                </form>
+                              ) : (
+                                <span 
+                                  onClick={() => {
+                                    setChangeDaysDraft(waterChangeDays);
+                                    setIsEditingChangeDays(true);
+                                  }}
+                                  className="font-bold text-white cursor-pointer hover:text-blue-400 transition-colors flex items-center gap-1"
+                                  title="Haz clic para editar"
+                                >
+                                  Cada {waterChangeDays} días
+                                  <Edit3 className="w-3 h-3 opacity-40 text-blue-400" />
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-[#141414]/30 border border-[#1E1E1E] flex flex-col justify-between">
+                          <div>
+                            <div className="text-xs font-bold text-gray-300 mb-2 uppercase tracking-wider">◈ Huella Hídrica por Caja Lavada</div>
+                            <p className="text-xs text-gray-400 leading-relaxed">
+                              Con una capacidad real de <span className="text-white font-bold">{selectedRow ? formatNumber(selectedRow.realBoxesHr, 0) : '-'} cajas/hora</span> y un consumo de reposición de <span className="text-white font-bold">{formatNumber(waterReplenishLh, 0)} litros/hora</span>, cada caja lavada y secada tiene un consumo neto de agua potable estimado de solo <span className="text-blue-400 font-black">{unitWaterL > 0 ? formatNumber(unitWaterL, 2) : '-'} litros/caja</span>.
+                            </p>
+                          </div>
+                          <div className="mt-3 pt-3 border-t border-[#1E1E1E] flex justify-between items-center text-xs">
+                            <span className="text-gray-500">Eficiencia hídrica unitaria:</span>
+                            <span className="font-black text-blue-400">
+                              {unitWaterL > 0 ? formatNumber(unitWaterL, 2) : '-'} Litros / caja
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* ── GRÁFICA DE EFICIENCIA — solo 2 colores: #00F0FF y #0080FF ── */}
 
                 <div className="rounded-2xl bg-[#0C0C0C] border border-[#1E1E1E] overflow-hidden">
@@ -2892,12 +4519,7 @@ ${userMsg}
           >
             <Table2 className="w-3.5 h-3.5" /> Excel
           </button>
-          <button
-            onClick={exportPDF}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 text-red-400 transition-all text-xs font-bold"
-          >
-            <FileText className="w-3.5 h-3.5" /> PDF
-          </button>
+
         </div>
       </div>
 
@@ -3257,35 +4879,80 @@ ${userMsg}
       {showReportModal && (
         <RyderReportModal
           reportData={reportModalData}
-          onClose={() => setShowReportModal(false)}
+          printWindow={printWindow}
+          clearPrintWindow={() => setPrintWindow(null)}
+          onExportPDF={directExportPDF}
+          onClose={() => {
+            setShowReportModal(false);
+            if (printWindow) {
+              try { printWindow.close(); } catch (e) {}
+              setPrintWindow(null);
+            }
+          }}
         />
+      )}
+
+      {/* Hidden container for high-fidelity direct PDF export */}
+      {isExportingPdf && reportModalData && (
+        <div 
+          id="ry-export-hidden-root"
+          style={{ 
+            position: 'fixed', 
+            left: '-9999px', 
+            top: 0, 
+            zIndex: -9999, 
+            width: '1120px', 
+            background: '#ffffff' 
+          }}
+        >
+          <RyderReportModal
+            reportData={reportModalData}
+            isExportOnly={true}
+            onClose={() => {}}
+          />
+        </div>
+      )}
+
+      {/* Premium Progress Loading overlay */}
+      {isExportingPdf && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="w-full max-w-sm p-6 rounded-[24px] bg-[#0c1328]/95 border border-[#11b5c9]/35 shadow-[0_0_50px_rgba(17,181,201,0.25)] text-center">
+            <div className="w-16 h-16 border-4 border-[#11b5c9]/20 border-t-[#11b5c9] rounded-full animate-spin mx-auto mb-4" />
+            <h3 className="text-lg font-bold text-white mb-2">Generando PDF de Alta Resolución</h3>
+            <p className="text-[#6b8599] text-sm mb-4">Exportando el informe de 8 páginas completo en formato vectorial directamente.</p>
+            <div className="bg-[#122033]/50 rounded-xl p-3 border border-white/5">
+              <span className="text-xs text-[#11b5c9] font-bold uppercase tracking-widest block mb-1">Estado de Progreso</span>
+              <span className="text-white font-mono text-sm font-semibold">{exportProgress}</span>
+            </div>
+          </div>
+        </div>
       )}
       {/* Modal de Cristal: Nombre de Exportación (Vidrio Biselado 30%) */}
       {showFileNameModal && (
         <div 
           className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
-          onClick={() => setShowFileNameModal(false)}
+          onClick={() => { setShowFileNameModal(false); setPdfPendingAction(false); }}
         >
           <div 
-            className="w-full max-w-sm p-8 rounded-[32px] bg-white/10 backdrop-blur-2xl relative overflow-hidden"
+            className="w-full max-w-sm p-8 rounded-[32px] bg-white/30 backdrop-blur-2xl relative overflow-hidden"
             style={{
-              borderTop: '1px solid rgba(255, 255, 255, 0.4)',
-              borderLeft: '1px solid rgba(255, 255, 255, 0.4)',
-              borderBottom: '1px solid rgba(0, 0, 0, 0.3)',
-              borderRight: '1px solid rgba(0, 0, 0, 0.3)',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(255, 255, 255, 0.05)'
+              borderTop: '1px solid rgba(255, 255, 255, 0.45)',
+              borderLeft: '1px solid rgba(255, 255, 255, 0.45)',
+              borderBottom: '1px solid rgba(0, 0, 0, 0.35)',
+              borderRight: '1px solid rgba(0, 0, 0, 0.35)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6), inset 0 0 20px rgba(255, 255, 255, 0.1)'
             }}
             onClick={e => e.stopPropagation()}
           >
             {/* Glossy Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-br from-white/15 to-transparent pointer-events-none" />
 
             <div className="relative z-10">
               <h3 className="text-xl font-black uppercase tracking-[0.2em] mb-2 text-white text-center">
-                Exportación
+                {pdfPendingAction ? 'Descargar PDF' : 'Nombre de Archivo'}
               </h3>
-              <p className="text-[10px] text-gray-300 uppercase tracking-widest text-center mb-6 opacity-70">
-                Configurar nombre base del archivo
+              <p className="text-[10px] text-gray-200 uppercase tracking-widest text-center mb-6 opacity-85">
+                {pdfPendingAction ? 'Asigna el nombre de tu reporte técnico' : 'Configurar nombre base del archivo'}
               </p>
 
               <div className="space-y-4">
@@ -3295,16 +4962,22 @@ ${userMsg}
                     value={tempFileName}
                     onChange={e => setTempFileName(e.target.value)}
                     placeholder="Nombre del archivo..."
-                    className="w-full px-5 py-4 rounded-2xl bg-black/40 border border-white/10 text-white placeholder-gray-500 
-                             focus:outline-none focus:border-[#00F0FF]/50 focus:shadow-[0_0_20px_rgba(0,240,255,0.1)] 
-                             transition-all duration-300 text-center font-medium"
+                    className="w-full px-5 py-4 rounded-2xl bg-black/45 border border-white/20 text-white placeholder-gray-400 
+                             focus:outline-none focus:border-[#00F0FF]/60 focus:shadow-[0_0_20px_rgba(0,240,255,0.25)] 
+                             transition-all duration-300 text-center font-bold"
                     autoFocus
                     onKeyDown={e => {
                       if (e.key === 'Enter') {
-                        setCustomFileName(tempFileName.trim());
+                        const finalName = tempFileName.trim();
+                        setCustomFileName(finalName);
                         setShowFileNameModal(false);
+                        if (pdfPendingAction) {
+                          setPdfPendingAction(false);
+                          setTimeout(() => performActualPdfExport(finalName), 300);
+                        }
                       } else if (e.key === 'Escape') {
                         setShowFileNameModal(false);
+                        setPdfPendingAction(false);
                       }
                     }}
                   />
@@ -3313,17 +4986,25 @@ ${userMsg}
 
               <div className="mt-8 flex flex-col gap-3">
                 <button 
-                  onClick={() => { setCustomFileName(tempFileName.trim()); setShowFileNameModal(false); }} 
+                  onClick={() => { 
+                    const finalName = tempFileName.trim();
+                    setCustomFileName(finalName); 
+                    setShowFileNameModal(false); 
+                    if (pdfPendingAction) {
+                      setPdfPendingAction(false);
+                      setTimeout(() => performActualPdfExport(finalName), 300);
+                    }
+                  }} 
                   className="w-full py-4 rounded-2xl text-xs font-black uppercase tracking-widest text-black 
-                           bg-[#00F0FF] hover:bg-[#00D0FF] shadow-[0_10px_20px_rgba(0,240,255,0.2)] 
+                           bg-[#00F0FF] hover:bg-[#00D0FF] shadow-[0_10px_20px_rgba(0,240,255,0.25)] 
                            hover:scale-[1.02] active:scale-[0.98] transition-all duration-300"
                 >
-                  Guardar Cambios
+                  {pdfPendingAction ? 'Exportar e Iniciar Descarga' : 'Guardar Cambios'}
                 </button>
                 <button 
-                  onClick={() => setShowFileNameModal(false)} 
-                  className="w-full py-3 rounded-2xl text-[10px] font-bold uppercase tracking-widest text-white/50 
-                           hover:text-white hover:bg-white/5 transition-all duration-300"
+                  onClick={() => { setShowFileNameModal(false); setPdfPendingAction(false); }} 
+                  className="w-full py-3 rounded-2xl text-[10px] font-bold uppercase tracking-widest text-white/60 
+                           hover:text-white hover:bg-white/10 transition-all duration-300"
                 >
                   Cancelar
                 </button>

@@ -12,23 +12,19 @@ export function buildRyderReportData({
   MACHINE_CONFIGS,
   selectedRow,
   physicalMaxMH,
+  simulatorName,
+  installedPowerKw,
+  washFlowLh,
+  waterReplenishLh,
+  tankCapacityL,
+  waterChangeDays,
+  clientName,
 }) {
   const fmt = (v, d = 0) =>
     new Intl.NumberFormat('es-MX', {
       minimumFractionDigits: d,
       maximumFractionDigits: d,
     }).format(v);
-
-  // ── velocidad actual en m/h ─────────────────────────────────────────────
-  const speedMH = +(inputs.manualSpeed * 60).toFixed(2);
-  const maxMH   = physicalMaxMH ?? 140;
-  const utilPct = Math.min(100, (speedMH / maxMH) * 100);
-
-  // ── promedio de capacidad por hora (solo filas con datos) ───────────────
-  const activeRows = computedRows.filter(r => r.realBoxesHr > 0);
-  const avgCapHr   = activeRows.length
-    ? activeRows.reduce((s, r) => s + r.realBoxesHr, 0) / activeRows.length
-    : 0;
 
   // ── capDia Y1 usando el selectedRow y el primer escenario ───────────────
   const y1Scenario = scenarioResults?.lavadoSecado?.[0];
@@ -41,6 +37,17 @@ export function buildRyderReportData({
     .filter(r => r.included !== false && r.requiredDaily > 0)
     .reduce((s, r) => s + r.requiredDaily, 0);
 
+  // ── utilización de la máquina en base a requerimiento diario ─────────────
+  const speedMH = +(inputs.manualSpeed * 60).toFixed(2);
+  const maxMH   = physicalMaxMH ?? 140;
+  const utilPct = capDiaY1 > 0 ? (reqTotalDia / capDiaY1) * 100 : 0;
+
+  // ── promedio de capacidad por hora (solo filas con datos) ───────────────
+  const activeRows = computedRows.filter(r => r.realBoxesHr > 0);
+  const avgCapHr   = activeRows.length
+    ? activeRows.reduce((s, r) => s + r.realBoxesHr, 0) / activeRows.length
+    : 0;
+
   // ── cobertura Y1 ────────────────────────────────────────────────────────
   const coberturaY1 = reqTotalDia > 0 ? +((capDiaY1 / reqTotalDia) * 100).toFixed(1) : 0;
 
@@ -48,6 +55,9 @@ export function buildRyderReportData({
   const modelTable = computedRows.map(r => ({
     mod:     r.label,
     nombre:  r.name,
+    l:       r.l,
+    w:       r.w,
+    h:       r.h,
     capHora: +r.realBoxesHr.toFixed(1),
     capDia:  Math.round(r.boxesPerDay),
     reqDia:  r.requiredDaily > 0 ? r.requiredDaily : null,
@@ -79,9 +89,9 @@ export function buildRyderReportData({
 
   const conclusions = [];
   if (utilPct >= 99)
-    conclusions.push({ type: 'warn', title: 'Banda al Límite', text: `La banda opera al ${fmt(utilPct, 1)}% de su velocidad máxima (${fmt(speedMH, 1)} de ${fmt(maxMH)} m/h). Margen mínimo para absorber variaciones.` });
+    conclusions.push({ type: 'warn', title: 'Carga al Límite', text: `La máquina opera al ${fmt(utilPct, 1)}% de su capacidad máxima diaria (${fmt(reqTotalDia)} de ${fmt(capDiaY1)} cajas/día). Se requiere supervisión o líneas adicionales.` });
   else
-    conclusions.push({ type: 'ok', title: 'Velocidad de Banda', text: `La banda opera al ${fmt(utilPct, 1)}% (${fmt(speedMH, 1)} de ${fmt(maxMH)} m/h). Hay margen operativo disponible.` });
+    conclusions.push({ type: 'ok', title: 'Carga de Máquina', text: `La máquina opera al ${fmt(utilPct, 1)}% de su capacidad máxima diaria (${fmt(reqTotalDia)} de ${fmt(capDiaY1)} cajas/día). Hay margen operativo disponible.` });
 
   if (allViable)
     conclusions.push({ type: 'ok', title: 'Todos los Modelos Viables', text: 'Los modelos con requerimiento definido presentan capacidad diaria superior al requerimiento.' });
@@ -101,15 +111,18 @@ export function buildRyderReportData({
 
   // ── retorno del objeto reportData ────────────────────────────────────────
   return {
+    inputs,
+    installedPowerKw,
     meta: {
-      empresa:   'RYDER',
-      cliente:   '',
+      empresa:   clientName || 'GRUPO GUSI - BDW 200',
+      cliente:   clientName || 'GRUPO GUSI - BDW 200',
       proyecto:  'Informe Paramétrico de Simulación',
       subtitulo: 'Análisis de capacidad, velocidad de línea y cobertura operativa para el sistema de lavado y secado de contenedores.',
       periodo:   'Y1 – Y5',
       fecha:     new Date().toLocaleDateString('es-MX'),
-      simulador: inputs.machineName || 'RYDER',
-      version:   'v7.70',
+      simulador: simulatorName || 'RYDER',
+      maquina:   inputs.machineName || 'PLD-120 / PLD-140',
+      version:   'v7.72',
     },
     kpis: {
       velocidadBandaMph:      speedMH,
@@ -120,18 +133,24 @@ export function buildRyderReportData({
       coberturaY1:            coberturaY1,
     },
     lineUtilization: {
-      actualMph:      speedMH,
-      maxMph:         maxMH,
+      actualMph:      reqTotalDia,
+      maxMph:         capDiaY1,
       utilPct:        +utilPct.toFixed(1),
       interpretation: utilPct >= 99
-        ? `La banda opera prácticamente al límite (${fmt(utilPct, 1)}%). Sin margen para absorber variaciones de demanda o velocidad sin intervención.`
-        : `La banda opera al ${fmt(utilPct, 1)}% de su velocidad máxima, con margen operativo disponible.`,
+        ? `La máquina opera prácticamente al límite de su capacidad diaria (${fmt(utilPct, 1)}%). Sin margen para absorber variaciones en el volumen de lavado diario.`
+        : `La máquina opera al ${fmt(utilPct, 1)}% de su capacidad máxima diaria, con margen operativo disponible para absorber variaciones.`,
     },
     modelTable,
     lavadoSecadoParams: {
       referencia: selectedRow?.name ?? 'N/A',
       rateBase:   reqTotalDia,
       rows:       scenRows,
+    },
+    waterParams: {
+      washFlowLh: washFlowLh ?? 1000,
+      waterReplenishLh: waterReplenishLh ?? 150,
+      tankCapacityL: tankCapacityL ?? 1200,
+      waterChangeDays: waterChangeDays ?? '3–5',
     },
     conclusions,
   };

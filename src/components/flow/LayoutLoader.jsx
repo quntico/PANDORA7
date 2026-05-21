@@ -4,8 +4,10 @@ import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import * as THREE from 'three';
 import { Upload, X, Box, Trash2, Scan } from 'lucide-react';
-import { Center } from '@react-three/drei';
+import { Center, Html } from '@react-three/drei';
 import { process3DFile } from '@/utils/fileProcessor';
+
+import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
 
 // Componente interno para renderizar el modelo
 function ModelRenderer({ url, type, scale = 1, blobMap, position, rotation, fxEnabled }) {
@@ -30,9 +32,14 @@ function ModelRenderer({ url, type, scale = 1, blobMap, position, rotation, fxEn
                     });
                 }
 
-                const loader = type === 'glb' || type === 'gltf'
-                    ? new GLTFLoader(manager)
-                    : new OBJLoader(manager);
+                let loader;
+                if (type === 'glb' || type === 'gltf') {
+                    loader = new GLTFLoader(manager);
+                } else if (type === 'fbx') {
+                    loader = new FBXLoader(manager);
+                } else {
+                    loader = new OBJLoader(manager);
+                }
 
                 const loadedData = await new Promise((resolve, reject) => {
                     loader.load(url, resolve, undefined, reject);
@@ -51,21 +58,44 @@ function ModelRenderer({ url, type, scale = 1, blobMap, position, rotation, fxEn
     // Procesar modelo (Memoizado para no recalcular si no cambia)
     const primitive = useMemo(() => {
         if (!obj) return null;
-        const scene = type === 'glb' || type === 'gltf' ? obj.scene : obj;
-        const clone = scene.clone(true);
+        let scene;
+        if (type === 'glb' || type === 'gltf') {
+            scene = obj.scene || obj;
+        } else {
+            scene = obj;
+        }
+        if (!scene) return null;
+
+        let clone;
+        try {
+            clone = typeof scene.clone === 'function' ? scene.clone(true) : scene;
+        } catch (e) {
+            console.warn('scene.clone error:', e);
+            clone = scene;
+        }
 
         const darkMaterial = new THREE.MeshStandardMaterial({
-            color: '#15191E', // Gris oscuro azulado (Blueprint background)
+            color: '#15191E',
             roughness: 0.9,
             metalness: 0.1,
             side: THREE.DoubleSide
         });
 
-        const outlineMaterial = new THREE.LineBasicMaterial({
-            color: '#00F0FF', // Cyan Neón (Coincide con botones/Joystick)
+        const glassMaterial = new THREE.MeshStandardMaterial({
+            color: '#00F0FF',
             transparent: true,
-            opacity: 1.0,  // Opacidad completa
-            linewidth: 2   // (Nota: WebGL ignora linewidth en windows a veces, pero no daña)
+            opacity: 0.15,
+            roughness: 0.1,
+            metalness: 0.9,
+            side: THREE.FrontSide,
+            depthWrite: false
+        });
+
+        const outlineMaterial = new THREE.LineBasicMaterial({
+            color: '#00F0FF',
+            transparent: true,
+            opacity: 1.0,
+            linewidth: 2
         });
 
         // Configurar materiales
@@ -74,16 +104,22 @@ function ModelRenderer({ url, type, scale = 1, blobMap, position, rotation, fxEn
                 child.castShadow = true;
                 child.receiveShadow = true;
 
-                // Guardar material original en userData si es la primera vez (en el clon)
                 if (!child.userData.originalMaterial) {
                     child.userData.originalMaterial = child.material;
                 }
 
                 if (fxEnabled) {
-                    // Modo Holograma / Blueprint
+                    const origMat = child.userData.originalMaterial;
+                    const nameRegex = /glass|vidrio|cristal|window|screen|transp|panel|cortina|curtain|flap|plastic|plastico|acrilico|acrylic|puerta|door/i;
+                    const isTransparent = origMat && (
+                        origMat.transparent || 
+                        origMat.opacity < 1 || 
+                        (origMat.transmission !== undefined && origMat.transmission > 0) ||
+                        nameRegex.test(child.name) ||
+                        (origMat.name && nameRegex.test(origMat.name))
+                    );
 
-                    // 1. Aplicar material base oscuro
-                    child.material = darkMaterial;
+                    child.material = isTransparent ? glassMaterial : darkMaterial;
 
                     // 2. Crear o mostrar bordes (Outlines)
                     let outline = child.children.find(c => c.name === 'outline_fx');
@@ -113,7 +149,18 @@ function ModelRenderer({ url, type, scale = 1, blobMap, position, rotation, fxEn
         return clone;
     }, [obj, type, fxEnabled]); // Recalcular si cambia fxEnabled
 
-    if (error) return null;
+    if (error) {
+        return (
+            <Html center>
+                <div style={{ background: '#ff000022', color: '#ff4444', padding: '1rem', borderRadius: '8px', border: '1px solid #ff4444', whiteSpace: 'nowrap' }}>
+                    Error cargando modelo 3D.<br/>
+                    Asegúrate de no haber refrescado la página sin antes volver a subir el archivo.<br/>
+                    <strong>Por favor, sube el modelo 3D nuevamente.</strong>
+                </div>
+            </Html>
+        );
+    }
+    
     if (!primitive) return null;
 
     return (

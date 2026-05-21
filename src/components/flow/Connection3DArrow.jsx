@@ -11,7 +11,7 @@ function Connection3DArrow({ edge, nodes, connectionStyle = 'curved' }) {
     const sourceNode = nodes.find(n => n.id === edge.source);
     const targetNode = nodes.find(n => n.id === edge.target);
 
-    if (!sourceNode || !targetNode) return null;
+    if (!sourceNode || !sourceNode.data || !targetNode || !targetNode.data) return null;
 
     // Calcular índices para fallback de posición
     const sourceIndex = nodes.indexOf(sourceNode);

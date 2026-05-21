@@ -27,20 +27,17 @@ function Equipment3DModel({ node, index, onClick, onTransformEnd, isSelected, on
         }
     };
 
-    // Validación
-    if (!node || !node.data) return null;
-
-    // Posición
+    // Posición (calcula siempre; los hooks deben llamarse incondicionalmente)
     const defaultPos = {
         x: (index % 5) * 3 - 6,
         y: 0,
         z: Math.floor(index / 5) * 3 - 3
     };
-    const position = node.data.position3D || defaultPos;
+    const position = node?.data?.position3D || defaultPos;
 
     // Calculate relative anchor point if it exists
     const anchorRel = useMemo(() => {
-        if (node.data.anchorPoint) {
+        if (node?.data?.anchorPoint) {
             return new THREE.Vector3(
                 node.data.anchorPoint.x - position.x,
                 node.data.anchorPoint.y - position.y,
@@ -48,30 +45,29 @@ function Equipment3DModel({ node, index, onClick, onTransformEnd, isSelected, on
             );
         }
         return null;
-    }, [node.data.anchorPoint, position.x, position.y, position.z]);
+    }, [node?.data?.anchorPoint, position.x, position.y, position.z]);
 
     // Label Position Relative to Group
     const labelPos = useMemo(() => {
-        return node.data.labelPosition
+        return node?.data?.labelPosition
             ? new THREE.Vector3(node.data.labelPosition.x, node.data.labelPosition.y + heightOffset, node.data.labelPosition.z)
             : new THREE.Vector3(0, 2.2 + heightOffset, 0);
-    }, [node.data.labelPosition, heightOffset]);
+    }, [node?.data?.labelPosition, heightOffset]);
 
-    const groupYPosition = node.data.position3D?.y ?? defaultPos.y;
+    const groupYPosition = node?.data?.position3D?.y ?? defaultPos.y;
 
     // Color
     const getColor = () => {
         const colorMap = {
-            'Mezcladora': '#00F0FF', // Cyan
-            'Extrusora': '#8B5CF6', // Purple
-            'Molino': '#10b981',    // Emerald
-            'Secadora': '#f59e0b',  // Amber
-            'Empacadora': '#ec4899',// Pink
-            'Transportador': '#06b6d4', // Cyan dark
+            'Mezcladora': '#00F0FF',
+            'Extrusora': '#8B5CF6',
+            'Molino': '#10b981',
+            'Secadora': '#f59e0b',
+            'Empacadora': '#ec4899',
+            'Transportador': '#06b6d4',
         };
-        // Case-insensitive check
-        const typeKey = Object.keys(colorMap).find(k => k.toLowerCase() === (node.data.type || '').toLowerCase());
-        return node.data.color || (typeKey ? colorMap[typeKey] : '#00F0FF');
+        const typeKey = Object.keys(colorMap).find(k => k.toLowerCase() === (node?.data?.type || '').toLowerCase());
+        return node?.data?.color || (typeKey ? colorMap[typeKey] : '#00F0FF');
     };
     const color = getColor();
 
@@ -79,22 +75,19 @@ function Equipment3DModel({ node, index, onClick, onTransformEnd, isSelected, on
     useFrame(() => {
         if (lineRef.current && anchorRel && labelRef.current) {
             const positions = lineRef.current.geometry.attributes.position.array;
-
-            // Punto 0: Anclaje (Fijo relativo al grupo)
             positions[0] = anchorRel.x;
             positions[1] = anchorRel.y;
             positions[2] = anchorRel.z;
-
-            // Punto 1: Etiqueta (Móvil)
             const labelCurrentPos = labelRef.current.position;
             positions[3] = labelCurrentPos.x;
-            // Ajustar para que la línea llegue a la base de la tarjeta (aprox)
             positions[4] = labelCurrentPos.y - 0.9;
             positions[5] = labelCurrentPos.z;
-
             lineRef.current.geometry.attributes.position.needsUpdate = true;
         }
     });
+
+    // Validación — después de todos los hooks
+    if (!node || !node.data) return null;
 
     return (
         <group>
@@ -251,6 +244,8 @@ function EquipmentWrapper({ node, index, isSelected, onClick, onUpdate, onSetAnc
     const groupRef = useRef();
     const labelRef = useRef();
     const { controls } = useThree();
+
+    if (!node || !node.data) return null;
 
     return (
         <>

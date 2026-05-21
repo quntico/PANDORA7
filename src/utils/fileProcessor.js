@@ -13,7 +13,7 @@ export async function process3DFile(file) {
     const fileName = file.name.toLowerCase();
 
     // Caso 1: Archivos directos soportados
-    if (fileName.endsWith('.obj') || fileName.endsWith('.glb') || fileName.endsWith('.gltf')) {
+    if (fileName.endsWith('.obj') || fileName.endsWith('.glb') || fileName.endsWith('.gltf') || fileName.endsWith('.fbx')) {
         return {
             url: URL.createObjectURL(file),
             type: fileName.split('.').pop(),
@@ -46,7 +46,7 @@ export async function process3DFile(file) {
                 blobMap.set(entryName, blobUrl);
 
                 const lowerName = entryName.toLowerCase();
-                // Buscar archivo principal (prioridad a GLB/GLTF, luego OBJ)
+                // Buscar archivo principal (prioridad a GLB/GLTF, luego OBJ/FBX)
                 if (lowerName.endsWith('.glb') || lowerName.endsWith('.gltf')) {
                     mainFile = {
                         name: entryName,
@@ -54,8 +54,9 @@ export async function process3DFile(file) {
                         type: lowerName.endsWith('.glb') ? 'glb' : 'gltf'
                     };
                 } else if (lowerName.endsWith('.obj') && !mainFile) {
-                    // Solo si no hay un gltf/glb ya encontrado (o preferimos el primero que aparezca)
                     mainFile = { name: entryName, url: blobUrl, type: 'obj' };
+                } else if (lowerName.endsWith('.fbx') && !mainFile) {
+                    mainFile = { name: entryName, url: blobUrl, type: 'fbx' };
                 }
             });
             sitePromises.push(promise);
@@ -64,7 +65,7 @@ export async function process3DFile(file) {
         await Promise.all(sitePromises);
 
         if (!mainFile) {
-            throw new Error("El archivo ZIP no contiene ningún modelo 3D válido (.obj, .glb, .gltf)");
+            throw new Error("El archivo ZIP no contiene ningún modelo 3D válido (.obj, .glb, .gltf, .fbx)");
         }
 
         return {
@@ -75,5 +76,5 @@ export async function process3DFile(file) {
         };
     }
 
-    throw new Error("Formato de archivo no soportado. Use .obj, .glb, .gltf o .zip");
+    throw new Error("Formato de archivo no soportado. Use .obj, .glb, .gltf, .fbx o .zip");
 }

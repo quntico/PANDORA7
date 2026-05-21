@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import ScrollToTop from '@/components/ScrollToTop';
 import { ProjectProvider } from '@/context/ProjectContext';
 import { useTheme } from '@/hooks/useTheme';
@@ -22,6 +22,11 @@ import RiderSimulatorPage from '@/pages/RiderSimulatorPage';
 import BetaLayout from '@/layouts/BetaLayout';
 import BetaDashboard from '@/pages/beta/BetaDashboard';
 
+function RiderSimulatorPageWrapper() {
+  const { id } = useParams();
+  return <RiderSimulatorPage key={id} />;
+}
+
 function AppContent() {
   // Initialize theme and logo
   useTheme();
@@ -39,7 +44,7 @@ function AppContent() {
         <Route path='analysis-input' element={<InputPage />} />
         <Route path='simulators'>
           <Route index element={<SimulatorsPage />} />
-          <Route path='rider' element={<RiderSimulatorPage />} />
+          <Route path=':id' element={<RiderSimulatorPageWrapper />} />
         </Route>
         <Route path='analysis' element={<AnalysisPage />} />
         <Route path='results' element={<ResultsPage />} />
