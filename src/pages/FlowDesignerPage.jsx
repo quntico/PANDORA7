@@ -1175,6 +1175,8 @@ function FlowDesignerPage() {
                     onLoad={handleLoadDesign}
                     onNewDesign={handleNewDesign}
                     currentDesignId={currentDesignId}
+                    activeLayout={currentLayout}
+                    onLayoutChange={setCurrentLayout}
                 />,
                 document.body
             )}

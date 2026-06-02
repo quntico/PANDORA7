@@ -17,7 +17,11 @@ import FlowDesignerPage from '@/pages/FlowDesignerPage';
 import AdminCotizadorPage from '@/pages/AdminCotizadorPage';
 import SimulatorsPage from '@/pages/SimulatorsPage';
 import RiderSimulatorPage from '@/pages/RiderSimulatorPage';
+import DynamicSimulatorBuilder from '@/pages/alpha/simulators/DynamicSimulatorBuilder';
+import LMA500Simulator from '@/pages/alpha/simulators/LMA500Simulator';
+import SMQSimulator from '@/pages/alpha/simulators/SMQSimulator';
 
+import VerifyPage from '@/pages/VerifyPage';
 
 import BetaLayout from '@/layouts/BetaLayout';
 import BetaDashboard from '@/pages/beta/BetaDashboard';
@@ -44,6 +48,9 @@ function AppContent() {
         <Route path='analysis-input' element={<InputPage />} />
         <Route path='simulators'>
           <Route index element={<SimulatorsPage />} />
+          <Route path='builder' element={<DynamicSimulatorBuilder />} />
+          <Route path='lma-500' element={<LMA500Simulator />} />
+          <Route path='smq-automatic' element={<SMQSimulator />} />
           <Route path=':id' element={<RiderSimulatorPageWrapper />} />
         </Route>
         <Route path='analysis' element={<AnalysisPage />} />
@@ -54,6 +61,9 @@ function AppContent() {
         <Route path='flow-designer' element={<FlowDesignerPage />} />
         <Route path='admin-cotizador' element={<AdminCotizadorPage />} />
       </Route>
+
+      {/* Validación PANDORA */}
+      <Route path='/verify' element={<VerifyPage />} />
 
       {/* Redirección de seguridad para compatibilidad */}
       <Route path='/beta' element={<Navigate to="/" replace />} />

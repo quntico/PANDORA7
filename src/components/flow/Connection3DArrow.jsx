@@ -1,11 +1,8 @@
 import React, { useRef, useMemo } from 'react';
-import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 function Connection3DArrow({ edge, nodes, connectionStyle = 'curved' }) {
     const tubeRef = useRef();
-    // Usaremos un grupo para contener las múltiples flechas
-    const arrowsGroupRef = useRef();
 
     // Encontrar nodos de origen y destino
     const sourceNode = nodes.find(n => n.id === edge.source);
@@ -67,66 +64,6 @@ function Connection3DArrow({ edge, nodes, connectionStyle = 'curved' }) {
     };
     const color = getColor();
 
-    // Geometría de Flecha Sólida (Extruida)
-    const arrowGeometry = useMemo(() => {
-        const shape = new THREE.Shape();
-        // Dibujar forma de flecha plana
-        // Cuerpo ancho
-        shape.moveTo(-0.15, -0.3);
-        shape.lineTo(0.15, -0.3);
-        shape.lineTo(0.15, 0.1);
-        // Cabeza
-        shape.lineTo(0.3, 0.1);
-        shape.lineTo(0, 0.5); // Punta
-        shape.lineTo(-0.3, 0.1);
-        shape.lineTo(-0.15, 0.1);
-        shape.lineTo(-0.15, -0.3);
-
-        const extrudeSettings = {
-            steps: 1,
-            depth: 0.1, // Grosor 3D
-            bevelEnabled: true,
-            bevelThickness: 0.02,
-            bevelSize: 0.02,
-            bevelSegments: 2
-        };
-
-        const geom = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-        // Ajuste de pivote
-        geom.translate(0, -0.1, -0.05);
-        return geom;
-    }, []);
-
-    const arrowCount = 4; // Número de flechas circulando
-    const arrows = useMemo(() => {
-        return new Array(arrowCount).fill(0).map((_, i) => ({
-            offset: i / arrowCount,
-            speed: 0.3
-        }));
-    }, [arrowCount]);
-
-    useFrame(({ clock }) => {
-        const time = clock.elapsedTime;
-
-        if (arrowsGroupRef.current) {
-            arrowsGroupRef.current.children.forEach((child, i) => {
-                const arrowData = arrows[i];
-                const t = (time * arrowData.speed + arrowData.offset) % 1;
-
-                const point = curve.getPoint(t);
-                const tangent = curve.getTangent(t).normalize();
-
-                child.position.copy(point);
-                child.lookAt(point.clone().add(tangent));
-
-                // Alineación correcta de flechas (invertida 180 grados a petición)
-                child.rotateX(Math.PI / 2);
-                // Rotar sobre su eje para que las aletas queden verticales
-                child.rotateY(Math.PI / 2);
-            });
-        }
-    });
-
     return (
         <group>
             {/* Tubo Base (Más grueso según petición: 0.15) */}
@@ -149,21 +86,6 @@ function Connection3DArrow({ edge, nodes, connectionStyle = 'curved' }) {
                 <tubeGeometry args={[curve, 64, 0.015, 8, false]} />
                 <meshBasicMaterial color={color} />
             </mesh>
-
-            {/* Grupo de Flechas 3D Sólidas en Movimiento */}
-            <group ref={arrowsGroupRef}>
-                {arrows.map((_, i) => (
-                    <mesh key={i} geometry={arrowGeometry}>
-                        <meshStandardMaterial
-                            color={color}
-                            emissive={color}
-                            emissiveIntensity={0.5}
-                            roughness={0.2}
-                            metalness={0.8}
-                        />
-                    </mesh>
-                ))}
-            </group>
 
             {/* Marcador final estático */}
             <mesh position={[targetPos.x, targetPos.y + 0.5, targetPos.z]}>

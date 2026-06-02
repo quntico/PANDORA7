@@ -47,7 +47,7 @@ function Header() {
         <nav className="flex items-center justify-between">
 
           {/* Logo + PANDORA + VER — siempre visibles */}
-          <Link to="/" className="flex items-center gap-3 group">
+          <Link to="/" className="flex items-center gap-4 group">
             {logo ? (
               <div style={{ width: `${logoSize}px`, height: '48px' }} className="relative flex-shrink-0">
                 <img
@@ -64,26 +64,25 @@ function Header() {
               <span className="text-2xl font-bold text-white">P</span>
             </div>
 
-            <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold text-[#00F0FF] tracking-tight drop-shadow-[0_0_10px_rgba(0,240,255,0.5)]">
-                PANDORA
+            <span className="text-2xl font-bold text-[#00F0FF] tracking-tight drop-shadow-[0_0_10px_rgba(0,240,255,0.5)]">
+              PANDORA
+            </span>
+
+            <span
+              className="flex items-center gap-2 text-[10px] font-semibold text-green-400 bg-green-500/15 px-2 py-0.5 rounded-md border border-green-500/30 tracking-wider cursor-pointer hover:bg-green-500/20 transition-colors"
+              onDoubleClick={(e) => {
+                e.preventDefault(); e.stopPropagation();
+                const password = prompt("ADMIN | Ingrese contraseña:");
+                if (password === "2020") { window.open('/admin-cotizador', '_blank'); }
+                else if (password !== null) { alert("Contraseña incorrecta."); }
+              }}
+            >
+              VER 7.80
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500"></span>
               </span>
-              <span
-                className="flex items-center gap-2 text-[10px] font-semibold text-neon-purple bg-neon-purple/15 px-2 py-0.5 rounded-md border border-neon-purple/30 tracking-wider cursor-pointer hover:bg-neon-purple/20 transition-colors"
-                onDoubleClick={(e) => {
-                  e.preventDefault(); e.stopPropagation();
-                  const password = prompt("ADMIN | Ingrese contraseña:");
-                  if (password === "2020") { window.open('/admin-cotizador', '_blank'); }
-                  else if (password !== null) { alert("Contraseña incorrecta."); }
-                }}
-              >
-                VER 7.75
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon-purple opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-neon-purple"></span>
-                </span>
-              </span>
-            </div>
+            </span>
           </Link>
 
           {/* Navigation Links — oculto si colapsado */}

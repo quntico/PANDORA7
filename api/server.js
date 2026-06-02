@@ -21,7 +21,7 @@ const upload = multer({ dest: os.tmpdir() });
 const orchestrator = new PandoraOrchestrator();
 
 app.get('/api', (req, res) => {
-  res.json({ status: 'PANDORA V3 ONLINE', version: '7.70', target: 'Vercel Deployment' });
+  res.json({ status: 'PANDORA V3 ONLINE', version: '7.76', target: 'Vercel Deployment' });
 });
 
 app.post("/api/pandora/v2/execute", async (req, res) => {

@@ -1,12 +1,12 @@
 {
   "name": "pandora-financial-analysis",
   "type": "module",
-  "version": "7.70",
+  "version": "7.76",
   "private": true,
   "scripts": {
-    "dev": "vite --host :: --port 3000",
+    "dev": "vite --host :: --port 4001",
     "build": "vite build",
-    "preview": "vite preview --host :: --port 3000",
+    "preview": "vite preview --host :: --port 4001",
     "lint": "eslint . --quiet",
     "lint:warn": "eslint ."
   },

@@ -13,7 +13,7 @@ export function useFlowDesigns() {
         try {
             const { data, error: fetchError } = await supabase
                 .from('flow_designs_beta')
-                .select('id, name, description, created_at, updated_at')
+                .select('id, name, description, created_at, updated_at, layout')
                 .order('updated_at', { ascending: false });
 
             if (fetchError) throw fetchError;

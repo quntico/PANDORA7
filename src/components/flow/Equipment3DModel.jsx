@@ -90,34 +90,7 @@ function Equipment3DModel({ node, index, onClick, onTransformEnd, isSelected, on
     if (!node || !node.data) return null;
 
     return (
-        <group>
-            {/* Model (Representation Sphere) */}
-            <mesh
-                ref={meshRef}
-                position={[0, 0.4, 0]}
-                castShadow
-                receiveShadow
-                onPointerOver={() => setHovered(true)}
-                onPointerOut={() => setHovered(false)}
-            >
-                <sphereGeometry args={[0.4, 32, 32]} />
-                <meshStandardMaterial
-                    color={color}
-                    roughness={0.1}
-                    metalness={0.8}
-                    emissive={color}
-                    emissiveIntensity={isSelected ? 1 : 0.4}
-                />
-            </mesh>
-
-            {/* Anclaje Visual (Punto de conexión de la etiqueta) - Solo si hay anclaje custom */}
-            {anchorRel && (
-                <mesh position={anchorRel}>
-                    <sphereGeometry args={[0.08, 16, 16]} />
-                    <meshStandardMaterial color={color} emissive={color} emissiveIntensity={2} />
-                </mesh>
-            )}
-
+        <group ref={meshRef}>
             {/* Línea conectora (Cuerda) - Solo si hay anclaje custom */}
             {anchorRel && (
                 <line ref={lineRef}>
@@ -142,10 +115,11 @@ function Equipment3DModel({ node, index, onClick, onTransformEnd, isSelected, on
             )}
 
             {/* GRUPO DE ETIQUETA MOVIBLE */}
-            <group ref={labelRef} position={labelPos}>
-                {/* Cubo "Contenedor" 3D Detrás de la UI (Ajustado según modo colapsado) */}
-                <mesh position={[0, 0, -0.11]} castShadow receiveShadow>
-                    <boxGeometry args={isCollapsed ? [3.4, 0.8, 0.2] : [3.4, 2.2, 0.2]} />
+            {!node.data?.hideLabel && (
+                <group ref={labelRef} position={labelPos}>
+                    {/* Cubo "Contenedor" 3D Detrás de la UI (Ajustado según modo colapsado) */}
+                    <mesh position={[0, 0, -0.11]} castShadow receiveShadow>
+                        <boxGeometry args={isCollapsed ? [3.4, 0.8, 0.2] : [3.4, 2.2, 0.2]} />
                     <meshStandardMaterial
                         color="#05080F"
                         roughness={0.2}
@@ -235,7 +209,7 @@ function Equipment3DModel({ node, index, onClick, onTransformEnd, isSelected, on
                         </div>
                     </div>
                 </Html>
-            </group>
+            </group>)}
         </group>
     );
 }

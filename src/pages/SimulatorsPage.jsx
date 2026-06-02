@@ -34,11 +34,44 @@ function SimulatorsPage() {
         icon: 'Activity',
         color: '#00F0FF',
         isSystem: true
+      },
+      {
+        id: 'iase',
+        name: 'IASE',
+        description: 'Simulador de Velocidad vs Cajas para línea de lavado y secado (140 m/h max).',
+        icon: 'Activity',
+        color: '#10b981',
+        isSystem: true
+      },
+      {
+        id: 'lma-500',
+        name: 'LMA-500',
+        description: 'Simulador Técnico-Económico Avanzado para la línea de extrusión y reciclado de 500 kg/h.',
+        icon: 'Activity',
+        color: '#0d9488',
+        isSystem: true
+      },
+      {
+        id: 'smq-automatic',
+        name: 'SMQ COTIZADOR',
+        description: 'Simulador Técnico-Comercial Inteligente para cotización automática de líneas y maquinaria de envasado, extrusión y dosificación SMQ.',
+        icon: 'Activity',
+        color: '#F5C400',
+        isSystem: true
       }
     ];
 
-    // Fusionar listas de forma que no duplique IDs de sistema y preserve elementos del usuario
-    const merged = Array.isArray(list) ? [...list] : [];
+    // Filtrar de la lista cargada cualquier duplicado de sistema o preset manual antiguo
+    const filteredList = Array.isArray(list) ? list.filter(s => {
+      if (!s || !s.id) return false;
+      const lowerId = s.id.toLowerCase();
+      const lowerName = (s.name || '').toLowerCase();
+      if (['rider', 'grupo-gusi', 'iase', 'lma-500', 'smq-automatic'].includes(lowerId)) return false;
+      if (['iase', 'lma-500', 'smq cotizador'].includes(lowerName)) return false;
+      return true;
+    }) : [];
+
+    const merged = [...filteredList];
     defaults.forEach(d => {
       if (!merged.some(s => s.id === d.id)) {
         merged.push(d);
@@ -225,13 +258,22 @@ function SimulatorsPage() {
             </div>
           </div>
           
-          <button 
-            onClick={openCreateModal}
-            className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-[#00F0FF]/15 border border-[#00F0FF]/35 hover:bg-[#00F0FF]/25 text-[#00F0FF] transition-all font-bold text-sm shadow-[0_0_15px_rgba(0,240,255,0.15)] group"
-          >
-            <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
-            Crear Simulador
-          </button>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => navigate('/alpha/simulators/builder')}
+              className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-[#8b5cf6]/15 border border-[#8b5cf6]/35 hover:bg-[#8b5cf6]/25 text-[#c084fc] transition-all font-bold text-sm shadow-[0_0_15px_rgba(139,92,246,0.15)] group"
+            >
+              <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" style={{ color: '#c084fc' }} />
+              + Constructor Dinámico
+            </button>
+            <button 
+              onClick={openCreateModal}
+              className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-[#00F0FF]/15 border border-[#00F0FF]/35 hover:bg-[#00F0FF]/25 text-[#00F0FF] transition-all font-bold text-sm shadow-[0_0_15px_rgba(0,240,255,0.15)] group"
+            >
+              <Layers className="w-4 h-4 transition-transform duration-300" style={{ color: '#00F0FF' }} />
+              + Crear Preset
+            </button>
+          </div>
         </div>
 
         {/* Grid de Simuladores */}

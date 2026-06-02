@@ -113,7 +113,7 @@ export default async function handler(req, res) {
       success: true,
       output: {
         ...gptResponse,
-        _metadata: { webSearchUsed: needsWeb, historySize: messageHistory.length, ver: "7.70" }
+        _metadata: { webSearchUsed: needsWeb, historySize: messageHistory.length, ver: "7.76" }
       }
     });
 

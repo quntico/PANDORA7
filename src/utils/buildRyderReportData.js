@@ -19,6 +19,7 @@ export function buildRyderReportData({
   tankCapacityL,
   waterChangeDays,
   clientName,
+  customerName,
 }) {
   const fmt = (v, d = 0) =>
     new Intl.NumberFormat('es-MX', {
@@ -114,15 +115,24 @@ export function buildRyderReportData({
     inputs,
     installedPowerKw,
     meta: {
-      empresa:   clientName || 'GRUPO GUSI - BDW 200',
-      cliente:   clientName || 'GRUPO GUSI - BDW 200',
+      empresa:   clientName || 'IASE',
+      cliente:   customerName || 'CENTRAL DE INTELIGENCIA',
       proyecto:  'Informe Paramétrico de Simulación',
       subtitulo: 'Análisis de capacidad, velocidad de línea y cobertura operativa para el sistema de lavado y secado de contenedores.',
       periodo:   'Y1 – Y5',
       fecha:     new Date().toLocaleDateString('es-MX'),
       simulador: simulatorName || 'RYDER',
-      maquina:   inputs.machineName || 'PLD-120 / PLD-140',
-      version:   'v7.72',
+      maquina:   (() => {
+        if (clientName && clientName.includes('-')) {
+          const parts = clientName.split('-');
+          if (parts[1]) {
+            const modelPart = parts[1].split('|')[0].trim();
+            if (modelPart) return modelPart;
+          }
+        }
+        return inputs.machineName || 'PLD-120 / PLD-140';
+      })(),
+      version:   'v7.76',
     },
     kpis: {
       velocidadBandaMph:      speedMH,

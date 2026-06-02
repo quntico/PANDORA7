@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import ResponseRenderer from '@/components/beta/renderers/ResponseRenderer';
-import { supabase } from '@/supabase';
+import { supabase, uploadFileWithProgress } from '@/supabase';
 import RyderReportModal from '@/components/ryder/RyderReportModal';
 import { buildRyderReportData } from '@/utils/buildRyderReportData';
 import SharedTwinViewer3D from '@/components/flow/SharedTwinViewer3D';
@@ -9,7 +9,7 @@ import FlowDesignsLibrary from '@/components/flow/FlowDesignsLibrary';
 import { FolderOpen, Upload, Check, Sliders, Pencil, Link2, Droplets, Zap, Wind, Navigation, Cpu, Warehouse, Wrench, Anchor } from 'lucide-react';
 
 
-import { Activity, ArrowLeft, Bot, Box, Brain, ChevronLeft, ChevronRight, Download, Edit3, Eye, FileText, LayoutDashboard, Lock, Minus, Plus, Send, Settings, Table2, Target, Trash2, Unlock, Loader2, X, Play, RotateCcw, Copy, Maximize2, Power, Calculator, EyeOff, FileDigit, GripVertical, AlertTriangle, Printer, Truck, BarChart2, CheckCircle2, Factory, Layers } from 'lucide-react';
+import { Activity, ArrowLeft, Bot, Box, Brain, ChevronLeft, ChevronRight, Download, Edit3, Eye, FileText, LayoutDashboard, Lock, Minus, Plus, Send, Settings, Table2, Target, Trash2, Unlock, Loader2, X, Play, RotateCcw, Copy, Maximize2, Minimize2, Power, Calculator, EyeOff, FileDigit, GripVertical, AlertTriangle, Printer, Truck, BarChart2, CheckCircle2, Factory, Layers } from 'lucide-react';
 import axios from 'axios';
 import { Link, useParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -134,10 +134,22 @@ const checkIsGusi = (simId) => {
   }
 };
 
+const checkIsIase = (simId) => {
+  if (simId === 'iase') return true;
+  try {
+    const list = JSON.parse(localStorage.getItem('pandora_simulators') || '[]');
+    const meta = list.find(s => s.id === simId);
+    return !!(meta && meta.name && meta.name.toUpperCase().includes('IASE'));
+  } catch {
+    return false;
+  }
+};
+
 export default function RiderSimulatorPage() {
   const { id } = useParams();
   const simulatorId = id || 'rider';
   const isGusi = checkIsGusi(simulatorId);
+  const isIase = checkIsIase(simulatorId);
 
   // Cargar metadatos del simulador desde localStorage
   const simulatorMeta = useMemo(() => {
@@ -154,9 +166,15 @@ export default function RiderSimulatorPage() {
     if (savedInputs) {
       try {
         const parsed = JSON.parse(savedInputs);
-        // Auto-sanar el machineName si es Gusi pero dice PLD
-        if (isGusi && parsed.machineName !== 'BWD-200') {
+        // Auto-sanar el machineName si es Gusi pero dice PLD (limpieza de estado cruzado)
+        if (isGusi && parsed.machineName && parsed.machineName.startsWith('PLD')) {
           parsed.machineName = 'BWD-200';
+          parsed.manualSpeed = 2.5; // 150 / 60
+          localStorage.setItem(`sim_${simulatorId}_inputs`, JSON.stringify(parsed));
+        }
+        // Auto-sanar el machineName si es Iase pero dice PLD o BWD (limpieza de estado cruzado)
+        if (isIase && parsed.machineName && (parsed.machineName.startsWith('PLD') || parsed.machineName.startsWith('BWD'))) {
+          parsed.machineName = 'BDP 150';
           parsed.manualSpeed = 2.5; // 150 / 60
           localStorage.setItem(`sim_${simulatorId}_inputs`, JSON.stringify(parsed));
         }
@@ -166,11 +184,26 @@ export default function RiderSimulatorPage() {
       }
     }
     const savedLimit = parseFloat(localStorage.getItem(simulatorId === 'rider' ? 'rider_physical_max_mh' : `sim_${simulatorId}_physical_max_mh`));
-    const limit = isNaN(savedLimit) ? (isGusi ? 150 : 140) : savedLimit;
+    const limit = isNaN(savedLimit) ? ((isGusi || isIase) ? 150 : 140) : savedLimit;
     
     if (isGusi) {
       return {
         machineName: 'BWD-200',
+        nominalBoxes: 200,          // Capacidad nominal ofertada
+        machineLength: 7.60,
+        maxAdvance: 1.40,
+        manualSpeed: limit / 60,
+        defaultGap: 0.10,
+        calcMode: 'manual',
+        shifts: 2,
+        hoursPerShift: 8,
+        daysPerMonth: 26
+      };
+    }
+
+    if (isIase) {
+      return {
+        machineName: 'BDP 150',
         nominalBoxes: 200,          // Capacidad nominal ofertada
         machineLength: 7.60,
         maxAdvance: 1.40,
@@ -232,7 +265,7 @@ export default function RiderSimulatorPage() {
       }
     }
     const savedLimit = parseFloat(localStorage.getItem(simulatorId === 'rider' ? 'rider_physical_max_mh' : `sim_${simulatorId}_physical_max_mh`));
-    const limit = isNaN(savedLimit) ? (isGusi ? 150 : 140) : savedLimit;
+    const limit = isNaN(savedLimit) ? ((isGusi || isIase) ? 150 : 140) : savedLimit;
     return { 
       lavadoSecado: { 
         ...DEFAULT_MACHINE_CONFIGS.lavadoSecado, 
@@ -261,7 +294,7 @@ export default function RiderSimulatorPage() {
   const [physicalMaxMH, setPhysicalMaxMH] = useState(() => {
     const key = simulatorId === 'rider' ? 'rider_physical_max_mh' : `sim_${simulatorId}_physical_max_mh`;
     const saved = parseFloat(localStorage.getItem(key));
-    return isNaN(saved) ? (isGusi ? 150 : 140) : saved;
+    return isNaN(saved) ? ((isGusi || isIase) ? 150 : 140) : saved;
   });
   const [editHrs, setEditHrs]           = useState(false);
   const [hrsDraft, setHrsDraft]         = useState(null); // [{year,effectiveHoursPerShift,shifts}]
@@ -292,9 +325,15 @@ export default function RiderSimulatorPage() {
   const [clientName, setClientName] = useState(() => {
     const saved = localStorage.getItem(`sim_${simulatorId}_client_name`);
     if (saved) return saved;
+    if (isIase) return 'MÁQUINA EN EVALUACIÓN - BDP 150 | IASE';
     return isGusi 
       ? 'MÁQUINA EN EVALUACIÓN - BWD 200 | GRUPO GUSI' 
       : 'MÁQUINA EN EVALUACIÓN - PLD-140 | RYDER';
+  });
+
+  const [customerName, setCustomerName] = useState(() => {
+    const saved = localStorage.getItem(`sim_${simulatorId}_customer_name`);
+    return saved || 'CENTRAL DE INTELIGENCIA';
   });
 
   // ── Estados para el Módulo Hídrico y Sustentabilidad ──
@@ -373,7 +412,8 @@ export default function RiderSimulatorPage() {
     waterReplenishLh,
     tankCapacityL,
     waterChangeDays,
-    clientName
+    clientName,
+    customerName
   });
 
   const openReportModal = () => {
@@ -609,6 +649,30 @@ export default function RiderSimulatorPage() {
   const [isDesignsLibraryOpen, setIsDesignsLibraryOpen] = useState(false);
   const [currentDesignId, setCurrentDesignId] = useState(null);
 
+  // --- ESTADOS DE PANTALLA COMPLETA DEL GEMELO DIGITAL ---
+  const twinBlockRef = useRef(null);
+  const [isTwinBlockFullscreen, setIsTwinBlockFullscreen] = useState(false);
+  const [twinTheme, setTwinTheme] = useState('dark');
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsTwinBlockFullscreen(!!document.fullscreenElement && document.fullscreenElement === twinBlockRef.current);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const toggleTwinBlockFullscreen = () => {
+    if (!document.fullscreenElement) {
+      twinBlockRef.current?.requestFullscreen?.().catch(err => {
+        console.error(`Error attempting to enable fullscreen: ${err.message}`);
+      });
+    } else {
+      document.exitFullscreen?.();
+    }
+  };
+
+
   // Guardar estados del Twin en LocalStorage en cambio
   useEffect(() => {
     localStorage.setItem(`sim_${simulatorId}_twin_nodes`, JSON.stringify(twinNodes));
@@ -656,13 +720,11 @@ export default function RiderSimulatorPage() {
   const [pendingUpload, setPendingUpload] = useState(null); // { file, processedResult }
   const [uploadModelName, setUploadModelName] = useState('');
   const [isSavingToCloud, setIsSavingToCloud] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
-  // Paso 1: Leer el archivo y mostrar el modal de nombre
-  const handleTwinModelUpload = async (e) => {
-    const file = e.target.files[0];
+  // Función genérica para procesar y cargar archivo 3D (soportando arrastrar y soltar)
+  const processAndSetupTwinModel = async (file) => {
     if (!file) return;
-    // Reset input
-    e.target.value = '';
     try {
       const { process3DFile } = await import('@/utils/fileProcessor');
       const result = await process3DFile(file);
@@ -676,35 +738,50 @@ export default function RiderSimulatorPage() {
     }
   };
 
+  // Paso 1: Leer el archivo y mostrar el modal de nombre
+  const handleTwinModelUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    // Reset input
+    e.target.value = '';
+    await processAndSetupTwinModel(file);
+  };
+
   // Paso 2: Guardar en la nube y en la librería local
   const handleConfirmUploadToLibrary = async () => {
     if (!pendingUpload) return;
     const { file, processedResult } = pendingUpload;
     const modelName = uploadModelName.trim() || processedResult.name;
     setIsSavingToCloud(true);
+    setUploadProgress(0);
     try {
-      // Subir archivo binario a Supabase Storage
+      // Subir archivo binario a Supabase Storage con progreso
       const ext = file.name.split('.').pop().toLowerCase();
       const storagePath = `twin-models/${Date.now()}_${modelName.replace(/\s+/g, '_')}.${ext}`;
-      const { data: storageData, error: storageError } = await supabase
-        .storage
-        .from('flow-assets')
-        .upload(storagePath, file, { upsert: false, contentType: file.type || 'application/octet-stream' });
+      
+      const { data: storageData, error: storageError } = await uploadFileWithProgress(
+        'flow-assets',
+        storagePath,
+        file,
+        (p) => setUploadProgress(p)
+      );
 
-      let publicUrl = processedResult.url; // Fallback a blob URL si falla el storage
-      if (!storageError && storageData) {
-        const { data: urlData } = supabase.storage.from('flow-assets').getPublicUrl(storagePath);
-        if (urlData?.publicUrl) publicUrl = urlData.publicUrl;
-      } else {
-        console.warn('[Storage] No se pudo subir, usando blob local:', storageError?.message);
+      if (storageError) {
+        throw new Error(storageError.message || storageError);
       }
+
+      const { data: urlData } = supabase.storage.from('flow-assets').getPublicUrl(storagePath);
+      if (!urlData?.publicUrl) {
+        throw new Error('No se pudo obtener la URL pública del archivo subido.');
+      }
+      const publicUrl = urlData.publicUrl;
 
       // Crear la configuración de layout con la URL pública (o blob)
       const layoutRecord = {
         ...processedResult,
         url: publicUrl,
         name: modelName,
-        storagePath: storageData?.path || null,
+        storagePath: storageData?.path || storagePath,
       };
 
       // Guardar en flow_designs_beta como diseño con solo el layout 3D
@@ -725,6 +802,7 @@ export default function RiderSimulatorPage() {
 
       setPendingUpload(null);
       setUploadModelName('');
+      setUploadProgress(0);
     } catch (err) {
       console.error(err);
       alert('Error guardando en la nube: ' + err.message);
@@ -744,6 +822,7 @@ export default function RiderSimulatorPage() {
 
   // ── Anclar modelo + etiquetas a este simulador (guardar en la nube) ──
   const [isAnchoring, setIsAnchoring] = useState(false);
+  const [isAnchored, setIsAnchored] = useState(true);
 
   const handleAnchorToSimulator = async () => {
     if (!twinLayout) return;
@@ -791,6 +870,7 @@ export default function RiderSimulatorPage() {
 
       // Guardar también en localStorage la referencia
       localStorage.setItem(`sim_${simulatorId}_twin_anchor_id`, currentDesignId || '');
+      setIsAnchored(true);
     } catch (err) {
       console.error('[Anchor] Error:', err);
       alert('Error al guardar en la nube: ' + err.message);
@@ -800,6 +880,7 @@ export default function RiderSimulatorPage() {
   };
 
   const handleUpdateTwinNode = (nodeId, updatedData) => {
+    setIsAnchored(false);
     setTwinNodes(prev => prev.map(node => {
       if (node.id === nodeId) {
         return {
@@ -815,6 +896,7 @@ export default function RiderSimulatorPage() {
   };
 
   const handleDeleteTwinNode = (nodeId) => {
+    setIsAnchored(false);
     setTwinNodes(prev => prev.filter(n => n.id !== nodeId));
     setTwinEdges(prev => prev.filter(e => e.source !== nodeId && e.target !== nodeId));
     if (selectedTwinNodeId === nodeId) setSelectedTwinNodeId(null);
@@ -864,6 +946,7 @@ export default function RiderSimulatorPage() {
   };
 
   const handleSaveTwinNode = () => {
+    setIsAnchored(false);
     if (editingTwinNodeId) {
       // Editar nodo existente
       setTwinNodes(prev => prev.map(n => n.id === editingTwinNodeId
@@ -894,6 +977,7 @@ export default function RiderSimulatorPage() {
 
   const handleAddTwinEdge = () => {
     if (!twinEdgeForm.source || !twinEdgeForm.target || twinEdgeForm.source === twinEdgeForm.target) return;
+    setIsAnchored(false);
     const newEdge = {
       id:     `twin_edge_${Date.now()}`,
       source: twinEdgeForm.source,
@@ -907,6 +991,7 @@ export default function RiderSimulatorPage() {
 
   const handleSyncFromFlowDesigner = () => {
     if (!window.confirm("¿Seguro que deseas sobrescribir el Twin Digital de este simulador con el diseño global del Flow Designer?")) return;
+    setIsAnchored(false);
     
     const fdNodes = localStorage.getItem('flowDesigner_nodes');
     const fdEdges = localStorage.getItem('flowDesigner_edges');
@@ -1294,7 +1379,7 @@ ${userMsg}
 
     let md = [];
     md.push(`# PANDORA 3.0 — Reporte Técnico ${simulatorMeta.name} Simulator`);
-    md.push(`**Exportado:** ${ts}  |  **Modelo seleccionado:** ${selectedRow?.name ?? '—'}  |  **Ver:** 7.75\n`);
+    md.push(`**Exportado:** ${ts}  |  **Modelo seleccionado:** ${selectedRow?.name ?? '—'}  |  **Ver:** 7.80\n`);
     md.push(`---`);
     md.push(`\n## CONTEXTO DEL SISTEMA`);
     md.push(`Este simulador calcula la capacidad operativa de una línea de lavado y secado industrial (tipo ${simulatorMeta.name}/PLD).`);
@@ -1947,6 +2032,23 @@ ${userMsg}
                   Auto-guardado
                 </span>
               </h1>
+
+              {/* Nombre del Cliente - Editable en sitio, posicionado abajo del nombre de la empresa IASE */}
+              <div className="flex items-center gap-2 mt-1.5 mb-1.5 bg-white/5 hover:bg-white/10 hover:border-cyan-500/30 border border-white/10 px-3 py-1 rounded-xl transition-all w-fit">
+                <Edit3 className="w-3.5 h-3.5 text-cyan-400" />
+                <span className="text-[10px] font-black tracking-wider uppercase text-cyan-400">Cliente:</span>
+                <input
+                  type="text"
+                  value={customerName}
+                  onChange={(e) => {
+                    setCustomerName(e.target.value);
+                    localStorage.setItem(`sim_${simulatorId}_customer_name`, e.target.value);
+                  }}
+                  className="bg-transparent text-xs font-black text-white border-none outline-none focus:outline-none focus:ring-0 p-0 m-0 w-64"
+                  placeholder="Escribir nombre del cliente..."
+                />
+              </div>
+
               <p className="text-sm text-gray-500 font-medium">{simulatorMeta.description} ({physicalMaxMH} m/h max)</p>
               <div className="flex items-center gap-2 mt-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl max-w-[360px]">
                 <Edit3 className="w-3.5 h-3.5 text-cyan-400" />
@@ -2669,11 +2771,20 @@ ${userMsg}
             </div>
 
             {/* Twin Digital 3D */}
-            <div className="rounded-2xl bg-gradient-to-b from-[#111] to-[#0A0A0A] border border-[#1A1A1A] p-5 shadow-xl">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+            <div 
+              ref={twinBlockRef}
+              className={`transition-all duration-300 relative ${
+                isTwinBlockFullscreen 
+                  ? `w-screen h-screen overflow-y-auto ${twinTheme === 'toxic' ? 'bg-[#0d0d0e]' : 'bg-[#05070f]'} p-8 rounded-none border-none z-[9999] flex flex-col justify-between` 
+                  : twinTheme === 'toxic'
+                    ? 'bg-[#121212] border border-[#2c302e] rounded-3xl p-6 shadow-xl overflow-hidden'
+                    : 'rounded-2xl bg-gradient-to-b from-[#111] to-[#0A0A0A] border border-[#1A1A1A] p-5 shadow-xl overflow-hidden'
+              }`}
+            >
+              <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 border-b pb-4 ${twinTheme === 'toxic' ? 'border-[#2c302e]' : 'border-white/5'}`}>
                 <div>
-                  <h3 className="text-sm font-black uppercase tracking-widest text-[#00F0FF] flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-[#00F0FF] animate-pulse" />
+                  <h3 className={`text-sm font-black uppercase tracking-widest flex items-center gap-2 ${twinTheme === 'toxic' ? 'text-[#84cc16]' : 'text-[#00F0FF]'}`}>
+                    <Activity className={`w-4 h-4 animate-pulse ${twinTheme === 'toxic' ? 'text-[#84cc16]' : 'text-[#00F0FF]'}`} />
                     Twin Digital 3D de la Línea
                   </h3>
                   <p className="text-[10px] text-gray-400 mt-0.5">
@@ -2685,7 +2796,11 @@ ${userMsg}
                 <div className="flex flex-wrap items-center gap-2 text-xs">
                   <button 
                     onClick={() => setIsDesignsLibraryOpen(true)}
-                    className="flex items-center gap-1.5 px-3 py-2 bg-neon-cyan/10 hover:bg-neon-cyan/20 text-[#00F0FF] border border-neon-cyan/30 rounded-xl transition-all font-black uppercase tracking-widest text-[9px]"
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all font-black uppercase tracking-widest text-[9px] ${
+                      twinTheme === 'toxic'
+                        ? 'bg-[#222222] border-[#2c302e] hover:border-[#84cc16] text-[#84cc16] hover:text-white'
+                        : 'bg-neon-cyan/10 hover:bg-neon-cyan/20 text-[#00F0FF] border border-neon-cyan/30'
+                    }`}
                     title="Abrir librería de twins guardados"
                   >
                     <FolderOpen className="w-3.5 h-3.5" /> Librería
@@ -2693,7 +2808,11 @@ ${userMsg}
 
                   <label 
                     htmlFor="twin-upload-file"
-                    className="flex items-center gap-1.5 px-3 py-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-xl cursor-pointer transition-all font-black uppercase tracking-widest text-[9px]"
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl cursor-pointer transition-all font-black uppercase tracking-widest text-[9px] ${
+                      twinTheme === 'toxic'
+                        ? 'bg-[#222222] border-[#2c302e] hover:border-[#84cc16] text-[#84cc16] hover:text-white'
+                        : 'bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                    }`}
                     title="Subir archivo 3D de la planta (.glb, .gltf o .fbx)"
                   >
                     <Upload className="w-3.5 h-3.5" /> Subir 3D
@@ -2702,7 +2821,7 @@ ${userMsg}
                     type="file" 
                     id="twin-upload-file" 
                     className="hidden" 
-                    accept=".glb,.gltf,.fbx" 
+                    accept=".glb,.gltf,.fbx,.dae" 
                     onChange={handleTwinModelUpload} 
                   />
 
@@ -2710,8 +2829,12 @@ ${userMsg}
                     onClick={() => setIsTwinEditMode(!isTwinEditMode)}
                     className={`flex items-center gap-1.5 px-3 py-2 border rounded-xl transition-all font-black uppercase tracking-widest text-[9px] ${
                       isTwinEditMode 
-                        ? 'bg-yellow-500/20 border-yellow-500 text-yellow-400' 
-                        : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'
+                        ? twinTheme === 'toxic'
+                          ? 'bg-[#84cc16] hover:bg-[#a3e635] text-black font-extrabold border-none shadow-[0_0_12px_rgba(132,204,22,0.4)]'
+                          : 'bg-yellow-500/20 border-yellow-500 text-yellow-400' 
+                        : twinTheme === 'toxic'
+                          ? 'bg-[#1a1a1a] border-[#2c302e] text-gray-400 hover:text-white'
+                          : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'
                     }`}
                     title="Acomodar fichas de movimiento y máquinas en 3D"
                   >
@@ -2719,8 +2842,29 @@ ${userMsg}
                   </button>
 
                   <button 
+                    onClick={toggleTwinBlockFullscreen}
+                    className={`flex items-center gap-1.5 px-3 py-2 border rounded-xl transition-all font-black uppercase tracking-widest text-[9px] ${
+                      isTwinBlockFullscreen 
+                        ? twinTheme === 'toxic'
+                          ? 'bg-[#84cc16]/25 border-[#84cc16] text-[#84cc16] font-extrabold shadow-[0_0_10px_rgba(132,204,22,0.25)]'
+                          : 'bg-[#00F0FF]/25 border-[#00F0FF] text-[#00F0FF] font-extrabold shadow-[0_0_10px_rgba(0,240,255,0.25)]'
+                      : twinTheme === 'toxic'
+                        ? 'bg-[#1a1a1a] border-[#2c302e] text-gray-400 hover:text-white hover:border-[#84cc16]/40'
+                        : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:border-white/20'
+                    }`}
+                    title={isTwinBlockFullscreen ? "Salir de Pantalla Completa" : "Editar en Pantalla Completa"}
+                  >
+                    {isTwinBlockFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                    <span>{isTwinBlockFullscreen ? 'Ventana' : 'Pantalla Completa'}</span>
+                  </button>
+
+                  <button 
                     onClick={handleSyncFromFlowDesigner}
-                    className="flex items-center justify-center p-2 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white border border-white/10 rounded-xl transition-all"
+                    className={`flex items-center justify-center p-2 border rounded-xl transition-all ${
+                      twinTheme === 'toxic'
+                        ? 'bg-[#1a1a1a] border-[#2c302e] text-gray-400 hover:text-white'
+                        : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'
+                    }`}
                     title="Sincronizar con el Flow Designer global"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
@@ -2730,18 +2874,26 @@ ${userMsg}
                   {twinLayout && (
                     <button 
                       onClick={handleAnchorToSimulator}
-                      disabled={isAnchoring}
+                      disabled={isAnchoring || isAnchored}
                       className={`flex items-center gap-1.5 px-3 py-2 border rounded-xl transition-all font-black uppercase tracking-widest text-[9px] ${
                         isAnchoring
-                          ? 'bg-green-500/10 border-green-500/30 text-green-400 opacity-70'
-                          : 'bg-green-500/10 hover:bg-green-500/20 text-green-400 border border-green-500/30'
+                          ? 'bg-green-500/10 border-green-500/30 text-green-400 opacity-70 cursor-wait'
+                          : isAnchored
+                            ? twinTheme === 'toxic'
+                              ? 'bg-lime-500/25 border-lime-400 text-lime-300 font-extrabold shadow-[0_0_10px_rgba(132,204,22,0.25)]'
+                              : 'bg-green-500/20 border-green-500 text-green-400 font-extrabold shadow-[0_0_10px_rgba(34,197,94,0.2)]'
+                            : twinTheme === 'toxic'
+                              ? 'bg-lime-500/10 hover:bg-lime-500/20 text-lime-400 border border-lime-500/30 animate-pulse font-extrabold'
+                              : 'bg-green-500/10 hover:bg-green-500/20 text-green-400 border border-green-500/30 animate-pulse font-extrabold'
                       }`}
-                      title="Guardar modelo, etiquetas y conectores en la nube para este simulador"
+                      title={isAnchored ? "El modelo ya está correctamente anclado y guardado" : "Guardar modelo, etiquetas y conectores en la nube para este simulador"}
                     >
                       {isAnchoring ? (
                         <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Guardando...</>
+                      ) : isAnchored ? (
+                        <><Check className="w-3.5 h-3.5 text-green-400" /> Anclado</>
                       ) : (
-                        <><Anchor className="w-3.5 h-3.5" /> Anclar</>
+                        <><Anchor className="w-3.5 h-3.5 text-green-400" /> Anclar</>
                       )}
                     </button>
                   )}
@@ -2813,7 +2965,12 @@ ${userMsg}
                         max="10.0" 
                         step="0.1" 
                         value={twinFloorElevation} 
-                        onChange={(e) => { if (!twinFloorLocked) setTwinFloorElevation(Number(e.target.value)); }}
+                        onChange={(e) => { 
+                          if (!twinFloorLocked) { 
+                            setTwinFloorElevation(Number(e.target.value)); 
+                            setIsAnchored(false); 
+                          } 
+                        }}
                         disabled={twinFloorLocked}
                         className={`w-full h-1.5 rounded-lg appearance-none transition-opacity ${
                           twinFloorLocked 
@@ -3083,12 +3240,12 @@ ${userMsg}
               )}
 
               {/* Visor 3D */}
-              <div className="relative rounded-xl overflow-hidden border border-white/5 bg-[#05070f]">
+              <div className={`relative rounded-xl overflow-hidden border ${twinTheme === 'toxic' ? 'border-[#2c302e] bg-[#0c0d0e]' : twinTheme === 'blueprint' ? 'border-slate-800/80 bg-[#edf4f9]' : 'border-white/5 bg-[#05070f]'}`}>
                 <SharedTwinViewer3D 
-                  height="390px" 
+                  height={isTwinBlockFullscreen ? "calc(100vh - 280px)" : "390px"} 
                   customNodes={twinNodes}
                   customEdges={twinEdges}
-                  customLayout={twinLayout ? { ...twinLayout, elevation: twinFloorElevation } : null}
+                  customLayout={pendingUpload ? null : (twinLayout ? { ...twinLayout, elevation: twinFloorElevation } : null)}
                   editMode={isTwinEditMode}
                   selectedNodeId={selectedTwinNodeId}
                   onSelectNode={setSelectedTwinNodeId}
@@ -3096,6 +3253,9 @@ ${userMsg}
                   labelHeightOffset={twinLabelHeightOffset}
                   labelsCollapsed={twinLabelsCollapsed}
                   showControls={!isTwinEditMode}
+                  onFileDrop={processAndSetupTwinModel}
+                  theme={twinTheme}
+                  onThemeChange={setTwinTheme}
                 />
               </div>
 
@@ -3110,6 +3270,7 @@ ${userMsg}
                 }}
                 currentDesignId={currentDesignId}
                 activeLayout={twinLayout}
+                onLayoutChange={setTwinLayout}
               />
 
               {/* ── Modal: Nombrar y Guardar Modelo 3D Subido ─────────────── */}
@@ -3144,6 +3305,23 @@ ${userMsg}
                         </div>
                       </div>
 
+                      {/* Progreso de subida */}
+                      {isSavingToCloud && (
+                        <div className="space-y-1.5 pt-1">
+                          <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-[#00F0FF]">
+                            <span>Progreso de Subida</span>
+                            <span>{uploadProgress}%</span>
+                          </div>
+                          <div className="h-2 w-full rounded-full bg-white/5 border border-white/10 overflow-hidden relative">
+                            <div 
+                              className="h-full rounded-full bg-gradient-to-r from-blue-500 to-[#00F0FF] transition-all duration-300 shadow-[0_0_10px_rgba(0,240,255,0.4)]"
+                              style={{ width: `${uploadProgress}%` }}
+                            />
+                          </div>
+                          <p className="text-[9px] text-gray-500">Subiendo archivo grande a Supabase... por favor no cierres esta pestaña.</p>
+                        </div>
+                      )}
+
                       {/* Campo de nombre */}
                       <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase tracking-widest text-[#00F0FF]">
@@ -3170,7 +3348,7 @@ ${userMsg}
                         className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#00F0FF] hover:bg-[#00d8e8] disabled:opacity-50 text-black font-black text-xs uppercase tracking-widest rounded-xl transition-all"
                       >
                         {isSavingToCloud ? (
-                          <><Loader2 className="w-4 h-4 animate-spin" /> Guardando...</>
+                          <><Loader2 className="w-4 h-4 animate-spin" /> Guardando... {uploadProgress}%</>
                         ) : (
                           <><Check className="w-4 h-4" /> Guardar en Librería</>
                         )}

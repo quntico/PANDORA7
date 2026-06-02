@@ -19,3 +19,52 @@ const client = createClient(supabaseUrl, supabaseAnonKey, {
 });
 
 export const supabase = client;
+
+/**
+ * Uploads a file to Supabase Storage with progress tracking using raw XMLHttpRequest
+ */
+export const uploadFileWithProgress = (bucketName, path, file, onProgress) => {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        const url = `${supabaseUrl}/storage/v1/object/${bucketName}/${path}`;
+        
+        xhr.open('POST', url, true);
+        xhr.setRequestHeader('Authorization', `Bearer ${supabaseAnonKey}`);
+        xhr.setRequestHeader('apikey', supabaseAnonKey);
+        xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+        
+        // Track upload progress
+        if (xhr.upload && onProgress) {
+            xhr.upload.onprogress = (event) => {
+                if (event.lengthComputable) {
+                    const percentage = Math.round((event.loaded / event.total) * 100);
+                    onProgress(percentage);
+                }
+            };
+        }
+        
+        xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                    const data = JSON.parse(xhr.responseText);
+                    resolve({ data, error: null });
+                } catch (e) {
+                    resolve({ data: { path }, error: null });
+                }
+            } else {
+                let errMessage = xhr.responseText;
+                try {
+                    const parsed = JSON.parse(xhr.responseText);
+                    errMessage = parsed.message || parsed.error || xhr.responseText;
+                } catch (e) {}
+                resolve({ data: null, error: new Error(errMessage) });
+            }
+        };
+        
+        xhr.onerror = () => {
+            reject(new Error('Network error during file upload'));
+        };
+        
+        xhr.send(file);
+    });
+};

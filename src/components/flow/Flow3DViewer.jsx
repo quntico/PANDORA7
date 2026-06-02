@@ -8,6 +8,7 @@ import LayoutControls, { LayoutModel } from './LayoutLoader';
 import * as THREE from 'three';
 import { process3DFile } from '@/utils/fileProcessor';
 import { supabase } from '@/supabase';
+import { useProject } from '@/context/ProjectContext';
 
 // Componente para controlar la cámara (Vistas Predefinidas)
 function ControlLimiter({ controlsRef }) {
@@ -478,6 +479,14 @@ function LayoutWrapper({ layout, scale, elevation, fxEnabled, isSelected, onUpda
 }
 
 function Flow3DViewer({ nodes = [], edges = [], onNodeClick, onNodeUpdate, fxEnabled: propFxEnabled, onFxChange, isControlsOpen, onControlsOpenChange, onNodeDrop, placingEquipment, onEquipmentPlaced, pickingAnchorNodeId, onPickingAnchorChange, onConnect, resetCameraTrigger, labelsCollapsed = false, labelHeightOffset = 0, layout: propLayout = null, onLayoutChange, isFullScreen = false, onFullScreenChange }) {
+    let projectId = null;
+    try {
+        const projectCtx = useProject();
+        projectId = projectCtx?.projectId;
+    } catch (e) {
+        // Fallback
+    }
+
     // Use prop layout if provided, otherwise internal state
     const [internalLayout, setInternalLayout] = useState(propLayout);
     const layout = propLayout !== undefined ? propLayout : internalLayout;
@@ -694,15 +703,41 @@ function Flow3DViewer({ nodes = [], edges = [], onNodeClick, onNodeUpdate, fxEna
                     fileName: file.name
                 };
 
+                // Register layout in project_artifacts_beta library so it is shared!
+                const ext = file.name.split('.').pop().toLowerCase();
+                const artifactPayload = {
+                    project_id: projectId || null,
+                    type: 'layout',
+                    title: file.name,
+                    data: {
+                        url: publicUrl,
+                        type: ext,
+                        name: file.name.replace(/\.[^/.]+$/, ""),
+                        scale: 1,
+                        elevation: 0,
+                        fileName: file.name,
+                        storagePath: fileName,
+                        uploadedAt: new Date().toISOString()
+                    }
+                };
+
+                const { error: dbError } = await supabase
+                    .from('project_artifacts_beta')
+                    .insert([artifactPayload]);
+
+                if (dbError) {
+                    console.error('[Flow3DViewer] Failed to register artifact:', dbError);
+                }
+
                 handleLayoutChange(persistentLayout, 1, 0);
-                console.log('[Flow3D] Layout uploaded to Supabase:', publicUrl);
+                console.log('[Flow3D] Layout uploaded to Supabase & registered in library:', publicUrl);
             }
         } catch (err) {
             console.error("Error cargando archivo:", err);
             setError(err.message);
             alert(`Error: ${err.message}`);
         }
-    }, [handleLayoutChange]);
+    }, [handleLayoutChange, projectId]);
 
     const handleDrop = useCallback((e) => {
         e.preventDefault();

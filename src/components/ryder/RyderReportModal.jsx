@@ -214,12 +214,21 @@ export default function RyderReportModal({ reportData, printWindow, clearPrintWi
                   PANDORA 3.0 · {meta.version}
                 </span>
               </div>
-              <div style={{ position: 'absolute', bottom: 14, right: 42, color: 'rgba(255,255,255,0.75)', fontSize: 12, fontWeight: 600 }}>
-                Línea de Lavado + Secado de Cajas plásticas
+              <div style={{ position: 'absolute', bottom: 10, right: 42, textAlign: 'right', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div style={{ color: 'rgba(255,255,255,0.98)', fontSize: 14, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 0.8 }}>
+                  Línea de Lavado + Secado de Cajas plásticas
+                </div>
+                <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 11, fontWeight: 800, display: 'flex', gap: 10, justifyContent: 'flex-end', alignItems: 'center' }}>
+                  <span>CLIENTE: <strong style={{ color: '#fff', textTransform: 'uppercase' }}>{meta.cliente}</strong></span>
+                  <span style={{ opacity: 0.6 }}>|</span>
+                  <span>MÁQUINA: <strong style={{ color: '#fff', textTransform: 'uppercase' }}>{meta.maquina}</strong></span>
+                  <span style={{ opacity: 0.6 }}>|</span>
+                  <span>FECHA: <strong style={{ color: '#fff', textTransform: 'uppercase' }}>{meta.fecha}</strong></span>
+                </div>
               </div>
             </div>
 
-            <div className="ry-page-inner" style={{ ...S.inner, display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: 36, alignItems: 'center' }}>
+            <div className="ry-page-inner" style={{ ...S.inner, display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: 36, alignItems: 'center', position: 'relative', marginTop: -40 }}>
               {/* ── Left: Title block ── */}
               <div>
                 {/* Overline */}
@@ -235,6 +244,10 @@ export default function RyderReportModal({ reportData, printWindow, clearPrintWi
                     </div>
                     <div style={{ fontSize: 42, fontWeight: 900, lineHeight: 1.0, letterSpacing: -0.5 }}>
                       <span style={{ color: '#11b5c9' }}>DE LÍNEA</span>
+                    </div>
+                    <div style={{ fontSize: 32, fontWeight: 900, color: '#0f1c2e', marginTop: 14, letterSpacing: -0.5, textTransform: 'uppercase' }}>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: '#11b5c9', display: 'block', letterSpacing: 2.5, marginBottom: 2 }}>CLIENTE</span>
+                      {meta.cliente}
                     </div>
                   </div>
                 </div>
@@ -253,10 +266,11 @@ export default function RyderReportModal({ reportData, printWindow, clearPrintWi
                 {/* Meta grid */}
                 <div style={{ display: 'grid', gap: 8, background: '#f7fbfd', border: '1px solid #dbe5ee', borderRadius: 12, padding: '14px 18px' }}>
                   {[
-                    ['Evaluación',  meta.empresa || 'MÁQUINA EN EVALUACIÓN - BWD 200 | GRUPO GUSI'],
-                    ['Máquina',  meta.maquina],
-                    ['Proyecto', meta.proyecto],
-                    ['Fecha',    meta.fecha],
+                    ['Empresa',    meta.empresa || 'IASE'],
+                    ['Cliente',    meta.cliente || 'CENTRAL DE INTELIGENCIA'],
+                    ['Máquina',    meta.maquina],
+                    ['Proyecto',   meta.proyecto],
+                    ['Fecha',      meta.fecha],
                   ].map(([k, v]) => (
                     <div key={k} style={{ display: 'flex', alignItems: 'baseline', gap: 8, fontSize: 13 }}>
                       <span style={{ fontWeight: 700, color: '#0b8ea0', minWidth: 80 }}>{k}</span>

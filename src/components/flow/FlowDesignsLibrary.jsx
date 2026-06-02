@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { X, Folder, Trash2, Clock, FileText, Plus, Loader2, RefreshCw, CheckCircle } from 'lucide-react';
+import { X, Folder, Trash2, Clock, FileText, Plus, Loader2, RefreshCw, CheckCircle, Cloud, CloudUpload, Server } from 'lucide-react';
 import { useFlowDesigns } from '@/hooks/useFlowDesigns';
+import { supabase } from '@/supabase';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function modelTypeIcon(type) {
@@ -87,10 +88,11 @@ function DesignCard({ design, isCurrent, onLoad, onDelete, deleting }) {
 }
 
 // ── Componente Principal ──────────────────────────────────────────────────────
-function FlowDesignsLibrary({ isOpen, onClose, onLoad, onNewDesign, currentDesignId, activeLayout = null }) {
+function FlowDesignsLibrary({ isOpen, onClose, onLoad, onNewDesign, currentDesignId, activeLayout = null, onLayoutChange = null }) {
     const { designs, isLoading, error, loadDesigns, deleteDesign } = useFlowDesigns();
     const [deletingId, setDeletingId] = useState(null);
     const [tab, setTab] = useState('all');
+    const [isUploadingCloud, setIsUploadingCloud] = useState(false);
 
     useEffect(() => {
         if (isOpen) loadDesigns();
@@ -102,6 +104,95 @@ function FlowDesignsLibrary({ isOpen, onClose, onLoad, onNewDesign, currentDesig
         setDeletingId(null);
     };
 
+    const handleUploadActiveLayoutToCloud = async () => {
+        if (!activeLayout || !activeLayout.url) return;
+        setIsUploadingCloud(true);
+        try {
+            // 1. Descargar archivo del blob local
+            const res = await fetch(activeLayout.url);
+            const blob = await res.blob();
+            
+            const originalName = activeLayout.name || 'Modelo_Simulador';
+            const ext = activeLayout.type || 'glb';
+            const fileNameWithExt = `${originalName.replace(/[^a-zA-Z0-9.-]/g, '_')}_${Date.now()}.${ext}`;
+            const file = new File([blob], fileNameWithExt, { type: blob.type || 'application/octet-stream' });
+            
+            // 2. Subir a Supabase Storage (intentar flow-assets primero, fallback a assets)
+            let storageBucket = 'flow-assets';
+            let storagePath = `twin-models/${fileNameWithExt}`;
+            let uploadResult = null;
+            let uploadError = null;
+            
+            try {
+                const { data, error } = await supabase.storage
+                    .from(storageBucket)
+                    .upload(storagePath, file, { 
+                        upsert: false, 
+                        contentType: file.type || 'application/octet-stream' 
+                    });
+                uploadResult = data;
+                uploadError = error;
+            } catch (err) {
+                uploadError = err;
+            }
+            
+            if (uploadError) {
+                // Fallback a 'assets' bucket
+                storageBucket = 'assets';
+                storagePath = `layouts/${fileNameWithExt}`;
+                const { data, error } = await supabase.storage
+                    .from(storageBucket)
+                    .upload(storagePath, file, { 
+                        upsert: false, 
+                        contentType: file.type || 'application/octet-stream' 
+                    });
+                uploadResult = data;
+                uploadError = error;
+                if (uploadError) throw uploadError;
+            }
+
+            // Obtener URL pública
+            const { data: urlData } = supabase.storage.from(storageBucket).getPublicUrl(storagePath);
+            const publicUrl = urlData?.publicUrl || activeLayout.url;
+
+            // 3. Crear payload para base de datos
+            const persistentLayout = {
+                ...activeLayout,
+                url: publicUrl,
+                storagePath: uploadResult?.path || storagePath,
+            };
+
+            // 4. Registrar en flow_designs_beta
+            const { error: dbError } = await supabase
+                .from('flow_designs_beta')
+                .insert([{
+                    name: originalName,
+                    description: `Modelo 3D guardado en la nube (${ext.toUpperCase()})`,
+                    nodes: [],
+                    edges: [],
+                    layout: persistentLayout,
+                    custom_equipments: null
+                }]);
+
+            if (dbError) throw dbError;
+
+            // 5. Notificar al componente padre
+            if (onLayoutChange) {
+                onLayoutChange(persistentLayout);
+            }
+
+            // 6. Recargar lista de diseños
+            await loadDesigns();
+
+            alert('¡Excelente! El modelo se ha guardado en la nube de Supabase con éxito y se ha añadido a tu librería global.');
+        } catch (err) {
+            console.error('[FlowDesignsLibrary] Error al guardar en la nube:', err);
+            alert('Error al guardar en la nube: ' + err.message);
+        } finally {
+            setIsUploadingCloud(false);
+        }
+    };
+
     const count3D   = useMemo(() => designs.filter(d => hasLayout(d)).length,   [designs]);
     const countFlow = useMemo(() => designs.filter(d => !hasLayout(d)).length,  [designs]);
 
@@ -110,6 +201,11 @@ function FlowDesignsLibrary({ isOpen, onClose, onLoad, onNewDesign, currentDesig
         if (tab === 'flow') return designs.filter(d => !hasLayout(d));
         return designs;
     }, [designs, tab]);
+
+    const activeLayoutIsCloud = useMemo(() => {
+        if (!activeLayout) return false;
+        return !!activeLayout.storagePath || (!activeLayout.url?.startsWith('blob:') && activeLayout.url?.startsWith('http'));
+    }, [activeLayout]);
 
     if (!isOpen) return null;
 
@@ -178,30 +274,62 @@ function FlowDesignsLibrary({ isOpen, onClose, onLoad, onNewDesign, currentDesig
                     {activeLayout && (tab === 'all' || tab === '3d') && (
                         <div>
                             <p className="text-[9px] font-black uppercase tracking-widest text-[#00F0FF]/60 mb-2">📌 Modelo activo en este simulador</p>
-                            <div className="p-4 rounded-xl border border-[#00F0FF]/40 bg-[#00F0FF]/5 flex items-center gap-4">
-                                <div className="text-3xl">{modelTypeIcon(activeLayout.type)}</div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                        <h3 className="text-white font-bold text-sm truncate">
-                                            {activeLayout.name || 'Modelo sin nombre'}
-                                        </h3>
-                                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-[#00F0FF]/20 text-[#00F0FF] border border-[#00F0FF]/30 flex items-center gap-1 flex-shrink-0">
-                                            <CheckCircle className="w-2.5 h-2.5" /> En uso
-                                        </span>
-                                        {activeLayout.type && (
-                                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/20">
-                                                {activeLayout.type.toUpperCase()}
+                            <div className="p-4 rounded-xl border border-[#00F0FF]/40 bg-[#00F0FF]/5 flex flex-col gap-3">
+                                <div className="flex items-center gap-4">
+                                    <div className="text-3xl">{modelTypeIcon(activeLayout.type)}</div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                            <h3 className="text-white font-bold text-sm truncate">
+                                                {activeLayout.name || 'Modelo sin nombre'}
+                                            </h3>
+                                            <span className="text-[9px] px-2 py-0.5 rounded-full bg-[#00F0FF]/20 text-[#00F0FF] border border-[#00F0FF]/30 flex items-center gap-1 flex-shrink-0">
+                                                <CheckCircle className="w-2.5 h-2.5" /> En uso
                                             </span>
+                                            {activeLayout.type && (
+                                                <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/20">
+                                                    {activeLayout.type.toUpperCase()}
+                                                </span>
+                                            )}
+                                            {activeLayoutIsCloud ? (
+                                                <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1 flex-shrink-0">
+                                                    <Cloud className="w-2.5 h-2.5" /> En la Nube
+                                                </span>
+                                            ) : (
+                                                <span className="text-[9px] px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 flex items-center gap-1 flex-shrink-0">
+                                                    <Server className="w-2.5 h-2.5" /> Temporal (Local)
+                                                </span>
+                                            )}
+                                        </div>
+                                        {activeLayoutIsCloud ? (
+                                            <p className="text-[10px] text-emerald-400/80 flex items-center gap-1 mt-1 truncate">
+                                                <CheckCircle className="w-3.5 h-3.5" /> Guardado permanentemente en la nube (Supabase)
+                                            </p>
+                                        ) : (
+                                            <p className="text-[10px] text-yellow-500/70">Solo en memoria local · expira al recargar la página</p>
                                         )}
                                     </div>
-                                    {activeLayout.storagePath ? (
-                                        <p className="text-[10px] text-gray-500 truncate">{activeLayout.storagePath}</p>
-                                    ) : activeLayout.url?.startsWith('blob:') ? (
-                                        <p className="text-[10px] text-yellow-500/70">Solo en memoria local · sube un nuevo archivo para guardarlo en la nube</p>
-                                    ) : (
-                                        <p className="text-[10px] text-gray-500 truncate">{activeLayout.url?.slice(0, 60)}…</p>
-                                    )}
                                 </div>
+                                
+                                {!activeLayoutIsCloud && (
+                                    <div className="flex items-center justify-between gap-3 pt-2 border-t border-white/5 flex-wrap">
+                                        <p className="text-[10px] text-gray-400">¿Quieres respaldarlo para siempre?</p>
+                                        <button
+                                            onClick={handleUploadActiveLayoutToCloud}
+                                            disabled={isUploadingCloud}
+                                            className="px-3 py-1 rounded bg-[#00F0FF]/10 hover:bg-[#00F0FF]/20 border border-[#00F0FF]/30 hover:border-[#00F0FF]/60 text-[#00F0FF] text-[10px] font-bold transition-all flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_10px_rgba(0,240,255,0.1)]"
+                                        >
+                                            {isUploadingCloud ? (
+                                                <>
+                                                    <Loader2 className="w-3 h-3 animate-spin" /> Guardando en Supabase...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <CloudUpload className="w-3.5 h-3.5" /> Guardar en la Nube
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
