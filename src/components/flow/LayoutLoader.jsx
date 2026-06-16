@@ -212,6 +212,24 @@ function ModelRenderer({ url, type, scale = 1, blobMap, position, rotation, fxEn
 
         // Configurar materiales
         clone.traverse((child) => {
+            // Ocultar siluetas de personas / referencias de escala por defecto (ej. Susan de SketchUp)
+            const nameLower = (child.name || '').toLowerCase();
+            const parentNameLower = (child.parent?.name || '').toLowerCase();
+            const geomNameLower = (child.geometry?.name || '').toLowerCase();
+            
+            const isScaleHelper = /susan|stacy|steve|chris|derrick|laura|sang|mark|lisanne|temple|katherine|escala|scale|person|human|character|figure|siluet|monigote|mannequin|mannikin|operator|operador|gente|avatar|dummy/i.test(nameLower) ||
+                                  /susan|stacy|steve|chris|derrick|laura|sang|mark|lisanne|temple|katherine|escala|scale|person|human|character|figure|siluet|monigote|mannequin|mannikin|operator|operador|gente|avatar|dummy/i.test(parentNameLower) ||
+                                  /susan|stacy|steve|chris|derrick|laura|sang|mark|lisanne|temple|katherine|escala|scale|person|human|character|figure|siluet|monigote|mannequin|mannikin|operator|operador|gente|avatar|dummy/i.test(geomNameLower);
+
+            if (isScaleHelper) {
+                child.visible = false;
+                if (child.isMesh) {
+                    child.castShadow = false;
+                    child.receiveShadow = false;
+                }
+                return;
+            }
+
             if (child.isMesh) {
                 child.castShadow = true;
                 child.receiveShadow = true;

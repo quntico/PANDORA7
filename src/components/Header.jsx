@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Settings, User, LayoutGrid, Calculator, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Settings, User, LayoutGrid, Calculator, PanelLeftClose, PanelLeftOpen, ChevronDown } from 'lucide-react';
 import { useProject } from '@/context/ProjectContext';
 import { useToast } from '@/components/ui/use-toast';
 import { useLogoManager } from '@/hooks/useLogoManager';
@@ -19,6 +19,18 @@ function Header() {
     try { return JSON.parse(localStorage.getItem('pandora_nav_collapsed') || 'false'); }
     catch { return false; }
   });
+  
+  const [simMenuOpen, setSimMenuOpen] = useState(false);
+
+  const simulatorShortcuts = [
+    { name: 'CARRIER (Tubo Cobre)', path: '/alpha/simulators/carrier', color: '#00F0FF' },
+    { name: 'LMA-500 (Reciclado)', path: '/alpha/simulators/lma-500', color: '#0d9488' },
+    { name: 'SMQ COTIZADOR', path: '/alpha/simulators/smq-automatic', color: '#F5C400' },
+    { name: 'RYDER (Lavado)', path: '/alpha/simulators/rider', color: '#3b82f6' },
+    { name: 'GRUPO GUSI', path: '/alpha/simulators/grupo-gusi', color: '#a855f7' },
+    { name: 'IASE', path: '/alpha/simulators/iase', color: '#10b981' },
+  ];
+
   const toggleNav = () => {
     setNavCollapsed(v => {
       localStorage.setItem('pandora_nav_collapsed', JSON.stringify(!v));
@@ -37,7 +49,7 @@ function Header() {
     { name: 'Evaluación', path: '/alpha' },
     { name: 'Simuladores', path: '/alpha/simulators' },
     { name: 'Análisis', path: '/alpha/analysis' },
-    { name: 'Historial', path: '/alpha/results' },
+    { name: 'AVATAR', path: '/alpha/avatar' },
     { name: 'Flow Designer', path: '/alpha/flow-designer' },
   ];
 
@@ -77,7 +89,7 @@ function Header() {
                 else if (password !== null) { alert("Contraseña incorrecta."); }
               }}
             >
-              VER 7.80
+              VER 7.86
               <span className="relative flex h-1.5 w-1.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500"></span>
@@ -88,20 +100,93 @@ function Header() {
           {/* Navigation Links — oculto si colapsado */}
           {!navCollapsed && (
             <div className="hidden md:flex items-center p-1 rounded-xl bg-glass-light border border-glass-border backdrop-blur-md gap-1">
-              {navItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={cn(
-                    "px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-300",
-                    location.pathname === item.path
-                      ? "bg-neon-cyan/10 text-neon-cyan shadow-glow-sm border border-neon-cyan/20"
-                      : "text-gray-400 hover:text-white hover:bg-glass-hover"
-                  )}
-                >
-                  {item.name}
-                </Link>
-              ))}
+              {navItems.map((item) => {
+                if (item.name === 'Simuladores') {
+                  const isSimulatorsPath = location.pathname.startsWith('/alpha/simulators');
+                  return (
+                    <div key={item.path} className="relative">
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setSimMenuOpen(!simMenuOpen);
+                        }}
+                        className={cn(
+                          "px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-1.5 focus:outline-none",
+                          isSimulatorsPath
+                            ? "bg-neon-cyan/10 text-neon-cyan shadow-glow-sm border border-neon-cyan/20"
+                            : "text-gray-400 hover:text-white hover:bg-glass-hover"
+                        )}
+                      >
+                        {item.name}
+                        <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-250", simMenuOpen && "rotate-180")} />
+                      </button>
+                      
+                      {simMenuOpen && (
+                        <>
+                          {/* Invisible backdrop to dismiss dropdown when clicking outside */}
+                          <div 
+                            className="fixed inset-0 z-30" 
+                            onClick={() => setSimMenuOpen(false)} 
+                          />
+                          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 rounded-xl bg-[#08080a]/95 backdrop-blur-3xl border border-glass-border p-2 shadow-2xl z-40 animate-in fade-in slide-in-from-top-2 duration-200">
+                            <div className="text-[10px] text-gray-500 font-black px-3 py-1.5 uppercase tracking-wider border-b border-glass-border/30">
+                              Atajos de Simuladores
+                            </div>
+                            <div className="space-y-0.5 mt-1">
+                              {simulatorShortcuts.map((sim) => (
+                                <Link
+                                  key={sim.path}
+                                  to={sim.path}
+                                  onClick={() => setSimMenuOpen(false)}
+                                  className={cn(
+                                    "flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold hover:bg-glass-hover hover:text-white transition-all text-gray-300",
+                                    location.pathname === sim.path && "text-neon-cyan bg-neon-cyan/5 border-l-2 border-neon-cyan"
+                                  )}
+                                >
+                                  <span 
+                                    className="w-2 h-2 rounded-full shrink-0" 
+                                    style={{ backgroundColor: sim.color }}
+                                  />
+                                  <span>{sim.name}</span>
+                                </Link>
+                              ))}
+                            </div>
+                            <div className="border-t border-glass-border/30 mt-1.5 pt-1.5">
+                              <Link
+                                to="/alpha/simulators"
+                                onClick={() => setSimMenuOpen(false)}
+                                className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-black text-neon-cyan hover:bg-neon-cyan/10 transition-all uppercase tracking-wider"
+                              >
+                                Hub de Simuladores
+                              </Link>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  );
+                }
+
+                // Enlace normal para los demás items
+                const isAvatar = item.name === 'AVATAR';
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={cn(
+                      "px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-1.5",
+                      location.pathname === item.path
+                        ? "bg-neon-cyan/10 text-neon-cyan shadow-glow-sm border border-neon-cyan/20"
+                        : "text-gray-400 hover:text-white hover:bg-glass-hover"
+                    )}
+                  >
+                    {isAvatar && (
+                      <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-tr from-[#00E5FF] to-[#C026FF] shadow-[0_0_8px_#00E5FF] animate-pulse" />
+                    )}
+                    {item.name}
+                  </Link>
+                );
+              })}
             </div>
           )}
 

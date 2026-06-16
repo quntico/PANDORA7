@@ -20,8 +20,9 @@ import RiderSimulatorPage from '@/pages/RiderSimulatorPage';
 import DynamicSimulatorBuilder from '@/pages/alpha/simulators/DynamicSimulatorBuilder';
 import LMA500Simulator from '@/pages/alpha/simulators/LMA500Simulator';
 import SMQSimulator from '@/pages/alpha/simulators/SMQSimulator';
-
+import CarrierSimulator from '@/pages/alpha/simulators/CarrierSimulator';
 import VerifyPage from '@/pages/VerifyPage';
+import AvatarPage from '@/pages/AvatarPage';
 
 import BetaLayout from '@/layouts/BetaLayout';
 import BetaDashboard from '@/pages/beta/BetaDashboard';
@@ -51,16 +52,20 @@ function AppContent() {
           <Route path='builder' element={<DynamicSimulatorBuilder />} />
           <Route path='lma-500' element={<LMA500Simulator />} />
           <Route path='smq-automatic' element={<SMQSimulator />} />
+          <Route path='carrier' element={<CarrierSimulator />} />
           <Route path=':id' element={<RiderSimulatorPageWrapper />} />
         </Route>
         <Route path='analysis' element={<AnalysisPage />} />
-        <Route path='results' element={<ResultsPage />} />
+        <Route path='avatar' element={<AvatarPage />} />
+        <Route path='results' element={<Navigate to="/alpha/avatar" replace />} />
         <Route path='dashboard' element={<DashboardPage />} />
         <Route path='settings' element={<SettingsPage />} />
         <Route path='chat' element={<ChatPage />} />
         <Route path='flow-designer' element={<FlowDesignerPage />} />
         <Route path='admin-cotizador' element={<AdminCotizadorPage />} />
       </Route>
+
+      <Route path='/app/avatar' element={<Navigate to="/alpha/avatar" replace />} />
 
       {/* Validación PANDORA */}
       <Route path='/verify' element={<VerifyPage />} />

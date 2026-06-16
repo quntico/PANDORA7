@@ -152,7 +152,11 @@ export function calculateLMA500Metrics(inputs) {
       usedFactor = Math.min(1.0, usedFactor * thermalPowerMultiplier);
     }
     
-    const realKw = eq.kw * usedFactor;
+    // Factor de pérdidas por voltaje: a 220V la eficiencia del motor y las líneas disminuye,
+    // requiriendo aproximadamente 7% más de potencia activa en la red (calentamiento, reactiva, etc.).
+    const voltageEfficiencyMultiplier = voltage === 220 ? 1.07 : 1.00;
+    
+    const realKw = eq.kw * usedFactor * voltageEfficiencyMultiplier;
     activePowerKw += realKw;
     return { ...eq, factor: usedFactor, realKw };
   });

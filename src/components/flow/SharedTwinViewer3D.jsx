@@ -236,7 +236,7 @@ function TwinScene({
       {/* Piso CAD Industrial (Sólido o Reflectivo pulido) */}
       {showFloorPlane !== 'none' && showFloorPlane !== 'grid' && (
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.015, 0]} receiveShadow>
-          <planeGeometry args={[100, 100]} />
+          <planeGeometry args={[2000, 2000]} />
           <meshStandardMaterial 
             color={
               isBlueprint 
@@ -287,7 +287,8 @@ export default function SharedTwinViewer3D({
   labelsCollapsed = false,
   onFileDrop = null,
   theme = 'dark',
-  onThemeChange = null
+  onThemeChange = null,
+  storagePrefix = ''
 }) {
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
@@ -533,19 +534,20 @@ export default function SharedTwinViewer3D({
     }
   };
 
-  const [hasLateral, setHasLateral] = useState(() => !!localStorage.getItem('twin_snapshot_lateral'));
-  const [hasSuperior, setHasSuperior] = useState(() => !!localStorage.getItem('twin_snapshot_superior'));
-  const [hasIsometrica, setHasIsometrica] = useState(() => !!localStorage.getItem('twin_snapshot_isometrica'));
+  const [hasLateral, setHasLateral] = useState(() => !!localStorage.getItem(`${storagePrefix}twin_snapshot_lateral`));
+  const [hasSuperior, setHasSuperior] = useState(() => !!localStorage.getItem(`${storagePrefix}twin_snapshot_superior`));
+  const [hasIsometrica, setHasIsometrica] = useState(() => !!localStorage.getItem(`${storagePrefix}twin_snapshot_isometrica`));
 
   useEffect(() => {
     const checkCaptures = () => {
-      setHasLateral(!!localStorage.getItem('twin_snapshot_lateral'));
-      setHasSuperior(!!localStorage.getItem('twin_snapshot_superior'));
-      setHasIsometrica(!!localStorage.getItem('twin_snapshot_isometrica'));
+      setHasLateral(!!localStorage.getItem(`${storagePrefix}twin_snapshot_lateral`));
+      setHasSuperior(!!localStorage.getItem(`${storagePrefix}twin_snapshot_superior`));
+      setHasIsometrica(!!localStorage.getItem(`${storagePrefix}twin_snapshot_isometrica`));
     };
+    checkCaptures();
     window.addEventListener('storage', checkCaptures);
     return () => window.removeEventListener('storage', checkCaptures);
-  }, []);
+  }, [storagePrefix]);
 
   const handleToggleRotation = () => {
     setRotationLevel(prev => (prev + 1) % 4);
@@ -624,10 +626,10 @@ export default function SharedTwinViewer3D({
         
         if (theme === 'blueprint') {
           const finalDataUrl = offscreen.toDataURL('image/png');
-          localStorage.setItem(`twin_snapshot_${viewType}`, finalDataUrl);
+          localStorage.setItem(`${storagePrefix}twin_snapshot_${viewType}`, finalDataUrl);
           // También guardar en twin_snapshot_base64 como fallback compatible
           if (viewType === 'lateral') {
-            localStorage.setItem('twin_snapshot_base64', finalDataUrl);
+            localStorage.setItem(`${storagePrefix}twin_snapshot_base64`, finalDataUrl);
           }
           window.dispatchEvent(new Event('storage'));
           
@@ -686,10 +688,10 @@ export default function SharedTwinViewer3D({
         ctx.putImageData(imgData, 0, 0);
         
         const finalDataUrl = offscreen.toDataURL('image/png');
-        localStorage.setItem(`twin_snapshot_${viewType}`, finalDataUrl);
+        localStorage.setItem(`${storagePrefix}twin_snapshot_${viewType}`, finalDataUrl);
         // También guardar en twin_snapshot_base64 como fallback compatible
         if (viewType === 'lateral') {
-          localStorage.setItem('twin_snapshot_base64', finalDataUrl);
+          localStorage.setItem(`${storagePrefix}twin_snapshot_base64`, finalDataUrl);
         }
         window.dispatchEvent(new Event('storage'));
         
@@ -722,7 +724,7 @@ export default function SharedTwinViewer3D({
         
         if (theme === 'blueprint') {
           const finalDataUrl = offscreen.toDataURL('image/png');
-          localStorage.setItem('twin_snapshot_base64', finalDataUrl);
+          localStorage.setItem(`${storagePrefix}twin_snapshot_base64`, finalDataUrl);
           
           const link = document.createElement('a');
           link.download = `twin_snapshot_${Date.now()}.png`;
@@ -782,7 +784,7 @@ export default function SharedTwinViewer3D({
         ctx.putImageData(imgData, 0, 0);
         
         const finalDataUrl = offscreen.toDataURL('image/png');
-        localStorage.setItem('twin_snapshot_base64', finalDataUrl);
+        localStorage.setItem(`${storagePrefix}twin_snapshot_base64`, finalDataUrl);
         
         const link = document.createElement('a');
         link.download = `twin_snapshot_${Date.now()}.png`;
@@ -814,7 +816,7 @@ export default function SharedTwinViewer3D({
         
         if (theme === 'blueprint') {
           const finalDataUrl = offscreen.toDataURL('image/png');
-          localStorage.setItem('twin_snapshot_base64', finalDataUrl);
+          localStorage.setItem(`${storagePrefix}twin_snapshot_base64`, finalDataUrl);
           window.dispatchEvent(new Event('storage'));
           return;
         }
@@ -866,7 +868,7 @@ export default function SharedTwinViewer3D({
         ctx.putImageData(imgData, 0, 0);
         
         const finalDataUrl = offscreen.toDataURL('image/png');
-        localStorage.setItem('twin_snapshot_base64', finalDataUrl);
+        localStorage.setItem(`${storagePrefix}twin_snapshot_base64`, finalDataUrl);
         window.dispatchEvent(new Event('storage'));
       };
       img.src = dataUrl;

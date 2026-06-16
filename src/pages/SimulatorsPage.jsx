@@ -58,6 +58,14 @@ function SimulatorsPage() {
         icon: 'Activity',
         color: '#F5C400',
         isSystem: true
+      },
+      {
+        id: 'carrier',
+        name: 'CARRIER',
+        description: 'Simulador Técnico de desbobinado, corte, trituración, molienda y briqueteado de rollos de tubo de cobre.',
+        icon: 'Activity',
+        color: '#00F0FF',
+        isSystem: true
       }
     ];
 
@@ -66,8 +74,8 @@ function SimulatorsPage() {
       if (!s || !s.id) return false;
       const lowerId = s.id.toLowerCase();
       const lowerName = (s.name || '').toLowerCase();
-      if (['rider', 'grupo-gusi', 'iase', 'lma-500', 'smq-automatic'].includes(lowerId)) return false;
-      if (['iase', 'lma-500', 'smq cotizador'].includes(lowerName)) return false;
+      if (['rider', 'grupo-gusi', 'iase', 'lma-500', 'smq-automatic', 'carrier'].includes(lowerId)) return false;
+      if (['iase', 'lma-500', 'smq cotizador', 'carrier'].includes(lowerName)) return false;
       return true;
     }) : [];
 

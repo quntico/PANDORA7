@@ -193,6 +193,7 @@ export default function LMA500Simulator() {
   };
 
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isExportOnly, setIsExportOnly] = useState(false);
   const [isTwinEditMode, setIsTwinEditMode] = useState(false);
   const [selectedTwinNodeId, setSelectedTwinNodeId] = useState(null);
   const [isDesignsLibraryOpen, setIsDesignsLibraryOpen] = useState(false);
@@ -251,9 +252,9 @@ export default function LMA500Simulator() {
   const [isAnchored, setIsAnchored] = useState(true);
   const [isAnchoring, setIsAnchoring] = useState(false);
   const [twinSnapshot, setTwinSnapshot] = useState(null);
-  const [twinSnapshotLateral, setTwinSnapshotLateral] = useState(() => localStorage.getItem('twin_snapshot_lateral') || null);
-  const [twinSnapshotSuperior, setTwinSnapshotSuperior] = useState(() => localStorage.getItem('twin_snapshot_superior') || null);
-  const [twinSnapshotIsometrica, setTwinSnapshotIsometrica] = useState(() => localStorage.getItem('twin_snapshot_isometrica') || null);
+  const [twinSnapshotLateral, setTwinSnapshotLateral] = useState(() => localStorage.getItem('sim_lma500_twin_snapshot_lateral') || null);
+  const [twinSnapshotSuperior, setTwinSnapshotSuperior] = useState(() => localStorage.getItem('sim_lma500_twin_snapshot_superior') || null);
+  const [twinSnapshotIsometrica, setTwinSnapshotIsometrica] = useState(() => localStorage.getItem('sim_lma500_twin_snapshot_isometrica') || null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [pdfProgress, setPdfProgress] = useState(0);
 
@@ -315,8 +316,7 @@ export default function LMA500Simulator() {
 
   // --- 3. DYNAMIC 3D DIGITAL TWIN BINDING ---
   const twinNodes = useMemo(() => {
-    return LMA500_EQUIPMENTS.map((eq) => {
-      const dynamicPower = Number((eq.kw * (inputs.loadFactor / 100)).toFixed(2));
+    return results.energy.equipmentPowerDetails.map((eq) => {
       const customPos = twinNodePositions[eq.id];
       return {
         id: eq.id,
@@ -330,7 +330,7 @@ export default function LMA500Simulator() {
                 eq.id === 'cernidor_silo' ? 'Secadora' : 'Chiller',
           label: eq.name,
           capacity: inputs.capacityDesired, 
-          power: dynamicPower, 
+          power: Number(eq.realKw.toFixed(2)), 
           color: '#0d9488', 
           hideLabel: true,
           position3D: customPos?.position3D || null,
@@ -338,7 +338,7 @@ export default function LMA500Simulator() {
         }
       };
     });
-  }, [inputs.loadFactor, inputs.capacityDesired, twinNodePositions]);
+  }, [results.energy.equipmentPowerDetails, inputs.capacityDesired, twinNodePositions]);
 
   const twinEdges = useMemo(() => {
     return [
@@ -370,10 +370,10 @@ export default function LMA500Simulator() {
   // Cargar instantánea del gemelo digital de localStorage y mantenerlo sincronizado
   useEffect(() => {
     const syncSnapshot = () => {
-      setTwinSnapshot(localStorage.getItem('twin_snapshot_base64'));
-      setTwinSnapshotLateral(localStorage.getItem('twin_snapshot_lateral'));
-      setTwinSnapshotSuperior(localStorage.getItem('twin_snapshot_superior'));
-      setTwinSnapshotIsometrica(localStorage.getItem('twin_snapshot_isometrica'));
+      setTwinSnapshot(localStorage.getItem('sim_lma500_twin_snapshot_base64'));
+      setTwinSnapshotLateral(localStorage.getItem('sim_lma500_twin_snapshot_lateral'));
+      setTwinSnapshotSuperior(localStorage.getItem('sim_lma500_twin_snapshot_superior'));
+      setTwinSnapshotIsometrica(localStorage.getItem('sim_lma500_twin_snapshot_isometrica'));
     };
     syncSnapshot();
     window.addEventListener('storage', syncSnapshot);
@@ -850,7 +850,7 @@ export default function LMA500Simulator() {
     }
   };
 
-  const printReport = async (fileName = null) => {
+  const printReport = async (fileName = null, exportOnly = false) => {
     const reportWrap = reportRef.current;
     if (!reportWrap) return;
 
@@ -904,8 +904,10 @@ export default function LMA500Simulator() {
       const clientNameClean = (inputs.clientName || 'PABLO_SOLER').trim().toUpperCase().replace(/\s+/g, '_');
       const projectNameClean = (inputs.projectName || 'INFORME_LMA500').trim().toUpperCase().replace(/\s+/g, '_');
       const defaultFileName = `SOLIMAQ_LMA500_INFORME_${projectNameClean}_${clientNameClean}.pdf`;
+      const finalFileName = fileName && fileName.trim() !== '' ? fileName : defaultFileName;
       
-      pdf.save(fileName && fileName.trim() !== '' ? fileName : defaultFileName);
+      // Guardar/Descargar el PDF
+      pdf.save(finalFileName);
       
     } catch (err) {
       console.error("Error al generar PDF:", err);
@@ -913,6 +915,10 @@ export default function LMA500Simulator() {
     } finally {
       setIsGeneratingPdf(false);
       setPdfProgress(0);
+      if (exportOnly) {
+        setIsReportModalOpen(false);
+        setIsExportOnly(false);
+      }
     }
   };
 
@@ -932,15 +938,16 @@ export default function LMA500Simulator() {
       setInputs(prev => ({ ...prev, exchangeRate: exportExchangeRate }));
     }
 
-    setTwinSnapshot(localStorage.getItem('twin_snapshot_base64'));
-    setTwinSnapshotLateral(localStorage.getItem('twin_snapshot_lateral'));
-    setTwinSnapshotSuperior(localStorage.getItem('twin_snapshot_superior'));
-    setTwinSnapshotIsometrica(localStorage.getItem('twin_snapshot_isometrica'));
+    setTwinSnapshot(localStorage.getItem('sim_lma500_twin_snapshot_base64'));
+    setTwinSnapshotLateral(localStorage.getItem('sim_lma500_twin_snapshot_lateral'));
+    setTwinSnapshotSuperior(localStorage.getItem('sim_lma500_twin_snapshot_superior'));
+    setTwinSnapshotIsometrica(localStorage.getItem('sim_lma500_twin_snapshot_isometrica'));
+    setIsExportOnly(true);
     setIsReportModalOpen(true);
     
     // Dar tiempo para que el reporte se renderice con el nuevo TC antes de imprimir
     setTimeout(() => {
-      printReport(exportFileName);
+      printReport(exportFileName, true);
     }, 1000); // 1000ms para asegurar el rerender completo
   };
 
@@ -951,7 +958,7 @@ export default function LMA500Simulator() {
         c: inputs.clientName || 'PABLO SOLER',
         s: 'SOLIMAQ LMA-500',
         d: new Date().toLocaleDateString('es-MX'),
-        h: 'SOLIMAQ-LMA500-RECILOGIC-PANDORA-v7.80'
+        h: 'SOLIMAQ-LMA500-RECILOGIC-PANDORA-v7.86'
       });
       // Safe base64 encoding for Unicode
       const b64 = btoa(unescape(encodeURIComponent(payloadString)));
@@ -1020,7 +1027,7 @@ export default function LMA500Simulator() {
       <div style={{ marginBottom: 20 }}>
         {/* Estampado Corporativo de Recilogic */}
         <div style={{ fontSize: 9, fontWeight: 900, color: '#008299', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>
-          SOLIMAQ LMA-500 · RECILOGIC · PANDORA v7.80
+          SOLIMAQ LMA-500 · RECILOGIC · PANDORA v7.86
         </div>
         
         {/* Diseño Premium de Título en Dos Líneas */}
@@ -2230,6 +2237,7 @@ export default function LMA500Simulator() {
             {/* Canvas 3D Viewer */}
             <div className={`relative rounded-2xl overflow-hidden border ${twinTheme === 'toxic' ? 'border-[#2c302e] bg-[#0c0d0e]' : twinTheme === 'blueprint' ? 'border-slate-800/80 bg-[#edf4f9]' : 'border-slate-800/80 bg-[#05070f]'}`}>
               <SharedTwinViewer3D 
+                storagePrefix="sim_lma500_"
                 height={isTwinBlockFullscreen ? "calc(100vh - 280px)" : "410px"} 
                 customNodes={twinNodes}
                 customEdges={twinEdges}
@@ -2372,14 +2380,13 @@ export default function LMA500Simulator() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/50">
-                  {LMA500_EQUIPMENTS.map(eq => {
-                    const estimatedLoadKw = eq.kw * (inputs.loadFactor / 100);
+                  {results.energy.equipmentPowerDetails.map(eq => {
                     return (
                       <tr key={eq.id} className="hover:bg-white/5 transition-colors">
                         <td className="py-3 px-4 font-black text-white">{eq.name}</td>
-                        <td className="py-3 px-4 text-center text-gray-500">220 VAC</td>
+                        <td className="py-3 px-4 text-center text-gray-500">{results.energy.voltage} VAC</td>
                         <td className="py-3 px-4 text-center text-white">{eq.kw.toFixed(2)} kW</td>
-                        <td className="py-3 px-4 text-center text-teal-400 font-bold">{estimatedLoadKw.toFixed(2)} kW</td>
+                        <td className="py-3 px-4 text-center text-teal-400 font-bold">{eq.realKw.toFixed(2)} kW</td>
                         <td className="py-3 px-4 text-right font-black text-white">{formatCurrency(eq.capexUsd, 'USD')}</td>
                       </tr>
                     );
@@ -3470,7 +3477,7 @@ export default function LMA500Simulator() {
 
       {/* --- IN-APP EXECUTIVE REPORT VIEW MODAL (Exactamente a 12 Páginas) --- */}
       {isReportModalOpen && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-[#050608]/95 overflow-y-auto p-4 md:p-6" style={{ backdropFilter: 'blur(16px)' }}>
+        <div className={`fixed inset-0 z-50 flex flex-col bg-[#050608]/95 overflow-y-auto p-4 md:p-6 ${isExportOnly ? 'opacity-0 pointer-events-none' : ''}`} style={{ backdropFilter: 'blur(16px)' }}>
           
           {/* Sticky Toolbar de Control en el Reporte */}
           <div className="max-w-[1140px] w-full mx-auto bg-[#0a0d14]/90 border border-white/10 rounded-2xl px-6 py-4 flex items-center justify-between shadow-2xl mb-6 sticky top-2 z-50 backdrop-blur-xl">
@@ -3521,7 +3528,7 @@ export default function LMA500Simulator() {
                     RECILOGIC
                   </span>
                   <span style={{ display: 'inline-block', fontSize: 9, fontWeight: 800, color: '#fff', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 6, padding: '2px 8px', background: 'rgba(255,255,255,0.1)' }}>
-                    PANDORA 3.0 · V7.80
+                    PANDORA 3.0 · V7.86
                   </span>
                 </div>
 
@@ -3716,12 +3723,12 @@ export default function LMA500Simulator() {
                     </tr>
                   </thead>
                   <tbody>
-                    {LMA500_EQUIPMENTS.map(eq => (
+                    {results.energy.equipmentPowerDetails.map(eq => (
                       <tr key={eq.id}>
                         <td style={REPORT_STYLES.td}>{eq.name}</td>
-                        <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>220 VAC</td>
+                        <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{results.energy.voltage} VAC</td>
                         <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{eq.kw.toFixed(2)} kW</td>
-                        <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(eq.kw * (inputs.loadFactor / 100)).toFixed(2)} kW</td>
+                        <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{eq.realKw.toFixed(2)} kW</td>
                         <td style={{ ...REPORT_STYLES.td, textAlign: 'right', fontWeight: 800 }}>{formatCurrency(eq.capexUsd, 'USD')}</td>
                       </tr>
                     ))}
@@ -3738,7 +3745,7 @@ export default function LMA500Simulator() {
                 </table>
 
                 <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 12, fontSize: 10, color: '#475569', lineHeight: 1.4 }}>
-                  <strong>Nota del Ingeniero:</strong> Los componentes han sido calibrados mecánicamente para un voltaje nominal de **220 VAC** según los requerimientos eléctricos estándar de plantas de reciclaje en México.
+                  <strong>Nota del Ingeniero:</strong> Los componentes han sido calibrados mecánicamente para un voltaje nominal de **{results.energy.voltage} VAC** según los requerimientos eléctricos estándar de plantas de reciclaje en México.
                 </div>
 
                 {/* Gráfica de Distribución de Potencia de Equipos */}
@@ -4165,7 +4172,7 @@ export default function LMA500Simulator() {
                 </div>
 
                 <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: 12, fontSize: 10, color: '#64748b', fontWeight: 500 }}>
-                  • El cálculo incluye el factor de carga promedio y asume un voltaje de alimentación estable de 220 VAC.
+                  • El cálculo incluye el factor de carga promedio y asume un voltaje de alimentación estable de {results.energy.voltage} VAC.
                 </div>
               </div>
               {renderPageFooter(pgCostosE, totalPgs)}
@@ -4861,7 +4868,7 @@ export default function LMA500Simulator() {
                         </div>
 
                         <div style={{ marginTop: 6, borderTop: '1px solid #e2e8f0', paddingTop: 8, fontSize: 10, fontFamily: 'monospace', color: '#94a3b8', textAlign: 'center' }}>
-                          VERIFICACIÓN HASH: SOLIMAQ-LMA500-RECILOGIC-PANDORA-v7.80
+                          VERIFICACIÓN HASH: SOLIMAQ-LMA500-RECILOGIC-PANDORA-v7.86
                         </div>
                       </div>
                       </>
@@ -5461,7 +5468,7 @@ export default function LMA500Simulator() {
 
       {/* --- FOOTER DESCRIPTIVO --- */}
       <div className="max-w-[1500px] mx-auto text-center mt-12 text-gray-600 text-xs font-semibold py-8 border-t border-slate-900">
-        PANDORA v7.80 • Sistema de Inteligencia y Simulación de Inversiones Industriales
+        PANDORA v7.86 • Sistema de Inteligencia y Simulación de Inversiones Industriales
         <p className="text-[10px] text-gray-600 mt-1 font-medium">
           SOLIMAQ S.A. de C.V. • Derechos Reservados. Todos los cálculos son estimaciones paramétricas basadas en fichas técnicas.
         </p>
@@ -5517,7 +5524,7 @@ export default function LMA500Simulator() {
                 onClick={confirmExportPdf}
                 className="flex-1 px-4 py-3 rounded-xl bg-teal-500 hover:bg-teal-400 text-black transition-all text-sm font-bold flex items-center justify-center gap-2"
               >
-                <Printer size={16} /> Generar PDF
+                <Download size={16} /> Exportar a PDF
               </button>
             </div>
           </div>

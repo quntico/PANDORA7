@@ -65,7 +65,7 @@ export function BetaProvider({ children }) {
         // Crear proyecto inicial
         const { data: newProject, error: createError } = await supabase
           .from('projects_beta')
-          .insert([{ name: 'PANDORA DEFAULT PROJECT', description: 'Proyecto de respaldo' }])
+          .insert([{ name: 'PROYECTO PREDETERMINADO PANDORA', description: 'Proyecto de respaldo' }])
           .select()
           .single();
         
