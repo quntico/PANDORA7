@@ -5,8 +5,9 @@ import RyderReportModal from '@/components/ryder/RyderReportModal';
 import { buildRyderReportData } from '@/utils/buildRyderReportData';
 import SharedTwinViewer3D from '@/components/flow/SharedTwinViewer3D';
 import { useFlowDesigns } from '@/hooks/useFlowDesigns';
+import { useBeta } from '@/context/BetaContext';
 import FlowDesignsLibrary from '@/components/flow/FlowDesignsLibrary';
-import { FolderOpen, Upload, Check, Sliders, Pencil, Link2, Droplets, Zap, Wind, Navigation, Cpu, Warehouse, Wrench, Anchor } from 'lucide-react';
+import { FolderOpen, Upload, Check, Sliders, Pencil, Link2, Droplets, Zap, Wind, Navigation, Cpu, Warehouse, Wrench, Anchor, Save } from 'lucide-react';
 
 
 import { Activity, ArrowLeft, Bot, Box, Brain, ChevronLeft, ChevronRight, Download, Edit3, Eye, FileText, LayoutDashboard, Lock, Minus, Plus, Send, Settings, Table2, Target, Trash2, Unlock, Loader2, X, Play, RotateCcw, Copy, Maximize2, Minimize2, Power, Calculator, EyeOff, FileDigit, GripVertical, AlertTriangle, Printer, Truck, BarChart2, CheckCircle2, Factory, Layers } from 'lucide-react';
@@ -111,9 +112,8 @@ function compareScenarioAgainstMachine(box, machineKey, MACHINE_CONFIGS, CUSTOME
   const machine = computeMachineCapacity(box, machineConfig);
   const scenarioRows = computeCustomerScenarioTable(machineScenario);
   return scenarioRows.map(row => {
-    const requiredLines = (manualLinesUsed !== null && manualLinesUsed !== undefined) 
-      ? manualLinesUsed 
-      : (row.requiredPerHour > 0 ? Math.ceil(row.requiredPerHour / machine.actualBoxesHr) : 0);
+    // Siempre asumimos 1 sola máquina
+    const requiredLines = row.requiredPerHour > 0 ? 1 : 0;
       
     const totalBoxesHr = requiredLines * machine.actualBoxesHr;
     const deficitOrSurplus = totalBoxesHr - row.requiredPerHour;
@@ -148,18 +148,139 @@ const checkIsIase = (simId) => {
 export default function RiderSimulatorPage() {
   const { id } = useParams();
   const simulatorId = id || 'rider';
+  const { activeProject, updateProjectName } = useBeta();
   const isGusi = checkIsGusi(simulatorId);
   const isIase = checkIsIase(simulatorId);
 
-  // Cargar metadatos del simulador desde localStorage
-  const simulatorMeta = useMemo(() => {
+  // Estados de notificación de guardado
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
+  const [productImageBase64, setProductImageBase64] = useState(() => {
+    return localStorage.getItem(`sim_${simulatorId}_product_image_base64`) || '';
+  });
+
+  const handleProductImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor selecciona un archivo de imagen válido (PNG, JPG, WEBP).');
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert('La imagen es demasiado grande. Elige una de menos de 2MB para asegurar un rendimiento óptimo.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target.result;
+      setProductImageBase64(base64);
+      localStorage.setItem(`sim_${simulatorId}_product_image_base64`, base64);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveProductImage = () => {
+    setProductImageBase64('');
+    localStorage.removeItem(`sim_${simulatorId}_product_image_base64`);
+  };
+
+  const [simulatorMeta, setSimulatorMeta] = useState(() => {
     try {
       const list = JSON.parse(localStorage.getItem('pandora_simulators') || '[]');
       return list.find(s => s.id === simulatorId) || { name: 'RYDER', description: 'Línea de lavado y secado para pallets/cajas plásticas (140 m/h max)' };
     } catch {
       return { name: 'RYDER', description: 'Línea de lavado y secado para pallets/cajas plásticas (140 m/h max)' };
     }
+  });
+
+  useEffect(() => {
+    try {
+      const list = JSON.parse(localStorage.getItem('pandora_simulators') || '[]');
+      const found = list.find(s => s.id === simulatorId);
+      if (found) {
+        setSimulatorMeta(found);
+      } else {
+        setSimulatorMeta({ name: 'RYDER', description: 'Línea de lavado y secado para pallets/cajas plásticas (140 m/h max)' });
+      }
+    } catch (e) {
+      console.error(e);
+    }
   }, [simulatorId]);
+
+  useEffect(() => {
+    if (activeProject?.name && activeProject.name !== simulatorMeta.name) {
+      setSimulatorMeta(prev => ({ ...prev, name: activeProject.name }));
+      try {
+        const list = JSON.parse(localStorage.getItem('pandora_simulators') || '[]');
+        let exists = false;
+        const updated = list.map(s => {
+          if (s.id === simulatorId) {
+            exists = true;
+            return { ...s, name: activeProject.name };
+          }
+          return s;
+        });
+        if (!exists) {
+          updated.push({ id: simulatorId, name: activeProject.name, description: simulatorMeta.description });
+        }
+        localStorage.setItem('pandora_simulators', JSON.stringify(updated));
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  }, [activeProject?.name, simulatorId]);
+
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [tempTitle, setTempTitle] = useState('');
+
+  useEffect(() => {
+    if (simulatorMeta.name) {
+      setTempTitle(simulatorMeta.name);
+    }
+  }, [simulatorMeta.name]);
+
+  const handleSaveTitle = () => {
+    setIsEditingTitle(false);
+    const clean = tempTitle.trim();
+    if (clean && clean !== simulatorMeta.name) {
+      setSimulatorMeta(prev => ({ ...prev, name: clean }));
+      try {
+        const list = JSON.parse(localStorage.getItem('pandora_simulators') || '[]');
+        let exists = false;
+        const updated = list.map(s => {
+          if (s.id === simulatorId) {
+            exists = true;
+            return { ...s, name: clean };
+          }
+          return s;
+        });
+        if (!exists) {
+          updated.push({ id: simulatorId, name: clean, description: simulatorMeta.description });
+        }
+        localStorage.setItem('pandora_simulators', JSON.stringify(updated));
+      } catch (err) {
+        console.error(err);
+      }
+
+      if (activeProject) {
+        updateProjectName(clean);
+      }
+    }
+  };
+
+  const handleTitleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleSaveTitle();
+    }
+    if (e.key === 'Escape') {
+      setIsEditingTitle(false);
+      setTempTitle(simulatorMeta.name || '');
+    }
+  };
 
   const [inputs, setInputs] = useState(() => {
     const savedInputs = localStorage.getItem(`sim_${simulatorId}_inputs`);
@@ -336,6 +457,12 @@ export default function RiderSimulatorPage() {
     return saved || 'CENTRAL DE INTELIGENCIA';
   });
 
+  useEffect(() => {
+    if (activeProject?.name) {
+      setCustomerName(activeProject.name);
+    }
+  }, [activeProject?.name]);
+
   // ── Estados para el Módulo Hídrico y Sustentabilidad ──
   const [washFlowLh, setWashFlowLh] = useState(() => {
     const saved = parseFloat(localStorage.getItem(`sim_${simulatorId}_wash_flow_lh`));
@@ -403,18 +530,29 @@ export default function RiderSimulatorPage() {
     setShowFileNameModal(true);
   };
 
-  const buildReport = () => buildRyderReportData({
-    inputs, computedRows, scenarioResults, mixScenarioResults,
-    CUSTOMER_SCENARIOS, MACHINE_CONFIGS, selectedRow, physicalMaxMH,
-    simulatorName: simulatorMeta.name,
-    installedPowerKw,
-    washFlowLh,
-    waterReplenishLh,
-    tankCapacityL,
-    waterChangeDays,
-    clientName,
-    customerName
-  });
+  const buildReport = () => {
+    const projectSuffix = activeProject?.id ? `${activeProject.id}_` : '';
+    const twinSnapshotLateral = localStorage.getItem(`${projectSuffix}twin_snapshot_lateral`);
+    const twinSnapshotSuperior = localStorage.getItem(`${projectSuffix}twin_snapshot_superior`);
+    const twinSnapshotIsometrica = localStorage.getItem(`${projectSuffix}twin_snapshot_isometrica`);
+
+    return buildRyderReportData({
+      inputs, computedRows, scenarioResults, mixScenarioResults,
+      CUSTOMER_SCENARIOS, MACHINE_CONFIGS, selectedRow, physicalMaxMH,
+      simulatorName: simulatorMeta.name,
+      installedPowerKw,
+      washFlowLh,
+      waterReplenishLh,
+      tankCapacityL,
+      waterChangeDays,
+      clientName,
+      customerName,
+      productImageBase64,
+      twinSnapshotLateral,
+      twinSnapshotSuperior,
+      twinSnapshotIsometrica
+    });
+  };
 
   const openReportModal = () => {
     setReportModalData(buildReport());
@@ -496,6 +634,74 @@ export default function RiderSimulatorPage() {
       }
     }, 1500);
   };
+  const handleSaveSimulator = async () => {
+    // 1. Guardar localmente
+    localStorage.setItem(`sim_${simulatorId}_inputs`, JSON.stringify(inputs));
+    localStorage.setItem(`sim_${simulatorId}_customer_scenarios`, JSON.stringify(CUSTOMER_SCENARIOS));
+    localStorage.setItem(`sim_${simulatorId}_machine_configs`, JSON.stringify(MACHINE_CONFIGS));
+    localStorage.setItem(`sim_${simulatorId}_client_name`, clientName);
+    localStorage.setItem(`sim_${simulatorId}_custom_file_name`, customFileName || '');
+    localStorage.setItem(`sim_${simulatorId}_boxes`, JSON.stringify(boxes));
+    
+    if (twinNodes?.length) {
+      localStorage.setItem(`sim_${simulatorId}_twin_nodes`, JSON.stringify(twinNodes));
+    }
+    if (twinEdges?.length) {
+      localStorage.setItem(`sim_${simulatorId}_twin_edges`, JSON.stringify(twinEdges));
+    }
+    if (twinLayout) {
+      localStorage.setItem(`sim_${simulatorId}_twin_layout`, JSON.stringify(twinLayout));
+    }
+
+    // 2. Guardar en Supabase (puente de guardado)
+    if (activeProject && activeProject.id && activeProject.id !== 'local-fallback-id') {
+      try {
+        const mixR      = computedRows.filter(r => selectedMixIds.includes(r.id));
+        const finalMix  = mixR.length ? mixR : (selectedRow ? [selectedRow] : []);
+        const avgPitch  = finalMix.length ? (finalMix.reduce((s,r) => s + r.pitch, 0) / finalMix.length) : 0;
+        const avgCapH   = avgPitch > 0 ? (physicalMaxMH / avgPitch) : 0;
+        const y1Sc      = CUSTOMER_SCENARIOS.lavadoSecado.scenarios[0];
+        const y1Efs     = y1Sc.effectiveHoursPerShift;
+        const y1Shifts  = y1Sc.shifts;
+        const y1H       = y1Efs * y1Shifts;
+        const capDay    = Math.round(avgCapH * y1H);
+
+        const payload = {
+          project_id: activeProject.id,
+          key: `sim_${simulatorId}_data`,
+          value: JSON.stringify({
+            inputs,
+            customerScenarios: CUSTOMER_SCENARIOS,
+            machineConfigs: MACHINE_CONFIGS,
+            clientName,
+            customFileName,
+            boxesCount: boxes.length,
+            results: {
+              dailyCapacityY1: capDay,
+              avgCapacityPerHour: Math.round(avgCapH),
+              manualSpeedMh: Math.round(inputs.manualSpeed * 60)
+            },
+            timestamp: Date.now()
+          })
+        };
+        
+        await supabase
+          .from('project_context_beta')
+          .upsert([payload], { onConflict: 'project_id,key' });
+          
+        setToastMessage('¡Simulador guardado! Parámetros sincronizados exitosamente con la base de datos de producción.');
+      } catch (dbErr) {
+        console.error("Error al sincronizar con Supabase:", dbErr);
+        setToastMessage('¡Simulador guardado localmente! (Error de sincronización con la base de datos)');
+      }
+    } else {
+      setToastMessage('¡Simulador guardado en local! (Crea o abre un proyecto en la bóveda de producción para sincronizar)');
+    }
+    
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 4000);
+  };
+
   const openConfig = () => {
     setConfigDraft(JSON.parse(JSON.stringify({ scenarios: CUSTOMER_SCENARIOS, machines: MACHINE_CONFIGS })));
     setConfigTab('maquina');
@@ -542,7 +748,7 @@ export default function RiderSimulatorPage() {
           localStorage.setItem(`sim_${simulatorId}_boxes`, JSON.stringify(gusiDefaults));
           return gusiDefaults;
         }
-        return parsed;
+        return parsed.filter(b => b.id !== 'ex3');
       } catch (e) {
         console.error(e);
       }
@@ -563,8 +769,6 @@ export default function RiderSimulatorPage() {
       { id:'ex0', name:'Contenedor CHICO',       l:30.48, w:38.10, h:17.78, gap:0.095, advanceSide:'length', color:'#6b7280', maquina:'lavado_secado', suciedad:'Polvo',  included:true  },
       { id:'ex1', name:'Contenedor MEDIANO',     l:60.96, w:38.10, h:17.78, gap:0.100, advanceSide:'length', color:'#8b5cf6', maquina:'lavado_secado', suciedad:'Polvo',  included:true  },
       { id:'ex2', name:'Contenedor Rectangular', l:60.96, w:38.10, h:35.56, gap:0.080, advanceSide:'length', color:'#3b82f6', maquina:'lavado_secado', suciedad:'Polvo',  included:true  },
-      // ── SOLO SECADO ──────────────────────────────────────────────────────────
-      { id:'ex3', name:'Contenedor Cuadrado',    l:60.96, w:55.88, h:35.56, gap:0.100, advanceSide:'length', color:'#10b981', maquina:'secado',        suciedad:'Grasa',  included:true  },
       // ── ESPECIALES / BULK (Integrados en evaluación) ─────────────────────────
       { id:'ex4', name:'CONT-AIP-ABAT (bulk bote)', l:114.30, w:121.92, h:86.36, gap:0.097, advanceSide:'length', color:'#f59e0b', maquina:'lavado_secado', suciedad:'Polvo', included:true },
       { id:'ex5', name:'TAPA-AIP-ABAT (bulk bote)', l:114.30, w:121.92, h:12.70, gap:0.097, advanceSide:'length', color:'#ec4899', maquina:'lavado_secado', suciedad:'Polvo', included:true },
@@ -1139,7 +1343,7 @@ export default function RiderSimulatorPage() {
   // ── Req. Diario — valores oficiales pre-cargados (ahora por ID) ──
   const OFFICIAL_REQS = isGusi
     ? { gusi_ex0: 500, gusi_ex1: 500, gusi_ex2: 600, gusi_ex3: 600 }
-    : { ex0:1610, ex1:798, ex2:1064, ex3:574, ex4:82, ex5:82, ex6:0 };
+    : { ex0:1610, ex1:798, ex2:1064, ex4:82, ex5:82, ex6:0 };
   const LS_KEY = simulatorId === 'rider' ? 'rider_daily_reqs_v2' : `sim_${simulatorId}_daily_reqs`;
   const [dailyReqs, setDailyReqs] = useState(() => {
     try {
@@ -1279,14 +1483,14 @@ export default function RiderSimulatorPage() {
         lavado: {
           requiredHoursTotal: totalHrsLavado,
           deficitOrSurplusHours: avail - totalHrsLavado,
-          linesRequired: avail > 0 ? Math.ceil(totalHrsLavado / avail) : 0,
+          linesRequired: avail > 0 && totalHrsLavado > 0 ? 1 : 0,
           status: avail >= totalHrsLavado ? 'VIABLE' : 'NO VIABLE',
         },
         // Solo Secado
         secado: {
           requiredHoursTotal: totalHrsSecado,
           deficitOrSurplusHours: avail - totalHrsSecado,
-          linesRequired: avail > 0 ? Math.ceil(totalHrsSecado / avail) : 0,
+          linesRequired: avail > 0 && totalHrsSecado > 0 ? 1 : 0,
           status: avail >= totalHrsSecado ? 'VIABLE' : 'NO VIABLE',
         },
       };
@@ -1741,7 +1945,7 @@ ${userMsg}
           r.requiredPerHour.toFixed(1), r.machineBoxesPerHour.toFixed(1),
           (r.deficitOrSurplus>=0?'+':'')+r.deficitOrSurplus.toFixed(1),
           (r.coverageRatio*100).toFixed(1)+'%',
-          r.requiredLines+(r.requiredLines===1?' maq.':' maqs.')
+          r.requiredLines+' maq.'
         ]),
         styles:{fillColor:C.panel,textColor:C.gray1,fontSize:8,lineColor:C.border,lineWidth:0.2,cellPadding:2.5},
         headStyles:{fillColor:C.header,textColor:C.accent1,fontStyle:'bold',fontSize:8,lineColor:C.accent1,lineWidth:0.3},
@@ -1998,14 +2202,14 @@ ${userMsg}
     },
     sc_cobertura: {
       title: 'Cobertura %',
-      description: 'Porcentaje de la demanda que una sola máquina puede cubrir. 100% o más = una línea es suficiente. Menos de 100% = se requieren más líneas.',
+      description: 'Porcentaje de la demanda que la máquina única puede cubrir. 100% o más = suficiente. Menos de 100% = capacidad insuficiente.',
       calculation: `Capacidad Real Máquina (c/h) ÷ Producción Requerida (c/h) × 100. Ejemplo: 100 c/h ÷ 263.4 c/h = 38.0%.`,
       color: 'text-green-400'
     },
     sc_lineas: {
-      title: 'Líneas Req.',
-      description: 'Número mínimo de líneas (máquinas en paralelo) necesarias para satisfacer la demanda del cliente en ese escenario.',
-      calculation: `TECHO(Producción Requerida c/h ÷ Capacidad Real Máquina c/h). Siempre se redondea hacia arriba. Verde = 1 línea, Amarillo = 2 líneas, Rojo = 3+ líneas.`,
+      title: 'Máquinas Req.',
+      description: 'Máquinas requeridas fijadas a la unidad física disponible.',
+      calculation: `Fijado siempre a 1 máquina operativa.`,
       color: 'text-green-400'
     }
   };
@@ -2024,119 +2228,192 @@ ${userMsg}
               <LayoutDashboard className="w-6 h-6 text-neon-cyan" />
             </div>
             <div>
-              <h1 className="text-2xl font-black tracking-tight text-white uppercase flex items-center gap-3">
-                {simulatorMeta.name}
+              <div className="flex items-center gap-3">
+                {isEditingTitle ? (
+                  <input
+                    type="text"
+                    value={tempTitle}
+                    onChange={(e) => setTempTitle(e.target.value)}
+                    onBlur={handleSaveTitle}
+                    onKeyDown={handleTitleKeyDown}
+                    autoFocus
+                    className="bg-[#0f0f0f] border border-neon-cyan/50 rounded-lg px-2 py-0.5 text-2xl font-black text-white tracking-tight outline-none focus:ring-1 focus:ring-neon-cyan/50 w-80 uppercase"
+                  />
+                ) : (
+                  <h1 
+                    onClick={() => setIsEditingTitle(true)}
+                    className="text-2xl font-black tracking-tight text-white uppercase cursor-pointer hover:text-neon-cyan transition-colors flex items-center gap-2 group"
+                    title="Hacer click para renombrar el simulador"
+                  >
+                    {simulatorMeta.name}
+                    <Edit3 className="w-5 h-5 text-gray-500 hover:text-neon-cyan transition-colors" />
+                  </h1>
+                )}
                 <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[10px] tracking-widest uppercase">Simulador Activo</span>
                 <span className="flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded font-black tracking-normal uppercase animate-pulse">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                   Auto-guardado
                 </span>
-              </h1>
-
-              {/* Nombre del Cliente - Editable en sitio, posicionado abajo del nombre de la empresa IASE */}
-              <div className="flex items-center gap-2 mt-1.5 mb-1.5 bg-white/5 hover:bg-white/10 hover:border-cyan-500/30 border border-white/10 px-3 py-1 rounded-xl transition-all w-fit">
-                <Edit3 className="w-3.5 h-3.5 text-cyan-400" />
-                <span className="text-[10px] font-black tracking-wider uppercase text-cyan-400">Cliente:</span>
-                <input
-                  type="text"
-                  value={customerName}
-                  onChange={(e) => {
-                    setCustomerName(e.target.value);
-                    localStorage.setItem(`sim_${simulatorId}_customer_name`, e.target.value);
-                  }}
-                  className="bg-transparent text-xs font-black text-white border-none outline-none focus:outline-none focus:ring-0 p-0 m-0 w-64"
-                  placeholder="Escribir nombre del cliente..."
-                />
               </div>
 
-              <p className="text-sm text-gray-500 font-medium">{simulatorMeta.description} ({physicalMaxMH} m/h max)</p>
-              <div className="flex items-center gap-2 mt-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl max-w-[360px]">
-                <Edit3 className="w-3.5 h-3.5 text-cyan-400" />
-                <span className="text-[10px] font-black tracking-wider uppercase text-cyan-400">Evaluación:</span>
-                <input
-                  type="text"
-                  value={clientName}
-                  onChange={(e) => {
-                    setClientName(e.target.value);
-                    localStorage.setItem(`sim_${simulatorId}_client_name`, e.target.value);
-                  }}
-                  className="bg-transparent text-xs font-bold text-white border-none outline-none focus:outline-none focus:ring-0 p-0 m-0 w-56"
-                  placeholder="Máquina en Evaluación..."
-                />
+              <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1 mb-2">
+                {simulatorMeta.description} ({physicalMaxMH} m/h max)
+              </p>
+
+              <div className="flex flex-wrap items-center gap-3 mt-2">
+                {/* EMPRESA (Header / Proyecto) */}
+                <div className="flex items-center gap-2 bg-white/5 hover:bg-white/10 hover:border-cyan-500/30 border border-white/10 px-3 py-1 rounded-xl transition-all w-fit">
+                  <Edit3 className="w-3.5 h-3.5 text-cyan-400" />
+                  <span className="text-[10px] font-black tracking-wider uppercase text-cyan-400">Empresa:</span>
+                  <input
+                    type="text"
+                    value={simulatorMeta.name}
+                    onChange={(e) => {
+                      const newName = e.target.value;
+                      setSimulatorMeta(prev => ({ ...prev, name: newName }));
+                      try {
+                        const list = JSON.parse(localStorage.getItem('pandora_simulators') || '[]');
+                        let exists = false;
+                        const updated = list.map(s => {
+                          if (s.id === simulatorId) {
+                            exists = true;
+                            return { ...s, name: newName };
+                          }
+                          return s;
+                        });
+                        if (!exists) {
+                          updated.push({ id: simulatorId, name: newName, description: simulatorMeta.description });
+                        }
+                        localStorage.setItem('pandora_simulators', JSON.stringify(updated));
+                      } catch (err) {
+                        console.error(err);
+                      }
+                      if (activeProject) {
+                        updateProjectName(newName);
+                      }
+                    }}
+                    className="bg-transparent text-xs font-black text-white border-none outline-none focus:outline-none focus:ring-0 p-0 m-0 w-48 uppercase"
+                    placeholder="Escribir Empresa (Header)..."
+                  />
+                </div>
+
+                {/* CLIENTE */}
+                <div className="flex items-center gap-2 bg-white/5 hover:bg-white/10 hover:border-cyan-500/30 border border-white/10 px-3 py-1 rounded-xl transition-all w-fit">
+                  <Edit3 className="w-3.5 h-3.5 text-cyan-400" />
+                  <span className="text-[10px] font-black tracking-wider uppercase text-cyan-400">Cliente:</span>
+                  <input
+                    type="text"
+                    value={customerName}
+                    onChange={(e) => {
+                      setCustomerName(e.target.value);
+                      localStorage.setItem(`sim_${simulatorId}_customer_name`, e.target.value);
+                    }}
+                    className="bg-transparent text-xs font-black text-white border-none outline-none focus:outline-none focus:ring-0 p-0 m-0 w-48 uppercase"
+                    placeholder="Escribir Cliente..."
+                  />
+                </div>
+
+                {/* EVALUACIÓN */}
+                <div className="flex items-center gap-2 bg-white/5 hover:bg-white/10 hover:border-cyan-500/30 border border-white/10 px-3 py-1.5 rounded-xl transition-all w-fit">
+                  <Edit3 className="w-3.5 h-3.5 text-cyan-400" />
+                  <span className="text-[10px] font-black tracking-wider uppercase text-cyan-400">Evaluación:</span>
+                  <input
+                    type="text"
+                    value={clientName}
+                    onChange={(e) => {
+                      setClientName(e.target.value);
+                      localStorage.setItem(`sim_${simulatorId}_client_name`, e.target.value);
+                    }}
+                    className="bg-transparent text-xs font-black text-white border-none outline-none focus:outline-none focus:ring-0 p-0 m-0 w-72 uppercase"
+                    placeholder="Máquina / Proyecto..."
+                  />
+                </div>
               </div>
             </div>
           </div>
-          <div className="flex gap-3">
-            <button onClick={openConfig} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#00F0FF]/10 border border-[#00F0FF]/30 hover:bg-[#00F0FF]/20 text-[#00F0FF] transition-all text-sm font-bold" title="Configuración del Simulador">
-              <Settings className="w-4 h-4" /> Configurar
-            </button>
-            <button onClick={handleSetFileName} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/30 hover:bg-indigo-500/20 text-indigo-400 transition-all text-sm font-bold" title={customFileName ? `Archivo: ${customFileName}` : "Configurar nombre de exportación"}>
-              <Edit3 className="w-4 h-4" /> {customFileName ? 'Nombre OK' : 'Nombre'}
-            </button>
-            <button onClick={exportCsv} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-glass-light border border-glass-border hover:bg-glass-hover transition-all text-sm font-bold">
-              <Download className="w-4 h-4" /> CSV
-            </button>
-            <button onClick={exportExcel} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 text-emerald-400 transition-all text-sm font-bold">
-              <Table2 className="w-4 h-4" /> Excel
-            </button>
-
-            {/* ── Informe PDF: choice dropdown ── */}
-            <div style={{ position: 'relative' }}>
-              <button
-                onClick={() => setShowPdfMenu(v => !v)}
-                onBlur={() => setTimeout(() => setShowPdfMenu(false), 160)}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all"
-                style={{ background: 'rgba(17,181,201,0.13)', border: '1px solid rgba(17,181,201,0.35)', color: '#11b5c9' }}
-              >
-                <FileText className="w-4 h-4" /> Informe PDF
-                <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}><path d="M2 4l4 4 4-4"/></svg>
+          <div className="flex flex-col items-end gap-3">
+            <div className="flex gap-3">
+              <button onClick={openConfig} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#00F0FF]/10 border border-[#00F0FF]/30 hover:bg-[#00F0FF]/20 text-[#00F0FF] transition-all text-sm font-bold" title="Configuración del Simulador">
+                <Settings className="w-4 h-4" /> Configurar
               </button>
-              {showPdfMenu && (
-                <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, minWidth: 230, background: '#0f1c2e', border: '1px solid rgba(17,181,201,0.28)', borderRadius: 12, padding: 6, zIndex: 9990, boxShadow: '0 16px 48px rgba(0,0,0,0.55)' }}>
-                  <button
-                    onMouseDown={openReportModal}
-                    style={{ display: 'flex', alignItems: 'center', gap: 14, width: '100%', padding: '12px 14px', background: 'transparent', border: 0, borderRadius: 8, color: '#e2eaf4', cursor: 'pointer', textAlign: 'left', transition: 'background 0.2s' }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(17,181,201,0.12)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    <div style={{ background: 'rgba(17,181,201,0.1)', padding: 8, borderRadius: 8, display: 'flex' }}>
-                      <Eye size={18} color="#11b5c9" />
-                    </div>
-                    <div>
-                      <div style={{ fontWeight: 700, color: '#11b5c9', fontSize: 13, marginBottom: 2 }}>Ver Informe</div>
-                      <div style={{ fontSize: 11, color: '#6b8599', lineHeight: 1.2 }}>Previsualiza el reporte en pantalla</div>
-                    </div>
-                  </button>
-                  <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
-                  <button
-                    onMouseDown={directExportPDF}
-                    style={{ display: 'flex', alignItems: 'center', gap: 14, width: '100%', padding: '12px 14px', background: 'transparent', border: 0, borderRadius: 8, color: '#e2eaf4', cursor: 'pointer', textAlign: 'left', transition: 'background 0.2s' }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(17,181,201,0.12)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    <div style={{ background: 'rgba(17,181,201,0.1)', padding: 8, borderRadius: 8, display: 'flex' }}>
-                      <Download size={18} color="#11b5c9" />
-                    </div>
-                    <div>
-                      <div style={{ fontWeight: 700, color: '#11b5c9', fontSize: 13, marginBottom: 2 }}>Descargar PDF</div>
-                      <div style={{ fontSize: 11, color: '#6b8599', lineHeight: 1.2 }}>Exporta directamente a PDF descargable</div>
-                    </div>
-                  </button>
-                </div>
-              )}
+              <button onClick={handleSetFileName} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/30 hover:bg-indigo-500/20 text-indigo-400 transition-all text-sm font-bold" title={customFileName ? `Archivo: ${customFileName}` : "Configurar nombre de exportación"}>
+                <Edit3 className="w-4 h-4" /> {customFileName ? 'Nombre OK' : 'Nombre'}
+              </button>
+              <button onClick={exportCsv} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-glass-light border border-glass-border hover:bg-glass-hover transition-all text-sm font-bold">
+                <Download className="w-4 h-4" /> CSV
+              </button>
+              <button onClick={exportExcel} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 text-emerald-400 transition-all text-sm font-bold">
+                <Table2 className="w-4 h-4" /> Excel
+              </button>
+
+              {/* ── Informe PDF: choice dropdown ── */}
+              <div style={{ position: 'relative' }}>
+                <button
+                  onClick={() => setShowPdfMenu(v => !v)}
+                  onBlur={() => setTimeout(() => setShowPdfMenu(false), 160)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all"
+                  style={{ background: 'rgba(17,181,201,0.13)', border: '1px solid rgba(17,181,201,0.35)', color: '#11b5c9' }}
+                >
+                  <FileText className="w-4 h-4" /> Informe PDF
+                  <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}><path d="M2 4l4 4 4-4"/></svg>
+                </button>
+                {showPdfMenu && (
+                  <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, minWidth: 230, background: '#0f1c2e', border: '1px solid rgba(17,181,201,0.28)', borderRadius: 12, padding: 6, zIndex: 9990, boxShadow: '0 16px 48px rgba(0,0,0,0.55)' }}>
+                    <button
+                      onMouseDown={openReportModal}
+                      style={{ display: 'flex', alignItems: 'center', gap: 14, width: '100%', padding: '12px 14px', background: 'transparent', border: 0, borderRadius: 8, color: '#e2eaf4', cursor: 'pointer', textAlign: 'left', transition: 'background 0.2s' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(17,181,201,0.12)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <div style={{ background: 'rgba(17,181,201,0.1)', padding: 8, borderRadius: 8, display: 'flex' }}>
+                        <Eye size={18} color="#11b5c9" />
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 700, color: '#11b5c9', fontSize: 13, marginBottom: 2 }}>Ver Informe</div>
+                        <div style={{ fontSize: 11, color: '#6b8599', lineHeight: 1.2 }}>Previsualiza el reporte en pantalla</div>
+                      </div>
+                    </button>
+                    <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
+                    <button
+                      onMouseDown={directExportPDF}
+                      style={{ display: 'flex', alignItems: 'center', gap: 14, width: '100%', padding: '12px 14px', background: 'transparent', border: 0, borderRadius: 8, color: '#e2eaf4', cursor: 'pointer', textAlign: 'left', transition: 'background 0.2s' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(17,181,201,0.12)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <div style={{ background: 'rgba(17,181,201,0.1)', padding: 8, borderRadius: 8, display: 'flex' }}>
+                        <Download size={18} color="#11b5c9" />
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 700, color: '#11b5c9', fontSize: 13, marginBottom: 2 }}>Descargar PDF</div>
+                        <div style={{ fontSize: 11, color: '#6b8599', lineHeight: 1.2 }}>Exporta directamente a PDF descargable</div>
+                      </div>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={exportForAI}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all"
+                style={{
+                  background: 'rgba(139, 92, 246, 0.12)',
+                  border: '1px solid rgba(139, 92, 246, 0.35)',
+                  color: '#A78BFA',
+                }}
+                title="Exporta un reporte Markdown para evaluación técnica por IA (descarga + copia al clipboard)"
+              >
+                <Brain className="w-4 h-4" /> Revisar con IA
+              </button>
             </div>
 
-            <button
-              onClick={exportForAI}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all"
-              style={{
-                background: 'rgba(139, 92, 246, 0.12)',
-                border: '1px solid rgba(139, 92, 246, 0.35)',
-                color: '#A78BFA',
-              }}
-              title="Exporta un reporte Markdown para evaluación técnica por IA (descarga + copia al clipboard)"
+            {/* BOTÓN GUARDAR SIMULADOR */}
+            <button 
+              onClick={handleSaveSimulator}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black bg-neon-cyan/15 border border-neon-cyan/35 hover:border-neon-cyan hover:bg-neon-cyan/25 text-neon-cyan hover:text-white transition-all uppercase tracking-wider"
+              title="Guardar estado de simulación localmente y en la base de datos de producción (Supabase)"
             >
-              <Brain className="w-4 h-4" /> Revisar con IA
+              <Save className="w-4 h-4" />
+              Guardar Simulador
             </button>
           </div>
         </div>
@@ -3377,6 +3654,38 @@ ${userMsg}
                   <button onClick={loadOfficialReqs} className="flex items-center gap-2 px-3 py-2 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 rounded-xl transition-all text-[10px] font-black uppercase tracking-widest">
                     <CheckCircle2 className="w-3.5 h-3.5" /> Oficiales
                   </button>
+                  {/* Foto de la Caja */}
+                  <div className="flex items-center gap-2">
+                    {productImageBase64 ? (
+                      <div className="flex items-center gap-2 bg-[#00F0FF]/10 border border-[#00F0FF]/30 rounded-xl pl-2 pr-3 py-1.5 transition-all">
+                        <img 
+                          src={productImageBase64} 
+                          alt="Caja subida" 
+                          className="w-5 h-5 object-cover rounded-md border border-[#00F0FF]/30 shrink-0" 
+                        />
+                        <span className="text-[10px] font-black uppercase text-[#00F0FF] tracking-wider">Foto Lista</span>
+                        <button 
+                          onClick={handleRemoveProductImage}
+                          className="text-[10px] font-bold text-red-400 hover:text-red-300 transition-colors uppercase ml-1"
+                          title="Eliminar foto"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="flex items-center gap-2 px-3 py-2 bg-[#00F0FF]/10 hover:bg-[#00F0FF]/20 text-[#00F0FF] border border-[#00F0FF]/25 font-bold uppercase tracking-wider rounded-xl cursor-pointer transition-all">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span className="text-[10px] font-black tracking-wider">Subir Foto Caja</span>
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          onChange={handleProductImageUpload} 
+                          className="hidden" 
+                        />
+                      </label>
+                    )}
+                  </div>
+
                   <button onClick={openNewBoxModal} className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-400 text-white font-bold uppercase tracking-wider rounded-xl transition-all shadow-glow-sm">
                     <Plus className="w-4 h-4" /> Agregar Caja
                   </button>
@@ -3571,7 +3880,7 @@ ${userMsg}
                             <span className={`px-2 py-1 rounded-full text-xs font-black ${
                               covers ? 'bg-[#00F0FF]/10 text-[#00F0FF]' : 'bg-[#EC4899]/10 text-[#EC4899]'
                             }`}>
-                              {covers ? '✓ 1 máq. suficiente' : `⚠ ${lines} máq.`}
+                              {covers ? '✓ 1 máq. suficiente' : '⚠ 1 máq. insuficiente'}
                             </span>
                           </td>
                           <td />
@@ -3675,21 +3984,22 @@ ${userMsg}
                       <div className="text-2xl font-black text-white">{reqPerHour}</div>
                       <div className="text-[9px] text-gray-500">vs prom. mix: {machCapHour} c/h</div>
                     </div>
-                    {/* KPI 4 — Máq. Necesarias */}
+                    {/* KPI 4 — Viabilidad de Máquina */}
                     <div onClick={() => setViabilityInfoModal({
-                      title: 'Máquinas Necesarias',
-                      formula: 'TECHO(Total req./día ÷ Cap. máquina/día). Siempre se redondea hacia arriba para no dejar demanda sin cubrir.',
+                      title: 'Estado de Viabilidad',
+                      formula: 'Evalúa si la capacidad de la máquina única (Y1) es suficiente para cubrir el requerimiento total diario del mix seleccionado.',
                       steps: [
                         `Total req./día: ${totalReq.toLocaleString('es-MX')} cajas`,
                         `Cap. máquina/día (Y1): ${machCapDay.toLocaleString('es-MX')} cajas`,
-                        `Ratio = ${totalReq} ÷ ${machCapDay} = ${(totalReq/machCapDay).toFixed(3)}`,
-                        `Máquinas = TECHO(${(totalReq/machCapDay).toFixed(3)}) = ${lines} línea(s)`,
-                        lines <= 1 ? '✓ Una sola máquina cubre toda la demanda' : `⚠ Se necesitan ${lines} máquinas en paralelo`
+                        `Cobertura = ${totalReq > 0 ? ((machCapDay / totalReq) * 100).toFixed(1) : 0}%`,
+                        covers ? '✓ La máquina única cubre toda la demanda' : '⚠ La demanda excede la capacidad de la máquina única'
                       ]
-                    })} className="p-4 rounded-xl bg-[#0A0A0A] border border-[#1A1A1A] text-center cursor-pointer hover:border-yellow-400/40 hover:bg-yellow-400/5 transition-all duration-200">
-                      <div className="text-[9px] text-yellow-400 uppercase font-bold tracking-wider mb-1">Máquinas Necesarias</div>
-                      <div className="text-2xl font-black text-white">{lines}</div>
-                      <div className="text-[9px] text-gray-500">línea(s) para cubrir demanda</div>
+                    })} className="p-4 rounded-xl bg-[#0A0A0A] border border-[#1A1A1A] text-center cursor-pointer hover:border-cyan-400/40 hover:bg-cyan-400/5 transition-all duration-200">
+                      <div className="text-[9px] text-[#00F0FF] uppercase font-bold tracking-wider mb-1">Viabilidad (1 Máq.)</div>
+                      <div className={`text-xl font-black ${covers ? 'text-green-400' : 'text-pink-500'}`}>
+                        {covers ? 'VIABLE' : 'INSUFICIENTE'}
+                      </div>
+                      <div className="text-[9px] text-gray-500">sobre el mix de producción</div>
                     </div>
                     {/* KPI 5 — Cap. Disponible */}
                     {(() => {
@@ -4163,11 +4473,62 @@ ${userMsg}
                               }
                             </div>
                           )}
+                          {/* Imagen de Producto a Lavar */}
+                          <div className="mt-4 p-4 rounded-2xl bg-[#0A0A0A] border border-[#1A1A1A] space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="w-1.5 h-3 bg-neon-cyan rounded-full" />
+                                <h4 className="text-xs font-black uppercase text-white tracking-widest">Foto del Producto (Caja)</h4>
+                              </div>
+                              {productImageBase64 && (
+                                <button 
+                                  onClick={handleRemoveProductImage}
+                                  className="text-[10px] font-bold text-red-400 hover:text-red-300 transition-colors uppercase"
+                                >
+                                  Eliminar
+                                </button>
+                              )}
+                            </div>
+
+                            {productImageBase64 ? (
+                              <div className="relative group rounded-xl border border-white/10 overflow-hidden bg-black/40 h-44 flex items-center justify-center">
+                                <img 
+                                  src={productImageBase64} 
+                                  alt="Caja a lavar" 
+                                  className="max-h-full max-w-full object-contain"
+                                />
+                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
+                                  <label className="cursor-pointer text-xs font-black text-neon-cyan border border-neon-cyan/50 rounded-lg px-3 py-1.5 bg-[#00F0FF]/10 hover:bg-[#00F0FF]/20 transition-all uppercase">
+                                    Cambiar Foto
+                                    <input 
+                                      type="file" 
+                                      accept="image/*" 
+                                      onChange={handleProductImageUpload} 
+                                      className="hidden" 
+                                    />
+                                  </label>
+                                </div>
+                              </div>
+                            ) : (
+                              <label className="border border-dashed border-white/15 hover:border-neon-cyan/50 hover:bg-neon-cyan/5 rounded-xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all h-44 group">
+                                <Upload className="w-6 h-6 text-gray-500 group-hover:text-neon-cyan transition-colors" />
+                                <span className="text-xs font-bold text-gray-400 group-hover:text-white transition-colors">Subir imagen del contenedor</span>
+                                <span className="text-[9px] text-gray-600">Recomendado: Imagen cuadrada de menos de 2MB</span>
+                                <input 
+                                  type="file" 
+                                  accept="image/*" 
+                                  onChange={handleProductImageUpload} 
+                                  className="hidden" 
+                                />
+                              </label>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>
                   );
                 })()}
+
 
                 {/* ── IMPACTO ENERGÉTICO Y COSTOS ── */}
                 {(() => {
@@ -4176,7 +4537,8 @@ ${userMsg}
                   const avgHourlyKwh = totalPowerKw * activeLoadFactor;
                   const avgHourlyCostMxn = avgHourlyKwh * 2.50;
                   
-                  const dailyHours = scenarioResults.lavadoSecado?.[0]?.availableDailyTime ?? 16;
+                  const availableTime = scenarioResults.lavadoSecado?.[0]?.availableDailyTime ?? 16;
+                  const dailyHours = totalHrsLavado > 0 ? Math.min(availableTime, totalHrsLavado) : availableTime;
                   const dailyKwh = avgHourlyKwh * dailyHours;
                   const dailyCostMxn = dailyKwh * 2.50;
                   const annualCostMxn = dailyCostMxn * (inputs.daysPerMonth || 26) * 12;
@@ -4664,7 +5026,7 @@ ${userMsg}
                               </td>
                               <td className="px-4 py-2.5">
                                 <span className={`px-2 py-0.5 rounded-full text-xs font-black ${row.requiredLines <= 1 ? 'bg-green-500/20 text-green-400' : row.requiredLines === 2 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}`}>
-                                  {row.requiredLines} L
+                                  {row.requiredLines} maq.
                                 </span>
                               </td>
                             </tr>
@@ -5097,7 +5459,7 @@ ${userMsg}
           <div className="w-full max-w-sm p-6 rounded-[24px] bg-[#0c1328]/95 border border-[#11b5c9]/35 shadow-[0_0_50px_rgba(17,181,201,0.25)] text-center">
             <div className="w-16 h-16 border-4 border-[#11b5c9]/20 border-t-[#11b5c9] rounded-full animate-spin mx-auto mb-4" />
             <h3 className="text-lg font-bold text-white mb-2">Generando PDF de Alta Resolución</h3>
-            <p className="text-[#6b8599] text-sm mb-4">Exportando el informe de 8 páginas completo en formato vectorial directamente.</p>
+            <p className="text-[#6b8599] text-sm mb-4">Exportando el informe de 12 páginas completo en formato vectorial directamente.</p>
             <div className="bg-[#122033]/50 rounded-xl p-3 border border-white/5">
               <span className="text-xs text-[#11b5c9] font-bold uppercase tracking-widest block mb-1">Estado de Progreso</span>
               <span className="text-white font-mono text-sm font-semibold">{exportProgress}</span>
@@ -5188,6 +5550,16 @@ ${userMsg}
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Premium Toast Notification System */}
+      {showToast && (
+        <div className="fixed bottom-6 right-6 z-[9999] animate-fade-in-up">
+          <div className="relative px-6 py-4 rounded-2xl bg-black/80 backdrop-blur-xl border border-neon-cyan/50 shadow-[0_0_24px_rgba(0,240,255,0.15)] flex items-center gap-3">
+            <div className="w-2 h-2 rounded-full bg-neon-cyan animate-pulse" />
+            <span className="text-xs font-semibold tracking-wide text-white font-mono">{toastMessage}</span>
           </div>
         </div>
       )}

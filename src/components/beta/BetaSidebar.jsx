@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useBeta } from '@/context/BetaContext';
 import { useProject } from '@/context/ProjectContext';
+import { useTranslation } from '@/context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
@@ -14,6 +15,7 @@ function BetaSidebar() {
     activeProject, setActiveProject, projects, createProject,
     viewMode, setViewMode 
   } = useBeta();
+  const { t } = useTranslation();
 
   const [customLogo, setCustomLogo] = useState(null);
 
@@ -34,19 +36,19 @@ function BetaSidebar() {
 
   const navGroups = [
     {
-      label: "ESPACIO DE TRABAJO",
+      label: t('sidebar.groups.workspace'),
       items: [
-        { id: 'memory', label: "Memoria del Proyecto", icon: Cpu, count: 0 },
-        { id: 'docs', label: "Documentación", icon: FileText, count: 12 },
-        { id: 'history', label: "Historial de Capturas", icon: History, count: 42 },
+        { id: 'memory', label: t('sidebar.items.memory'), icon: Cpu, count: 0 },
+        { id: 'docs', label: t('sidebar.items.docs'), icon: FileText, count: 12 },
+        { id: 'history', label: t('sidebar.items.history'), icon: History, count: 42 },
       ]
     },
     {
-      label: "MOTOR DEL PROYECTO",
+      label: t('sidebar.groups.engine'),
       items: [
-        { id: 'tasks', label: "Decisiones y Tareas", icon: CheckSquare, count: 8 },
-        { id: 'versions', label: "Control de Versiones", icon: GitBranch, count: 3 },
-        { id: 'tools', label: "Herramientas Conectadas", icon: Globe, count: 15 },
+        { id: 'tasks', label: t('sidebar.items.tasks'), icon: CheckSquare, count: 8 },
+        { id: 'versions', label: t('sidebar.items.versions'), icon: GitBranch, count: 3 },
+        { id: 'tools', label: t('sidebar.items.tools'), icon: Globe, count: 15 },
       ]
     }
   ];
@@ -57,7 +59,7 @@ function BetaSidebar() {
       <div 
         className="p-6 border-b border-[#151515] bg-gradient-to-b from-[#0A0A0A] to-transparent cursor-pointer group hover:bg-[#111] transition-colors"
         onClick={() => setViewMode('sandbox')}
-        title="Regresar a The Sandbox"
+        title={t('sidebar.logo_title')}
       >
         <div className="flex items-center gap-3 mb-1">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-neon-purple to-neon-blue flex items-center justify-center shadow-glow-sm relative overflow-hidden group/logo">
@@ -88,7 +90,7 @@ function BetaSidebar() {
             >
               PANDORA
             </span>
-            <span className="text-[10px] text-neon-purple font-black tracking-widest mt-0.5 uppercase">MODO BETA</span>
+            <span className="text-[10px] text-neon-purple font-black tracking-widest mt-0.5 uppercase">{t('sidebar.mode_beta')}</span>
           </div>
         </div>
       </div>
@@ -96,11 +98,11 @@ function BetaSidebar() {
       {/* Project Selector */}
       <div className="p-4 space-y-3">
         <div className="flex items-center justify-between px-2">
-          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">PROYECTOS ACTIVOS</span>
+          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{t('sidebar.active_projects')}</span>
           <button 
             onClick={() => createProject("Nuevo Proyecto " + (projects.length + 1))}
             className="p-1.5 rounded-md hover:bg-[#151515] text-gray-500 hover:text-white transition-all border border-transparent hover:border-[#222]"
-            title="Nuevo Proyecto"
+            title={t('sidebar.new_project')}
           >
             <Plus className="w-3.5 h-3.5" />
           </button>
@@ -124,7 +126,7 @@ function BetaSidebar() {
               )} />
               <div className="flex-1 truncate">
                 <p className="text-sm font-semibold truncate leading-tight">{p.name}</p>
-                <p className="text-[9px] text-gray-600 font-medium uppercase tracking-tighter">Actualizado: {p.lastUpdate || "Recientemente"}</p>
+                <p className="text-[9px] text-gray-600 font-medium uppercase tracking-tighter">{t('common.updated')}: {p.lastUpdate || t('common.recently')}</p>
               </div>
               <ChevronRight className={cn(
                 "w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity",
@@ -145,7 +147,7 @@ function BetaSidebar() {
             )}
           >
             <ShieldCheck className={cn("w-4 h-4", viewMode === 'admin' ? "text-neon-purple" : "text-gray-600")} />
-            <span className="text-xs font-black uppercase tracking-widest">Administración</span>
+            <span className="text-xs font-black uppercase tracking-widest">{t('sidebar.admin')}</span>
           </button>
 
           <button 
@@ -159,7 +161,7 @@ function BetaSidebar() {
           >
             {viewMode !== 'simulator' && <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-neon-cyan/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />}
             <Activity className={cn("w-4 h-4 transition-colors", viewMode === 'simulator' ? "text-neon-cyan" : "text-gray-600 group-hover:text-neon-cyan/50")} />
-            <span className="text-xs font-black uppercase tracking-widest">Simulador</span>
+            <span className="text-xs font-black uppercase tracking-widest">{t('sidebar.simulator')}</span>
           </button>
         </div>
       </div>
@@ -202,7 +204,7 @@ function BetaSidebar() {
       <div className="p-4 mt-auto border-t border-[#151515] space-y-2">
         <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-gray-500 hover:bg-[#111] hover:text-white transition-all group">
           <Settings className="w-4 h-4 group-hover:rotate-45 transition-transform" />
-          <span className="text-xs font-semibold text-gray-400 group-hover:text-white transition-colors">Configuración Alfa</span>
+          <span className="text-xs font-semibold text-gray-400 group-hover:text-white transition-colors">{t('sidebar.alpha_config')}</span>
         </button>
 
         <button 
@@ -210,7 +212,7 @@ function BetaSidebar() {
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-red-400/70 hover:bg-red-500/10 hover:text-red-400 transition-all border border-transparent hover:border-red-500/20"
         >
           <LogOut className="w-4 h-4" />
-          <span className="text-xs font-bold uppercase tracking-wider">Salir Modo Beta</span>
+          <span className="text-xs font-bold uppercase tracking-wider">{t('sidebar.exit_beta')}</span>
         </button>
       </div>
     </aside>
@@ -218,4 +220,3 @@ function BetaSidebar() {
 }
 
 export default BetaSidebar;
-

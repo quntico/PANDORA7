@@ -6,7 +6,7 @@ import {
   Clock, BarChart3, Wrench, FileSpreadsheet, Percent, 
   TrendingUp, RefreshCw, Printer, Info, Eye, X, Download, FileText,
   FolderOpen, Upload, Check, Sliders, RotateCcw, Table2, MousePointer,
-  Loader2, Lock, Unlock, Link2, Plus, LineChart, Maximize2, Minimize2
+  Loader2, Lock, Unlock, Link2, Plus, LineChart, Maximize2, Minimize2, Save
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
@@ -20,6 +20,7 @@ import html2canvas from 'html2canvas';
 // Componentes del Visor 3D y Datos Base
 import SharedTwinViewer3D from '../../../components/flow/SharedTwinViewer3D';
 import FlowDesignsLibrary from '../../../components/flow/FlowDesignsLibrary';
+import { useBeta } from '../../../context/BetaContext';
 import { process3DFile } from '../../../utils/fileProcessor';
 import { supabase, uploadFileWithProgress } from '../../../supabase';
 import { useFlowDesigns } from '../../../hooks/useFlowDesigns';
@@ -39,7 +40,12 @@ const REPORT_STYLES = {
 
 export default function LMA500Simulator() {
   const navigate = useNavigate();
+  const { activeProject } = useBeta();
   const reportRef = useRef(null);
+
+  // Estados de notificación de guardado
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   // --- 1. ESTADO DE ENTRADAS CON VALORES REALES DE LA FICHA ---
   const defaultInputs = {
@@ -190,6 +196,69 @@ export default function LMA500Simulator() {
         includeRawMaterialInOpex: matched.includeInOpex !== false
       }));
     }
+  };
+
+  const handleSaveSimulator = async () => {
+    // 1. Guardar localmente
+    localStorage.setItem('sim_lma500_inputs', JSON.stringify(inputs));
+    localStorage.setItem('sim_lma500_materials', JSON.stringify(materials));
+    localStorage.setItem('sim_lma500_custom_file_name', customFileName || '');
+    
+    if (typeof twinNodes !== 'undefined' && twinNodes?.length) {
+      localStorage.setItem('sim_lma500_twin_nodes', JSON.stringify(twinNodes));
+    }
+    if (typeof twinEdges !== 'undefined' && twinEdges?.length) {
+      localStorage.setItem('sim_lma500_twin_edges', JSON.stringify(twinEdges));
+    }
+    if (typeof twinLayout !== 'undefined' && twinLayout) {
+      localStorage.setItem('sim_lma500_twin_layout', JSON.stringify(twinLayout));
+    }
+
+    // 2. Guardar en Supabase (puente de guardado)
+    if (activeProject && activeProject.id && activeProject.id !== 'local-fallback-id') {
+      try {
+        const payload = {
+          project_id: activeProject.id,
+          key: 'sim_lma500_data',
+          value: JSON.stringify({
+            inputs,
+            materials,
+            twinLayout,
+            twinNodes,
+            twinEdges,
+            twinNodePositions,
+            currentDesignId,
+            results: {
+              capexTotalUsd: results.capex.totalUsd,
+              capexTotalMxn: results.capex.totalMxn,
+              opexTotalUsd: results.opex.totalUsd,
+              opexTotalMxn: reportData?.monthlyOperatingCostMxn || results.opex.totalMxn,
+              paybackMonths: results.profitability.paybackMonths,
+              adjustedPaybackMonths: results.profitability.adjustedPaybackMonths,
+              productionMonthlyKg: results.productionMonthly,
+              revenueMonthlyMxn: results.profitability.revenueMxn,
+              profitMonthlyMxn: results.profitability.profitMxn,
+              electricityMonthlyCostMxn: results.energy.electricityMonthlyCostMxn
+            },
+            timestamp: Date.now()
+          })
+        };
+        
+        await supabase
+          .from('project_context_beta')
+          .upsert([payload], { onConflict: 'project_id,key' });
+          
+        setToastMessage('¡Simulador guardado! Parámetros sincronizados exitosamente con la base de datos de producción.');
+      } catch (dbErr) {
+        console.error("Error al sincronizar con Supabase:", dbErr);
+        setToastMessage('¡Simulador guardado localmente! (Error de sincronización con la base de datos)');
+      }
+    } else {
+      setToastMessage('¡Simulador guardado en local! (Crea o abre un proyecto en la bóveda de producción para sincronizar)');
+    }
+    
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 4000);
   };
 
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
@@ -367,18 +436,67 @@ export default function LMA500Simulator() {
     };
   }, [isReportModalOpen]);
 
+  // Cargar datos del simulador LMA-500 de Supabase al cambiar de proyecto
+  useEffect(() => {
+    const loadSimulatorDataFromCloud = async () => {
+      if (!activeProject || !activeProject.id || activeProject.id === 'local-fallback-id') {
+        return;
+      }
+      try {
+        const { data, error } = await supabase
+          .from('project_context_beta')
+          .select('value')
+          .eq('project_id', activeProject.id)
+          .eq('key', 'sim_lma500_data')
+          .maybeSingle();
+
+        if (error) throw error;
+        if (data && data.value) {
+          const cloudData = JSON.parse(data.value);
+          console.log("[LMA500Simulator] Re-hydrating state from Supabase:", cloudData);
+
+          // Re-hidratar inputs
+          if (cloudData.inputs) {
+            setInputs(prev => ({ ...prev, ...cloudData.inputs }));
+          }
+
+          // Re-hidratar materiales
+          if (cloudData.materials) {
+            setMaterials(cloudData.materials);
+          }
+
+          // Re-hidratar diseño 3D
+          if (cloudData.twinLayout) {
+            setTwinLayout(cloudData.twinLayout);
+          }
+          if (cloudData.currentDesignId) {
+            setCurrentDesignId(cloudData.currentDesignId);
+          }
+          if (cloudData.twinNodePositions) {
+            setTwinNodePositions(cloudData.twinNodePositions);
+          }
+        }
+      } catch (err) {
+        console.error("[LMA500Simulator] Error loading from cloud:", err);
+      }
+    };
+
+    loadSimulatorDataFromCloud();
+  }, [activeProject?.id]);
+
   // Cargar instantánea del gemelo digital de localStorage y mantenerlo sincronizado
   useEffect(() => {
     const syncSnapshot = () => {
-      setTwinSnapshot(localStorage.getItem('sim_lma500_twin_snapshot_base64'));
-      setTwinSnapshotLateral(localStorage.getItem('sim_lma500_twin_snapshot_lateral'));
-      setTwinSnapshotSuperior(localStorage.getItem('sim_lma500_twin_snapshot_superior'));
-      setTwinSnapshotIsometrica(localStorage.getItem('sim_lma500_twin_snapshot_isometrica'));
+      const suffix = activeProject?.id ? `${activeProject.id}_` : '';
+      setTwinSnapshot(localStorage.getItem(`sim_lma500_${suffix}twin_snapshot_base64`));
+      setTwinSnapshotLateral(localStorage.getItem(`sim_lma500_${suffix}twin_snapshot_lateral`));
+      setTwinSnapshotSuperior(localStorage.getItem(`sim_lma500_${suffix}twin_snapshot_superior`));
+      setTwinSnapshotIsometrica(localStorage.getItem(`sim_lma500_${suffix}twin_snapshot_isometrica`));
     };
     syncSnapshot();
     window.addEventListener('storage', syncSnapshot);
     return () => window.removeEventListener('storage', syncSnapshot);
-  }, [isReportModalOpen]);
+  }, [isReportModalOpen, activeProject?.id]);
 
   // Controladores de eventos de la barra del Twin con carga en la nube
   const processAndSetupTwinModel = async (file) => {
@@ -958,7 +1076,7 @@ export default function LMA500Simulator() {
         c: inputs.clientName || 'PABLO SOLER',
         s: 'SOLIMAQ LMA-500',
         d: new Date().toLocaleDateString('es-MX'),
-        h: 'SOLIMAQ-LMA500-RECILOGIC-PANDORA-v7.86'
+        h: 'SOLIMAQ-LMA500-RECILOGIC-PANDORA-v7.89'
       });
       // Safe base64 encoding for Unicode
       const b64 = btoa(unescape(encodeURIComponent(payloadString)));
@@ -1027,7 +1145,7 @@ export default function LMA500Simulator() {
       <div style={{ marginBottom: 20 }}>
         {/* Estampado Corporativo de Recilogic */}
         <div style={{ fontSize: 9, fontWeight: 900, color: '#008299', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>
-          SOLIMAQ LMA-500 · RECILOGIC · PANDORA v7.86
+          SOLIMAQ LMA-500 · RECILOGIC · PANDORA v7.89
         </div>
         
         {/* Diseño Premium de Título en Dos Líneas */}
@@ -1154,20 +1272,32 @@ export default function LMA500Simulator() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setIsReportModalOpen(true)}
-            className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-[#0d9488]/10 hover:bg-[#0d9488]/20 border border-[#0d9488]/30 text-teal-400 transition-all font-bold text-sm shadow-[0_0_15px_rgba(13,148,136,0.15)] animate-pulse"
+        <div className="flex flex-col items-end gap-3">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsReportModalOpen(true)}
+              className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-[#0d9488]/10 hover:bg-[#0d9488]/20 border border-[#0d9488]/30 text-teal-400 transition-all font-bold text-sm shadow-[0_0_15px_rgba(13,148,136,0.15)] animate-pulse"
+            >
+              <Eye className="w-4 h-4" />
+              Ver Informe en Visor ({totalPgs} Págs)
+            </button>
+            <button
+              onClick={handlePrintFromMain}
+              className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-teal-500 hover:bg-teal-600 text-black transition-all font-bold text-sm shadow-[0_0_20px_rgba(20,184,166,0.25)]"
+            >
+              <Printer className="w-4 h-4" />
+              Exportar PDF
+            </button>
+          </div>
+
+          {/* BOTÓN GUARDAR SIMULADOR */}
+          <button 
+            onClick={handleSaveSimulator}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black bg-teal-500/10 border border-teal-500/30 hover:border-teal-400 hover:bg-teal-500/20 text-teal-400 hover:text-white transition-all uppercase tracking-wider shadow-[0_0_12px_rgba(20,184,166,0.05)]"
+            title="Guardar estado de simulación localmente y en la base de datos de producción (Supabase)"
           >
-            <Eye className="w-4 h-4" />
-            Ver Informe en Visor ({totalPgs} Págs)
-          </button>
-          <button
-            onClick={handlePrintFromMain}
-            className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-teal-500 hover:bg-teal-600 text-black transition-all font-bold text-sm shadow-[0_0_20px_rgba(20,184,166,0.25)]"
-          >
-            <Printer className="w-4 h-4" />
-            Exportar PDF
+            <Save className="w-4 h-4" />
+            Guardar Simulador
           </button>
         </div>
       </div>
@@ -3528,7 +3658,7 @@ export default function LMA500Simulator() {
                     RECILOGIC
                   </span>
                   <span style={{ display: 'inline-block', fontSize: 9, fontWeight: 800, color: '#fff', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 6, padding: '2px 8px', background: 'rgba(255,255,255,0.1)' }}>
-                    PANDORA 3.0 · V7.86
+                    PANDORA 3.0 · V7.89
                   </span>
                 </div>
 
@@ -4868,7 +4998,7 @@ export default function LMA500Simulator() {
                         </div>
 
                         <div style={{ marginTop: 6, borderTop: '1px solid #e2e8f0', paddingTop: 8, fontSize: 10, fontFamily: 'monospace', color: '#94a3b8', textAlign: 'center' }}>
-                          VERIFICACIÓN HASH: SOLIMAQ-LMA500-RECILOGIC-PANDORA-v7.86
+                          VERIFICACIÓN HASH: SOLIMAQ-LMA500-RECILOGIC-PANDORA-v7.89
                         </div>
                       </div>
                       </>
@@ -5468,7 +5598,7 @@ export default function LMA500Simulator() {
 
       {/* --- FOOTER DESCRIPTIVO --- */}
       <div className="max-w-[1500px] mx-auto text-center mt-12 text-gray-600 text-xs font-semibold py-8 border-t border-slate-900">
-        PANDORA v7.86 • Sistema de Inteligencia y Simulación de Inversiones Industriales
+        PANDORA v7.89 • Sistema de Inteligencia y Simulación de Inversiones Industriales
         <p className="text-[10px] text-gray-600 mt-1 font-medium">
           SOLIMAQ S.A. de C.V. • Derechos Reservados. Todos los cálculos son estimaciones paramétricas basadas en fichas técnicas.
         </p>
@@ -5531,6 +5661,15 @@ export default function LMA500Simulator() {
         </div>
       )}
 
+      {/* Premium Toast Notification System */}
+      {showToast && (
+        <div className="fixed bottom-6 right-6 z-[9999] animate-fade-in-up">
+          <div className="relative px-6 py-4 rounded-2xl bg-black/80 backdrop-blur-xl border border-neon-cyan/50 shadow-[0_0_24px_rgba(0,240,255,0.15)] flex items-center gap-3">
+            <div className="w-2 h-2 rounded-full bg-neon-cyan animate-pulse" />
+            <span className="text-xs font-semibold tracking-wide text-white font-mono">{toastMessage}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

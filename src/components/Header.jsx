@@ -23,8 +23,10 @@ function Header() {
   const [simMenuOpen, setSimMenuOpen] = useState(false);
 
   const simulatorShortcuts = [
+    { name: 'FORVIA - BDW 200', path: '/alpha/simulators/forvia', color: '#e11d48' },
     { name: 'CARRIER (Tubo Cobre)', path: '/alpha/simulators/carrier', color: '#00F0FF' },
     { name: 'LMA-500 (Reciclado)', path: '/alpha/simulators/lma-500', color: '#0d9488' },
+    { name: 'WM-500 (Trituradora)', path: '/alpha/simulators/wm-500', color: '#06b6d4' },
     { name: 'SMQ COTIZADOR', path: '/alpha/simulators/smq-automatic', color: '#F5C400' },
     { name: 'RYDER (Lavado)', path: '/alpha/simulators/rider', color: '#3b82f6' },
     { name: 'GRUPO GUSI', path: '/alpha/simulators/grupo-gusi', color: '#a855f7' },
@@ -89,7 +91,7 @@ function Header() {
                 else if (password !== null) { alert("Contraseña incorrecta."); }
               }}
             >
-              VER 7.86
+              VER 7.89
               <span className="relative flex h-1.5 w-1.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500"></span>

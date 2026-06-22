@@ -8,6 +8,7 @@ import {
   FileType, Download, Eye
 } from 'lucide-react';
 import { useBeta } from '@/context/BetaContext';
+import { useTranslation } from '@/context/LanguageContext';
 import { supabase } from '@/supabase';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
@@ -30,6 +31,7 @@ function getExt(name) {
 function FileDropZone({ onFilesExtracted, isUploading }) {
   const [isDragging, setIsDragging] = useState(false);
   const fileRef = useRef(null);
+  const { t } = useTranslation();
 
   const processFiles = useCallback(async (files) => {
     for (const file of Array.from(files)) {
@@ -94,7 +96,7 @@ function FileDropZone({ onFilesExtracted, isUploading }) {
           </div>
           <div className="text-center">
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-              Arrastra archivos aquí o <span className="text-neon-cyan">haz clic</span>
+              {t('vault.editor.drag_drop_files')}
             </p>
             <p className="text-[8px] text-gray-700 mt-1 uppercase tracking-wider">
               PDF · TXT · CSV · DOCX · XLSX · Imágenes
@@ -116,6 +118,7 @@ function FileDropZone({ onFilesExtracted, isUploading }) {
 
 // ── Editor inline de Proyecto ─────────────────────────────────────────────────
 function ProjectEditor({ project, onSave, onCancel }) {
+  const { t } = useTranslation();
   const [form, setForm] = useState({
     name:        project?.name || '',
     description: project?.description || '',
@@ -130,7 +133,6 @@ function ProjectEditor({ project, onSave, onCancel }) {
   const saveFileToSupabase = async (fileName, fileType, content, projectId) => {
     if (!projectId || projectId === 'local-fallback-id') return;
     try {
-      // Guardar el contenido COMPLETO (sin truncar) — GPT-4o soporta 128K tokens
       const { error } = await supabase.from('project_artifacts_beta').insert([{
         project_id: projectId,
         type:       'file',
@@ -198,7 +200,7 @@ function ProjectEditor({ project, onSave, onCancel }) {
     >
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-black text-neon-cyan uppercase tracking-[3px]">
-          {project?.id ? 'Editar Proyecto' : 'Nuevo Proyecto'}
+          {project?.id ? t('vault.editor.edit_project') : t('vault.editor.new_project')}
         </span>
         <button onClick={onCancel} className="text-gray-600 hover:text-white transition-colors">
           <X className="w-4 h-4" />
@@ -207,31 +209,31 @@ function ProjectEditor({ project, onSave, onCancel }) {
 
       {/* Nombre */}
       <div>
-        <label className="text-[9px] font-black text-gray-600 uppercase tracking-widest block mb-1.5">Nombre</label>
+        <label className="text-[9px] font-black text-gray-600 uppercase tracking-widest block mb-1.5">{t('vault.editor.name')}</label>
         <input
           value={form.name}
           onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
           className="w-full bg-[#0D0D0D] border border-[#1A1A1A] rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-neon-cyan/40 transition-all"
-          placeholder="Nombre del proyecto..."
+          placeholder={t('vault.editor.name_placeholder')}
         />
       </div>
 
       {/* Descripción */}
       <div>
-        <label className="text-[9px] font-black text-gray-600 uppercase tracking-widest block mb-1.5">Descripción</label>
+        <label className="text-[9px] font-black text-gray-600 uppercase tracking-widest block mb-1.5">{t('vault.editor.description')}</label>
         <textarea
           value={form.description}
           onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
           rows={3}
           className="w-full bg-[#0D0D0D] border border-[#1A1A1A] rounded-xl px-3 py-2 text-sm text-gray-300 outline-none focus:border-neon-cyan/40 transition-all resize-none"
-          placeholder="¿De qué trata este proyecto?"
+          placeholder={t('vault.editor.desc_placeholder')}
         />
       </div>
 
       {/* ── ZONA DRAG & DROP ─────────────────────────────────────────── */}
       <div>
         <label className="text-[9px] font-black text-gray-600 uppercase tracking-widest block mb-2">
-          Archivos de Contexto (arrastrar y soltar)
+          {t('vault.editor.files_context')}
         </label>
 
         <FileDropZone
@@ -278,7 +280,7 @@ function ProjectEditor({ project, onSave, onCancel }) {
       <div>
         <div className="flex items-center justify-between mb-1.5">
           <label className="text-[9px] font-black text-gray-600 uppercase tracking-widest">
-            Notas / Contexto Ejecutivo
+            {t('vault.editor.exec_notes')}
           </label>
           {form.notes && (
             <span className="text-[8px] text-gray-700 font-bold">
@@ -291,14 +293,14 @@ function ProjectEditor({ project, onSave, onCancel }) {
           onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
           rows={6}
           className="w-full bg-[#0D0D0D] border border-[#1A1A1A] rounded-xl px-3 py-2 text-sm text-gray-300 outline-none focus:border-neon-purple/40 transition-all resize-none font-mono text-[11px] leading-relaxed"
-          placeholder="Información clave, supuestos, restricciones, objetivos... (También se completa automáticamente al subir archivos)"
+          placeholder={t('vault.editor.notes_placeholder')}
         />
       </div>
 
       {/* Etiquetas */}
       <div>
         <label className="text-[9px] font-black text-gray-600 uppercase tracking-widest block mb-1.5">
-          Etiquetas (separadas por coma)
+          {t('vault.editor.tags')}
         </label>
         <input
           value={form.tags}
@@ -310,7 +312,7 @@ function ProjectEditor({ project, onSave, onCancel }) {
 
       {/* Estado */}
       <div>
-        <label className="text-[9px] font-black text-gray-600 uppercase tracking-widest block mb-1.5">Estado</label>
+        <label className="text-[9px] font-black text-gray-600 uppercase tracking-widest block mb-1.5">{t('vault.editor.status')}</label>
         <div className="flex gap-2">
           {['active', 'paused', 'archived'].map(s => (
             <button
@@ -325,7 +327,7 @@ function ProjectEditor({ project, onSave, onCancel }) {
                   : 'bg-transparent border-[#1A1A1A] text-gray-600 hover:border-[#2A2A2A]'
               )}
             >
-              {s === 'active' ? 'Activo' : s === 'paused' ? 'Pausado' : 'Archivado'}
+              {s === 'active' ? t('vault.status.active') : s === 'paused' ? t('vault.status.paused') : t('vault.status.archived')}
             </button>
           ))}
         </div>
@@ -337,23 +339,21 @@ function ProjectEditor({ project, onSave, onCancel }) {
         className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan text-[10px] font-black uppercase tracking-widest hover:bg-neon-cyan/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
       >
         <Save className="w-4 h-4" />
-        Guardar Proyecto
+        {t('vault.editor.save_project')}
       </button>
     </motion.div>
   );
 }
 
-
-
 // ── Tarjeta visual de un Proyecto ─────────────────────────────────────────────
 function ProjectCard({ project, isActive, onSelect, onEdit, onDelete, fileTypes = {} }) {
+  const { t } = useTranslation();
   const statusColor = {
     active:   'bg-green-400 shadow-[0_0_8px_rgba(0,255,100,0.5)]',
     paused:   'bg-yellow-400',
     archived: 'bg-gray-600',
   };
 
-  // Indicadores de tipos de archivo — se encienden si el proyecto tiene ese tipo
   const fileIndicators = [
     {
       key:   'pdf',
@@ -410,7 +410,7 @@ function ProjectCard({ project, isActive, onSelect, onEdit, onDelete, fileTypes 
       {isActive && (
         <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-neon-cyan/10 border border-neon-cyan/20">
           <span className="w-1.5 h-1.5 rounded-full bg-neon-cyan animate-pulse" />
-          <span className="text-[8px] font-black text-neon-cyan uppercase tracking-widest">Activo</span>
+          <span className="text-[8px] font-black text-neon-cyan uppercase tracking-widest">{t('vault.status.active')}</span>
         </div>
       )}
 
@@ -427,12 +427,12 @@ function ProjectCard({ project, isActive, onSelect, onEdit, onDelete, fileTypes 
             </p>
           )}
           <p className="text-[9px] text-gray-700 font-bold uppercase tracking-wider mt-2">
-            {project.lastUpdate || 'Actualizado recientemente'}
+            {project.lastUpdate || t('common.updated_recently', 'Actualizado recientemente')}
           </p>
         </div>
       </div>
 
-      {/* File Type Indicators ── se encienden según los archivos del proyecto */}
+      {/* File Type Indicators */}
       <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-[#111]">
         {fileIndicators.map(ind => {
           const active = !!projectTypes[ind.key];
@@ -474,16 +474,13 @@ function ProjectCard({ project, isActive, onSelect, onEdit, onDelete, fileTypes 
   );
 }
 
-
-
-
 // ── Panel de Detalles del Proyecto Activo ─────────────────────────────────────
 function ActiveProjectDetails({ project, memory, messages, artifacts, onAddFiles }) {
+  const { t } = useTranslation();
   const decisions = memory?.decisions || [];
   const tasks     = memory?.pendingTasks || [];
   const aiMsgs    = messages?.filter(m => m.role === 'assistant') || [];
 
-  // Archivos del proyecto: filtrar artefactos de tipo 'file' de Supabase
   const [projectFiles, setProjectFiles] = useState([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [deletingId, setDeletingId]     = useState(null);
@@ -500,7 +497,6 @@ function ActiveProjectDetails({ project, memory, messages, artifacts, onAddFiles
       .order('created_at', { ascending: false })
       .then(({ data, error }) => {
         if (error) console.error('[ProjectVault] Error cargando archivos:', error);
-        // Parsear el campo 'data' JSONB de cada registro
         const files = (data || []).map(f => ({
           ...f,
           parsedData: (() => { try { return JSON.parse(f.data || '{}'); } catch { return {}; } })()
@@ -517,7 +513,6 @@ function ActiveProjectDetails({ project, memory, messages, artifacts, onAddFiles
     setDeletingId(null);
   };
 
-  // ── Zona Drop Directa en detalle (sin abrir editor) ─────────────────────────
   const [isDroppingHere, setIsDroppingHere] = useState(false);
   const [uploadingHere, setUploadingHere]   = useState(false);
   const detailFileRef = useRef(null);
@@ -566,15 +561,14 @@ function ActiveProjectDetails({ project, memory, messages, artifacts, onAddFiles
   };
 
   const stats = [
-    { label: 'Análisis IA', value: aiMsgs.length,       icon: Brain,        color: 'text-neon-cyan' },
-    { label: 'Archivos',    value: projectFiles.length,  icon: FileText,     color: 'text-orange-400' },
-    { label: 'Decisiones',  value: decisions.length,     icon: CheckCircle2, color: 'text-green-400' },
-    { label: 'Tareas',      value: tasks.length,          icon: Clock,        color: 'text-yellow-400' },
+    { label: t('vault.stats.ai_analysis'), value: aiMsgs.length,       icon: Brain,        color: 'text-neon-cyan' },
+    { label: t('vault.stats.files'),    value: projectFiles.length,  icon: FileText,     color: 'text-orange-400' },
+    { label: t('vault.stats.decisions'),  value: decisions.length,     icon: CheckCircle2, color: 'text-green-400' },
+    { label: t('vault.stats.tasks'),      value: tasks.length,          icon: Clock,        color: 'text-yellow-400' },
   ];
 
   const tags = project?.tags || [];
 
-  // Mini preview modal
   const PreviewModal = () => previewFile ? (
     <motion.div
       initial={{ opacity: 0 }}
@@ -628,7 +622,7 @@ function ActiveProjectDetails({ project, memory, messages, artifacts, onAddFiles
       >
         <div className="flex items-center justify-between mb-2">
           <p className="text-[9px] font-black text-orange-400 uppercase tracking-[3px] flex items-center gap-1.5">
-            <FileText className="w-3 h-3" /> Archivos del Proyecto
+            <FileText className="w-3 h-3" /> {t('vault.project_files')}
           </p>
           <div className="flex items-center gap-2">
             {uploadingHere && <Loader2 className="w-3 h-3 text-orange-400 animate-spin" />}
@@ -636,7 +630,7 @@ function ActiveProjectDetails({ project, memory, messages, artifacts, onAddFiles
               onClick={() => detailFileRef.current?.click()}
               className="flex items-center gap-1 px-2 py-1 rounded-lg bg-orange-400/10 border border-orange-400/20 text-orange-400 text-[8px] font-black uppercase tracking-widest hover:bg-orange-400/20 transition-all"
             >
-              <Upload className="w-2.5 h-2.5" /> Subir
+              <Upload className="w-2.5 h-2.5" /> {t('vault.upload')}
             </button>
           </div>
         </div>
@@ -659,7 +653,7 @@ function ActiveProjectDetails({ project, memory, messages, artifacts, onAddFiles
           >
             <Upload className={cn('w-6 h-6 transition-colors', isDroppingHere ? 'text-orange-400' : 'text-gray-700 group-hover:text-orange-400')} />
             <p className={cn('text-[9px] font-black uppercase tracking-widest transition-colors', isDroppingHere ? 'text-orange-400' : 'text-gray-600 group-hover:text-orange-400')}>
-              {isDroppingHere ? 'Suelta aqui para subir' : 'Arrastra archivos o haz clic'}
+              {isDroppingHere ? 'Suelta aqui para subir' : t('vault.editor.drag_drop_files')}
             </p>
             <p className="text-[8px] text-gray-700">PDF · Excel · Word · Imágenes · CSV</p>
           </div>
@@ -679,12 +673,10 @@ function ActiveProjectDetails({ project, memory, messages, artifacts, onAddFiles
                     exit={{ opacity: 0, x: -20 }}
                     className="flex items-center gap-3 p-3 rounded-xl bg-[#0A0A0A] border border-[#181818] group hover:border-[#2A2A2A] transition-all"
                   >
-                    {/* Icono tipo */}
                     <div className="w-9 h-9 rounded-xl bg-[#111] border border-[#1A1A1A] flex items-center justify-center flex-shrink-0">
                       <FileTypeIcon type={meta.fileType} className="w-4 h-4" />
                     </div>
 
-                    {/* Info */}
                     <div className="flex-1 min-w-0">
                       <p className="text-[11px] font-bold text-gray-200 truncate">{file.title}</p>
                       <p className="text-[8px] text-gray-600 mt-0.5 uppercase tracking-wider">
@@ -692,18 +684,16 @@ function ActiveProjectDetails({ project, memory, messages, artifacts, onAddFiles
                       </p>
                     </div>
 
-                    {/* Badge extensión */}
                     <span className="text-[8px] font-black px-2 py-0.5 rounded-full bg-[#151515] border border-[#222] text-gray-500 uppercase flex-shrink-0">
                       {getExt(file.title)}
                     </span>
 
-                    {/* Acciones */}
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       {meta.content && (
                         <button
                           onClick={() => setPreviewFile(file)}
                           className="p-1.5 rounded-lg bg-[#151515] border border-[#222] text-gray-600 hover:text-neon-cyan hover:border-neon-cyan/30 transition-all"
-                          title="Ver contenido extraído"
+                          title={t('vault.view_extracted')}
                         >
                           <Eye className="w-3 h-3" />
                         </button>
@@ -712,7 +702,7 @@ function ActiveProjectDetails({ project, memory, messages, artifacts, onAddFiles
                         onClick={() => handleDeleteFile(file.id)}
                         disabled={deletingId === file.id}
                         className="p-1.5 rounded-lg bg-[#151515] border border-[#222] text-gray-600 hover:text-red-400 hover:border-red-400/30 transition-all"
-                        title="Eliminar archivo"
+                        title={t('vault.delete_file')}
                       >
                         {deletingId === file.id
                           ? <Loader2 className="w-3 h-3 animate-spin" />
@@ -731,7 +721,7 @@ function ActiveProjectDetails({ project, memory, messages, artifacts, onAddFiles
       {project?.description && (
         <div className="p-4 rounded-xl bg-[#0A0A0A] border border-[#151515]">
           <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-            <FileText className="w-3 h-3" /> Descripción
+            <FileText className="w-3 h-3" /> {t('vault.editor.description')}
           </p>
           <p className="text-[11px] text-gray-300 leading-relaxed">{project.description}</p>
         </div>
@@ -741,7 +731,7 @@ function ActiveProjectDetails({ project, memory, messages, artifacts, onAddFiles
       {project?.notes && (
         <div className="p-4 rounded-xl bg-neon-purple/5 border border-neon-purple/20">
           <p className="text-[9px] font-black text-neon-purple uppercase tracking-widest mb-2 flex items-center gap-1.5">
-            <Brain className="w-3 h-3" /> Contexto Ejecutivo
+            <Brain className="w-3 h-3" /> {t('vault.editor.exec_notes')}
           </p>
           <p className="text-[11px] text-gray-300 leading-relaxed whitespace-pre-wrap line-clamp-6">{project.notes}</p>
         </div>
@@ -751,7 +741,7 @@ function ActiveProjectDetails({ project, memory, messages, artifacts, onAddFiles
       {tags.length > 0 && (
         <div>
           <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-            <Tag className="w-3 h-3" /> Etiquetas
+            <Tag className="w-3 h-3" /> {t('vault.editor.tags')}
           </p>
           <div className="flex flex-wrap gap-1.5">
             {tags.map(t => (
@@ -767,7 +757,7 @@ function ActiveProjectDetails({ project, memory, messages, artifacts, onAddFiles
       {decisions.length > 0 && (
         <div>
           <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-            <CheckCircle2 className="w-3 h-3 text-green-400" /> Decisiones Recientes
+            <CheckCircle2 className="w-3 h-3 text-green-400" /> {t('vault.stats.recent_decisions')}
           </p>
           <div className="space-y-1.5">
             {decisions.slice(-4).reverse().map((d, i) => (
@@ -784,7 +774,7 @@ function ActiveProjectDetails({ project, memory, messages, artifacts, onAddFiles
       {tasks.length > 0 && (
         <div>
           <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-            <Clock className="w-3 h-3 text-yellow-400" /> Tareas Pendientes
+            <Clock className="w-3 h-3 text-yellow-400" /> {t('vault.stats.pending_tasks')}
           </p>
           <div className="space-y-1.5">
             {tasks.slice(0, 4).map((t, i) => (
@@ -808,7 +798,6 @@ function parseProjectDescription(raw) {
   if (!raw) return { description: '', notes: '', tags: [] };
   try {
     const parsed = JSON.parse(raw);
-    // Formato guardado: { desc, notes, tags }
     if (typeof parsed === 'object' && ('desc' in parsed || 'notes' in parsed)) {
       return {
         description: parsed.desc  || '',
@@ -817,22 +806,20 @@ function parseProjectDescription(raw) {
       };
     }
   } catch {}
-  // Si no es JSON, es texto plano (formato antiguo)
   return { description: raw, notes: '', tags: [] };
 }
 
 // ── Componente Principal: ProjectVault ────────────────────────────────────────
 export default function ProjectVault() {
+  const { t } = useTranslation();
   const { projects, activeProject, setActiveProject, createProject, memory, messages, artifacts, fetchProjects } = useBeta();
   const [showEditor, setShowEditor]   = useState(false);
   const [editTarget, setEditTarget]   = useState(null);
   const [activeView, setActiveView]   = useState('list');
   const [isSaving, setIsSaving]       = useState(false);
   const [filter, setFilter]           = useState('all');
-  // Mapa de tipos de archivo por proyecto: { [projectId]: { pdf: N, excel: N, image: N, video: N, word: N } }
   const [fileTypeMap, setFileTypeMap] = useState({});
 
-  // Cargar tipos de archivo para todos los proyectos de la lista
   useEffect(() => {
     if (!projects.length) return;
     supabase
@@ -865,7 +852,6 @@ export default function ProjectVault() {
   });
 
   const handleSelect = (project) => {
-    // Parsear notes/tags del campo description antes de activar el proyecto
     const enriched = { ...project, ...parseProjectDescription(project.description) };
     setActiveProject(enriched);
     setActiveView('detail');
@@ -884,8 +870,6 @@ export default function ProjectVault() {
   const handleSave = async (formData) => {
     setIsSaving(true);
     try {
-      // Serializar notes y tags en description (la tabla solo tiene: name, description, status)
-      // Formato: JSON con { desc, notes, tags } para compatibilidad
       const descPayload = JSON.stringify({
         desc:  formData.description || '',
         notes: formData.notes      || '',
@@ -893,7 +877,6 @@ export default function ProjectVault() {
       });
 
       if (formData.id && formData.id !== 'local-fallback-id') {
-        // Update — solo columnas que existen
         const { data, error } = await supabase
           .from('projects_beta')
           .update({
@@ -906,7 +889,6 @@ export default function ProjectVault() {
           .single();
         if (error) { console.error('[ProjectVault] Error update:', error); }
         if (data) {
-          // Reconstituir campos en memoria para que el UI los vea
           const reconstructed = {
             ...data,
             ...parseProjectDescription(data.description),
@@ -915,7 +897,6 @@ export default function ProjectVault() {
           if (typeof fetchProjects === 'function') await fetchProjects();
         }
       } else {
-        // Nuevo proyecto
         await createProject(formData.name);
       }
     } catch (err) {
@@ -950,8 +931,8 @@ export default function ProjectVault() {
             <FolderOpen className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-xl font-black text-white tracking-[5px] uppercase leading-none">BÓVEDA</h1>
-            <p className="text-[9px] text-gray-600 font-bold uppercase tracking-[2px] mt-1.5">Gestión de Proyectos Persistentes</p>
+            <h1 className="text-xl font-black text-white tracking-[5px] uppercase leading-none">{t('vault.title')}</h1>
+            <p className="text-[9px] text-gray-600 font-bold uppercase tracking-[2px] mt-1.5">{t('vault.subtitle')}</p>
           </div>
         </div>
 
@@ -960,7 +941,7 @@ export default function ProjectVault() {
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-neon-purple/10 border border-neon-purple/30 text-neon-purple text-[10px] font-black uppercase tracking-widest hover:bg-neon-purple/20 transition-all"
         >
           <Plus className="w-4 h-4" />
-          Nuevo
+          {t('vault.new')}
         </button>
       </div>
 
@@ -968,9 +949,9 @@ export default function ProjectVault() {
       <div className="px-8 pt-5 pb-3 relative z-10">
         <div className="flex items-center gap-1.5 bg-[#080808] p-1 rounded-xl border border-[#151515] w-fit">
           {[
-            { id: 'all',      label: 'Todos' },
-            { id: 'active',   label: 'Activos' },
-            { id: 'archived', label: 'Archivados' },
+            { id: 'all',      label: t('vault.filters.all') },
+            { id: 'active',   label: t('vault.filters.active') },
+            { id: 'archived', label: t('vault.filters.archived') },
           ].map(f => (
             <button
               key={f.id}
@@ -1006,7 +987,7 @@ export default function ProjectVault() {
                   onClick={() => setActiveView('list')}
                   className="text-[9px] font-black text-gray-600 hover:text-white uppercase tracking-widest transition-colors flex items-center gap-1"
                 >
-                  ← Proyectos
+                  {t('vault.back_projects')}
                 </button>
                 <span className="text-gray-700">/</span>
                 <span className="text-[9px] font-black text-neon-cyan uppercase tracking-widest truncate max-w-[200px]">
@@ -1032,7 +1013,7 @@ export default function ProjectVault() {
               {filteredProjects.length === 0 ? (
                 <div className="h-48 flex flex-col items-center justify-center border border-dashed border-[#1A1A1A] rounded-2xl opacity-40">
                   <FolderOpen className="w-8 h-8 text-gray-700 mb-3" />
-                  <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Sin proyectos</p>
+                  <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">{t('vault.no_projects')}</p>
                 </div>
               ) : (
                 filteredProjects.map(p => (

@@ -21,6 +21,9 @@ import DynamicSimulatorBuilder from '@/pages/alpha/simulators/DynamicSimulatorBu
 import LMA500Simulator from '@/pages/alpha/simulators/LMA500Simulator';
 import SMQSimulator from '@/pages/alpha/simulators/SMQSimulator';
 import CarrierSimulator from '@/pages/alpha/simulators/CarrierSimulator';
+import ForviaSimulator from '@/pages/alpha/simulators/ForviaSimulator';
+import WM500Simulator from '@/pages/alpha/simulators/WM500Simulator';
+import WM500SimulatorStable from '@/pages/alpha/simulators/WM500SimulatorStable';
 import VerifyPage from '@/pages/VerifyPage';
 import AvatarPage from '@/pages/AvatarPage';
 
@@ -53,6 +56,9 @@ function AppContent() {
           <Route path='lma-500' element={<LMA500Simulator />} />
           <Route path='smq-automatic' element={<SMQSimulator />} />
           <Route path='carrier' element={<CarrierSimulator />} />
+          <Route path='forvia' element={<ForviaSimulator />} />
+          <Route path='wm-500' element={<WM500Simulator />} />
+          <Route path='wm-500-stable' element={<WM500SimulatorStable />} />
           <Route path=':id' element={<RiderSimulatorPageWrapper />} />
         </Route>
         <Route path='analysis' element={<AnalysisPage />} />
@@ -76,14 +82,21 @@ function AppContent() {
   );
 }
 
+import { LanguageProvider } from '@/context/LanguageContext';
+import { BetaProvider } from '@/context/BetaContext';
+
 function App() {
   return (
-    <ProjectProvider>
-      <BrowserRouter>
-        <ScrollToTop />
-        <AppContent />
-      </BrowserRouter>
-    </ProjectProvider>
+    <LanguageProvider>
+      <ProjectProvider>
+        <BetaProvider>
+          <BrowserRouter>
+            <ScrollToTop />
+            <AppContent />
+          </BrowserRouter>
+        </BetaProvider>
+      </ProjectProvider>
+    </LanguageProvider>
   );
 }
 

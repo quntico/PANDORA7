@@ -5,7 +5,9 @@ import * as THREE from 'three';
 import EquipmentWrapper from './Equipment3DModel';
 import Connection3DArrow from './Connection3DArrow';
 import { LayoutModel } from './LayoutLoader';
-import { Box, Play, Pause, RotateCcw, Activity, RefreshCw, AlertTriangle, Maximize, Minimize, Camera, Upload, RotateCw, Palette, X, Check, Sliders, Sun, Grid3X3, Compass, Sparkles, Download, Minimize2, Maximize2, Square, Circle } from 'lucide-react';
+import { Box, Play, Pause, RotateCcw, Activity, RefreshCw, AlertTriangle, Maximize, Minimize, Camera, Upload, RotateCw, Palette, X, Check, Sliders, Sun, Grid3X3, Compass, Sparkles, Download, Minimize2, Maximize2, Square, Circle, Eye, Save, Trash2 } from 'lucide-react';
+import { useBeta } from '../../context/BetaContext';
+
 
 // ── Detección proactiva de soporte WebGL ──────────────────────────────────────
 function checkWebGLSupport() {
@@ -98,14 +100,22 @@ function TwinScene({
   sunAngle = 45,
   customRoughness = 0.25,
   customMetalness = 0.95,
-  customOutlineOpacity = 0.0
+  customOutlineOpacity = 0.0,
+  gridVisibility = 1.0,
+  fogDensity = 0.015
 }) {
   const isBlueprint = theme === 'blueprint';
   const isToxic = theme === 'toxic';
   const isAluminum = theme === 'aluminum';
   const isCustom = typeof theme === 'object' && theme !== null;
-  const { camera } = useThree();
+  const { camera, invalidate } = useThree();
   const controlsRef = useRef();
+
+  useEffect(() => {
+    const handleForceRender = () => invalidate();
+    window.addEventListener('force-twin-render', handleForceRender);
+    return () => window.removeEventListener('force-twin-render', handleForceRender);
+  }, [invalidate]);
 
   // Cargar estado inicial de la cámara al montar
   useEffect(() => {
@@ -134,6 +144,43 @@ function TwinScene({
     }
   }, [layout, camera]);
 
+  // Escuchar evento personalizado para orientar la cámara a vistas predefinidas
+  useEffect(() => {
+    const handleSetCameraPreset = (e) => {
+      const { preset } = e.detail;
+      if (!controlsRef.current) return;
+      
+      if (preset === 'lateral') {
+        // Vista Lateral (mirando desde el lado Z+)
+        camera.position.set(0, 2, 22);
+        controlsRef.current.target.set(0, 0.5, 0);
+      } else if (preset === 'superior') {
+        // Vista Superior (mirando desde arriba Y+)
+        camera.position.set(0, 25, 0.01); // offset de 0.01 en Z para evitar gimbal lock en OrbitControls
+        controlsRef.current.target.set(0, 0, 0);
+      } else if (preset === 'isometrica') {
+        // Vista Isométrica (diagonal)
+        camera.position.set(16, 12, 16);
+        controlsRef.current.target.set(0, 0.5, 0);
+      }
+      
+      controlsRef.current.update();
+      
+      // Guardar el estado en localStorage para que no se pierda al recargar
+      if (layout && layout.url) {
+        const cameraKey = `camera_state_${layout.url.replace(/[^a-zA-Z0-9]/g, '_')}`;
+        const state = {
+          position: { x: camera.position.x, y: camera.position.y, z: camera.position.z },
+          target: { x: controlsRef.current.target.x, y: controlsRef.current.target.y, z: controlsRef.current.target.z }
+        };
+        localStorage.setItem(cameraKey, JSON.stringify(state));
+      }
+    };
+    
+    window.addEventListener('set-twin-camera-preset', handleSetCameraPreset);
+    return () => window.removeEventListener('set-twin-camera-preset', handleSetCameraPreset);
+  }, [camera, layout]);
+
   const handleControlsChange = useCallback(() => {
     if (!layout || !layout.url) return;
     const cameraKey = `camera_state_${layout.url.replace(/[^a-zA-Z0-9]/g, '_')}`;
@@ -155,6 +202,16 @@ function TwinScene({
   const angleRad = (sunAngle * Math.PI) / 180;
   const sunX = 15 * Math.cos(angleRad);
   const sunZ = 15 * Math.sin(angleRad);
+
+  const fogColor = isBlueprint 
+    ? "#edf4f9" 
+    : isToxic 
+      ? "#0c0d0e" 
+      : isAluminum 
+        ? "#15181c" 
+        : isCustom 
+          ? (theme.bg || "#05070f") 
+          : "#05070f";
 
   return (
     <>
@@ -183,6 +240,11 @@ function TwinScene({
           intensity={0.6 * lightIntensity} 
           color="#ffffff" 
         />
+      )}
+
+      {/* Niebla Dinámica */}
+      {fogDensity > 0 && (
+        <fogExp2 attach="fog" args={[fogColor, fogDensity]} />
       )}
 
       {/* Modelo de Planta 3D */}
@@ -218,17 +280,17 @@ function TwinScene({
       ))}
 
       {/* Grid de Ingeniería */}
-      {showFloorPlane !== 'none' && (
+      {showFloorPlane !== 'none' && gridVisibility > 0 && (
         <Grid
           position={[0, -0.01, 0]}
           args={[50, 50]}
           cellSize={1}
-          cellThickness={isBlueprint ? 0.6 : isToxic ? 0.4 : isAluminum ? 0.3 : 0.5}
+          cellThickness={(isBlueprint ? 0.6 : isToxic ? 0.4 : isAluminum ? 0.3 : 0.5) * gridVisibility}
           cellColor={isCustom ? (theme.gridBg || '#1e293b') : isBlueprint ? "#b2f5ea" : isToxic ? "#2c302e" : isAluminum ? "#1e2228" : "#1a2536"}
           sectionSize={5}
-          sectionThickness={isBlueprint ? 1.2 : isToxic ? 0.8 : isAluminum ? 0.6 : 1}
+          sectionThickness={(isBlueprint ? 1.2 : isToxic ? 0.8 : isAluminum ? 0.6 : 1) * gridVisibility}
           sectionColor={isCustom ? (theme.grid || theme.wireframe) : isBlueprint ? "#0d9488" : isToxic ? "#84cc16" : isAluminum ? "#334155" : "#00F0FF"}
-          fadeDistance={45}
+          fadeDistance={45 * Math.min(2.0, gridVisibility)}
           fadeStrength={1}
         />
       )}
@@ -238,17 +300,7 @@ function TwinScene({
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.015, 0]} receiveShadow>
           <planeGeometry args={[2000, 2000]} />
           <meshStandardMaterial 
-            color={
-              isBlueprint 
-                ? "#edf4f9" 
-                : isToxic 
-                  ? "#08090a" 
-                  : isAluminum 
-                    ? "#111317" 
-                    : isCustom 
-                      ? (theme.bg || "#05070f") 
-                      : "#05070f"
-            } 
+            color={fogColor} 
             roughness={showFloorPlane === 'reflective' ? 0.12 : 0.9}
             metalness={showFloorPlane === 'reflective' ? 0.85 : 0.0}
           />
@@ -290,6 +342,16 @@ export default function SharedTwinViewer3D({
   onThemeChange = null,
   storagePrefix = ''
 }) {
+  let activeProject = null;
+  try {
+    const betaCtx = useBeta();
+    activeProject = betaCtx?.activeProject;
+  } catch (e) {
+    // skip
+  }
+  const projectSuffix = activeProject?.id ? `${activeProject.id}_` : '';
+  const resolvedPrefix = `${storagePrefix}${projectSuffix}`;
+
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
   const [layout, setLayout] = useState(null);
@@ -299,14 +361,73 @@ export default function SharedTwinViewer3D({
   const [webglSupported, setWebglSupported] = useState(true);
   const [canvasError, setCanvasError] = useState(null);
   const [rotationLevel, setRotationLevel] = useState(0); // 0 = OFF, 1 = 1x, 2 = 2x, 3 = 3x
-  const [lightIntensity, setLightIntensity] = useState(1.0);
-  const [showFloorPlane, setShowFloorPlane] = useState('reflective');
-  const [extraFills, setExtraFills] = useState(true);
-  const [sunAngle, setSunAngle] = useState(45);
-  const [customRoughness, setCustomRoughness] = useState(0.25);
-  const [customMetalness, setCustomMetalness] = useState(0.95);
-  const [customOutlineOpacity, setCustomOutlineOpacity] = useState(0.0);
+  const [lightIntensity, setLightIntensity] = useState(() => {
+    const saved = localStorage.getItem(`${resolvedPrefix}studio_lightIntensity`);
+    return saved !== null ? parseFloat(saved) : 1.0;
+  });
+  const [showFloorPlane, setShowFloorPlane] = useState(() => {
+    const saved = localStorage.getItem(`${resolvedPrefix}studio_showFloorPlane`);
+    return saved !== null ? saved : 'reflective';
+  });
+  const [extraFills, setExtraFills] = useState(() => {
+    const saved = localStorage.getItem(`${resolvedPrefix}studio_extraFills`);
+    return saved !== null ? saved === 'true' : true;
+  });
+  const [sunAngle, setSunAngle] = useState(() => {
+    const saved = localStorage.getItem(`${resolvedPrefix}studio_sunAngle`);
+    return saved !== null ? parseInt(saved) : 45;
+  });
+  const [customRoughness, setCustomRoughness] = useState(() => {
+    const saved = localStorage.getItem(`${resolvedPrefix}studio_customRoughness`);
+    return saved !== null ? parseFloat(saved) : 0.25;
+  });
+  const [customMetalness, setCustomMetalness] = useState(() => {
+    const saved = localStorage.getItem(`${resolvedPrefix}studio_customMetalness`);
+    return saved !== null ? parseFloat(saved) : 0.95;
+  });
+  const [customOutlineOpacity, setCustomOutlineOpacity] = useState(() => {
+    const saved = localStorage.getItem(`${resolvedPrefix}studio_customOutlineOpacity`);
+    return saved !== null ? parseFloat(saved) : 0.0;
+  });
+  const [gridVisibility, setGridVisibility] = useState(() => {
+    const saved = localStorage.getItem(`${resolvedPrefix}studio_gridVisibility`);
+    return saved !== null ? parseFloat(saved) : 1.0;
+  });
+  const [fogDensity, setFogDensity] = useState(() => {
+    const saved = localStorage.getItem(`${resolvedPrefix}studio_fogDensity`);
+    return saved !== null ? parseFloat(saved) : 0.015;
+  });
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
+
+  // Sincronizar ajustes del estudio CAD al cambiar de proyecto/simulador
+  useEffect(() => {
+    const savedLight = localStorage.getItem(`${resolvedPrefix}studio_lightIntensity`);
+    if (savedLight !== null) setLightIntensity(parseFloat(savedLight));
+    
+    const savedFloor = localStorage.getItem(`${resolvedPrefix}studio_showFloorPlane`);
+    if (savedFloor !== null) setShowFloorPlane(savedFloor);
+    
+    const savedFills = localStorage.getItem(`${resolvedPrefix}studio_extraFills`);
+    if (savedFills !== null) setExtraFills(savedFills === 'true');
+    
+    const savedSun = localStorage.getItem(`${resolvedPrefix}studio_sunAngle`);
+    if (savedSun !== null) setSunAngle(parseInt(savedSun));
+    
+    const savedRoughness = localStorage.getItem(`${resolvedPrefix}studio_customRoughness`);
+    if (savedRoughness !== null) setCustomRoughness(parseFloat(savedRoughness));
+    
+    const savedMetalness = localStorage.getItem(`${resolvedPrefix}studio_customMetalness`);
+    if (savedMetalness !== null) setCustomMetalness(parseFloat(savedMetalness));
+    
+    const savedOutline = localStorage.getItem(`${resolvedPrefix}studio_customOutlineOpacity`);
+    if (savedOutline !== null) setCustomOutlineOpacity(parseFloat(savedOutline));
+    
+    const savedGrid = localStorage.getItem(`${resolvedPrefix}studio_gridVisibility`);
+    if (savedGrid !== null) setGridVisibility(parseFloat(savedGrid));
+    
+    const savedFog = localStorage.getItem(`${resolvedPrefix}studio_fogDensity`);
+    if (savedFog !== null) setFogDensity(parseFloat(savedFog));
+  }, [resolvedPrefix]);
 
   // --- GRABADOR DE PANTALLA PROFESIONAL ---
   const [isRecording, setIsRecording] = useState(false);
@@ -534,20 +655,44 @@ export default function SharedTwinViewer3D({
     }
   };
 
-  const [hasLateral, setHasLateral] = useState(() => !!localStorage.getItem(`${storagePrefix}twin_snapshot_lateral`));
-  const [hasSuperior, setHasSuperior] = useState(() => !!localStorage.getItem(`${storagePrefix}twin_snapshot_superior`));
-  const [hasIsometrica, setHasIsometrica] = useState(() => !!localStorage.getItem(`${storagePrefix}twin_snapshot_isometrica`));
+  const [hasLateral, setHasLateral] = useState(() => !!localStorage.getItem(`${resolvedPrefix}twin_snapshot_lateral`));
+  const [hasSuperior, setHasSuperior] = useState(() => !!localStorage.getItem(`${resolvedPrefix}twin_snapshot_superior`));
+  const [hasIsometrica, setHasIsometrica] = useState(() => !!localStorage.getItem(`${resolvedPrefix}twin_snapshot_isometrica`));
+
+  const [lateralImg, setLateralImg] = useState(() => localStorage.getItem(`${resolvedPrefix}twin_snapshot_lateral`));
+  const [superiorImg, setSuperiorImg] = useState(() => localStorage.getItem(`${resolvedPrefix}twin_snapshot_superior`));
+  const [isometricaImg, setIsometricaImg] = useState(() => localStorage.getItem(`${resolvedPrefix}twin_snapshot_isometrica`));
+
+  // Estados para previsualizar capturas
+  const [previewImage, setPreviewImage] = useState(null);
+  const [previewTitle, setPreviewTitle] = useState('');
+
+  const handleOpenPreview = (viewType, title) => {
+    const dataUrl = localStorage.getItem(`${resolvedPrefix}twin_snapshot_${viewType}`);
+    if (dataUrl) {
+      setPreviewImage(dataUrl);
+      setPreviewTitle(title);
+    } else {
+      alert(`No hay captura guardada para la vista: ${title}`);
+    }
+  };
 
   useEffect(() => {
     const checkCaptures = () => {
-      setHasLateral(!!localStorage.getItem(`${storagePrefix}twin_snapshot_lateral`));
-      setHasSuperior(!!localStorage.getItem(`${storagePrefix}twin_snapshot_superior`));
-      setHasIsometrica(!!localStorage.getItem(`${storagePrefix}twin_snapshot_isometrica`));
+      const lat = localStorage.getItem(`${resolvedPrefix}twin_snapshot_lateral`);
+      const sup = localStorage.getItem(`${resolvedPrefix}twin_snapshot_superior`);
+      const iso = localStorage.getItem(`${resolvedPrefix}twin_snapshot_isometrica`);
+      setHasLateral(!!lat);
+      setHasSuperior(!!sup);
+      setHasIsometrica(!!iso);
+      setLateralImg(lat);
+      setSuperiorImg(sup);
+      setIsometricaImg(iso);
     };
     checkCaptures();
     window.addEventListener('storage', checkCaptures);
     return () => window.removeEventListener('storage', checkCaptures);
-  }, [storagePrefix]);
+  }, [resolvedPrefix]);
 
   const handleToggleRotation = () => {
     setRotationLevel(prev => (prev + 1) % 4);
@@ -608,106 +753,114 @@ export default function SharedTwinViewer3D({
     }
   };
 
-  const handleCaptureView = (viewType) => {
-    const canvas = containerRef.current?.querySelector('canvas');
-    if (canvas) {
-      const dataUrl = canvas.toDataURL('image/png');
-      
-      const img = new Image();
-      img.onload = () => {
-        const offscreen = document.createElement('canvas');
-        offscreen.width = canvas.width;
-        offscreen.height = canvas.height;
-        const ctx = offscreen.getContext('2d');
-        
-        ctx.fillStyle = theme === 'blueprint' ? '#edf4f9' : '#05070f';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
-        
-        if (theme === 'blueprint') {
-          const finalDataUrl = offscreen.toDataURL('image/png');
-          localStorage.setItem(`${storagePrefix}twin_snapshot_${viewType}`, finalDataUrl);
-          // También guardar en twin_snapshot_base64 como fallback compatible
-          if (viewType === 'lateral') {
-            localStorage.setItem(`${storagePrefix}twin_snapshot_base64`, finalDataUrl);
-          }
-          window.dispatchEvent(new Event('storage'));
-          
-          if (viewType === 'lateral') setHasLateral(true);
-          if (viewType === 'superior') setHasSuperior(true);
-          if (viewType === 'isometrica') setHasIsometrica(true);
-          
-          alert(`¡${viewType === 'lateral' ? 'Vista Lateral' : viewType === 'superior' ? 'Vista Superior' : 'Vista Isométrica'} guardada con éxito!`);
-          return;
-        }
+  const handleClearCaptures = () => {
+    localStorage.removeItem(`${resolvedPrefix}twin_snapshot_lateral`);
+    localStorage.removeItem(`${resolvedPrefix}twin_snapshot_superior`);
+    localStorage.removeItem(`${resolvedPrefix}twin_snapshot_isometrica`);
+    setHasLateral(false);
+    setHasSuperior(false);
+    setHasIsometrica(false);
+    setLateralImg(null);
+    setSuperiorImg(null);
+    setIsometricaImg(null);
+  };
 
-        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imgData.data;
-        
-        for (let i = 0; i < data.length; i += 4) {
-          let r = data[i] / 255, g = data[i + 1] / 255, b = data[i + 2] / 255;
-          let max = Math.max(r, g, b), min = Math.min(r, g, b);
-          let h, s, l = (max + min) / 2;
+  const handleCaptureView = (viewType) => {
+    window.dispatchEvent(new Event('force-twin-render'));
+    setTimeout(() => {
+      try {
+        const canvas = canvasRef.current || containerRef.current?.querySelector('canvas');
+        if (canvas) {
+          const dataUrl = canvas.toDataURL('image/png');
           
-          if (max === min) { h = s = 0; } 
-          else {
-            let d = max - min;
-            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-            switch (max) {
-              case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-              case g: h = (b - r) / d + 2; break;
-              case b: h = (r - g) / d + 4; break;
+          const img = new Image();
+          img.onload = () => {
+            const offscreen = document.createElement('canvas');
+            offscreen.width = canvas.width;
+            offscreen.height = canvas.height;
+            const ctx = offscreen.getContext('2d');
+            
+            ctx.fillStyle = theme === 'blueprint' ? '#edf4f9' : '#05070f';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+            
+            if (theme === 'blueprint') {
+              const finalDataUrl = offscreen.toDataURL('image/jpeg', 0.85);
+              localStorage.setItem(`${resolvedPrefix}twin_snapshot_${viewType}`, finalDataUrl);
+              localStorage.setItem(`${resolvedPrefix}twin_snapshot_base64`, finalDataUrl);
+              window.dispatchEvent(new Event('storage'));
+              
+              if (viewType === 'lateral') { setHasLateral(true); setLateralImg(finalDataUrl); }
+              if (viewType === 'superior') { setHasSuperior(true); setSuperiorImg(finalDataUrl); }
+              if (viewType === 'isometrica') { setHasIsometrica(true); setIsometricaImg(finalDataUrl); }
+              
+              return;
             }
-            h /= 6;
-          }
-          
-          l = 1 - l;
-          
-          if (s === 0) { r = g = b = l; } 
-          else {
-            const hue2rgb = (p, q, t) => {
-              if (t < 0) t += 1;
-              if (t > 1) t -= 1;
-              if (t < 1/6) return p + (q - p) * 6 * t;
-              if (t < 1/2) return q;
-              if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-              return p;
-            };
-            let q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-            let p = 2 * l - q;
-            r = hue2rgb(p, q, h + 1/3);
-            g = hue2rgb(p, q, h);
-            b = hue2rgb(p, q, h - 1/3);
-          }
-          
-          data[i] = r * 255;
-          data[i + 1] = g * 255;
-          data[i + 2] = b * 255;
+
+            let finalDataUrl = dataUrl;
+            try {
+              const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+              const data = imgData.data;
+              for (let i = 0; i < data.length; i += 4) {
+                let r = data[i] / 255, g = data[i + 1] / 255, b = data[i + 2] / 255;
+                let max = Math.max(r, g, b), min = Math.min(r, g, b);
+                let h, s, l = (max + min) / 2;
+                if (max === min) { h = s = 0; } 
+                else {
+                  let d = max - min;
+                  s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                  switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                  }
+                  h /= 6;
+                }
+                l = 1 - l;
+                if (s === 0) { r = g = b = l; } 
+                else {
+                  const hue2rgb = (p, q, t) => {
+                    if (t < 0) t += 1; if (t > 1) t -= 1;
+                    if (t < 1/6) return p + (q - p) * 6 * t;
+                    if (t < 1/2) return q;
+                    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                    return p;
+                  };
+                  let q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                  let p = 2 * l - q;
+                  r = hue2rgb(p, q, h + 1/3); g = hue2rgb(p, q, h); b = hue2rgb(p, q, h - 1/3);
+                }
+                data[i] = r * 255; data[i + 1] = g * 255; data[i + 2] = b * 255;
+              }
+              ctx.putImageData(imgData, 0, 0);
+              finalDataUrl = offscreen.toDataURL('image/jpeg', 0.85);
+            } catch(e) {
+              console.warn("CORS evitó inversión de color. Se guarda imagen pura.");
+            }
+            
+            localStorage.setItem(`${resolvedPrefix}twin_snapshot_${viewType}`, finalDataUrl);
+            localStorage.setItem(`${resolvedPrefix}twin_snapshot_base64`, finalDataUrl);
+            window.dispatchEvent(new Event('storage'));
+            
+            if (viewType === 'lateral') { setHasLateral(true); setLateralImg(finalDataUrl); }
+            if (viewType === 'superior') { setHasSuperior(true); setSuperiorImg(finalDataUrl); }
+            if (viewType === 'isometrica') { setHasIsometrica(true); setIsometricaImg(finalDataUrl); }
+          };
+          img.onerror = () => alert("Error interno al exportar WebGL.");
+          img.src = dataUrl;
         }
-        
-        ctx.putImageData(imgData, 0, 0);
-        
-        const finalDataUrl = offscreen.toDataURL('image/png');
-        localStorage.setItem(`${storagePrefix}twin_snapshot_${viewType}`, finalDataUrl);
-        // También guardar en twin_snapshot_base64 como fallback compatible
-        if (viewType === 'lateral') {
-          localStorage.setItem(`${storagePrefix}twin_snapshot_base64`, finalDataUrl);
-        }
-        window.dispatchEvent(new Event('storage'));
-        
-        if (viewType === 'lateral') setHasLateral(true);
-        if (viewType === 'superior') setHasSuperior(true);
-        if (viewType === 'isometrica') setHasIsometrica(true);
-        
-        alert(`¡${viewType === 'lateral' ? 'Vista Lateral' : viewType === 'superior' ? 'Vista Superior' : 'Vista Isométrica'} capturada con éxito para el informe!`);
-      };
-      img.src = dataUrl;
-    }
+      } catch (err) {
+        console.error("CORS Error al capturar canvas:", err);
+        alert("La captura fue bloqueada. Tu modelo 3D usa texturas externas incompatibles con la exportación de seguridad del navegador.");
+      }
+    }, 150);
   };
 
   const handleScreenshot = () => {
-    const canvas = containerRef.current?.querySelector('canvas');
-    if (canvas) {
+    window.dispatchEvent(new Event('force-twin-render'));
+    setTimeout(() => {
+      const canvas = canvasRef.current || containerRef.current?.querySelector('canvas');
+      if (canvas) {
       const dataUrl = canvas.toDataURL('image/png');
       
       const img = new Image();
@@ -723,8 +876,8 @@ export default function SharedTwinViewer3D({
         ctx.drawImage(img, 0, 0);
         
         if (theme === 'blueprint') {
-          const finalDataUrl = offscreen.toDataURL('image/png');
-          localStorage.setItem(`${storagePrefix}twin_snapshot_base64`, finalDataUrl);
+          const finalDataUrl = offscreen.toDataURL('image/jpeg', 0.85);
+          localStorage.setItem(`${resolvedPrefix}twin_snapshot_base64`, finalDataUrl);
           
           const link = document.createElement('a');
           link.download = `twin_snapshot_${Date.now()}.png`;
@@ -735,56 +888,48 @@ export default function SharedTwinViewer3D({
           return;
         }
 
-        // Inversión manual de luminosidad (Garantiza compatibilidad cross-browser y PDF)
-        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imgData.data;
-        
-        for (let i = 0; i < data.length; i += 4) {
-          let r = data[i] / 255, g = data[i + 1] / 255, b = data[i + 2] / 255;
-          let max = Math.max(r, g, b), min = Math.min(r, g, b);
-          let h, s, l = (max + min) / 2;
-          
-          if (max === min) { h = s = 0; } 
-          else {
-            let d = max - min;
-            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-            switch (max) {
-              case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-              case g: h = (b - r) / d + 2; break;
-              case b: h = (r - g) / d + 4; break;
+        let finalDataUrl = dataUrl;
+        try {
+          // Inversión manual de luminosidad (Garantiza compatibilidad cross-browser y PDF)
+          const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imgData.data;
+          for (let i = 0; i < data.length; i += 4) {
+            let r = data[i] / 255, g = data[i + 1] / 255, b = data[i + 2] / 255;
+            let max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+            if (max === min) { h = s = 0; } 
+            else {
+              let d = max - min;
+              s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+              switch (max) {
+                case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                case g: h = (b - r) / d + 2; break;
+                case b: h = (r - g) / d + 4; break;
+              }
+              h /= 6;
             }
-            h /= 6;
+            l = 1 - l;
+            if (s === 0) { r = g = b = l; } 
+            else {
+              const hue2rgb = (p, q, t) => {
+                if (t < 0) t += 1; if (t > 1) t -= 1;
+                if (t < 1/6) return p + (q - p) * 6 * t;
+                if (t < 1/2) return q;
+                if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                return p;
+              };
+              let q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+              let p = 2 * l - q;
+              r = hue2rgb(p, q, h + 1/3); g = hue2rgb(p, q, h); b = hue2rgb(p, q, h - 1/3);
+            }
+            data[i] = r * 255; data[i + 1] = g * 255; data[i + 2] = b * 255;
           }
-          
-          // Invertir solo luminosidad (Modo claro)
-          l = 1 - l;
-          
-          if (s === 0) { r = g = b = l; } 
-          else {
-            const hue2rgb = (p, q, t) => {
-              if (t < 0) t += 1;
-              if (t > 1) t -= 1;
-              if (t < 1/6) return p + (q - p) * 6 * t;
-              if (t < 1/2) return q;
-              if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-              return p;
-            };
-            let q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-            let p = 2 * l - q;
-            r = hue2rgb(p, q, h + 1/3);
-            g = hue2rgb(p, q, h);
-            b = hue2rgb(p, q, h - 1/3);
-          }
-          
-          data[i] = r * 255;
-          data[i + 1] = g * 255;
-          data[i + 2] = b * 255;
+          ctx.putImageData(imgData, 0, 0);
+          finalDataUrl = offscreen.toDataURL('image/jpeg', 0.85);
+        } catch (e) {
+          console.warn("CORS evitó filtro de screenshot. Guardando foto pura.");
         }
-        
-        ctx.putImageData(imgData, 0, 0);
-        
-        const finalDataUrl = offscreen.toDataURL('image/png');
-        localStorage.setItem(`${storagePrefix}twin_snapshot_base64`, finalDataUrl);
+        localStorage.setItem(`${resolvedPrefix}twin_snapshot_base64`, finalDataUrl);
         
         const link = document.createElement('a');
         link.download = `twin_snapshot_${Date.now()}.png`;
@@ -794,12 +939,15 @@ export default function SharedTwinViewer3D({
         alert("¡Foto capturada! Aparecerá en tu informe en formato Modo Claro perfecto.");
       };
       img.src = dataUrl;
-    }
+      }
+    }, 150);
   };
 
   const captureSilentSnapshot = () => {
-    const canvas = containerRef.current?.querySelector('canvas');
-    if (!canvas) return;
+    window.dispatchEvent(new Event('force-twin-render'));
+    setTimeout(() => {
+      const canvas = canvasRef.current || containerRef.current?.querySelector('canvas');
+      if (!canvas) return;
     try {
       const dataUrl = canvas.toDataURL('image/png');
       
@@ -815,8 +963,8 @@ export default function SharedTwinViewer3D({
         ctx.drawImage(img, 0, 0);
         
         if (theme === 'blueprint') {
-          const finalDataUrl = offscreen.toDataURL('image/png');
-          localStorage.setItem(`${storagePrefix}twin_snapshot_base64`, finalDataUrl);
+          const finalDataUrl = offscreen.toDataURL('image/jpeg', 0.85);
+          localStorage.setItem(`${resolvedPrefix}twin_snapshot_base64`, finalDataUrl);
           window.dispatchEvent(new Event('storage'));
           return;
         }
@@ -867,14 +1015,15 @@ export default function SharedTwinViewer3D({
         
         ctx.putImageData(imgData, 0, 0);
         
-        const finalDataUrl = offscreen.toDataURL('image/png');
-        localStorage.setItem(`${storagePrefix}twin_snapshot_base64`, finalDataUrl);
+        const finalDataUrl = offscreen.toDataURL('image/jpeg', 0.85);
+        localStorage.setItem(`${resolvedPrefix}twin_snapshot_base64`, finalDataUrl);
         window.dispatchEvent(new Event('storage'));
       };
       img.src = dataUrl;
-    } catch (e) {
-      console.warn("Error capturing silent screenshot:", e);
-    }
+      } catch (e) {
+        console.warn("Error capturing silent screenshot:", e);
+      }
+    }, 150);
   };
 
   // Auto-Capturar snapshot silencioso 2 segundos después de montar o cambiar el layout/modelo
@@ -1035,6 +1184,8 @@ export default function SharedTwinViewer3D({
             customRoughness={customRoughness}
             customMetalness={customMetalness}
             customOutlineOpacity={customOutlineOpacity}
+            gridVisibility={gridVisibility}
+            fogDensity={fogDensity}
           />
         </Canvas>
 
@@ -1066,47 +1217,93 @@ export default function SharedTwinViewer3D({
                 <RotateCcw className="w-3.5 h-3.5" />
               </button>
               <div className="h-4 w-px bg-slate-700/60 mx-1" />
-              <div className="flex items-center gap-1 bg-slate-900/60 p-1 rounded-2xl border border-slate-800">
-                <button 
-                  onClick={() => handleCaptureView('lateral')}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border transition-all text-[9px] font-black uppercase tracking-wider ${
-                    hasLateral 
-                      ? 'bg-emerald-500/25 border-emerald-400 text-emerald-300 hover:bg-emerald-500/40 hover:text-white shadow-[0_0_10px_rgba(16,185,129,0.25)]' 
-                      : 'bg-slate-800/90 border-slate-700 text-slate-100 hover:text-white hover:bg-slate-700 hover:border-slate-500'
-                  }`}
-                  title="Capturar Vista Lateral actual"
-                >
-                  <Camera className="w-3 h-3" />
-                  <span>Lateral</span>
-                  <span className={`w-2 h-2 rounded-full ${hasLateral ? 'bg-emerald-400 animate-pulse shadow-[0_0_6px_#34d399]' : 'bg-slate-600'}`} />
-                </button>
+              <div className="flex items-center gap-2 bg-slate-900/60 p-1 rounded-2xl border border-slate-800">
+                {/* LATERAL */}
+                <div className="flex items-center gap-1">
+                  <button 
+                    onClick={() => handleCaptureView('lateral')}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border transition-all text-[9px] font-black uppercase tracking-wider ${
+                      hasLateral 
+                        ? 'bg-cyan-500/25 border-cyan-400 text-cyan-300 hover:bg-cyan-500/40 hover:text-white shadow-[0_0_10px_rgba(6,182,212,0.25)]' 
+                        : 'bg-slate-800/90 border-slate-700 text-slate-100 hover:text-white hover:bg-slate-700 hover:border-slate-500'
+                    }`}
+                    title="Capturar Vista Lateral actual"
+                  >
+                    <Camera className="w-3 h-3" />
+                    <span>Lateral</span>
+                    <span className={`w-2 h-2 rounded-full ${hasLateral ? 'bg-cyan-400 animate-pulse shadow-[0_0_6px_#22d3ee]' : 'bg-slate-600'}`} />
+                  </button>
+                  {hasLateral && (
+                    <button
+                      onClick={() => handleOpenPreview('lateral', 'Vista Lateral')}
+                      className="p-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/25 text-cyan-400 hover:text-white transition-all shadow-[0_0_8px_rgba(6,182,212,0.15)]"
+                      title="Ver vista previa de la foto Lateral"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
 
-                <button 
-                  onClick={() => handleCaptureView('superior')}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border transition-all text-[9px] font-black uppercase tracking-wider ${
-                    hasSuperior 
-                      ? 'bg-emerald-500/25 border-emerald-400 text-emerald-300 hover:bg-emerald-500/40 hover:text-white shadow-[0_0_10px_rgba(16,185,129,0.25)]' 
-                      : 'bg-slate-800/90 border-slate-700 text-slate-100 hover:text-white hover:bg-slate-700 hover:border-slate-500'
-                  }`}
-                  title="Capturar Vista Superior actual"
-                >
-                  <Camera className="w-3 h-3" />
-                  <span>Superior</span>
-                  <span className={`w-2 h-2 rounded-full ${hasSuperior ? 'bg-emerald-400 animate-pulse shadow-[0_0_6px_#34d399]' : 'bg-slate-600'}`} />
-                </button>
+                {/* SUPERIOR */}
+                <div className="flex items-center gap-1">
+                  <button 
+                    onClick={() => handleCaptureView('superior')}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border transition-all text-[9px] font-black uppercase tracking-wider ${
+                      hasSuperior 
+                        ? 'bg-cyan-500/25 border-cyan-400 text-cyan-300 hover:bg-cyan-500/40 hover:text-white shadow-[0_0_10px_rgba(6,182,212,0.25)]' 
+                        : 'bg-slate-800/90 border-slate-700 text-slate-100 hover:text-white hover:bg-slate-700 hover:border-slate-500'
+                    }`}
+                    title="Capturar Vista Superior actual"
+                  >
+                    <Camera className="w-3 h-3" />
+                    <span>Superior</span>
+                    <span className={`w-2 h-2 rounded-full ${hasSuperior ? 'bg-cyan-400 animate-pulse shadow-[0_0_6px_#22d3ee]' : 'bg-slate-600'}`} />
+                  </button>
+                  {hasSuperior && (
+                    <button
+                      onClick={() => handleOpenPreview('superior', 'Vista Superior')}
+                      className="p-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/25 text-cyan-400 hover:text-white transition-all shadow-[0_0_8px_rgba(6,182,212,0.15)]"
+                      title="Ver vista previa de la foto Superior"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
 
-                <button 
-                  onClick={() => handleCaptureView('isometrica')}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border transition-all text-[9px] font-black uppercase tracking-wider ${
-                    hasIsometrica 
-                      ? 'bg-emerald-500/25 border-emerald-400 text-emerald-300 hover:bg-emerald-500/40 hover:text-white shadow-[0_0_10px_rgba(16,185,129,0.25)]' 
-                      : 'bg-slate-800/90 border-slate-700 text-slate-100 hover:text-white hover:bg-slate-700 hover:border-slate-500'
-                  }`}
-                  title="Capturar Vista Isométrica actual"
+                {/* ISOMETRICA */}
+                <div className="flex items-center gap-1">
+                  <button 
+                    onClick={() => handleCaptureView('isometrica')}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border transition-all text-[9px] font-black uppercase tracking-wider ${
+                      hasIsometrica 
+                        ? 'bg-cyan-500/25 border-cyan-400 text-cyan-300 hover:bg-cyan-500/40 hover:text-white shadow-[0_0_10px_rgba(6,182,212,0.25)]' 
+                        : 'bg-slate-800/90 border-slate-700 text-slate-100 hover:text-white hover:bg-slate-700 hover:border-slate-500'
+                    }`}
+                    title="Capturar Vista Isométrica actual"
+                  >
+                    <Camera className="w-3 h-3" />
+                    <span>Isométrica</span>
+                    <span className={`w-2 h-2 rounded-full ${hasIsometrica ? 'bg-cyan-400 animate-pulse shadow-[0_0_6px_#22d3ee]' : 'bg-slate-600'}`} />
+                  </button>
+                  {hasIsometrica && (
+                    <button
+                      onClick={() => handleOpenPreview('isometrica', 'Vista Isométrica')}
+                      className="p-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/25 text-cyan-400 hover:text-white transition-all shadow-[0_0_8px_rgba(6,182,212,0.15)]"
+                      title="Ver vista previa de la foto Isométrica"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+                
+                {/* BOTÓN LIMPIAR CAPTURAS */}
+                <div className="h-4 w-px bg-slate-700/60 mx-1" />
+                <button
+                  onClick={handleClearCaptures}
+                  className="p-1.5 rounded-xl border bg-slate-800/90 border-slate-700 text-slate-100 hover:text-white hover:bg-red-900/60 hover:border-red-500/50 transition-all shadow-sm"
+                  title="Limpiar todas las capturas del reporte"
                 >
-                  <Camera className="w-3 h-3" />
-                  <span>Isométrica</span>
-                  <span className={`w-2 h-2 rounded-full ${hasIsometrica ? 'bg-emerald-400 animate-pulse shadow-[0_0_6px_#34d399]' : 'bg-slate-600'}`} />
+                  <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
               <button 
@@ -1171,12 +1368,15 @@ export default function SharedTwinViewer3D({
 
         {/* Panel de Ajustes de Estudio CAD (Luz, Piso, Visibilidad) - Visible en pantalla completa */}
         {isFullscreen && !isRecording && (
-          <div className={`absolute top-4 right-4 z-10 p-4 rounded-3xl bg-slate-950/94 backdrop-blur-xl border border-slate-700/80 w-[270px] pointer-events-auto shadow-2xl flex flex-col ${isPanelCollapsed ? 'gap-0 py-3' : 'gap-4 max-h-[90vh] overflow-y-auto'} text-white animate-fade-in transition-all duration-300`}>
+          <div 
+            style={{ backgroundColor: '#090d16', zIndex: 9999 }}
+            className={`absolute top-4 right-4 p-4 rounded-3xl border border-slate-700/80 w-[270px] pointer-events-auto shadow-[0_15px_50px_rgba(0,0,0,0.85)] flex flex-col ${isPanelCollapsed ? 'gap-0 py-3' : 'gap-4 max-h-[90vh] overflow-y-auto'} text-white animate-fade-in transition-all duration-300`}
+          >
             {/* Cabecera */}
             <div className={`flex items-center justify-between ${isPanelCollapsed ? '' : 'pb-2 border-b border-slate-800/80'}`}>
               <div className="flex items-center gap-2">
                 <Sliders className="w-3.5 h-3.5 text-cyan-400" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-200">Estudio CAD Pro</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-100">Estudio CAD Pro</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-[7px] font-black uppercase bg-cyan-500/10 text-cyan-300 border border-cyan-450/30 rounded px-1.5 py-0.5 tracking-wider">
@@ -1184,10 +1384,10 @@ export default function SharedTwinViewer3D({
                 </span>
                 <button
                   onClick={() => setIsPanelCollapsed(!isPanelCollapsed)}
-                  className="p-1 rounded bg-slate-900 border border-slate-800 text-slate-450 hover:text-white transition-all duration-200 cursor-pointer flex items-center justify-center"
+                  className="p-1 rounded bg-slate-900 border border-slate-850 text-slate-200 hover:text-white transition-all duration-200 cursor-pointer flex items-center justify-center"
                   title={isPanelCollapsed ? "Maximizar Panel" : "Minimizar Panel"}
                 >
-                  {isPanelCollapsed ? <Maximize2 className="w-3 h-3 text-cyan-400" /> : <Minimize2 className="w-3 h-3 text-slate-400" />}
+                  {isPanelCollapsed ? <Maximize2 className="w-3 h-3 text-cyan-400" /> : <Minimize2 className="w-3 h-3 text-slate-350" />}
                 </button>
               </div>
             </div>
@@ -1197,21 +1397,21 @@ export default function SharedTwinViewer3D({
               <>
                 {/* SECCIÓN 1: ILUMINACIÓN Y SOL */}
                 <div className="space-y-3">
-                  <div className="flex items-center gap-1.5 text-[8.5px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-900 pb-1">
+                  <div className="flex items-center gap-1.5 text-[8.5px] font-black uppercase tracking-wider text-slate-200 border-b border-slate-850 pb-1">
                     <Sun className="w-3.5 h-3.5 text-amber-400" />
                     <span>Iluminación y Sombras</span>
                   </div>
 
                   {/* Intensidad de Luz */}
                   <div className="space-y-1">
-                    <div className="flex items-center justify-between text-[8px] font-black uppercase text-slate-400">
+                    <div className="flex items-center justify-between text-[8px] font-black uppercase text-slate-300">
                       <span>Brillo e Iluminación</span>
-                      <span className="text-cyan-400 font-mono">{(lightIntensity * 100).toFixed(0)}%</span>
+                      <span className="text-cyan-400 font-mono font-bold">{(lightIntensity * 100).toFixed(0)}%</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <button 
                         onClick={() => setLightIntensity(prev => Math.max(0.2, prev - 0.2))}
-                        className="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800 hover:bg-slate-800 hover:border-slate-700 text-xs font-bold transition-all flex items-center justify-center cursor-pointer"
+                        className="w-6 h-6 rounded-lg bg-slate-900 border border-slate-850 hover:bg-slate-800 hover:border-slate-700 text-xs font-bold transition-all flex items-center justify-center cursor-pointer text-white"
                       >
                         -
                       </button>
@@ -1226,7 +1426,7 @@ export default function SharedTwinViewer3D({
                       />
                       <button 
                         onClick={() => setLightIntensity(prev => Math.min(3.0, prev + 0.2))}
-                        className="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800 hover:bg-slate-800 hover:border-slate-700 text-xs font-bold transition-all flex items-center justify-center cursor-pointer"
+                        className="w-6 h-6 rounded-lg bg-slate-900 border border-slate-850 hover:bg-slate-800 hover:border-slate-700 text-xs font-bold transition-all flex items-center justify-center cursor-pointer text-white"
                       >
                         +
                       </button>
@@ -1235,12 +1435,12 @@ export default function SharedTwinViewer3D({
 
                   {/* Posición del Sol (sunAngle) */}
                   <div className="space-y-1">
-                    <div className="flex items-center justify-between text-[8px] font-black uppercase text-slate-400">
+                    <div className="flex items-center justify-between text-[8px] font-black uppercase text-slate-300">
                       <div className="flex items-center gap-1">
                         <Compass className="w-3 h-3 text-cyan-400 animate-spin-slow" />
                         <span>Ángulo del Sol (Sombras)</span>
                       </div>
-                      <span className="text-cyan-400 font-mono">{sunAngle}°</span>
+                      <span className="text-cyan-400 font-mono font-bold">{sunAngle}°</span>
                     </div>
                     <input 
                       type="range"
@@ -1256,16 +1456,16 @@ export default function SharedTwinViewer3D({
 
                 {/* SECCIÓN 2: DETALLES DE EQUIPOS (MATERIALES CAD) */}
                 <div className="space-y-3">
-                  <div className="flex items-center gap-1.5 text-[8.5px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-900 pb-1">
+                  <div className="flex items-center gap-1.5 text-[8.5px] font-black uppercase tracking-wider text-slate-200 border-b border-slate-850 pb-1">
                     <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
                     <span>Detalle y Acabado CAD</span>
                   </div>
 
                   {/* Metalicidad (customMetalness) */}
                   <div className="space-y-1">
-                    <div className="flex items-center justify-between text-[8px] font-black uppercase text-slate-400">
+                    <div className="flex items-center justify-between text-[8px] font-black uppercase text-slate-300">
                       <span>Brillo Metálico</span>
-                      <span className="text-cyan-400 font-mono">{(customMetalness * 100).toFixed(0)}%</span>
+                      <span className="text-cyan-400 font-mono font-bold">{(customMetalness * 100).toFixed(0)}%</span>
                     </div>
                     <input 
                       type="range"
@@ -1280,9 +1480,9 @@ export default function SharedTwinViewer3D({
 
                   {/* Rugosidad / Pulido (customRoughness) */}
                   <div className="space-y-1">
-                    <div className="flex items-center justify-between text-[8px] font-black uppercase text-slate-400">
+                    <div className="flex items-center justify-between text-[8px] font-black uppercase text-slate-300">
                       <span>Rugosidad / Pulido</span>
-                      <span className="text-cyan-400 font-mono">{(customRoughness * 100).toFixed(0)}%</span>
+                      <span className="text-cyan-400 font-mono font-bold">{(customRoughness * 100).toFixed(0)}%</span>
                     </div>
                     <input 
                       type="range"
@@ -1297,9 +1497,9 @@ export default function SharedTwinViewer3D({
 
                   {/* Contornos CAD / Outlines (customOutlineOpacity) */}
                   <div className="space-y-1">
-                    <div className="flex items-center justify-between text-[8px] font-black uppercase text-slate-400">
+                    <div className="flex items-center justify-between text-[8px] font-black uppercase text-slate-300">
                       <span>Siluetas e Ingeniería</span>
-                      <span className="text-cyan-400 font-mono">{(customOutlineOpacity * 100).toFixed(0)}%</span>
+                      <span className="text-cyan-400 font-mono font-bold">{(customOutlineOpacity * 100).toFixed(0)}%</span>
                     </div>
                     <input 
                       type="range"
@@ -1313,11 +1513,11 @@ export default function SharedTwinViewer3D({
                   </div>
                 </div>
 
-                {/* SECCIÓN 3: PISO */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-1.5 text-[8.5px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-900 pb-1">
+                {/* SECCIÓN 3: PISO, CUADRÍCULA Y FOG */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-1.5 text-[8.5px] font-black uppercase tracking-wider text-slate-200 border-b border-slate-850 pb-1">
                     <Grid3X3 className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>Superficie del Suelo</span>
+                    <span>Entorno y Cuadrícula</span>
                   </div>
                   <div className="grid grid-cols-2 gap-1.5">
                     {[
@@ -1329,15 +1529,49 @@ export default function SharedTwinViewer3D({
                       <button
                         key={opt.id}
                         onClick={() => setShowFloorPlane(opt.id)}
-                        className={`py-1 px-1.5 rounded-lg border text-[8px] font-bold uppercase tracking-wider transition-all text-center cursor-pointer ${
+                        className={`py-1 px-1.5 rounded-lg border text-[8px] font-black uppercase tracking-wider transition-all text-center cursor-pointer ${
                           showFloorPlane === opt.id
-                            ? 'bg-cyan-500/15 border-cyan-400 text-cyan-300 shadow-[0_0_8px_rgba(6,182,212,0.15)]'
-                            : 'bg-slate-900 border-slate-800/80 text-slate-450 hover:bg-slate-850 hover:text-slate-200'
+                            ? 'bg-cyan-500/25 border-cyan-400 text-cyan-200 shadow-[0_0_8px_rgba(6,182,212,0.25)]'
+                            : 'bg-slate-900 border-slate-800/80 text-slate-300 hover:bg-slate-800 hover:text-white hover:border-slate-700'
                         }`}
                       >
                         {opt.label}
                       </button>
                     ))}
+                  </div>
+
+                  {/* Slider de Visibilidad del Grid */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[8px] font-black uppercase text-slate-300">
+                      <span>Grosor/Visibilidad Cuadrícula</span>
+                      <span className="text-cyan-400 font-mono font-bold">{(gridVisibility * 100).toFixed(0)}%</span>
+                    </div>
+                    <input 
+                      type="range"
+                      min="0.0"
+                      max="3.0"
+                      step="0.1"
+                      value={gridVisibility}
+                      onChange={(e) => setGridVisibility(parseFloat(e.target.value))}
+                      className="w-full accent-cyan-400 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Slider de Densidad de Fog */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[8px] font-black uppercase text-slate-300">
+                      <span>Niebla Industrial (Fog)</span>
+                      <span className="text-cyan-400 font-mono font-bold">{(fogDensity * 1000).toFixed(0)}</span>
+                    </div>
+                    <input 
+                      type="range"
+                      min="0.00"
+                      max="0.08"
+                      step="0.002"
+                      value={fogDensity}
+                      onChange={(e) => setFogDensity(parseFloat(e.target.value))}
+                      className="w-full accent-cyan-400 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer"
+                    />
                   </div>
                 </div>
 
@@ -1345,8 +1579,8 @@ export default function SharedTwinViewer3D({
                 <div className="space-y-3 pt-2 border-t border-slate-800/80">
                   <div className="flex items-center justify-between pt-1">
                     <div className="flex flex-col">
-                      <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">Filtro de Contraluz</span>
-                      <span className="text-[6.5px] text-slate-500 font-medium leading-tight">Iluminación frontal</span>
+                      <span className="text-[8px] font-black uppercase tracking-wider text-slate-300">Filtro de Contraluz</span>
+                      <span className="text-[6.5px] text-slate-400 font-medium leading-tight">Iluminación frontal</span>
                     </div>
                     <button
                       onClick={() => setExtraFills(prev => !prev)}
@@ -1361,6 +1595,27 @@ export default function SharedTwinViewer3D({
                       />
                     </button>
                   </div>
+                  
+                  {/* Botón para guardar configuración del Estudio */}
+                  <button
+                    onClick={() => {
+                      localStorage.setItem(`${resolvedPrefix}studio_lightIntensity`, String(lightIntensity));
+                      localStorage.setItem(`${resolvedPrefix}studio_showFloorPlane`, showFloorPlane);
+                      localStorage.setItem(`${resolvedPrefix}studio_extraFills`, String(extraFills));
+                      localStorage.setItem(`${resolvedPrefix}studio_sunAngle`, String(sunAngle));
+                      localStorage.setItem(`${resolvedPrefix}studio_customRoughness`, String(customRoughness));
+                      localStorage.setItem(`${resolvedPrefix}studio_customMetalness`, String(customMetalness));
+                      localStorage.setItem(`${resolvedPrefix}studio_customOutlineOpacity`, String(customOutlineOpacity));
+                      localStorage.setItem(`${resolvedPrefix}studio_gridVisibility`, String(gridVisibility));
+                      localStorage.setItem(`${resolvedPrefix}studio_fogDensity`, String(fogDensity));
+                      alert("¡Configuración de estudio guardada con éxito para este proyecto!");
+                    }}
+                    className="w-full flex items-center justify-center gap-2 py-1.5 px-3 rounded-xl bg-slate-900 border border-cyan-500/50 hover:bg-cyan-500/20 text-[#00F0FF] font-bold text-[9px] uppercase tracking-wider transition-all hover:scale-[1.01] cursor-pointer"
+                    title="Guardar la iluminación, sombras, y acabados para que no se pierdan al recargar"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>Guardar Ajustes de Estudio</span>
+                  </button>
 
                   {/* Botón de Captura de Foto PNG Independiente */}
                   <button
@@ -1399,7 +1654,7 @@ export default function SharedTwinViewer3D({
               onClick={isPaused ? resumeRecording : pauseRecording}
               className={`p-2 rounded-xl border transition-all cursor-pointer ${
                 isPaused 
-                  ? 'bg-emerald-500/25 border-emerald-400 text-emerald-300 hover:bg-emerald-500/40 hover:text-white' 
+                  ? 'bg-cyan-500/25 border-cyan-400 text-cyan-300 hover:bg-cyan-500/40 hover:text-white' 
                   : 'bg-slate-900 border-slate-800 text-slate-100 hover:text-white hover:bg-slate-800'
               }`}
               title={isPaused ? "Reanudar Grabación" : "Pausar Grabación"}
@@ -1724,6 +1979,60 @@ export default function SharedTwinViewer3D({
           </div>
         )}
       </div>
+
+      {/* Lightbox / Modal de Vista Previa de Capturas */}
+      {previewImage && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-fade-in">
+          <div className="relative max-w-4xl w-full bg-slate-950/80 border border-slate-700/80 rounded-3xl p-6 shadow-[0_0_50px_rgba(6,182,212,0.15)] flex flex-col gap-4">
+            {/* Header del modal */}
+            <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+              <div className="flex items-center gap-2">
+                <Camera className="w-4.5 h-4.5 text-cyan-400 animate-pulse" />
+                <span className="text-xs font-black uppercase tracking-widest text-white">
+                  Vista Previa: {previewTitle}
+                </span>
+              </div>
+              <button
+                onClick={() => setPreviewImage(null)}
+                className="p-1.5 rounded-xl bg-slate-800 hover:bg-red-500/20 border border-slate-700 hover:border-red-500/50 text-slate-400 hover:text-red-400 transition-all"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Imagen */}
+            <div className="w-full aspect-video rounded-2xl overflow-hidden border border-slate-800 bg-[#070a13] flex items-center justify-center">
+              <img 
+                src={previewImage} 
+                alt={previewTitle} 
+                className="max-h-full max-w-full object-contain" 
+              />
+            </div>
+
+            {/* Footer / Acciones */}
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                onClick={() => {
+                  const link = document.createElement('a');
+                  link.download = `PREVIA_${previewTitle.replace(/\s+/g, '_')}.png`;
+                  link.href = previewImage;
+                  link.click();
+                }}
+                className="flex items-center gap-2 px-4 py-2.5 bg-cyan-500 hover:bg-cyan-450 text-black rounded-xl text-xs font-bold transition-all shadow-[0_0_15px_rgba(6,182,212,0.25)]"
+              >
+                <Download className="w-4 h-4" />
+                Descargar Captura
+              </button>
+              <button
+                onClick={() => setPreviewImage(null)}
+                className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all border border-slate-700"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </TwinErrorBoundary>
   );
 }

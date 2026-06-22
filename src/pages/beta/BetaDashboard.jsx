@@ -4,11 +4,13 @@ import BetaAdmin from '@/components/beta/BetaAdmin';
 import ProjectVault from '@/components/beta/ProjectVault';
 import BetaSimulator from '@/components/beta/BetaSimulator';
 import { useBeta } from '@/context/BetaContext';
+import { useTranslation } from '@/context/LanguageContext';
 import { Cpu } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 function BetaDashboard() {
   const { loading, viewMode } = useBeta();
+  const { t } = useTranslation();
 
   if (loading) {
     return (
@@ -19,9 +21,9 @@ function BetaDashboard() {
             <div className="absolute inset-0 bg-neon-cyan/20 blur-2xl animate-pulse" />
           </div>
           <div className="flex flex-col items-center">
-            <h2 className="text-sm font-black text-white tracking-[4px] uppercase">CARGANDO SISTEMA BETA</h2>
+            <h2 className="text-sm font-black text-white tracking-[4px] uppercase">{t('dashboard.loading_title', 'CARGANDO SISTEMA BETA')}</h2>
             <p className="text-[10px] text-gray-600 font-bold uppercase tracking-widest mt-2 animate-bounce">
-              Sincronizando con Supabase Memory...
+              {t('dashboard.loading_subtitle', 'Sincronizando con Supabase Memory...')}
             </p>
           </div>
         </div>
@@ -48,7 +50,7 @@ function BetaDashboard() {
             <div className="absolute top-4 right-12 flex items-center gap-4 pointer-events-none opacity-50">
               <div className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-neon-cyan animate-pulse" />
-                <span className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Sincronizado</span>
+                <span className="text-[9px] font-black text-gray-600 uppercase tracking-widest">{t('dashboard.sync_badge', 'Sincronizado')}</span>
               </div>
             </div>
           </motion.div>

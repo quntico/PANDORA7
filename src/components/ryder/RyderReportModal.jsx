@@ -12,8 +12,13 @@ const fmt = (v, d = 0) =>
 export default function RyderReportModal({ reportData, printWindow, clearPrintWindow, onClose, isExportOnly = false, onExportPDF }) {
   const reportRef = React.useRef(null);
 
-  if (!reportData) return null;
-  const { meta, inputs, kpis, lineUtilization, modelTable, lavadoSecadoParams, conclusions, installedPowerKw, waterParams } = reportData;
+  const { 
+    meta, inputs, kpis, lineUtilization, modelTable, lavadoSecadoParams, 
+    conclusions, installedPowerKw, waterParams, productImageBase64,
+    twinSnapshotLateral: reportTwinSnapshotLateral,
+    twinSnapshotSuperior: reportTwinSnapshotSuperior,
+    twinSnapshotIsometrica: reportTwinSnapshotIsometrica
+  } = reportData;
 
   // Parámetros Hídricos y Cálculos
   const wp = waterParams || { washFlowLh: 1000, waterReplenishLh: 150, tankCapacityL: 1200, waterChangeDays: '3–5' };
@@ -23,27 +28,36 @@ export default function RyderReportModal({ reportData, printWindow, clearPrintWi
   const recircPct = wp.washFlowLh > 0 ? ((wp.washFlowLh - wp.waterReplenishLh) / wp.washFlowLh) * 100 : 0;
   const modelCapHr = modelTable?.[0]?.capHora || 200;
   const unitWaterL = modelCapHr > 0 ? (wp.waterReplenishLh / modelCapHr) : 0.75;
-  const twinSnapshot = localStorage.getItem('twin_snapshot_base64');
+  const twinSnapshot = reportTwinSnapshotLateral || localStorage.getItem('twin_snapshot_base64');
+  const twinSnapshotLateral = reportTwinSnapshotLateral || localStorage.getItem('twin_snapshot_lateral') || localStorage.getItem('sim_forvia_twin_snapshot_lateral') || localStorage.getItem('sim_lma500_twin_snapshot_lateral');
+  const twinSnapshotSuperior = reportTwinSnapshotSuperior || localStorage.getItem('twin_snapshot_superior') || localStorage.getItem('sim_forvia_twin_snapshot_superior') || localStorage.getItem('sim_lma500_twin_snapshot_superior');
+  const twinSnapshotIsometrica = reportTwinSnapshotIsometrica || localStorage.getItem('twin_snapshot_isometrica') || localStorage.getItem('sim_forvia_twin_snapshot_isometrica') || localStorage.getItem('sim_lma500_twin_snapshot_isometrica');
 
   const renderFooter = (pageNum) => (
     <div style={{ position: 'absolute', bottom: 18, left: 42, right: 42, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #e8eef4', paddingTop: 10, fontSize: 10, color: '#9aabb8', fontWeight: 700, letterSpacing: 0.3 }}>
       <span style={{ textTransform: 'uppercase' }}>{meta.empresa || 'MÁQUINA EN EVALUACIÓN - BWD 200 | GRUPO GUSI'}</span>
-      <span>PÁGINA {pageNum} DE 10</span>
+      <span>PÁGINA {pageNum} DE 13</span>
     </div>
   );
 
-  const renderPageHeader = (title, subtitle) => (
-    <div style={{ marginBottom: 50 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-        <div style={{ width: 4, height: 32, background: 'linear-gradient(180deg,#11b5c9,#0b8ea0)', borderRadius: 2 }} />
-        <div>
+  const renderPageHeader = (line1, line2, subtitleDesc) => (
+    <div style={{ marginBottom: 40 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #e2e8f0', paddingBottom: 15 }}>
+        <div style={{ display: 'flex', gap: 16, alignItems: 'stretch' }}>
+          <div style={{ width: 6, background: '#11b5c9', borderRadius: 4 }} />
+          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <h2 style={{ fontSize: 26, fontWeight: 950, margin: 0, color: '#122033', textTransform: 'uppercase', lineHeight: 1.0, letterSpacing: -0.5 }}>{line1}</h2>
+            <h2 style={{ fontSize: 26, fontWeight: 950, margin: 0, color: '#11b5c9', textTransform: 'uppercase', lineHeight: 1.0, marginTop: 4, letterSpacing: -0.5 }}>{line2}</h2>
+          </div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: 9, fontWeight: 800, color: '#11b5c9', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2, lineHeight: 1 }}>
             {meta.simulador} · {meta.maquina}
           </div>
-          <h2 style={{ fontSize: 24, fontWeight: 800, margin: 0, color: '#122033', letterSpacing: -0.3, lineHeight: 1.1 }}>{title}</h2>
+          <div style={{ fontSize: 11, fontWeight: 800, color: '#122033', marginTop: 4 }}>{meta.cliente}</div>
+          <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>{subtitleDesc}</div>
         </div>
       </div>
-      <p style={{ margin: 0, color: '#5f7286', fontSize: 13, lineHeight: 1.4 }}>{subtitle}</p>
     </div>
   );
 
@@ -165,7 +179,8 @@ export default function RyderReportModal({ reportData, printWindow, clearPrintWi
   const avgHourlyCostMxn = avgHourlyKwh * energyConfig.electricityRate; // $ MXN
   
   const y1Scenario = lavadoSecadoParams.rows.find(r => r.year === 'Y1') || { tiempoDisponible: 16 };
-  const dailyHours = y1Scenario.tiempoDisponible || (energyInputs.shifts * energyInputs.hoursPerShift);
+  const totalHrsLavado = modelTable?.reduce((sum, r) => sum + (r.hrsReq || 0), 0) || 0;
+  const dailyHours = totalHrsLavado > 0 ? Math.min(y1Scenario.tiempoDisponible, totalHrsLavado) : y1Scenario.tiempoDisponible;
   const dailyKwh = avgHourlyKwh * dailyHours;
   const dailyCostMxn = dailyKwh * energyConfig.electricityRate;
   const workingDaysPerYear = (energyInputs.daysPerMonth || 26) * 12; // 312 días
@@ -301,38 +316,122 @@ export default function RyderReportModal({ reportData, printWindow, clearPrintWi
             </div>
           </div>
 
-          {/* ── PAGE 2: Twin Digital 3D ── */}
+          {/* ── PAGE 2: ESPECIFICACIÓN DE PRODUCTOS A LAVAR ── */}
           <div className="ry-page" style={S.page}>
             <div className="ry-page-inner" style={{ ...S.inner, display: 'flex', flexDirection: 'column' }}>
-              {renderPageHeader('Twin Digital 3D de la Línea', 'Visualización tridimensional interactiva y distribución de flujo del sistema.')}
+              {renderPageHeader('PRODUCTOS A LAVAR', 'DETALLE DE CONTENEDORES', 'Especificaciones físicas, volumétricas y tasas de suciedad analizadas.')}
+              
+              <div style={{ display: 'flex', gap: 32, flex: 1, minHeight: 0, marginTop: 10 }}>
+                {/* Tabla de especificaciones a la izquierda */}
+                <div style={{ flex: 1.4 }}>
+                  <h3 style={{ ...S.h3, marginBottom: 12 }}>Modelos de Cajas Registrados</h3>
+                  <p style={{ fontSize: 13, color: '#4b5563', lineHeight: 1.6, marginBottom: 20 }}>
+                    Los siguientes modelos de contenedores plásticos y cajas han sido parametrizados para evaluar la viabilidad de lavado, capacidad volumétrica y consumo energético del sistema:
+                  </p>
+                  
+                  <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: 12 }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                      <thead>
+                        <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                          <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 800, color: '#0f1c2e' }}>Mod</th>
+                          <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 800, color: '#0f1c2e' }}>Nombre</th>
+                          <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 800, color: '#0f1c2e' }}>Dimensiones cm</th>
+                          <th style={{ padding: '12px 10px', textAlign: 'center', fontWeight: 800, color: '#0f1c2e' }}>Suciedad</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {modelTable.map((r, i) => (
+                          <tr key={i} style={{ borderBottom: i < modelTable.length - 1 ? '1px solid #edf2f7' : 'none' }}>
+                            <td style={{ padding: '12px 10px' }}>
+                              <span style={{ width: 20, height: 20, borderRadius: '50%', background: r.color || '#3b82f6', color: '#fff', fontSize: 10, fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                {r.mod}
+                              </span>
+                            </td>
+                            <td style={{ padding: '12px 10px', fontWeight: 700, color: '#1e293b' }}>
+                              {r.nombre}
+                            </td>
+                            <td style={{ padding: '12px 10px', color: '#475569', fontWeight: 600 }}>
+                              {r.l} × {r.w} × {r.h} cm
+                            </td>
+                            <td style={{ padding: '12px 10px', textAlign: 'center' }}>
+                              <span style={{ padding: '3px 8px', borderRadius: 12, fontSize: 10, fontWeight: 800, background: r.suciedad === 'ALTA' ? '#fee2e2' : r.suciedad === 'MEDIA' ? '#fef3c7' : '#d1fae5', color: r.suciedad === 'ALTA' ? '#ef4444' : r.suciedad === 'MEDIA' ? '#d97706' : '#10b981' }}>
+                                {r.suciedad || 'MEDIA'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Imagen del contenedor a la derecha */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <h3 style={{ ...S.h3, marginBottom: 4 }}>Fotografía del Contenedor</h3>
+                  
+                  <div style={{ flex: 1, minHeight: 280, border: '1px solid #cbd5e1', borderRadius: 16, background: '#f8fafc', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                    {productImageBase64 ? (
+                      <img 
+                        src={productImageBase64} 
+                        alt="Caja a lavar" 
+                        style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', padding: 12 }} 
+                      />
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: 24, color: '#94a3b8' }}>
+                        <svg viewBox="0 0 64 64" width="80" height="80" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ margin: '0 auto 16px', opacity: 0.5 }}>
+                          <path d="M4 16 L32 4 L60 16 L32 28 Z" />
+                          <path d="M4 16 L4 48 L32 60 L32 28" />
+                          <path d="M60 16 L60 48 L32 60" />
+                          <path d="M14 20 L42 8 M48 22 L20 34" />
+                        </svg>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#64748b', marginBottom: 4 }}>Modelo Digital Estándar</div>
+                        <div style={{ fontSize: 11, color: '#94a3b8' }}>Sube una foto real del contenedor en el simulador para personalizar este apartado.</div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div style={{ background: '#f1f5f9', borderRadius: 12, padding: 14, borderLeft: '4px solid #11b5c9' }}>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: '#0f1c2e', textTransform: 'uppercase', marginBottom: 4 }}>Propiedades Físicas Relevantes</div>
+                    <div style={{ fontSize: 11, color: '#475569', lineHeight: 1.5 }}>
+                      Las dimensiones y el peso determinan la velocidad de línea recomendada y la holgura en el transportador para asegurar un lavado completo a alta presión y el posterior escurrido centrífugo o térmico.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {renderFooter(2)}
+            </div>
+          </div>
+
+          {/* ── PAGE 3: Twin Digital 3D - Vista Lateral ── */}
+          <div className="ry-page" style={S.page}>
+            <div className="ry-page-inner" style={{ ...S.inner, display: 'flex', flexDirection: 'column' }}>
+              {renderPageHeader('TWIN DIGITAL 3D', 'VISTA LATERAL', 'Visualización tridimensional de perfil y distribución del flujo lateral.')}
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: 20, flex: 1, minHeight: 0 }}>
-                {/* 3D Viewer Container */}
                 <div style={{ position: 'relative', height: '360px', borderRadius: 20, overflow: 'hidden', border: '1px solid #dbe5ee', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {twinSnapshot ? (
+                  {twinSnapshotLateral ? (
+                    <img 
+                      src={twinSnapshotLateral} 
+                      alt="Vista Lateral" 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    />
+                  ) : twinSnapshot ? (
                     <img 
                       src={twinSnapshot} 
-                      alt="Twin Snapshot" 
-                      style={{ 
-                        width: '100%', 
-                        height: '100%', 
-                        objectFit: 'contain'
-                      }} 
+                      alt="Twin Snapshot Fallback" 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                     />
                   ) : (
                     <SharedTwinViewer3D height="360px" interactive={false} showControls={false} />
                   )}
                 </div>
                 
-                {/* Technical Description Panel */}
-                <div style={{ display: 'flex', gap: 24, justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', gap: 24, justifyContent: 'space-between', alignItems: 'flex-start', marginTop: 80 }}>
                   <div style={{ flex: 1.5 }}>
-                    <h3 style={S.h3}>Arquitectura Espacial y Flujos</h3>
+                    <h3 style={S.h3}>Arquitectura Espacial Lateral</h3>
                     <p style={{ fontSize: 13, color: '#4b5563', lineHeight: 1.6, margin: '0 0 12px' }}>
-                      Este gemelo digital ilustra la distribución física tridimensional de la máquina en evaluación, optimizada para la demanda nominal diaria de <strong>{fmt(modelCapHr, 0)} cajas/h</strong>.
-                    </p>
-                    <p style={{ fontSize: 13, color: '#4b5563', lineHeight: 1.6, margin: 0 }}>
-                      La trayectoria secuencial conecta las etapas principales de alimentación mecánica, lavado interno de alto caudal con recirculación inteligente y homogeneización de cargas.
+                      Esta vista ilustra la elevación y distribución física longitudinal de los módulos operativos, optimizada para la demanda nominal diaria de <strong>{fmt(modelCapHr, 0)} cajas/h</strong>.
                     </p>
                   </div>
                   
@@ -346,15 +445,107 @@ export default function RyderReportModal({ reportData, printWindow, clearPrintWi
                   </div>
                 </div>
               </div>
-              {renderFooter(2)}
+              {renderFooter(3)}
             </div>
           </div>
 
-          {/* ── PAGE 3: KPIs ── */}
+          {/* ── PAGE 3: Twin Digital 3D - Vista Superior ── */}
+          <div className="ry-page" style={S.page}>
+            <div className="ry-page-inner" style={{ ...S.inner, display: 'flex', flexDirection: 'column' }}>
+              {renderPageHeader('TWIN DIGITAL 3D', 'VISTA SUPERIOR', 'Visualización en planta y alineamiento de la línea de lavado.')}
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20, flex: 1, minHeight: 0 }}>
+                <div style={{ position: 'relative', height: '360px', borderRadius: 20, overflow: 'hidden', border: '1px solid #dbe5ee', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {twinSnapshotSuperior ? (
+                    <img 
+                      src={twinSnapshotSuperior} 
+                      alt="Vista Superior" 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    />
+                  ) : twinSnapshot ? (
+                    <img 
+                      src={twinSnapshot} 
+                      alt="Twin Snapshot Fallback" 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    />
+                  ) : (
+                    <SharedTwinViewer3D height="360px" interactive={false} showControls={false} />
+                  )}
+                </div>
+                
+                <div style={{ display: 'flex', gap: 24, justifyContent: 'space-between', alignItems: 'flex-start', marginTop: 80 }}>
+                  <div style={{ flex: 1.5 }}>
+                    <h3 style={S.h3}>Distribución en Planta</h3>
+                    <p style={{ fontSize: 13, color: '#4b5563', lineHeight: 1.6, margin: '0 0 12px' }}>
+                      Vista en planta que detalla el flujo lineal y el espaciamiento de las guías de transporte mecánico, garantizando el flujo continuo y seguro de los contenedores.
+                    </p>
+                  </div>
+                  
+                  <div style={{ flex: 1, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: '16px' }}>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: '#0b8ea0', textTransform: 'uppercase', marginBottom: 6, letterSpacing: 0.5 }}>Eficiencia ESG y Balances</div>
+                    <div style={{ fontSize: 12, color: '#5f7286', lineHeight: 1.5 }}>
+                      • Caudal interno: <strong>{fmt(wp.washFlowLh, 0)} L/h</strong><br />
+                      • Ahorro de agua: <strong>{fmt(recircPct, 1)}%</strong><br />
+                      • Reposición: <strong>{fmt(wp.waterReplenishLh, 0)} L/h</strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {renderFooter(4)}
+            </div>
+          </div>
+
+          {/* ── PAGE 4: Twin Digital 3D - Vista Isométrica ── */}
+          <div className="ry-page" style={S.page}>
+            <div className="ry-page-inner" style={{ ...S.inner, display: 'flex', flexDirection: 'column' }}>
+              {renderPageHeader('TWIN DIGITAL 3D', 'VISTA ISOMÉTRICA', 'Visualización tridimensional y perspectiva del gemelo digital.')}
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20, flex: 1, minHeight: 0 }}>
+                <div style={{ position: 'relative', height: '360px', borderRadius: 20, overflow: 'hidden', border: '1px solid #dbe5ee', background: '#f8fafc', display: 'flex', alignItems: 'center', justifySelf: 'center', justifyContent: 'center' }}>
+                  {twinSnapshotIsometrica ? (
+                    <img 
+                      src={twinSnapshotIsometrica} 
+                      alt="Vista Isométrica" 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    />
+                  ) : twinSnapshot ? (
+                    <img 
+                      src={twinSnapshot} 
+                      alt="Twin Snapshot Fallback" 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    />
+                  ) : (
+                    <SharedTwinViewer3D height="360px" interactive={false} showControls={false} />
+                  )}
+                </div>
+                
+                <div style={{ display: 'flex', gap: 24, justifyContent: 'space-between', alignItems: 'flex-start', marginTop: 80 }}>
+                  <div style={{ flex: 1.5 }}>
+                    <h3 style={S.h3}>Perspectiva Tridimensional de la Línea</h3>
+                    <p style={{ fontSize: 13, color: '#4b5563', lineHeight: 1.6, margin: '0 0 12px' }}>
+                      La trayectoria tridimensional conecta secuencialmente las etapas principales de alimentación, lavado por aspersión a alta presión y secado térmico continuo.
+                    </p>
+                  </div>
+                  
+                  <div style={{ flex: 1, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: '16px' }}>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: '#0b8ea0', textTransform: 'uppercase', marginBottom: 6, letterSpacing: 0.5 }}>Eficiencia ESG y Balances</div>
+                    <div style={{ fontSize: 12, color: '#5f7286', lineHeight: 1.5 }}>
+                      • Caudal interno: <strong>{fmt(wp.washFlowLh, 0)} L/h</strong><br />
+                      • Ahorro de agua: <strong>{fmt(recircPct, 1)}%</strong><br />
+                      • Reposición: <strong>{fmt(wp.waterReplenishLh, 0)} L/h</strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {renderFooter(5)}
+            </div>
+          </div>
+
+          {/* ── PAGE 5: KPIs ── */}
           <div className="ry-page" style={S.page}>
             <div className="ry-page-inner" style={S.inner}>
-              {renderPageHeader('Indicadores Clave de Operación', 'Resumen ejecutivo de velocidad, capacidad y cobertura inicial del sistema.')}
-              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: 24, marginTop: 0 }}>
+              {renderPageHeader('INDICADORES CLAVE', 'DE OPERACIÓN', 'Resumen ejecutivo de velocidad, capacidad y cobertura inicial del sistema.')}
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: 24, marginTop: 100 }}>
                 {/* Left column: 2x2 grid of giant KPI cards */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                   {[
@@ -395,14 +586,14 @@ export default function RyderReportModal({ reportData, printWindow, clearPrintWi
                   </div>
                 </div>
               </div>
-              {renderFooter(3)}
+              {renderFooter(6)}
             </div>
           </div>
 
-          {/* ── PAGE 3: Utilización ── */}
+          {/* ── PAGE 6: Utilización ── */}
           <div className="ry-page" style={S.page}>
             <div className="ry-page-inner" style={S.inner}>
-              {renderPageHeader('Carga y Utilización del Sistema', 'Análisis del porcentaje de utilización diaria y margen operativo disponible.')}
+              {renderPageHeader('UTILIZACIÓN', 'Y CARGA DEL SISTEMA', 'Análisis del porcentaje de utilización diaria y margen operativo disponible.')}
               <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: 24 }}>
                 <div style={{ background: 'linear-gradient(135deg,rgba(17,181,201,0.09),rgba(17,181,201,0.01))', border: '1px solid rgba(17,181,201,0.2)', borderRadius: 18, padding: '20px 24px' }}>
                   <div style={{ fontSize: 16, fontWeight: 800, color: '#122033', marginBottom: 6 }}>Carga y Utilización de la Máquina</div>
@@ -444,14 +635,14 @@ export default function RyderReportModal({ reportData, printWindow, clearPrintWi
                   </div>
                 ))}
               </div>
-              {renderFooter(4)}
+              {renderFooter(7)}
             </div>
           </div>
 
-          {/* ── PAGE 4: Modelos ── */}
+          {/* ── PAGE 7: Modelos ── */}
           <div className="ry-page" style={S.page}>
             <div className="ry-page-inner" style={S.inner}>
-              {renderPageHeader('Modelos de Contenedores Evaluados', 'Especificaciones técnicas y dimensiones de las cajas plásticas consideradas en la simulación.')}
+              {renderPageHeader('MODELOS DE CONTENEDORES', 'EVALUADOS EN SIMULACIÓN', 'Especificaciones técnicas y dimensiones de las cajas plásticas consideradas.')}
               <div style={S.panel}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
@@ -490,14 +681,14 @@ export default function RyderReportModal({ reportData, printWindow, clearPrintWi
                   </div>
                 ))}
               </div>
-              {renderFooter(5)}
+              {renderFooter(8)}
             </div>
           </div>
 
-          {/* ── PAGE 5: Cap vs Req + Escenarios ── */}
+          {/* ── PAGE 8: Cap vs Req + Escenarios ── */}
           <div className="ry-page" style={S.page}>
             <div className="ry-page-inner" style={S.inner}>
-              {renderPageHeader('Capacidad vs Requerimiento de Línea', 'Contraste gráfico de la capacidad real frente a la demanda por modelo de caja.')}
+              {renderPageHeader('CAPACIDAD VS REQUERIMIENTO', 'ANÁLISIS DE LA LÍNEA', 'Contraste gráfico de la capacidad real frente a la demanda por modelo de caja.')}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 22 }}>
                 <div style={{ ...S.panel, height: '480px' }}>
                   <h3 style={S.h3}>Capacidad vs Requerimiento por Modelo</h3>
@@ -543,14 +734,14 @@ export default function RyderReportModal({ reportData, printWindow, clearPrintWi
                   </div>
                 </div>
               </div>
-              {renderFooter(6)}
+              {renderFooter(8)}
             </div>
           </div>
 
-          {/* ── PAGE 6: Cobertura Y1-Y5 ── */}
+          {/* ── PAGE 9: Cobertura Y1-Y5 ── */}
           <div className="ry-page" style={S.page}>
             <div className="ry-page-inner" style={S.inner}>
-              {renderPageHeader('Cobertura y Tendencias Y1–Y5', 'Evolución proyectada del porcentaje de cobertura y balance de capacidad instalada.')}
+              {renderPageHeader('COBERTURA Y TENDENCIAS', 'PROYECCIÓN Y1–Y5', 'Evolución proyectada del porcentaje de cobertura y balance de capacidad instalada.')}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 22 }}>
                 <div style={{ ...S.panel, height: '480px' }}>
                   <h3 style={S.h3}>Cobertura Anual Y1–Y5</h3>
@@ -584,14 +775,14 @@ export default function RyderReportModal({ reportData, printWindow, clearPrintWi
                   <p style={{ fontSize: 12, color: '#5c7083', marginTop: 12 }}>Cobertura % y superávit c/h por año proyectado.</p>
                 </div>
               </div>
-              {renderFooter(7)}
+              {renderFooter(10)}
             </div>
           </div>
 
-          {/* ── PAGE 7: Consumo Energético ── */}
+          {/* ── PAGE 10: Consumo Energético ── */}
           <div className="ry-page" style={S.page}>
             <div className="ry-page-inner" style={S.inner}>
-              {renderPageHeader('Reporte de Consumo Energético', 'Análisis detallado de potencia instalada, consumo de corriente y proyección de costo eléctrico.')}
+              {renderPageHeader('CONSUMO ENERGÉTICO', 'Y BALANCE TÉRMICO', 'Análisis detallado de potencia instalada, consumo de corriente y proyección de costo eléctrico.')}
               
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 18 }}>
                 <div style={S.kpi}>
@@ -616,12 +807,12 @@ export default function RyderReportModal({ reportData, printWindow, clearPrintWi
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 22 }}>
-                <div style={{ ...S.panel, height: '340px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 0.7fr', gap: 22 }}>
+                <div style={{ ...S.panel, height: '340px', display: 'flex', flexDirection: 'column' }}>
                   <h3 style={S.h3}>Desglose de Potencia por Componente</h3>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, height: 270 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1 }}>
                     <div style={{ flex: 1 }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, height: 'auto' }}>
                         <thead>
                           <tr>
                             <th style={{ ...S.th, padding: '8px 8px' }}>Componente</th>
@@ -637,9 +828,11 @@ export default function RyderReportModal({ reportData, printWindow, clearPrintWi
                             ['Motor de Banda', energyConfig.beltKw, '#122033'],
                           ].map(([name, val, color], idx) => (
                             <tr key={idx} style={{ borderBottom: '1px solid #dbe5ee' }}>
-                              <td style={{ padding: '9px 8px', display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
-                                <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: color }} />
-                                {name}
+                              <td style={{ padding: '9px 8px', fontSize: 12 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: color }} />
+                                  {name}
+                                </div>
                               </td>
                               <td style={{ padding: '9px 8px', textAlign: 'right', fontWeight: 600 }}>{fmt(val, 1)} kW</td>
                               <td style={{ padding: '9px 8px', textAlign: 'right', color: '#6b7280' }}>{fmt((val / totalPowerKw) * 100, 1)}%</td>
@@ -653,49 +846,47 @@ export default function RyderReportModal({ reportData, printWindow, clearPrintWi
                         </tbody>
                       </table>
                     </div>
-                    <div style={{ width: 190, height: 190 }}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie data={energyBreakdownData} cx="50%" cy="50%" innerRadius="48%" outerRadius="75%" dataKey="value" startAngle={90} endAngle={-270} isAnimationActive={false}>
-                            {energyBreakdownData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.fill} />
-                            ))}
-                          </Pie>
-                          <Tooltip formatter={(v) => `${fmt(v, 1)} kW`} />
-                        </PieChart>
-                      </ResponsiveContainer>
+                    <div style={{ width: 190, height: 190, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <PieChart width={190} height={190}>
+                        <Pie data={energyBreakdownData} cx="95" cy="95" innerRadius="48%" outerRadius="75%" dataKey="value" startAngle={90} endAngle={-270} isAnimationActive={false}>
+                          {energyBreakdownData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(v) => `${fmt(v, 1)} kW`} />
+                      </PieChart>
                     </div>
                   </div>
                 </div>
 
-                <div style={{ ...S.panel, height: '340px', padding: '24px 22px' }}>
+                <div style={{ ...S.panel, height: '340px', padding: '24px 22px', display: 'flex', flexDirection: 'column' }}>
                   <h3 style={S.h3}>Proyecciones de Gasto Operativo en Energía</h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16, height: 270, justifyContent: 'center' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: 1, justifyContent: 'center' }}>
                     {[
                       ['Tarifa Industrial Base', `$${fmt(energyConfig.electricityRate, 2)} MXN / kWh`, 'Tarifa media regulada'],
                       ['Consumo Energético Semanal (6 días)', `${fmt(dailyKwh * 6)} kWh / sem`, `Costo: $${fmt(dailyCostMxn * 6)} MXN`],
                       ['Consumo Energético Mensual (26 días)', `${fmt(dailyKwh * energyInputs.daysPerMonth)} kWh / mes`, `Costo: $${fmt(dailyCostMxn * energyInputs.daysPerMonth)} MXN`],
-                      ['Impacto Económico Anual (312 días)', `${fmt(annualKwh)} kWh / año`, `Costo: $${fmt(annualCostMxn)} MXN (~$${fmt(annualCostUsd)} USD)`],
+                      ['Impacto Económico Anual (312 días)', `${fmt(dailyKwh * energyInputs.daysPerMonth * 12)} kWh / año`, `Costo: $${fmt(dailyCostMxn * energyInputs.daysPerMonth * 12)} MXN (~$${fmt((dailyCostMxn * energyInputs.daysPerMonth * 12) / 20.0)} USD)`],
                     ].map(([label, val, sub], idx) => (
-                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 12, borderBottom: idx < 3 ? '1px solid #e8eef4' : 'none' }}>
-                        <div>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: '#122033' }}>{label}</div>
+                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 10, borderBottom: idx < 3 ? '1px solid #e8eef4' : 'none' }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: '#122033', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</div>
                           <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>{sub}</div>
                         </div>
-                        <div style={{ fontSize: 16, fontWeight: 800, color: idx === 3 ? '#ef4444' : '#0b8ea0', textAlign: 'right' }}>{val}</div>
+                        <div style={{ fontSize: 15, fontWeight: 800, color: idx === 3 ? '#ef4444' : '#0b8ea0', textAlign: 'right', whiteSpace: 'nowrap', flexShrink: 0, marginLeft: 16 }}>{val}</div>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
-              {renderFooter(8)}
+              {renderFooter(11)}
             </div>
           </div>
 
-          {/* ── PAGE 8: Consumo Hídrico ── */}
+          {/* ── PAGE 11: Consumo Hídrico ── */}
           <div className="ry-page" style={S.page}>
             <div className="ry-page-inner" style={S.inner}>
-              {renderPageHeader('Consumo Hídrico y Sustentabilidad', 'Análisis del balance hídrico, tasa de recirculación de agua y huella ecológica por caja lavada.')}
+              {renderPageHeader('CONSUMO HÍDRICO', 'Y SUSTENTABILIDAD', 'Análisis del balance hídrico, tasa de recirculación de agua y huella ecológica.')}
               
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 18 }}>
                 <div style={S.kpi}>
@@ -761,14 +952,14 @@ export default function RyderReportModal({ reportData, printWindow, clearPrintWi
                   </div>
                 </div>
               </div>
-              {renderFooter(9)}
+              {renderFooter(12)}
             </div>
           </div>
 
-          {/* ── PAGE 9: Conclusiones ── */}
+          {/* ── PAGE 12: Conclusiones ── */}
           <div className="ry-page" style={S.page}>
             <div className="ry-page-inner" style={S.inner}>
-              {renderPageHeader('Conclusiones del Informe', 'Diagnóstico general de viabilidad operativa y recomendaciones estratégicas.')}
+              {renderPageHeader('CONCLUSIONES DEL INFORME', 'Y RECOMENDACIONES TÉCNICAS', 'Diagnóstico general de viabilidad operativa y recomendaciones estratégicas.')}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 10 }}>
                 {conclusions.map((c, i) => (
                   <div key={i} style={{ borderRadius: 16, padding: '16px 20px', border: '1px solid #dbe5ee', background: '#fbfdff', borderLeft: `6px solid ${c.type === 'ok' ? '#22c55e' : c.type === 'warn' ? '#f59e0b' : '#ef4444'}` }}>
@@ -793,7 +984,7 @@ export default function RyderReportModal({ reportData, printWindow, clearPrintWi
                   <div style={{ fontSize: 9, fontFamily: 'monospace', color: '#94a3b8', marginTop: 4 }}>ID: PND-BWD-85C9</div>
                 </div>
               </div>
-              {renderFooter(10)}
+              {renderFooter(13)}
             </div>
           </div>
         </div>

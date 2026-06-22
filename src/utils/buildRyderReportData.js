@@ -20,12 +20,19 @@ export function buildRyderReportData({
   waterChangeDays,
   clientName,
   customerName,
+  productImageBase64,
+  twinSnapshotLateral,
+  twinSnapshotSuperior,
+  twinSnapshotIsometrica,
 }) {
   const fmt = (v, d = 0) =>
     new Intl.NumberFormat('es-MX', {
       minimumFractionDigits: d,
       maximumFractionDigits: d,
     }).format(v);
+
+  // Filtrar solo los modelos incluidos/activos para no mostrar ni calcular sobre modelos apagados
+  const activeComputedRows = computedRows.filter(r => r.included !== false);
 
   // ── capDia Y1 usando el selectedRow y el primer escenario ───────────────
   const y1Scenario = scenarioResults?.lavadoSecado?.[0];
@@ -34,8 +41,8 @@ export function buildRyderReportData({
     : +(selectedRow?.boxesPerDay ?? 0).toFixed(0);
 
   // ── requerimiento total diario (suma de todos los modelos activos) ───────
-  const reqTotalDia = computedRows
-    .filter(r => r.included !== false && r.requiredDaily > 0)
+  const reqTotalDia = activeComputedRows
+    .filter(r => r.requiredDaily > 0)
     .reduce((s, r) => s + r.requiredDaily, 0);
 
   // ── utilización de la máquina en base a requerimiento diario ─────────────
@@ -44,7 +51,7 @@ export function buildRyderReportData({
   const utilPct = capDiaY1 > 0 ? (reqTotalDia / capDiaY1) * 100 : 0;
 
   // ── promedio de capacidad por hora (solo filas con datos) ───────────────
-  const activeRows = computedRows.filter(r => r.realBoxesHr > 0);
+  const activeRows = activeComputedRows.filter(r => r.realBoxesHr > 0);
   const avgCapHr   = activeRows.length
     ? activeRows.reduce((s, r) => s + r.realBoxesHr, 0) / activeRows.length
     : 0;
@@ -53,7 +60,7 @@ export function buildRyderReportData({
   const coberturaY1 = reqTotalDia > 0 ? +((capDiaY1 / reqTotalDia) * 100).toFixed(1) : 0;
 
   // ── tabla de modelos ─────────────────────────────────────────────────────
-  const modelTable = computedRows.map(r => ({
+  const modelTable = activeComputedRows.map(r => ({
     mod:     r.label,
     nombre:  r.name,
     l:       r.l,
@@ -80,12 +87,11 @@ export function buildRyderReportData({
     capHora:           +r.machineBoxesPerHour.toFixed(1),
     balance:           +r.deficitOrSurplus.toFixed(1),
     cobertura:         +((r.coverageRatio ?? 0) * 100).toFixed(1),
-    lineas:            r.requiredLines + (r.requiredLines === 1 ? ' maq.' : ' maqs.'),
+    lineas:            r.requiredLines + ' maq.',
   }));
 
   // ── conclusiones automáticas ─────────────────────────────────────────────
   const allViable   = modelTable.filter(r => r.reqDia > 0).every(r => r.estado === 'VIABLE');
-  const maxLines    = Math.max(...(scenRows.map(r => parseInt(r.lineas)) || [1]));
   const minCoverage = Math.min(...scenRows.map(r => r.cobertura));
 
   const conclusions = [];
@@ -99,10 +105,10 @@ export function buildRyderReportData({
   else
     conclusions.push({ type: 'bad', title: 'Modelos con Déficit', text: 'Uno o más modelos no cubren su requerimiento diario con la configuración actual.' });
 
-  if (maxLines <= 1)
+  if (minCoverage >= 100)
     conclusions.push({ type: 'ok', title: `1 Máquina Suficiente (Y1–Y5)`, text: `El sistema cubre el escenario completo con 1 sola máquina. Cobertura mínima: ${fmt(minCoverage, 1)}% en el peor año.` });
   else
-    conclusions.push({ type: 'warn', title: `Se Requieren ${maxLines} Máquinas`, text: `En algún año del horizonte Y1–Y5 se necesitan ${maxLines} máquinas para cubrir la demanda.` });
+    conclusions.push({ type: 'bad', title: `Capacidad Insuficiente con 1 Máquina`, text: `En algún año del horizonte Y1–Y5 la máquina única no cubre la demanda. Cobertura mínima: ${fmt(minCoverage, 1)}% en el peor año.` });
 
   conclusions.push({
     type:  coberturaY1 >= 100 ? 'ok' : 'warn',
@@ -115,9 +121,9 @@ export function buildRyderReportData({
     inputs,
     installedPowerKw,
     meta: {
-      empresa:   clientName || 'IASE',
-      cliente:   customerName || 'CENTRAL DE INTELIGENCIA',
-      proyecto:  'Informe Paramétrico de Simulación',
+      empresa:   simulatorName || 'FRUITEX',
+      cliente:   customerName || 'IVAN CLEMENT',
+      proyecto:  clientName || 'MÁQUINA EN EVALUACIÓN - BDW 200',
       subtitulo: 'Análisis de capacidad, velocidad de línea y cobertura operativa para el sistema de lavado y secado de contenedores.',
       periodo:   'Y1 – Y5',
       fecha:     new Date().toLocaleDateString('es-MX'),
@@ -130,7 +136,7 @@ export function buildRyderReportData({
             if (modelPart) return modelPart;
           }
         }
-        return inputs.machineName || 'PLD-120 / PLD-140';
+        return inputs.machineName || 'BDW 200';
       })(),
       version:   'v7.76',
     },
@@ -163,5 +169,9 @@ export function buildRyderReportData({
       waterChangeDays: waterChangeDays ?? '3–5',
     },
     conclusions,
+    productImageBase64,
+    twinSnapshotLateral,
+    twinSnapshotSuperior,
+    twinSnapshotIsometrica,
   };
 }

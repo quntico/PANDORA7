@@ -10,11 +10,13 @@ import { cn } from '@/lib/utils';
 import axios from 'axios';
 import { useProject } from '@/context/ProjectContext';
 import { useBeta } from '@/context/BetaContext';
+import { useTranslation } from '@/context/LanguageContext';
 import { supabase } from '@/supabase';
 import ExecutiveActions from './ExecutiveActions';
 import ResponseRenderer from './renderers/ResponseRenderer';
 
 function BetaChat() {
+  const { t } = useTranslation();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -569,7 +571,7 @@ function BetaChat() {
                 
                 <textarea
                   className="flex-1 bg-transparent px-6 text-[16px] text-gray-100 placeholder-gray-700 outline-none resize-none max-h-[120px] custom-scrollbar"
-                  placeholder="Inicia un análisis estratégico o selecciona una acción..."
+                  placeholder={t('chat.inputPlaceholder', 'Inicia un análisis estratégico o selecciona una acción...')}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => { 

@@ -213,6 +213,26 @@ export function BetaProvider({ children }) {
     }
   };
 
+  const updateProjectName = async (newName) => {
+    if (!activeProject) return;
+    const cleanName = newName.trim();
+    if (!cleanName) return;
+
+    setActiveProject(prev => prev ? { ...prev, name: cleanName } : null);
+    setProjects(prev => prev.map(p => p.id === activeProject.id ? { ...p, name: cleanName } : p));
+
+    if (activeProject.id !== 'local-fallback-id') {
+      try {
+        await supabase
+          .from('projects_beta')
+          .update({ name: cleanName })
+          .eq('id', activeProject.id);
+      } catch (err) {
+        console.error('[BetaContext] Error updating project name in cloud:', err);
+      }
+    }
+  };
+
   const saveDecision = async (title, description, impact) => {
     if (!activeProject) return;
     const { data } = await supabase.from('project_decisions_beta').insert([{
@@ -249,6 +269,7 @@ export function BetaProvider({ children }) {
         memory,
         setMemory,
         createProject,
+        updateProjectName,
         saveDecision,
         saveTask,
         fetchProjects,

@@ -30,11 +30,7 @@ function BetaLayoutInner() {
 }
 
 function BetaLayout() {
-  return (
-    <BetaProvider>
-      <BetaLayoutInner />
-    </BetaProvider>
-  );
+  return <BetaLayoutInner />;
 }
 
 export default BetaLayout;

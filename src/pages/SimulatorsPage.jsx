@@ -66,6 +66,22 @@ function SimulatorsPage() {
         icon: 'Activity',
         color: '#00F0FF',
         isSystem: true
+      },
+      {
+        id: 'forvia',
+        name: 'FORVIA',
+        description: 'Simulador de Velocidad vs Cajas para línea de lavado y secado BDW 200 (140 m/h max) con Digital Twin 3D.',
+        icon: 'Activity',
+        color: '#e11d48',
+        isSystem: true
+      },
+      {
+        id: 'wm-500',
+        name: 'WM-500',
+        description: 'Simulador técnico-económico paramétrico para la trituradora de madera y tarimas WM-500 con OEE y consumos.',
+        icon: 'Activity',
+        color: '#00F0FF',
+        isSystem: true
       }
     ];
 
@@ -74,8 +90,8 @@ function SimulatorsPage() {
       if (!s || !s.id) return false;
       const lowerId = s.id.toLowerCase();
       const lowerName = (s.name || '').toLowerCase();
-      if (['rider', 'grupo-gusi', 'iase', 'lma-500', 'smq-automatic', 'carrier'].includes(lowerId)) return false;
-      if (['iase', 'lma-500', 'smq cotizador', 'carrier'].includes(lowerName)) return false;
+      if (['rider', 'grupo-gusi', 'iase', 'lma-500', 'smq-automatic', 'carrier', 'forvia', 'wm-500'].includes(lowerId)) return false;
+      if (['iase', 'lma-500', 'smq cotizador', 'carrier', 'forvia', 'wm-500'].includes(lowerName)) return false;
       return true;
     }) : [];
 
