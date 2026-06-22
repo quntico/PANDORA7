@@ -714,6 +714,7 @@ export default function WM500Simulator() {
       installedPowerKw,
       averageHourlyConsumptionKw,
       realProductionPerHourKg,
+      productionPerHourTon,
       dailyProductionKg,
       dailyProductionTon,
       monthlyProductionTon,
