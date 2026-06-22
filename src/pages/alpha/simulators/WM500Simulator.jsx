@@ -649,15 +649,19 @@ export default function WM500Simulator() {
     // 4. CAPEX
     const precioEquipoUsd = inputs.precioEquipoUsd || 0;
     const ivaUsd = precioEquipoUsd * ((inputs.iva || 0) / 100);
-    const maniobrasUsd = precioEquipoUsd * ((inputs.porcentajeManiobras || 0) / 100);
-    const montajeMecanicoUsd = precioEquipoUsd * ((inputs.porcentajeMontajeMecanico || 0) / 100);
-    const obraCivilUsd = precioEquipoUsd * ((inputs.porcentajeObraCivil || 0) / 100);
-    const electricoPrincipalUsd = precioEquipoUsd * ((inputs.porcentajeElectricoPrincipal || 0) / 100);
-    const canalizacionProteccionesUsd = precioEquipoUsd * ((inputs.porcentajeCanalizacionProtecciones || 0) / 100);
-    const extraccionPolvoUsd = precioEquipoUsd * ((inputs.porcentajeExtraccionPolvo || 0) / 100);
-    const seguridadIndustrialUsd = precioEquipoUsd * ((inputs.porcentajeSeguridadIndustrial || 0) / 100);
-    const ingenieriaSupervisionUsd = precioEquipoUsd * ((inputs.porcentajeIngenieriaSupervision || 0) / 100);
-    const contingenciaUsd = precioEquipoUsd * ((inputs.porcentajeContingencia || 0) / 100);
+    
+    // Auto-detector inteligente: Si el valor es > 100, se asume que el usuario ingresó dólares absolutos en lugar de un porcentaje.
+    const getCapexValue = (val, base) => (val > 100 || val < -100) ? val : base * (val / 100);
+
+    const maniobrasUsd = getCapexValue(inputs.porcentajeManiobras || 0, precioEquipoUsd);
+    const montajeMecanicoUsd = getCapexValue(inputs.porcentajeMontajeMecanico || 0, precioEquipoUsd);
+    const obraCivilUsd = getCapexValue(inputs.porcentajeObraCivil || 0, precioEquipoUsd);
+    const electricoPrincipalUsd = getCapexValue(inputs.porcentajeElectricoPrincipal || 0, precioEquipoUsd);
+    const canalizacionProteccionesUsd = getCapexValue(inputs.porcentajeCanalizacionProtecciones || 0, precioEquipoUsd);
+    const extraccionPolvoUsd = getCapexValue(inputs.porcentajeExtraccionPolvo || 0, precioEquipoUsd);
+    const seguridadIndustrialUsd = getCapexValue(inputs.porcentajeSeguridadIndustrial || 0, precioEquipoUsd);
+    const ingenieriaSupervisionUsd = getCapexValue(inputs.porcentajeIngenieriaSupervision || 0, precioEquipoUsd);
+    const contingenciaUsd = getCapexValue(inputs.porcentajeContingencia || 0, precioEquipoUsd);
 
     const capexInstaladoUsd = precioEquipoUsd + maniobrasUsd + montajeMecanicoUsd + obraCivilUsd + electricoPrincipalUsd + canalizacionProteccionesUsd + extraccionPolvoUsd + seguridadIndustrialUsd + ingenieriaSupervisionUsd + contingenciaUsd;
     const capexFiscalUsd = capexInstaladoUsd + ivaUsd;
@@ -1653,7 +1657,7 @@ export default function WM500Simulator() {
                   </div>
                 </div>
                 <div className="col-span-2 border-t border-slate-200 mt-2 pt-2">
-                  <span className="block text-[8px] font-bold text-slate-400 uppercase mb-2">Costos Indirectos (Porcentajes % sobre USD)</span>
+                  <span className="block text-[8px] font-bold text-slate-400 uppercase mb-2">Costos Indirectos (% O Valor Absoluto en USD)</span>
                 </div>
                 {[
                   { label: 'Maniobras', key: 'porcentajeManiobras' },
