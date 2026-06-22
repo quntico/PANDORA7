@@ -622,9 +622,8 @@ export default function WM500Simulator() {
     // 1. DIMENSIONES
     const footprintM2 = (inputs.machineLength || 0) * (inputs.machineWidth || 0);
 
-    // 2. PRODUCCIÓN Y CAPACIDAD
     const nominalCapacity = inputs.nominalCapacity || 4000;
-    const realProductionPerHourKg = nominalCapacity * ((inputs.utilization || 90) / 100) * ((inputs.oee || 85) / 100);
+    const realProductionPerHourKg = nominalCapacity * ((inputs.oee || 85) / 100) * ((inputs.reductionFactor || 90) / 100);
     const dailyProductionKg = realProductionPerHourKg * (inputs.hoursPerDay || 20);
     const dailyProductionTon = dailyProductionKg / 1000;
     const monthlyProductionTon = dailyProductionTon * (inputs.daysPerMonth || 24);
@@ -1928,6 +1927,18 @@ export default function WM500Simulator() {
                           type="number"
                           value={inputs.oee}
                           onChange={(e) => setInputs(prev => ({ ...prev, oee: parseInt(e.target.value) || 0 }))}
+                          className="w-12 bg-transparent border-b border-dashed border-slate-400 focus:border-cyan-500 focus:outline-none text-slate-700 px-0.5 group-hover:text-cyan-700 font-black text-right text-sm"
+                          step="1" max="100" min="1"
+                        /> %
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono">
+                      <span>Reducción (Criba):</span>
+                      <div>
+                        <input 
+                          type="number"
+                          value={inputs.reductionFactor !== undefined ? inputs.reductionFactor : 90}
+                          onChange={(e) => setInputs(prev => ({ ...prev, reductionFactor: parseInt(e.target.value) || 0 }))}
                           className="w-12 bg-transparent border-b border-dashed border-slate-400 focus:border-cyan-500 focus:outline-none text-slate-700 px-0.5 group-hover:text-cyan-700 font-black text-right text-sm"
                           step="1" max="100" min="1"
                         /> %
