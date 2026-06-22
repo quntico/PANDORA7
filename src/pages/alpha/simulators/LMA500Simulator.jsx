@@ -1076,7 +1076,7 @@ export default function LMA500Simulator() {
         c: inputs.clientName || 'PABLO SOLER',
         s: 'SOLIMAQ LMA-500',
         d: new Date().toLocaleDateString('es-MX'),
-        h: 'SOLIMAQ-LMA500-RECILOGIC-PANDORA-v7.89'
+        h: 'SOLIMAQ-LMA500-RECILOGIC-PANDORA-v8.00'
       });
       // Safe base64 encoding for Unicode
       const b64 = btoa(unescape(encodeURIComponent(payloadString)));
@@ -1145,7 +1145,7 @@ export default function LMA500Simulator() {
       <div style={{ marginBottom: 20 }}>
         {/* Estampado Corporativo de Recilogic */}
         <div style={{ fontSize: 9, fontWeight: 900, color: '#008299', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>
-          SOLIMAQ LMA-500 · RECILOGIC · PANDORA v7.89
+          SOLIMAQ LMA-500 · RECILOGIC · PANDORA v8.00
         </div>
         
         {/* Diseño Premium de Título en Dos Líneas */}
@@ -3658,7 +3658,7 @@ export default function LMA500Simulator() {
                     RECILOGIC
                   </span>
                   <span style={{ display: 'inline-block', fontSize: 9, fontWeight: 800, color: '#fff', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 6, padding: '2px 8px', background: 'rgba(255,255,255,0.1)' }}>
-                    PANDORA 3.0 · V7.89
+                    PANDORA 3.0 · V8.00
                   </span>
                 </div>
 
@@ -4998,7 +4998,7 @@ export default function LMA500Simulator() {
                         </div>
 
                         <div style={{ marginTop: 6, borderTop: '1px solid #e2e8f0', paddingTop: 8, fontSize: 10, fontFamily: 'monospace', color: '#94a3b8', textAlign: 'center' }}>
-                          VERIFICACIÓN HASH: SOLIMAQ-LMA500-RECILOGIC-PANDORA-v7.89
+                          VERIFICACIÓN HASH: SOLIMAQ-LMA500-RECILOGIC-PANDORA-v8.00
                         </div>
                       </div>
                       </>
@@ -5598,7 +5598,7 @@ export default function LMA500Simulator() {
 
       {/* --- FOOTER DESCRIPTIVO --- */}
       <div className="max-w-[1500px] mx-auto text-center mt-12 text-gray-600 text-xs font-semibold py-8 border-t border-slate-900">
-        PANDORA v7.89 • Sistema de Inteligencia y Simulación de Inversiones Industriales
+        PANDORA v8.00 • Sistema de Inteligencia y Simulación de Inversiones Industriales
         <p className="text-[10px] text-gray-600 mt-1 font-medium">
           SOLIMAQ S.A. de C.V. • Derechos Reservados. Todos los cálculos son estimaciones paramétricas basadas en fichas técnicas.
         </p>

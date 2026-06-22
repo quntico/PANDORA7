@@ -1840,7 +1840,7 @@ export default function CarrierSimulator() {
       <div style={{ marginBottom: 20 }}>
         {/* Estampado Corporativo de Carrier */}
         <div style={{ fontSize: 10, fontWeight: 900, color: '#0891b2', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>
-          PROYECTO CARRIER · COBRE · PANDORA v7.89
+          PROYECTO CARRIER · COBRE · PANDORA v8.00
         </div>
         
         {/* Título en Dos Líneas */}
@@ -3003,7 +3003,7 @@ export default function CarrierSimulator() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#1b1b22] pb-4 mb-4">
               <h2 className="text-sm font-black uppercase tracking-widest text-white flex items-center gap-2">
                 <Cpu className="w-5 h-5 text-purple-400 animate-pulse" />
-                Auditoría Cognitiva Pandora AI (v7.89)
+                Auditoría Cognitiva Pandora AI (v8.00)
               </h2>
               <span className={`px-3 py-1 rounded-xl text-[9px] font-black uppercase tracking-wider border transition-all ${
                 aiProcessAnalysis.isSequenceCorrect
@@ -4444,7 +4444,7 @@ export default function CarrierSimulator() {
                       CARRIER
                     </span>
                     <span style={{ display: 'inline-block', fontSize: 9, fontWeight: 800, color: '#fff', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 6, padding: '2px 8px', background: 'rgba(255,255,255,0.1)' }}>
-                      PANDORA 3.0 · V7.89
+                      PANDORA 3.0 · V8.00
                     </span>
                   </div>
 

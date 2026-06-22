@@ -91,7 +91,7 @@ function Header() {
                 else if (password !== null) { alert("Contraseña incorrecta."); }
               }}
             >
-              VER 7.89
+              VER 8.00
               <span className="relative flex h-1.5 w-1.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500"></span>

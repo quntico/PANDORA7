@@ -89,7 +89,7 @@ function TechnicalPanel() {
 
       <div className="flex justify-between items-center border-t border-cyan-500/10 pt-1.5 text-[8px] text-slate-500">
         <span>DEVICES: {quality.toUpperCase()}</span>
-        <span>PANDORA 7.89</span>
+        <span>PANDORA 8.00</span>
       </div>
     </div>
   );
@@ -116,7 +116,7 @@ export default function AvatarPage() {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
             </span>
             <div className="flex flex-col">
-              <span className="text-[10px] font-black text-white tracking-widest uppercase font-mono">PANDORA V7.89 CORE</span>
+              <span className="text-[10px] font-black text-white tracking-widest uppercase font-mono">PANDORA V8.00 CORE</span>
               <span className="text-[8px] text-cyan-400 font-bold tracking-widest font-mono">SYSTEM: ACTIVE</span>
             </div>
           </div>
