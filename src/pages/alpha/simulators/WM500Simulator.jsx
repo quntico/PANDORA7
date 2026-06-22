@@ -1083,7 +1083,7 @@ export default function WM500Simulator() {
   };
 
   const printReport = async () => {
-    const defaultName = `Dictamen_Industrial_${(inputs.clientName || 'Cliente').replace(/\s+/g, '_')}_WM500`;
+    const defaultName = `Proyeccion_Industrial_${(inputs.clientName || 'Cliente').replace(/\s+/g, '_')}_WM500`;
     const finalFileName = window.prompt("Ingresa el nombre del archivo PDF a exportar:", defaultName);
     
     if (!finalFileName) return; // User cancelled or left empty
@@ -1312,7 +1312,7 @@ export default function WM500Simulator() {
     if (withoutNum.includes('ESPECIFICACIONES TÉCNICAS')) return { line1: num + 'CONFIGURACIÓN DEL SISTEMA', line2: withoutNum };
     if (withoutNum.includes('VISTA')) return { line1: num + 'GEMELO DIGITAL 3D', line2: withoutNum };
     if (withoutNum.includes('ESCENARIOS')) return { line1: (num || '6. ') + 'PROYECCIÓN PARAMÉTRICA', line2: withoutNum };
-    if (withoutNum.includes('FINANCIERO')) return { line1: num + 'ANÁLISIS DE RENTABILIDAD', line2: withoutNum };
+    if (withoutNum.includes('FINANCIER')) return { line1: num + 'ANÁLISIS DE RENTABILIDAD', line2: withoutNum };
     if (withoutNum.includes('ENERGÍA') || withoutNum.includes('ENERGIA') || withoutNum.includes('CAPACIDAD')) return { line1: num + 'REQUERIMIENTOS OPERATIVOS', line2: withoutNum };
     
     return { line1: num ? num + 'FICHA TÉCNICA Y COMPONENTES' : 'FICHA TÉCNICA Y COMPONENTES', line2: withoutNum };
@@ -3662,7 +3662,7 @@ export default function WM500Simulator() {
                 {(pdfConfig.financiero || pdfConfig.capex || pdfConfig.riesgos) && (
                 <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
                       <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 20 }}>
-                        {renderPageHeader('7. Dictamen Financiero', 'Análisis Ejecutivo de Viabilidad Económica (CAPEX/OPEX)')}
+                        {renderPageHeader('7. Proyección Financiera', 'Análisis Ejecutivo de Viabilidad Económica (CAPEX/OPEX)')}
                         
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                           
