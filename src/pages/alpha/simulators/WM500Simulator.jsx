@@ -746,9 +746,9 @@ export default function WM500Simulator() {
   // Escenarios
   const scenarioResults = useMemo(() => {
     const calcScenario = (params) => {
-      const { utilizacion, oee, factorCarga, horasDia, diasMes } = params;
+      const { oee, factorCarga, horasDia, diasMes } = params;
       const nominalCapacity = inputs.nominalCapacity || 4000;
-      const capacidadRealKgH = nominalCapacity * (utilizacion / 100) * (oee / 100);
+      const capacidadRealKgH = nominalCapacity * (oee / 100) * ((inputs.reductionFactor || 90) / 100);
       const produccionDiariaKg = capacidadRealKgH * horasDia;
       const produccionDiariaTon = produccionDiariaKg / 1000;
       const produccionMensualTon = produccionDiariaTon * diasMes;
@@ -790,7 +790,7 @@ export default function WM500Simulator() {
         opexMensual: opexMensualMxn,
         costPerTon: opexPorTon,
         coverage: coberturaMeta,
-        utilization: utilizacion / 100,
+        utilization: (inputs.reductionFactor || 90) / 100,
         payback,
         estado,
         estadoColor
@@ -798,9 +798,9 @@ export default function WM500Simulator() {
     };
 
     return {
-      conservador: calcScenario({ utilizacion: inputs.utilization || 90, oee: 70, factorCarga: inputs.loadFactor || 85, horasDia: inputs.hoursPerDay || 20, diasMes: inputs.daysPerMonth || 24 }),
-      normal: calcScenario({ utilizacion: inputs.utilization || 90, oee: 85, factorCarga: inputs.loadFactor || 85, horasDia: inputs.hoursPerDay || 20, diasMes: inputs.daysPerMonth || 24 }),
-      alto: calcScenario({ utilizacion: inputs.utilization || 90, oee: 95, factorCarga: inputs.loadFactor || 85, horasDia: inputs.hoursPerDay || 20, diasMes: inputs.daysPerMonth || 24 })
+      conservador: calcScenario({ oee: 70, factorCarga: inputs.loadFactor || 85, horasDia: inputs.hoursPerDay || 20, diasMes: inputs.daysPerMonth || 24 }),
+      normal: calcScenario({ oee: 85, factorCarga: inputs.loadFactor || 85, horasDia: inputs.hoursPerDay || 20, diasMes: inputs.daysPerMonth || 24 }),
+      alto: calcScenario({ oee: 95, factorCarga: inputs.loadFactor || 85, horasDia: inputs.hoursPerDay || 20, diasMes: inputs.daysPerMonth || 24 })
     };
   }, [inputs, results.capexInstaladoMxn]);
 
@@ -2866,7 +2866,7 @@ export default function WM500Simulator() {
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Producción Diaria:</span><span className="text-slate-800 font-bold">{scenarioResults.conservador.dailyProdTon.toFixed(1)} ton</span></div>
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Costo por Ton:</span><span className="text-slate-800 font-bold">${scenarioResults.conservador.costPerTon.toFixed(1)} MXN</span></div>
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Cobertura Meta:</span><span className="text-slate-800 font-bold">{scenarioResults.conservador.coverage.toFixed(1)}%</span></div>
-                        <div className="flex justify-between"><span>Utilización:</span><span className="text-slate-850 font-bold">{(scenarioResults.conservador.utilization * 100).toFixed(1)}%</span></div>
+                        <div className="flex justify-between"><span>Factor Reducción:</span><span className="text-slate-850 font-bold">{(scenarioResults.conservador.utilization * 100).toFixed(1)}%</span></div>
                       </div>
                     </div>
                     <button 
@@ -2888,7 +2888,7 @@ export default function WM500Simulator() {
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Producción Diaria:</span><span className="text-slate-800 font-bold">{scenarioResults.normal.dailyProdTon.toFixed(1)} ton</span></div>
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Costo por Ton:</span><span className="text-slate-800 font-bold">${scenarioResults.normal.costPerTon.toFixed(1)} MXN</span></div>
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Cobertura Meta:</span><span className="text-slate-800 font-bold">{scenarioResults.normal.coverage.toFixed(1)}%</span></div>
-                        <div className="flex justify-between"><span>Utilización:</span><span className="text-slate-850 font-bold">{(scenarioResults.normal.utilization * 100).toFixed(1)}%</span></div>
+                        <div className="flex justify-between"><span>Factor Reducción:</span><span className="text-slate-850 font-bold">{(scenarioResults.normal.utilization * 100).toFixed(1)}%</span></div>
                       </div>
                     </div>
                     <button 
@@ -2910,7 +2910,7 @@ export default function WM500Simulator() {
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Producción Diaria:</span><span className="text-slate-800 font-bold">{scenarioResults.alto.dailyProdTon.toFixed(1)} ton</span></div>
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Costo por Ton:</span><span className="text-slate-800 font-bold">${scenarioResults.alto.costPerTon.toFixed(1)} MXN</span></div>
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Cobertura Meta:</span><span className="text-slate-800 font-bold">{scenarioResults.alto.coverage.toFixed(1)}%</span></div>
-                        <div className="flex justify-between"><span>Utilización:</span><span className="text-slate-850 font-bold">{(scenarioResults.alto.utilization * 100).toFixed(1)}%</span></div>
+                        <div className="flex justify-between"><span>Factor Reducción:</span><span className="text-slate-850 font-bold">{(scenarioResults.alto.utilization * 100).toFixed(1)}%</span></div>
                       </div>
                     </div>
                     <button 
