@@ -4848,10 +4848,10 @@ export default function MolexSimulator() {
                   })()}
 
                   {/* Main Grid: Table & Chart */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1.25fr 1.35fr', gap: '14px', flex: 1, alignItems: 'stretch' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.65fr', gap: '16px', flex: 1, alignItems: 'stretch' }}>
                     
                     {/* Left: Scenarios Table */}
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse', border: '1.5px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden' }}>
                         <thead>
                           <tr style={{ background: '#0b1329', color: '#ffffff', fontSize: '8.5px', fontWeight: 800, textAlign: 'center' }}>
@@ -4913,11 +4913,13 @@ export default function MolexSimulator() {
                       background: '#ffffff',
                       border: '1.5px solid #e2e8f0',
                       borderRadius: '16px',
-                      padding: '12px 14px',
+                      padding: '16px 20px',
                       display: 'flex',
                       flexDirection: 'column',
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.01)',
-                      boxSizing: 'border-box'
+                      boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.02)',
+                      boxSizing: 'border-box',
+                      height: '100%',
+                      justifyContent: 'space-between'
                     }}>
                       <span style={{ fontSize: '9px', fontWeight: 950, color: '#1e293b', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '8px' }}>
                         Comparativa Gráfica Mensual (MXN)
@@ -4940,17 +4942,17 @@ export default function MolexSimulator() {
                       </div>
 
                       {/* Chart Body */}
-                      <div style={{ position: 'relative', height: '160px', borderLeft: '1.5px solid #cbd5e1', boxSizing: 'border-box' }}>
+                      <div style={{ position: 'relative', height: '200px', borderLeft: '1.5px solid #cbd5e1', boxSizing: 'border-box' }}>
                         
                         {/* Y Axis Grid Lines */}
                         <div style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, pointerEvents: 'none' }}>
                           {[120000, 100000, 80000, 60000, 40000, 20000, 0, -20000, -40000].map((val) => {
-                            const y = ((val - (-40000)) / 160000) * 160;
+                            const y = ((val - (-40000)) / 160000) * 200;
                             const isZero = val === 0;
                             return (
                               <div key={val} style={{
                                 position: 'absolute',
-                                left: '42px',
+                                left: '46px',
                                 right: 0,
                                 bottom: `${y}px`,
                                 borderBottom: isZero ? '1.5px solid #94a3b8' : '1px dashed #e2e8f0',
@@ -4961,15 +4963,15 @@ export default function MolexSimulator() {
                         </div>
 
                         {/* Y Axis Labels */}
-                        <div style={{ position: 'absolute', left: 0, width: '36px', height: '160px', pointerEvents: 'none' }}>
+                        <div style={{ position: 'absolute', left: 0, width: '40px', height: '200px', pointerEvents: 'none' }}>
                           {[120000, 100000, 80000, 60000, 40000, 20000, 0, -20000, -40000].map((val) => {
-                            const y = ((val - (-40000)) / 160000) * 160;
+                            const y = ((val - (-40000)) / 160000) * 200;
                             return (
                               <div key={val} style={{
                                 position: 'absolute',
                                 right: '4px',
                                 bottom: `${y - 4.5}px`,
-                                fontSize: '7px',
+                                fontSize: '7.5px',
                                 fontWeight: 800,
                                 color: val === 0 ? '#1e293b' : '#64748b',
                                 lineHeight: '9px',
@@ -4984,10 +4986,10 @@ export default function MolexSimulator() {
                         {/* Bars Area */}
                         <div style={{
                           position: 'absolute',
-                          left: '42px',
+                          left: '46px',
                           right: 0,
                           top: 0,
-                          height: '160px',
+                          height: '200px',
                           display: 'flex',
                           justifyContent: 'space-around',
                           alignItems: 'flex-end',
@@ -4998,34 +5000,34 @@ export default function MolexSimulator() {
                             const vOpex = calculations.opexFixedMonthlyMxn;
                             const vEbitda = p.margenMensualMxn;
 
-                            const hV = (vVenta / 160000) * 160;
-                            const hOp = (vOpex / 160000) * 160;
-                            const hEb = (Math.abs(vEbitda) / 160000) * 160;
+                            const hV = (vVenta / 160000) * 200;
+                            const hOp = (vOpex / 160000) * 200;
+                            const hEb = (Math.abs(vEbitda) / 160000) * 200;
 
-                            const bottomEb = vEbitda >= 0 ? 40 : 40 - hEb;
+                            const bottomEb = vEbitda >= 0 ? 50 : 50 - hEb;
 
                             return (
-                              <div key={p.m} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '42px' }}>
-                                <div style={{ position: 'relative', width: '34px', height: '160px' }}>
+                              <div key={p.m} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '78px' }}>
+                                <div style={{ position: 'relative', width: '68px', height: '200px' }}>
                                   
                                   {/* Ventas Bar */}
                                   <div style={{
                                     position: 'absolute',
-                                    left: '1px',
-                                    bottom: '40px',
-                                    width: '8px',
+                                    left: '4px',
+                                    bottom: '50px',
+                                    width: '12px',
                                     height: `${hV}px`,
                                     background: '#00b0b9',
-                                    borderRadius: '2px 2px 0 0'
+                                    borderRadius: '2.5px 2.5px 0 0'
                                   }}>
                                     <div style={{
                                       position: 'absolute',
-                                      bottom: `${hV + 1}px`,
+                                      bottom: `${hV + 14}px`, // Staggered higher
                                       left: '50%',
                                       transform: 'translateX(-50%)',
-                                      fontSize: '5.5px',
+                                      fontSize: '7.5px',
                                       fontWeight: 900,
-                                      color: '#0891b2',
+                                      color: '#0f766e',
                                       whiteSpace: 'nowrap'
                                     }}>
                                       {moneyShort(vVenta)}
@@ -5035,19 +5037,19 @@ export default function MolexSimulator() {
                                   {/* OPEX Fijo Bar */}
                                   <div style={{
                                     position: 'absolute',
-                                    left: '11px',
-                                    bottom: '40px',
-                                    width: '8px',
+                                    left: '23px',
+                                    bottom: '50px',
+                                    width: '12px',
                                     height: `${hOp}px`,
                                     background: '#ef4444',
-                                    borderRadius: '2px 2px 0 0'
+                                    borderRadius: '2.5px 2.5px 0 0'
                                   }}>
                                     <div style={{
                                       position: 'absolute',
-                                      bottom: `${hOp + 1}px`,
+                                      bottom: `${hOp + 2}px`, // Staggered lower
                                       left: '50%',
                                       transform: 'translateX(-50%)',
-                                      fontSize: '5.5px',
+                                      fontSize: '7.5px',
                                       fontWeight: 900,
                                       color: '#dc2626',
                                       whiteSpace: 'nowrap'
@@ -5059,19 +5061,19 @@ export default function MolexSimulator() {
                                   {/* EBITDA Bar */}
                                   <div style={{
                                     position: 'absolute',
-                                    left: '21px',
+                                    left: '42px',
                                     bottom: `${bottomEb}px`,
-                                    width: '8px',
+                                    width: '12px',
                                     height: `${hEb}px`,
                                     background: '#10b981',
-                                    borderRadius: vEbitda >= 0 ? '2px 2px 0 0' : '0 0 2px 2px'
+                                    borderRadius: vEbitda >= 0 ? '2.5px 2.5px 0 0' : '0 0 2.5px 2.5px'
                                   }}>
                                     <div style={{
                                       position: 'absolute',
-                                      bottom: vEbitda >= 0 ? `${hEb + 1}px` : `-8px`,
+                                      bottom: vEbitda >= 0 ? `${hEb + 2}px` : `-12px`,
                                       left: '50%',
                                       transform: 'translateX(-50%)',
-                                      fontSize: '5.5px',
+                                      fontSize: '7.5px',
                                       fontWeight: 900,
                                       color: vEbitda >= 0 ? '#16a34a' : '#ef4444',
                                       whiteSpace: 'nowrap'
@@ -5081,7 +5083,7 @@ export default function MolexSimulator() {
                                   </div>
 
                                 </div>
-                                <span style={{ fontSize: '8px', fontWeight: 900, color: '#475569', marginTop: '4px' }}>x{p.m}</span>
+                                <span style={{ fontSize: '8.5px', fontWeight: 900, color: '#475569', marginTop: '6px' }}>x{p.m}</span>
                               </div>
                             );
                           })}
