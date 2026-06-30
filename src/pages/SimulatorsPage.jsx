@@ -82,6 +82,14 @@ function SimulatorsPage() {
         icon: 'Activity',
         color: '#00F0FF',
         isSystem: true
+      },
+      {
+        id: 'molex',
+        name: 'MOLEX',
+        description: 'Simulador técnico-comercial para la recuperación de cobre y cobre estañado en finales de rollo.',
+        icon: 'Activity',
+        color: '#0f766e',
+        isSystem: true
       }
     ];
 
@@ -90,8 +98,8 @@ function SimulatorsPage() {
       if (!s || !s.id) return false;
       const lowerId = s.id.toLowerCase();
       const lowerName = (s.name || '').toLowerCase();
-      if (['rider', 'grupo-gusi', 'iase', 'lma-500', 'smq-automatic', 'carrier', 'forvia', 'wm-500'].includes(lowerId)) return false;
-      if (['iase', 'lma-500', 'smq cotizador', 'carrier', 'forvia', 'wm-500'].includes(lowerName)) return false;
+      if (['rider', 'grupo-gusi', 'iase', 'lma-500', 'smq-automatic', 'carrier', 'forvia', 'wm-500', 'molex'].includes(lowerId)) return false;
+      if (['iase', 'lma-500', 'smq cotizador', 'carrier', 'forvia', 'wm-500', 'molex'].includes(lowerName)) return false;
       return true;
     }) : [];
 
@@ -120,6 +128,9 @@ function SimulatorsPage() {
   const [formDesc, setFormDesc] = useState('');
   const [formColor, setFormColor] = useState('#3b82f6');
   const [formIcon, setFormIcon] = useState('Activity');
+  const [formCompanyName, setFormCompanyName] = useState('');
+  const [formClientName, setFormClientName] = useState('');
+  const [formProjectName, setFormProjectName] = useState('');
 
   // Colores predefinidos y elegantes (diseño premium)
   const COLORS = [
@@ -131,6 +142,214 @@ function SimulatorsPage() {
     { value: '#f59e0b', name: 'Ámbar Cálido' }
   ];
 
+  // Helper de valores predeterminados para cada tipo de simulador
+  const getDefaultInputsForTemplate = (templateId) => {
+    const norm = (templateId || '').toLowerCase();
+    if (norm.includes('lma-500')) {
+      return {
+        clientName: 'PABLO SOLER',
+        projectName: 'Proyecto Reciclado Solimaq LMA-500',
+        companyName: 'SOLIMAQ',
+        capacityDesired: 450,
+        hoursPerShift: 8,
+        shiftsPerDay: 2,
+        daysPerMonth: 26,
+        materialType: 'hdpe',
+        loadFactor: 75,
+        electricityRate: 2.30,
+        exchangeRate: 18.00,
+        numOperators: 2,
+        laborCostPerShift: 450,
+        maintenanceCost: 800,
+        sparePartsCost: 500,
+        waterCost: 150,
+        requiresAir: true,
+        airPressureBar: 7.0,
+        airConsumptionNm3: 15.0,
+        airCostPerNm3: 0.35,
+        capexCableado: 4500,
+        capexManiobras: 3000,
+        capexMontaje: 6000,
+        capexObraCivil: 8000,
+        capexCompresor: 12000,
+        capexInstalacionAdic: 2500,
+        sellPricePerKg: 28.50,
+        rawMaterialCostPerKg: 12.00,
+        includeRawMaterialInOpex: true,
+        nominalCapacity: 500,
+        oeePercent: 95,
+        wastePercent: 5,
+        voltage: 440,
+        powerFactor: 0.85,
+        feederLength: 50,
+        isEpcMode: false,
+        useAdvancedPower: false,
+        energyStates: { conveyor: 'Normal', shredder: 'Normal', agglomerator: 'Normal', pelletizer: 'Normal', chiller: 'Normal' },
+        thermalConfig: { humidity: 1, zoneTemps: 220, dieTemp: 230 },
+        dynamicCapexConfig: { ccm: true, cables: true, capacitors: true, transformer: true, engineering: true },
+        includeTechAuditPdf: true,
+        includeFinancialAuditPdf: true
+      };
+    }
+    if (norm.includes('wm-500')) {
+      return {
+        companyName: 'ELECTRIZ',
+        clientName: 'CENTRAL DE INTELIGENCIA',
+        machineName: 'WM 500',
+        projectName: 'PROYECTO PREDETERMINADO PANDORA',
+        evaluationDate: '20/6/2026',
+        materialType: 'TARIMA PESADA',
+        evaluationName: 'Trituradora para Maderas y Tarimas',
+        technicalSheetName: 'Ficha Técnica de Homologación WM-500',
+        energySectionTitle: 'Desglose Energético Operativo',
+        capacityCardTitle: 'Capacidad Real Ajustada',
+        nominalCapacity: 4000,
+        utilization: 90,
+        oee: 85,
+        loadFactor: 85,
+        hoursPerDay: 20,
+        shiftsPerDay: 2,
+        daysPerMonth: 24,
+        dailyGoalKg: 50000,
+        reductionFactor: 90,
+        motorPrincipalHp: 120,
+        motorAuxiliarHp: 10,
+        customInstalledPowerKw: 96.98,
+        potenciaActivaKw: 82.43,
+        electricityRate: 2.50,
+        machineLength: 14.50,
+        machineWidth: 1.75,
+        machineHeight: 1.90,
+        pesoKg: 13000,
+        bocaAlimentacion: '1300 x 300 mm',
+        rotorRpm: 650,
+        particulaFinal: '2–3 cm',
+        ruidoDb: 80,
+        separadorMagnetico: 'Incluido',
+        componentesElectricos: 'Schneider Electric',
+        motorMarca: 'Siemens',
+        precioEquipoUsd: 48600,
+        iva: 16,
+        tipoCambio: 18,
+        porcentajeManiobras: 5,
+        porcentajeMontajeMecanico: 6,
+        porcentajeObraCivil: 5,
+        porcentajeElectricoPrincipal: 8,
+        porcentajeCanalizacionProtecciones: 5,
+        porcentajeExtraccionPolvo: 12,
+        porcentajeSeguridadIndustrial: 3,
+        porcentajeIngenieriaSupervision: 4,
+        porcentajeContingencia: 10,
+        operadoresPorTurno: 1,
+        sueldoOperadorMensual: 12000,
+        supervisoresPorTurno: 0,
+        sueldoSupervisorMensual: 20000,
+        mantenimientoAnualPorcentaje: 5,
+        cuchillasMensualMxn: 15000,
+        refaccionesMensualMxn: 8000,
+        lubricacionMensualMxn: 2000,
+        limpiezaMensualMxn: 3000,
+        consumiblesMensualMxn: 2500,
+        otrosOpexMensualMxn: 0,
+        precioVentaTonMxn: 500,
+        ahorroPorTonMxn: 600,
+        usarModoIngresoVenta: true,
+        usarModoAhorroInterno: false,
+        vidaUtilAnios: 10,
+        tasaDescuento: 14,
+        depreciacionAnual: 10,
+        inflacionAnual: 5,
+        incrementoEnergiaAnual: 6,
+        riesgoPolvo: 'medio',
+        riesgoIncendio: 'bajo',
+        riesgoMetal: 'alto',
+        riesgoRuido: 'alto',
+        frecuenciaMantenimientoHoras: 250,
+        vidaUtilCuchillasHoras: 800,
+        disponibilidadMecanica: 95,
+        factorParo: 5,
+        requiereExtraccionPolvo: true,
+        requiereSistemaContraIncendio: false,
+        requiereCabinaAcustica: false,
+        requiereLOTO: true,
+        requiereGuardas: true,
+        requiereEStop: true
+      };
+    }
+    if (norm.includes('molex')) {
+      return {
+        pesoObjetivo: 20,
+        precioRojo: 195,
+        precioEstanado: 175,
+        costoCompra: 0,
+        multiplicadorActivo: 1,
+        diasMes: 26,
+        mesesAnio: 12,
+        nombreEscenario: "MOLEX finales de rollo",
+        companyName: 'CENTRAL DE INTELIGENCIA',
+        clientName: 'CENTRAL DE INTELIGENCIA',
+        projectName: 'MOLEX - RECUPERACIÓN COBRE',
+        machinePurchaseUsd: 45000,
+        installationCostUsd: 5000,
+        civilWorksUsd: 2500,
+        numOperators: 2,
+        monthlySalaryMxn: 12000,
+        monthlyMaintenanceUsd: 400,
+        monthlyConsumablesUsd: 250,
+        installedPowerKw: 22,
+        averageLoadFactor: 80,
+        electricityRateMxn: 2.50,
+        voltage: 440,
+        exchangeRate: 18.20,
+        vidaUtilCuchillasHoras: 800,
+        frecuenciaMantenimientoHoras: 250,
+        riesgoHumedad: 'medio',
+        riesgoPolvo: 'bajo',
+        riesgoMetal: 'medio',
+        riesgoVoltaje: 'alto'
+      };
+    }
+    if (norm.includes('forvia')) {
+      return {
+        clientName: 'CENTRAL DE INTELIGENCIA',
+        projectName: 'FORVIA - BDW 200',
+        evaluationName: 'MÁQUINA EN EVALUACIÓN - PLD-140',
+        nominalBoxes: 200,
+        machineLength: 7.60,
+        maxSpeed: 140,
+        defaultGap: 0.10,
+        calcMode: 'manual',
+        shifts: 2,
+        hoursPerShift: 8,
+        daysPerMonth: 26,
+        electricityRate: 2.50,
+        loadFactor: 85,
+        installedPowerKw: 89.5,
+        sueldoOperadorMensual: 12000,
+        operatorsPerShift: 1,
+        waterFlowLh: 1000,
+        waterReplenishLh: 150,
+        tankCapacityL: 1200,
+        waterChangeInterval: '3-5 días'
+      };
+    }
+    return {
+      machineName: 'PLD-120 / PLD-140',
+      nominalBoxes: 200,
+      machineLength: 7.60,
+      maxAdvance: 1.40,
+      manualSpeed: 140 / 60,
+      defaultGap: 0.10,
+      calcMode: 'manual',
+      shifts: 2,
+      hoursPerShift: 8,
+      daysPerMonth: 26,
+      companyName: 'CENTRAL DE INTELIGENCIA',
+      clientName: 'CENTRAL DE INTELIGENCIA',
+      projectName: 'PROYECTO RYDER'
+    };
+  };
+
   // 3. Acciones de negocio
 
   // Abrir modal de creación
@@ -141,6 +360,9 @@ function SimulatorsPage() {
     setFormDesc('Simulador avanzado de capacidad y optimización de líneas industriales.');
     setFormColor('#00F0FF');
     setFormIcon('Layers');
+    setFormCompanyName('CENTRAL DE INTELIGENCIA');
+    setFormClientName('CENTRAL DE INTELIGENCIA');
+    setFormProjectName('PROYECTO PREDETERMINADO PANDORA');
     setIsModalOpen(true);
   };
 
@@ -154,6 +376,25 @@ function SimulatorsPage() {
     setFormDesc(sim.description);
     setFormColor(sim.color || '#3b82f6');
     setFormIcon(sim.icon || 'Activity');
+
+    let inputsKey = `sim_${sim.id}_inputs`;
+    let currentInputs = {};
+    const savedInputs = localStorage.getItem(inputsKey);
+    if (savedInputs) {
+      try {
+        currentInputs = JSON.parse(savedInputs);
+      } catch (e) {}
+    }
+    
+    const templateId = (sim.type || sim.id).toLowerCase();
+    const defaultCompany = currentInputs.companyName || currentInputs.customerName || localStorage.getItem(`sim_${sim.id}_customer_name`) || (templateId === 'lma-500' ? 'SOLIMAQ' : 'CENTRAL DE INTELIGENCIA');
+    const defaultClient = currentInputs.clientName || localStorage.getItem(`sim_${sim.id}_client_name`) || 'CENTRAL DE INTELIGENCIA';
+    const defaultProject = currentInputs.projectName || (templateId === 'lma-500' ? 'Proyecto Reciclado Solimaq LMA-500' : `${sim.name}`);
+
+    setFormCompanyName(defaultCompany);
+    setFormClientName(defaultClient);
+    setFormProjectName(defaultProject);
+
     setIsModalOpen(true);
   };
 
@@ -167,6 +408,25 @@ function SimulatorsPage() {
     setFormDesc(sim.description);
     setFormColor(sim.color || '#3b82f6');
     setFormIcon(sim.icon || 'Activity');
+
+    let inputsKey = `sim_${sim.id}_inputs`;
+    let currentInputs = {};
+    const savedInputs = localStorage.getItem(inputsKey);
+    if (savedInputs) {
+      try {
+        currentInputs = JSON.parse(savedInputs);
+      } catch (e) {}
+    }
+    
+    const templateId = (sim.type || sim.id).toLowerCase();
+    const defaultCompany = currentInputs.companyName || currentInputs.customerName || localStorage.getItem(`sim_${sim.id}_customer_name`) || (templateId === 'lma-500' ? 'SOLIMAQ' : 'CENTRAL DE INTELIGENCIA');
+    const defaultClient = currentInputs.clientName || localStorage.getItem(`sim_${sim.id}_client_name`) || 'CENTRAL DE INTELIGENCIA';
+    const defaultProject = currentInputs.projectName || (templateId === 'lma-500' ? 'Proyecto Reciclado Solimaq LMA-500' : `${sim.name} - Copia`);
+
+    setFormCompanyName(defaultCompany);
+    setFormClientName(defaultClient);
+    setFormProjectName(defaultProject);
+
     setIsModalOpen(true);
   };
 
@@ -183,11 +443,25 @@ function SimulatorsPage() {
         description: formDesc.trim() || 'Simulador personalizado de capacidad y cobertura.',
         icon: formIcon,
         color: formColor,
-        isSystem: false
+        isSystem: false,
+        type: 'rider'
       };
 
       // Al crear desde cero, copiamos la estructura por defecto de RYDER para que no falle
       copySimulatorData('rider', newId);
+
+      const destInputsKey = `sim_${newId}_inputs`;
+      const destInputs = getDefaultInputsForTemplate('rider');
+      if (destInputs) {
+        destInputs.companyName = formCompanyName.trim();
+        destInputs.clientName = formClientName.trim();
+        destInputs.projectName = formProjectName.trim();
+        destInputs.customerName = formCompanyName.trim();
+        localStorage.setItem(destInputsKey, JSON.stringify(destInputs));
+      }
+      localStorage.setItem(`sim_${newId}_client_name`, formClientName.trim());
+      localStorage.setItem(`sim_${newId}_customer_name`, formCompanyName.trim());
+
       setSimulators([...simulators, newSim]);
 
     } else if (modalType === 'edit') {
@@ -197,6 +471,28 @@ function SimulatorsPage() {
           : s
       ));
 
+      const inputsKey = `sim_${currentSim.id}_inputs`;
+      let currentInputs = {};
+      const savedInputs = localStorage.getItem(inputsKey);
+      if (savedInputs) {
+        try {
+          currentInputs = JSON.parse(savedInputs);
+        } catch (e) {}
+      } else {
+        currentInputs = getDefaultInputsForTemplate(currentSim.type || currentSim.id);
+      }
+
+      if (currentInputs) {
+        currentInputs.companyName = formCompanyName.trim();
+        currentInputs.clientName = formClientName.trim();
+        currentInputs.projectName = formProjectName.trim();
+        currentInputs.customerName = formCompanyName.trim();
+        localStorage.setItem(inputsKey, JSON.stringify(currentInputs));
+      }
+
+      localStorage.setItem(`sim_${currentSim.id}_client_name`, formClientName.trim());
+      localStorage.setItem(`sim_${currentSim.id}_customer_name`, formCompanyName.trim());
+
     } else if (modalType === 'clone') {
       const newId = `sim_${Date.now()}`;
       const newSim = {
@@ -205,10 +501,34 @@ function SimulatorsPage() {
         description: formDesc.trim(),
         icon: formIcon,
         color: formColor,
-        isSystem: false
+        isSystem: false,
+        type: currentSim.type || currentSim.id
       };
 
       copySimulatorData(currentSim.id, newId);
+
+      const destInputsKey = `sim_${newId}_inputs`;
+      let destInputs = {};
+      const savedNewInputs = localStorage.getItem(destInputsKey);
+      if (savedNewInputs) {
+        try {
+          destInputs = JSON.parse(savedNewInputs);
+        } catch (e) {}
+      } else {
+        destInputs = getDefaultInputsForTemplate(currentSim.type || currentSim.id);
+      }
+
+      if (destInputs) {
+        destInputs.companyName = formCompanyName.trim();
+        destInputs.clientName = formClientName.trim();
+        destInputs.projectName = formProjectName.trim();
+        destInputs.customerName = formCompanyName.trim();
+        localStorage.setItem(destInputsKey, JSON.stringify(destInputs));
+      }
+
+      localStorage.setItem(`sim_${newId}_client_name`, formClientName.trim());
+      localStorage.setItem(`sim_${newId}_customer_name`, formCompanyName.trim());
+
       setSimulators([...simulators, newSim]);
     }
 
@@ -217,9 +537,12 @@ function SimulatorsPage() {
 
   // Copiar datos de localStorage de un simulador a otro
   const copySimulatorData = (srcId, destId) => {
+    const normalizedSrc = srcId.replace('-', '').toLowerCase();
+    const normalizedDest = destId.toLowerCase();
+
+    // Primero copiar llaves específicas conocidas
     const keys = ['inputs', 'customer_scenarios', 'machine_configs', 'boxes', 'daily_reqs', 'physical_max_mh', 'req_locked'];
     keys.forEach(key => {
-      // Mapeo especial para los nombres antiguos de llaves de ryder
       let srcKey = `sim_${srcId}_${key}`;
       if (srcId === 'rider') {
         if (key === 'daily_reqs') srcKey = 'rider_daily_reqs_v2';
@@ -233,8 +556,26 @@ function SimulatorsPage() {
       }
     });
 
-    // Si copiamos a partir de rider y no hay nada en local storage aún,
-    // RiderSimulatorPage los inicializará automáticamente con valores por defecto cuando cargue.
+    // Luego hacer una copia genérica de cualquier otra llave que contenga el ID del origen
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.toLowerCase().includes(normalizedSrc) || key.toLowerCase().includes(srcId.toLowerCase()))) {
+        const val = localStorage.getItem(key);
+        if (val !== null) {
+          let newKey = key;
+          if (key.toLowerCase().includes(normalizedSrc)) {
+            const index = key.toLowerCase().indexOf(normalizedSrc);
+            newKey = key.substring(0, index) + normalizedDest + key.substring(index + normalizedSrc.length);
+          } else if (key.toLowerCase().includes(srcId.toLowerCase())) {
+            const index = key.toLowerCase().indexOf(srcId.toLowerCase());
+            newKey = key.substring(0, index) + normalizedDest + key.substring(index + srcId.length);
+          }
+          if (!localStorage.getItem(newKey)) {
+            localStorage.setItem(newKey, val);
+          }
+        }
+      }
+    }
   };
 
   // Eliminar un simulador
@@ -461,6 +802,45 @@ function SimulatorsPage() {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
+                  Nombre de la Empresa
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ej. ELECTRIZ / SOLIMAQ"
+                  value={formCompanyName}
+                  onChange={e => setFormCompanyName(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl bg-[#141414] border border-[#222] hover:border-gray-700 focus:border-blue-500 focus:outline-none text-white transition-all text-sm font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
+                  Cliente
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ej. CENTRAL DE INTELIGENCIA"
+                  value={formClientName}
+                  onChange={e => setFormClientName(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl bg-[#141414] border border-[#222] hover:border-gray-700 focus:border-blue-500 focus:outline-none text-white transition-all text-sm font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
+                  Nombre del Proyecto
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ej. PROYECTO PREDETERMINADO PANDORA"
+                  value={formProjectName}
+                  onChange={e => setFormProjectName(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl bg-[#141414] border border-[#222] hover:border-gray-700 focus:border-blue-500 focus:outline-none text-white transition-all text-sm font-semibold"
+                />
               </div>
 
               {/* Botones de acción */}

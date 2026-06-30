@@ -18,7 +18,100 @@ const client = createClient(supabaseUrl, supabaseAnonKey, {
     }
 });
 
-export const supabase = client;
+// Proxy/Wrapper to intercept calls to project_context_beta keys
+const proxyClient = new Proxy(client, {
+  get(target, propKey, receiver) {
+    const origMethod = target[propKey];
+    if (propKey === 'from') {
+      return function (tableName) {
+        const queryBuilder = origMethod.apply(target, arguments);
+        if (tableName === 'project_context_beta') {
+          // Intercept eq('key', 'sim_...')
+          const origEq = queryBuilder.eq;
+          queryBuilder.eq = function (column, value) {
+            if (column === 'key' && typeof value === 'string' && value.startsWith('sim_') && value.endsWith('_data')) {
+              // Extract the simulator ID from current pathname
+              const match = window.location.pathname.match(/\/simulators\/(sim_[^\/]+)/i);
+              if (match) {
+                const currentSimId = match[1];
+                const newValue = `sim_${currentSimId}_data`;
+                return origEq.call(this, column, newValue);
+              }
+            }
+            return origEq.apply(this, arguments);
+          };
+
+          // Also intercept insert/update/upsert to rewrite the payload keys!
+          const origInsert = queryBuilder.insert;
+          queryBuilder.insert = function (values, options) {
+            const match = window.location.pathname.match(/\/simulators\/(sim_[^\/]+)/i);
+            if (match) {
+              const currentSimId = match[1];
+              const rewritePayload = (payload) => {
+                if (Array.isArray(payload)) {
+                  return payload.map(p => {
+                    if (p && p.key && p.key.startsWith('sim_') && p.key.endsWith('_data')) {
+                      return { ...p, key: `sim_${currentSimId}_data` };
+                    }
+                    return p;
+                  });
+                } else if (payload && payload.key && payload.key.startsWith('sim_') && payload.key.endsWith('_data')) {
+                  return { ...payload, key: `sim_${currentSimId}_data` };
+                }
+                return payload;
+              };
+              return origInsert.call(this, rewritePayload(values), options);
+            }
+            return origInsert.apply(this, arguments);
+          };
+
+          const origUpsert = queryBuilder.upsert;
+          queryBuilder.upsert = function (values, options) {
+            const match = window.location.pathname.match(/\/simulators\/(sim_[^\/]+)/i);
+            if (match) {
+              const currentSimId = match[1];
+              const rewritePayload = (payload) => {
+                if (Array.isArray(payload)) {
+                  return payload.map(p => {
+                    if (p && p.key && p.key.startsWith('sim_') && p.key.endsWith('_data')) {
+                      return { ...p, key: `sim_${currentSimId}_data` };
+                    }
+                    return p;
+                  });
+                } else if (payload && payload.key && payload.key.startsWith('sim_') && payload.key.endsWith('_data')) {
+                  return { ...payload, key: `sim_${currentSimId}_data` };
+                }
+                return payload;
+              };
+              return origUpsert.call(this, rewritePayload(values), options);
+            }
+            return origUpsert.apply(this, arguments);
+          };
+
+          const origUpdate = queryBuilder.update;
+          queryBuilder.update = function (values, options) {
+            const match = window.location.pathname.match(/\/simulators\/(sim_[^\/]+)/i);
+            if (match) {
+              const currentSimId = match[1];
+              const rewritePayload = (payload) => {
+                if (payload && payload.key && payload.key.startsWith('sim_') && payload.key.endsWith('_data')) {
+                  return { ...payload, key: `sim_${currentSimId}_data` };
+                }
+                return payload;
+              };
+              return origUpdate.call(this, rewritePayload(values), options);
+            }
+            return origUpdate.apply(this, arguments);
+          };
+        }
+        return queryBuilder;
+      };
+    }
+    return typeof origMethod === 'function' ? origMethod.bind(target) : origMethod;
+  }
+});
+
+export const supabase = proxyClient;
 
 /**
  * Uploads a file to Supabase Storage with progress tracking using raw XMLHttpRequest

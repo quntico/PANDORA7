@@ -67,7 +67,7 @@ function BetaHeader() {
                 className="bg-[#0f0f0f] border border-neon-cyan/50 rounded-lg px-2 py-0.5 text-xs font-black text-white tracking-widest outline-none focus:ring-1 focus:ring-neon-cyan/50 w-72"
               />
             ) : (
-              <h1 
+              <h1
                 onClick={() => setIsEditingName(true)}
                 className="text-sm font-black text-white tracking-widest flex items-center gap-2 cursor-pointer hover:text-neon-cyan transition-colors group"
                 title="Hacer click para renombrar proyecto/cliente"

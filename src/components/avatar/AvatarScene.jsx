@@ -144,7 +144,7 @@ function PremiumFallback2D() {
           WebGL o la aceleración por hardware están inactivos.
         </p>
         <p className="text-xs font-mono text-[#00E5FF]/60 uppercase tracking-widest">
-          SISTEMA PANDORA V8.00
+          SISTEMA PANDORA V8.01
         </p>
       </div>
 

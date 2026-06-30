@@ -108,6 +108,44 @@ export default function ForviaSimulator() {
   const { activeProject, updateProjectName } = useBeta();
   const reportRef = useRef(null);
 
+  // --- 1. ESTADO DE ENTRADAS ---
+  const defaultInputs = {
+    clientName: 'CENTRAL DE INTELIGENCIA',
+    projectName: 'FORVIA - BDW 200',
+    evaluationName: 'MÁQUINA EN EVALUACIÓN - PLD-140',
+    maxSpeed: 140, // m/h
+    targetCapacity: 200, // cajas/h
+    machineLength: 7.6, // m
+    boxLength: 0.3997, // m
+    loadFactor: 75, // %
+    hoursPerShift: 6.6, // hrs
+    shiftsPerDay: 2, // turnos
+    daysPerMonth: 26, // días operativos al mes
+    electricityRate: 2.30, // MXN/kWh
+    exchangeRate: 18.20, // USD/MXN
+    voltage: 440, // VAC
+    powerFactor: 0.85,
+    boxWeightGrams: 420, // g
+    sellPricePerBox: 12.50, // MXN por caja terminada
+    rawMaterialCostPerKg: 18.00, // MXN/kg
+    numOperators: 1,
+    laborCostPerShift: 500, // MXN/turno
+    maintenanceCost: 600, // USD/mes
+    sparePartsCost: 350, // USD/mes
+    cableadoCapex: 2500, // USD
+    obraCivilCapex: 4000, // USD
+    isEpcMode: false
+  };
+
+  const [inputs, setInputs] = useState(() => {
+    const saved = localStorage.getItem('sim_forvia_inputs');
+    return saved ? JSON.parse(saved) : defaultInputs;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('sim_forvia_inputs', JSON.stringify(inputs));
+  }, [inputs]);
+
   useEffect(() => {
     if (activeProject?.name) {
       setInputs(prev => ({ ...prev, projectName: activeProject.name }));
@@ -170,44 +208,6 @@ export default function ForviaSimulator() {
       setTempClientName(inputs.clientName || '');
     }
   };
-
-  // --- 1. ESTADO DE ENTRADAS ---
-  const defaultInputs = {
-    clientName: 'CENTRAL DE INTELIGENCIA',
-    projectName: 'FORVIA - BDW 200',
-    evaluationName: 'MÁQUINA EN EVALUACIÓN - PLD-140',
-    maxSpeed: 140, // m/h
-    targetCapacity: 200, // cajas/h
-    machineLength: 7.6, // m
-    boxLength: 0.3997, // m
-    loadFactor: 75, // %
-    hoursPerShift: 6.6, // hrs
-    shiftsPerDay: 2, // turnos
-    daysPerMonth: 26, // días operativos al mes
-    electricityRate: 2.30, // MXN/kWh
-    exchangeRate: 18.20, // USD/MXN
-    voltage: 440, // VAC
-    powerFactor: 0.85,
-    boxWeightGrams: 420, // g
-    sellPricePerBox: 12.50, // MXN por caja terminada
-    rawMaterialCostPerKg: 18.00, // MXN/kg
-    numOperators: 1,
-    laborCostPerShift: 500, // MXN/turno
-    maintenanceCost: 600, // USD/mes
-    sparePartsCost: 350, // USD/mes
-    cableadoCapex: 2500, // USD
-    obraCivilCapex: 4000, // USD
-    isEpcMode: false
-  };
-
-  const [inputs, setInputs] = useState(() => {
-    const saved = localStorage.getItem('sim_forvia_inputs');
-    return saved ? JSON.parse(saved) : defaultInputs;
-  });
-
-  useEffect(() => {
-    localStorage.setItem('sim_forvia_inputs', JSON.stringify(inputs));
-  }, [inputs]);
 
   // --- ESTADOS DE PERSISTENCIA Y MODELO CAD ---
   const [twinLayout, setTwinLayout] = useState(null);

@@ -31,6 +31,7 @@ function Header() {
     { name: 'RYDER (Lavado)', path: '/alpha/simulators/rider', color: '#3b82f6' },
     { name: 'GRUPO GUSI', path: '/alpha/simulators/grupo-gusi', color: '#a855f7' },
     { name: 'IASE', path: '/alpha/simulators/iase', color: '#10b981' },
+    { name: 'MOLEX (Cobre)', path: '/alpha/simulators/molex', color: '#ea580c' },
   ];
 
   const toggleNav = () => {
@@ -87,11 +88,11 @@ function Header() {
               onDoubleClick={(e) => {
                 e.preventDefault(); e.stopPropagation();
                 const password = prompt("ADMIN | Ingrese contraseña:");
-                if (password === "2020") { window.open('/admin-cotizador', '_blank'); }
+                if (password === "2020" || password === "2021") { window.open('/admin-cotizador', '_blank'); }
                 else if (password !== null) { alert("Contraseña incorrecta."); }
               }}
             >
-              VER 8.00
+              VER 8.01
               <span className="relative flex h-1.5 w-1.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500"></span>

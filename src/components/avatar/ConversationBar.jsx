@@ -101,7 +101,7 @@ export default function ConversationBar({ mainContainerRef }) {
       } else if (q.includes('inversión') || q.includes('precio') || q.includes('costo') || q.includes('usd') || q.includes('venta')) {
         responseText = "Calculando la inversión estimada del proyecto... La suma de módulos activos asciende a la cifra consolidada en tu panel de control. ¿Procedemos a exportar el informe de inversión?";
       } else if (q.includes('quien eres') || q.includes('creador') || q.includes('pandora')) {
-        responseText = "Soy PANDORA versión 8.00, la inteligencia artificial holográfica y centro neurálgico del ecosistema QUANTICO. Fui programada para optimizar plantas industriales de alta tecnología.";
+        responseText = "Soy PANDORA versión 8.01, la inteligencia artificial holográfica y centro neurálgico del ecosistema QUANTICO. Fui programada para optimizar plantas industriales de alta tecnología.";
       }
 
       // Record latency
@@ -149,7 +149,7 @@ export default function ConversationBar({ mainContainerRef }) {
       case 'SPEAKING': return 'PANDORA HABLANDO';
       case 'ERROR': return 'ERROR DE CONEXIÓN';
       case 'STANDBY': return 'EN ESPERA';
-      default: return 'PANDORA V8.00 IDLE';
+      default: return 'PANDORA V8.01 IDLE';
     }
   };
 

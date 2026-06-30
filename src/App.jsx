@@ -24,15 +24,111 @@ import CarrierSimulator from '@/pages/alpha/simulators/CarrierSimulator';
 import ForviaSimulator from '@/pages/alpha/simulators/ForviaSimulator';
 import WM500Simulator from '@/pages/alpha/simulators/WM500Simulator';
 import WM500SimulatorStable from '@/pages/alpha/simulators/WM500SimulatorStable';
+import MolexSimulator from '@/pages/alpha/simulators/MolexSimulator';
 import VerifyPage from '@/pages/VerifyPage';
 import AvatarPage from '@/pages/AvatarPage';
 
 import BetaLayout from '@/layouts/BetaLayout';
 import BetaDashboard from '@/pages/beta/BetaDashboard';
 
-function RiderSimulatorPageWrapper() {
+function SimulatorPageWrapper() {
   const { id } = useParams();
-  return <RiderSimulatorPage key={id} />;
+  const [simulatorType, setSimulatorType] = React.useState('rider');
+
+  React.useEffect(() => {
+    const saved = localStorage.getItem('pandora_simulators');
+    if (saved) {
+      try {
+        const simulators = JSON.parse(saved);
+        const found = simulators.find(s => s.id === id);
+        if (found) {
+          setSimulatorType(found.type || found.id);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }, [id]);
+
+  React.useEffect(() => {
+    if (!id || id === simulatorType) return;
+
+    const originalGetItem = localStorage.getItem;
+    const originalSetItem = localStorage.setItem;
+    const originalRemoveItem = localStorage.removeItem;
+
+    const normalizedSrc = simulatorType.replace('-', '').toLowerCase();
+    const normalizedDest = id.toLowerCase();
+
+    localStorage.getItem = function (key) {
+      if (typeof key === 'string') {
+        let redirectedKey = key;
+        if (key.toLowerCase().includes(normalizedSrc)) {
+          const index = key.toLowerCase().indexOf(normalizedSrc);
+          redirectedKey = key.substring(0, index) + normalizedDest + key.substring(index + normalizedSrc.length);
+        } else if (key.toLowerCase().includes(simulatorType.toLowerCase())) {
+          const index = key.toLowerCase().indexOf(simulatorType.toLowerCase());
+          redirectedKey = key.substring(0, index) + normalizedDest + key.substring(index + simulatorType.length);
+        }
+        return originalGetItem.call(localStorage, redirectedKey);
+      }
+      return originalGetItem.call(localStorage, key);
+    };
+
+    localStorage.setItem = function (key, value) {
+      if (typeof key === 'string') {
+        let redirectedKey = key;
+        if (key.toLowerCase().includes(normalizedSrc)) {
+          const index = key.toLowerCase().indexOf(normalizedSrc);
+          redirectedKey = key.substring(0, index) + normalizedDest + key.substring(index + normalizedSrc.length);
+        } else if (key.toLowerCase().includes(simulatorType.toLowerCase())) {
+          const index = key.toLowerCase().indexOf(simulatorType.toLowerCase());
+          redirectedKey = key.substring(0, index) + normalizedDest + key.substring(index + simulatorType.length);
+        }
+        return originalSetItem.call(localStorage, redirectedKey, value);
+      }
+      return originalSetItem.call(localStorage, key, value);
+    };
+
+    localStorage.removeItem = function (key) {
+      if (typeof key === 'string') {
+        let redirectedKey = key;
+        if (key.toLowerCase().includes(normalizedSrc)) {
+          const index = key.toLowerCase().indexOf(normalizedSrc);
+          redirectedKey = key.substring(0, index) + normalizedDest + key.substring(index + normalizedSrc.length);
+        } else if (key.toLowerCase().includes(simulatorType.toLowerCase())) {
+          const index = key.toLowerCase().indexOf(simulatorType.toLowerCase());
+          redirectedKey = key.substring(0, index) + normalizedDest + key.substring(index + simulatorType.length);
+        }
+        return originalRemoveItem.call(localStorage, redirectedKey);
+      }
+      return originalRemoveItem.call(localStorage, key);
+    };
+
+    return () => {
+      localStorage.getItem = originalGetItem;
+      localStorage.setItem = originalSetItem;
+      localStorage.removeItem = originalRemoveItem;
+    };
+  }, [id, simulatorType]);
+
+  const normType = (simulatorType || '').toLowerCase();
+
+  if (normType.includes('lma-500')) {
+    return <LMA500Simulator key={id} />;
+  } else if (normType.includes('smq-automatic') || normType.includes('smq')) {
+    return <SMQSimulator key={id} />;
+  } else if (normType.includes('carrier')) {
+    return <CarrierSimulator key={id} />;
+  } else if (normType.includes('forvia')) {
+    return <ForviaSimulator key={id} />;
+  } else if (normType.includes('wm-500')) {
+    return <WM500Simulator key={id} />;
+  } else if (normType.includes('molex')) {
+    return <MolexSimulator key={id} />;
+  } else {
+    return <RiderSimulatorPage key={id} />;
+  }
 }
 
 function AppContent() {
@@ -59,7 +155,8 @@ function AppContent() {
           <Route path='forvia' element={<ForviaSimulator />} />
           <Route path='wm-500' element={<WM500Simulator />} />
           <Route path='wm-500-stable' element={<WM500SimulatorStable />} />
-          <Route path=':id' element={<RiderSimulatorPageWrapper />} />
+          <Route path='molex' element={<MolexSimulator />} />
+          <Route path=':id' element={<SimulatorPageWrapper />} />
         </Route>
         <Route path='analysis' element={<AnalysisPage />} />
         <Route path='avatar' element={<AvatarPage />} />
