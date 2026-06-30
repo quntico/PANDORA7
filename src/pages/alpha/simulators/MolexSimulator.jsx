@@ -168,6 +168,40 @@ const money2 = (v) =>
     maximumFractionDigits: 2,
   }) + " MXN";
 
+const moneyShort = (v) =>
+  "$" +
+  Number(v || 0).toLocaleString("es-MX", {
+    maximumFractionDigits: 0,
+  });
+
+const makeDoughnutSVG = (percentages, colors) => {
+  const r = 35;
+  const C = 2 * Math.PI * r; // ~219.91
+  let currentOffset = 0;
+  return (
+    <svg width="90" height="90" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
+      {percentages.map((p, idx) => {
+        const strokeLength = C * (p / 100);
+        const strokeOffset = currentOffset;
+        currentOffset -= strokeLength;
+        return (
+          <circle
+            key={idx}
+            cx="50"
+            cy="50"
+            r={r}
+            fill="transparent"
+            stroke={colors[idx]}
+            strokeWidth="12"
+            strokeDasharray={`${strokeLength} ${C}`}
+            strokeDashoffset={strokeOffset}
+          />
+        );
+      })}
+    </svg>
+  );
+};
+
 const kg = (v) =>
   Number(v || 0).toLocaleString("es-MX", {
     minimumFractionDigits: 2,
@@ -3825,114 +3859,477 @@ export default function MolexSimulator() {
             <div className="lma-page" style={S.page}>
               <div className="lma-page-inner" style={S.inner}>
                 {renderPageHeader("7. ESTRUCTURA DE CAPEX / OPEX", "Distribución de inversión inicial y costos operativos proyectados")}
-                <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 20 }}>
-                  {/* CAPEX */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    <div style={{ fontSize: '10px', fontWeight: 950, color: '#334155', borderBottom: '1px solid #cbd5e1', paddingBottom: 4, textTransform: 'uppercase' }}>
-                      Estructura de Inversión Inicial (CAPEX)
+                <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                  
+                  {/* CAPEX CARD */}
+                  <div style={{
+                    background: '#ffffff',
+                    border: '1.5px solid #e2e8f0',
+                    borderRadius: '20px',
+                    padding: '16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    height: '560px',
+                    boxSizing: 'border-box'
+                  }}>
+                    {/* Header */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        background: '#008299',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#ffffff'
+                      }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <line x1="18" y1="20" x2="18" y2="10" />
+                          <line x1="12" y1="20" x2="12" y2="4" />
+                          <line x1="6" y1="20" x2="6" y2="14" />
+                        </svg>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 900, color: '#1e293b', letterSpacing: '0.2px' }}>
+                          ESTRUCTURA DE INVERSIÓN INICIAL (CAPEX)
+                        </span>
+                        <div style={{ width: '45px', height: '3px', background: '#008299', marginTop: '4px', borderRadius: '1.5px' }} />
+                      </div>
                     </div>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9px' }}>
-                      <tbody>
-                        <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-                          <td style={{ padding: '6px 0', color: '#64748b' }}>Adquisición de Maquinaria (MOLEX)</td>
-                          <td style={{ padding: '6px 0', textAlign: 'right', fontWeight: 700 }}>{money(inputs.machinePurchaseUsd * inputs.exchangeRate)}</td>
-                        </tr>
-                        <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-                          <td style={{ padding: '6px 0', color: '#64748b' }}>Instalación e Integración Eléctrica</td>
-                          <td style={{ padding: '6px 0', textAlign: 'right', fontWeight: 700 }}>{money(inputs.installationCostUsd * inputs.exchangeRate)}</td>
-                        </tr>
-                        <tr style={{ borderBottom: '1px solid #cbd5e1' }}>
-                          <td style={{ padding: '6px 0', color: '#64748b' }}>Obra Civil y Cimentación</td>
-                          <td style={{ padding: '6px 0', textAlign: 'right', fontWeight: 700 }}>{money(inputs.civilWorksUsd * inputs.exchangeRate)}</td>
-                        </tr>
-                        <tr style={{ background: '#ecfeff', fontWeight: 900 }}>
-                          <td style={{ padding: '8px 10px', color: '#0891b2' }}>CAPEX Total Estimado (MXN)</td>
-                          <td style={{ padding: '8px 10px', textAlign: 'right', color: '#0891b2' }}>{money(calculations.capexTotalMxn)}</td>
-                        </tr>
-                      </tbody>
-                    </table>
 
-                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      <span style={{ fontSize: '8px', fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Distribución Porcentual del CAPEX</span>
-                      {(() => {
-                        const total = calculations.capexTotalMxn || 1;
-                        const pMaq = ((inputs.machinePurchaseUsd * inputs.exchangeRate) / total) * 100;
-                        const pInst = ((inputs.installationCostUsd * inputs.exchangeRate) / total) * 100;
-                        const pCivil = ((inputs.civilWorksUsd * inputs.exchangeRate) / total) * 100;
-                        return (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8px', color: '#475569' }}>
-                              <span>Maquinaria: {pMaq.toFixed(0)}%</span>
-                              <span>Instalación: {pInst.toFixed(0)}%</span>
-                              <span>Obra Civil: {pCivil.toFixed(0)}%</span>
+                    {/* Table */}
+                    <div style={{ marginTop: '12px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1.5px solid #f1f5f9', paddingBottom: '6px', fontSize: '9px', fontWeight: 800, color: '#008299' }}>
+                        <span>Concepto</span>
+                        <span>Monto (MXN)</span>
+                      </div>
+                      
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        {/* Row 1 */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', padding: '6px 0' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ width: '24px', height: '24px', borderRadius: '6px', background: '#ecfeff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#008299' }}>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                              </svg>
                             </div>
-                            <div style={{ height: 8, borderRadius: 4, overflow: 'hidden', display: 'flex', background: '#e2e8f0' }}>
-                              <div style={{ width: `${pMaq}%`, background: '#00989d' }} />
-                              <div style={{ width: `${pInst}%`, background: '#0d9488' }} />
-                              <div style={{ width: `${pCivil}%`, background: '#0f766e' }} />
-                            </div>
+                            <span style={{ fontSize: '9px', fontWeight: 600, color: '#334155' }}>Adquisición de Maquinaria (MOLEX)</span>
                           </div>
-                        );
-                      })()}
+                          <span style={{ fontSize: '9.5px', fontWeight: 850, color: '#1e293b' }}>{money(inputs.machinePurchaseUsd * inputs.exchangeRate)}</span>
+                        </div>
+
+                        {/* Row 2 */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', padding: '6px 0' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ width: '24px', height: '24px', borderRadius: '6px', background: '#ecfeff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#008299' }}>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                <path d="M12 2v6M9 2v4M15 2v4M6 8h12v4a6 6 0 0 1-6 6v4" />
+                              </svg>
+                            </div>
+                            <span style={{ fontSize: '9px', fontWeight: 600, color: '#334155' }}>Instalación e Integración Eléctrica</span>
+                          </div>
+                          <span style={{ fontSize: '9.5px', fontWeight: 850, color: '#1e293b' }}>{money(inputs.installationCostUsd * inputs.exchangeRate)}</span>
+                        </div>
+
+                        {/* Row 3 */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ width: '24px', height: '24px', borderRadius: '6px', background: '#ecfeff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#008299' }}>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                <rect x="3" y="3" width="18" height="18" rx="2" />
+                                <path d="M3 9h18M3 15h18M9 9v6M15 15v6" />
+                              </svg>
+                            </div>
+                            <span style={{ fontSize: '9px', fontWeight: 600, color: '#334155' }}>Obra Civil y Cimentación</span>
+                          </div>
+                          <span style={{ fontSize: '9.5px', fontWeight: 850, color: '#1e293b' }}>{money(inputs.civilWorksUsd * inputs.exchangeRate)}</span>
+                        </div>
+                      </div>
                     </div>
+
+                    {/* Total Box */}
+                    <div style={{
+                      background: '#f0fdfa',
+                      border: '1.5px solid #ccfbf1',
+                      borderRadius: '12px',
+                      padding: '8px 12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      marginTop: '4px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#008299', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <rect x="4" y="2" width="16" height="20" rx="2" />
+                            <line x1="8" y1="6" x2="16" y2="6" />
+                            <line x1="16" y1="14" x2="16" y2="18" />
+                            <path d="M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01" />
+                          </svg>
+                        </div>
+                        <span style={{ fontSize: '9.5px', fontWeight: 900, color: '#008299' }}>CAPEX Total Estimado (MXN)</span>
+                      </div>
+                      <span style={{ fontSize: '14px', fontWeight: 950, color: '#008299' }}>{money(calculations.capexTotalMxn)}</span>
+                    </div>
+
+                    {/* Charts Container */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.15fr', gap: '10px', marginTop: '10px', flex: 1, alignItems: 'center' }}>
+                      {/* Doughnut Chart */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', borderRadius: '12px', padding: '6px', height: '135px', boxSizing: 'border-box' }}>
+                        <span style={{ fontSize: '8px', fontWeight: 900, color: '#475569', marginBottom: '4px' }}>Distribución del CAPEX</span>
+                        <div style={{ position: 'relative', width: '85px', height: '85px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {(() => {
+                            const total = calculations.capexTotalMxn || 1;
+                            const pMaq = ((inputs.machinePurchaseUsd * inputs.exchangeRate) / total) * 100;
+                            const pInst = ((inputs.installationCostUsd * inputs.exchangeRate) / total) * 100;
+                            const pCivil = ((inputs.civilWorksUsd * inputs.exchangeRate) / total) * 100;
+                            return (
+                              <>
+                                {makeDoughnutSVG([pMaq, pInst, pCivil], ['#008299', '#0d9488', '#0f766e'])}
+                                <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '45px', height: '45px', borderRadius: '50%', background: '#ffffff', boxShadow: 'inset 0 0 5px rgba(0,0,0,0.05)' }}>
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008299" strokeWidth="2.5">
+                                    <line x1="18" y1="20" x2="18" y2="10" />
+                                    <line x1="12" y1="20" x2="12" y2="4" />
+                                    <line x1="6" y1="20" x2="6" y2="14" />
+                                  </svg>
+                                </div>
+                              </>
+                            );
+                          })()}
+                        </div>
+                      </div>
+
+                      {/* Horizontal Bar Chart */}
+                      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', background: '#f8fafc', borderRadius: '12px', padding: '8px', height: '135px', boxSizing: 'border-box' }}>
+                        <span style={{ fontSize: '8px', fontWeight: 900, color: '#475569', marginBottom: '8px', textAlign: 'center' }}>Comparativo de Componentes (CAPEX)</span>
+                        
+                        {(() => {
+                          const total = calculations.capexTotalMxn || 1;
+                          const vMaq = inputs.machinePurchaseUsd * inputs.exchangeRate;
+                          const vInst = inputs.installationCostUsd * inputs.exchangeRate;
+                          const vCivil = inputs.civilWorksUsd * inputs.exchangeRate;
+                          
+                          const maxVal = Math.max(vMaq, vInst, vCivil, 1);
+                          
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span style={{ fontSize: '7.5px', fontWeight: 800, color: '#64748b', width: '42px', textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Maquinaria</span>
+                                <div style={{ flex: 1, height: '10px', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden', display: 'flex' }}>
+                                  <div style={{ width: `${(vMaq / maxVal) * 100}%`, background: '#008299' }} />
+                                </div>
+                                <span style={{ fontSize: '7.5px', fontWeight: 800, color: '#334155', width: '38px' }}>{moneyShort(vMaq)}</span>
+                              </div>
+                              
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span style={{ fontSize: '7.5px', fontWeight: 800, color: '#64748b', width: '42px', textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Instalación</span>
+                                <div style={{ flex: 1, height: '10px', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden', display: 'flex' }}>
+                                  <div style={{ width: `${(vInst / maxVal) * 100}%`, background: '#0d9488' }} />
+                                </div>
+                                <span style={{ fontSize: '7.5px', fontWeight: 800, color: '#334155', width: '38px' }}>{moneyShort(vInst)}</span>
+                              </div>
+
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span style={{ fontSize: '7.5px', fontWeight: 800, color: '#64748b', width: '42px', textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Obra Civil</span>
+                                <div style={{ flex: 1, height: '10px', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden', display: 'flex' }}>
+                                  <div style={{ width: `${(vCivil / maxVal) * 100}%`, background: '#0f766e' }} />
+                                </div>
+                                <span style={{ fontSize: '7.5px', fontWeight: 800, color: '#334155', width: '38px' }}>{moneyShort(vCivil)}</span>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+
+                    {/* Bottom Summary Box */}
+                    {(() => {
+                      const total = calculations.capexTotalMxn || 1;
+                      const pMaq = ((inputs.machinePurchaseUsd * inputs.exchangeRate) / total) * 100;
+                      return (
+                        <div style={{
+                          background: '#ecfeff',
+                          border: '1px solid #a5f3fc',
+                          borderRadius: '12px',
+                          padding: '8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          marginTop: '6px'
+                        }}>
+                          <div style={{
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '50%',
+                            background: '#008299',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#ffffff',
+                            flexShrink: 0
+                          }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <circle cx="12" cy="12" r="10" />
+                              <circle cx="12" cy="12" r="6" />
+                              <circle cx="12" cy="12" r="2" />
+                            </svg>
+                          </div>
+                          <span style={{ fontSize: '8px', fontWeight: 700, color: '#0f766e', lineHeight: '1.2' }}>
+                            La inversión inicial se concentra principalmente en maquinaria ({pMaq.toFixed(0)}%), asegurando la capacidad productiva del proyecto.
+                          </span>
+                        </div>
+                      );
+                    })()}
                   </div>
 
-                  {/* OPEX */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    <div style={{ fontSize: '10px', fontWeight: 950, color: '#334155', borderBottom: '1px solid #cbd5e1', paddingBottom: 4, textTransform: 'uppercase' }}>
-                      Gasto Operativo Mensual (OPEX)
+                  {/* OPEX CARD */}
+                  <div style={{
+                    background: '#ffffff',
+                    border: '1.5px solid #e2e8f0',
+                    borderRadius: '20px',
+                    padding: '16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    height: '560px',
+                    boxSizing: 'border-box'
+                  }}>
+                    {/* Header */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        background: '#be185d',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#ffffff'
+                      }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <circle cx="12" cy="12" r="10" />
+                          <polyline points="12 6 12 12 16 14" />
+                        </svg>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 900, color: '#1e293b', letterSpacing: '0.2px' }}>
+                          GASTO OPERATIVO MENSUAL (OPEX)
+                        </span>
+                        <div style={{ width: '45px', height: '3px', background: '#be185d', marginTop: '4px', borderRadius: '1.5px' }} />
+                      </div>
                     </div>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9px' }}>
-                      <tbody>
-                        <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-                          <td style={{ padding: '6px 0', color: '#64748b' }}>Mano de Obra Directa</td>
-                          <td style={{ padding: '6px 0', textAlign: 'right', fontWeight: 700 }}>{money(calculations.laborMonthlyMxn)}</td>
-                        </tr>
-                        <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-                          <td style={{ padding: '6px 0', color: '#64748b' }}>Mantenimiento Periódico</td>
-                          <td style={{ padding: '6px 0', textAlign: 'right', fontWeight: 700 }}>{money(calculations.maintenanceMonthlyMxn)}</td>
-                        </tr>
-                        <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-                          <td style={{ padding: '6px 0', color: '#64748b' }}>Consumibles y Cuchillas</td>
-                          <td style={{ padding: '6px 0', textAlign: 'right', fontWeight: 700 }}>{money(calculations.consumablesMonthlyMxn)}</td>
-                        </tr>
-                        <tr style={{ borderBottom: '1px solid #cbd5e1' }}>
-                          <td style={{ padding: '6px 0', color: '#64748b' }}>Costo Eléctrico (Escenario x{inputs.multiplicadorActivo})</td>
-                          <td style={{ padding: '6px 0', textAlign: 'right', fontWeight: 700 }}>{money(activeProjection.energiaMesMxn)}</td>
-                        </tr>
-                        <tr style={{ background: '#fdf2f8', fontWeight: 900 }}>
-                          <td style={{ padding: '8px 10px', color: '#be185d' }}>OPEX Total Mensual (MXN)</td>
-                          <td style={{ padding: '8px 10px', textAlign: 'right', color: '#be185d' }}>{money(activeProjection.opexTotalMesMxn)}</td>
-                        </tr>
-                      </tbody>
-                    </table>
 
-                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      <span style={{ fontSize: '8px', fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Distribución del OPEX</span>
-                      {(() => {
-                        const total = activeProjection.opexTotalMesMxn || 1;
-                        const pLabor = (calculations.laborMonthlyMxn / total) * 100;
-                        const pMtto = (calculations.maintenanceMonthlyMxn / total) * 100;
-                        const pCons = (calculations.consumablesMonthlyMxn / total) * 100;
-                        const pEner = (activeProjection.energiaMesMxn / total) * 100;
-                        return (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8px', color: '#475569' }}>
-                              <span>Nómina: {pLabor.toFixed(0)}%</span>
-                              <span>Mtto: {pMtto.toFixed(0)}%</span>
-                              <span>Energía: {pEner.toFixed(0)}%</span>
+                    {/* Table */}
+                    <div style={{ marginTop: '12px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1.5px solid #f1f5f9', paddingBottom: '6px', fontSize: '9px', fontWeight: 800, color: '#be185d' }}>
+                        <span>Concepto</span>
+                        <span>Monto (MXN)</span>
+                      </div>
+                      
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        {/* Row 1 */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', padding: '5px 0' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ width: '24px', height: '24px', borderRadius: '6px', background: '#fdf2f8', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#be185d' }}>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                <circle cx="9" cy="7" r="4" />
+                              </svg>
                             </div>
-                            <div style={{ height: 8, borderRadius: 4, overflow: 'hidden', display: 'flex', background: '#e2e8f0' }}>
-                              <div style={{ width: `${pLabor}%`, background: '#be185d' }} />
-                              <div style={{ width: `${pMtto}%`, background: '#db2777' }} />
-                              <div style={{ width: `${pCons}%`, background: '#f472b6' }} />
-                              <div style={{ width: `${pEner}%`, background: '#fb7185' }} />
-                            </div>
+                            <span style={{ fontSize: '9px', fontWeight: 600, color: '#334155' }}>Mano de Obra Directa</span>
                           </div>
-                        );
-                      })()}
+                          <span style={{ fontSize: '9.5px', fontWeight: 850, color: '#1e293b' }}>{money(calculations.laborMonthlyMxn)}</span>
+                        </div>
+
+                        {/* Row 2 */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', padding: '5px 0' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ width: '24px', height: '24px', borderRadius: '6px', background: '#fdf2f8', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#be185d' }}>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+                              </svg>
+                            </div>
+                            <span style={{ fontSize: '9px', fontWeight: 600, color: '#334155' }}>Mantenimiento Periódico</span>
+                          </div>
+                          <span style={{ fontSize: '9.5px', fontWeight: 850, color: '#1e293b' }}>{money(calculations.maintenanceMonthlyMxn)}</span>
+                        </div>
+
+                        {/* Row 3 */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', padding: '5px 0' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ width: '24px', height: '24px', borderRadius: '6px', background: '#fdf2f8', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#be185d' }}>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                                <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                              </svg>
+                            </div>
+                            <span style={{ fontSize: '9px', fontWeight: 600, color: '#334155' }}>Consumibles y Cuchillas</span>
+                          </div>
+                          <span style={{ fontSize: '9.5px', fontWeight: 850, color: '#1e293b' }}>{money(calculations.consumablesMonthlyMxn)}</span>
+                        </div>
+
+                        {/* Row 4 */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 0' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ width: '24px', height: '24px', borderRadius: '6px', background: '#fdf2f8', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#be185d' }}>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                              </svg>
+                            </div>
+                            <span style={{ fontSize: '9px', fontWeight: 600, color: '#334155' }}>Costo Eléctrico (Escenario x{inputs.multiplicadorActivo})</span>
+                          </div>
+                          <span style={{ fontSize: '9.5px', fontWeight: 850, color: '#1e293b' }}>{money(activeProjection.energiaMesMxn)}</span>
+                        </div>
+                      </div>
                     </div>
+
+                    {/* Total Box */}
+                    <div style={{
+                      background: '#fff1f2',
+                      border: '1.5px solid #ffe4e6',
+                      borderRadius: '12px',
+                      padding: '8px 12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      marginTop: '4px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#be185d', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <rect x="4" y="2" width="16" height="20" rx="2" />
+                            <line x1="8" y1="6" x2="16" y2="6" />
+                            <line x1="16" y1="14" x2="16" y2="18" />
+                            <path d="M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01" />
+                          </svg>
+                        </div>
+                        <span style={{ fontSize: '9.5px', fontWeight: 900, color: '#be185d' }}>OPEX Total Mensual (MXN)</span>
+                      </div>
+                      <span style={{ fontSize: '14px', fontWeight: 950, color: '#be185d' }}>{money(activeProjection.opexTotalMesMxn)}</span>
+                    </div>
+
+                    {/* Charts Container */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.15fr', gap: '10px', marginTop: '10px', flex: 1, alignItems: 'center' }}>
+                      {/* Doughnut Chart */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', borderRadius: '12px', padding: '6px', height: '135px', boxSizing: 'border-box' }}>
+                        <span style={{ fontSize: '8px', fontWeight: 900, color: '#475569', marginBottom: '4px' }}>Distribución del OPEX</span>
+                        <div style={{ position: 'relative', width: '85px', height: '85px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {(() => {
+                            const total = activeProjection.opexTotalMesMxn || 1;
+                            const pLabor = (calculations.laborMonthlyMxn / total) * 100;
+                            const pMtto = (calculations.maintenanceMonthlyMxn / total) * 100;
+                            const pCons = (calculations.consumablesMonthlyMxn / total) * 100;
+                            const pEner = (activeProjection.energiaMesMxn / total) * 100;
+                            return (
+                              <>
+                                {makeDoughnutSVG([pLabor, pMtto, pCons, pEner], ['#9d174d', '#c2185b', '#e91e63', '#f48fb1'])}
+                                <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '45px', height: '45px', borderRadius: '50%', background: '#ffffff', boxShadow: 'inset 0 0 5px rgba(0,0,0,0.05)' }}>
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#be185d" strokeWidth="2.5">
+                                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                                    <path d="M9 12l2 2 4-4" />
+                                  </svg>
+                                </div>
+                              </>
+                            );
+                          })()}
+                        </div>
+                      </div>
+
+                      {/* Horizontal Bar Chart */}
+                      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', background: '#f8fafc', borderRadius: '12px', padding: '8px', height: '135px', boxSizing: 'border-box' }}>
+                        <span style={{ fontSize: '8px', fontWeight: 900, color: '#475569', marginBottom: '8px', textAlign: 'center' }}>Comparativo de Componentes (OPEX)</span>
+                        
+                        {(() => {
+                          const total = activeProjection.opexTotalMesMxn || 1;
+                          const vLabor = calculations.laborMonthlyMxn;
+                          const vMtto = calculations.maintenanceMonthlyMxn;
+                          const vCons = calculations.consumablesMonthlyMxn;
+                          const vEner = activeProjection.energiaMesMxn;
+                          
+                          const maxVal = Math.max(vLabor, vMtto, vCons, vEner, 1);
+                          
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span style={{ fontSize: '7.5px', fontWeight: 800, color: '#64748b', width: '42px', textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Nómina</span>
+                                <div style={{ flex: 1, height: '8px', background: '#e2e8f0', borderRadius: '2.5px', overflow: 'hidden', display: 'flex' }}>
+                                  <div style={{ width: `${(vLabor / maxVal) * 100}%`, background: '#9d174d' }} />
+                                </div>
+                                <span style={{ fontSize: '7.5px', fontWeight: 800, color: '#334155', width: '38px' }}>{moneyShort(vLabor)}</span>
+                              </div>
+                              
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span style={{ fontSize: '7.5px', fontWeight: 800, color: '#64748b', width: '42px', textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Mtto</span>
+                                <div style={{ flex: 1, height: '8px', background: '#e2e8f0', borderRadius: '2.5px', overflow: 'hidden', display: 'flex' }}>
+                                  <div style={{ width: `${(vMtto / maxVal) * 100}%`, background: '#c2185b' }} />
+                                </div>
+                                <span style={{ fontSize: '7.5px', fontWeight: 800, color: '#334155', width: '38px' }}>{moneyShort(vMtto)}</span>
+                              </div>
+
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span style={{ fontSize: '7.5px', fontWeight: 800, color: '#64748b', width: '42px', textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Consumibles</span>
+                                <div style={{ flex: 1, height: '8px', background: '#e2e8f0', borderRadius: '2.5px', overflow: 'hidden', display: 'flex' }}>
+                                  <div style={{ width: `${(vCons / maxVal) * 100}%`, background: '#e91e63' }} />
+                                </div>
+                                <span style={{ fontSize: '7.5px', fontWeight: 800, color: '#334155', width: '38px' }}>{moneyShort(vCons)}</span>
+                              </div>
+
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span style={{ fontSize: '7.5px', fontWeight: 800, color: '#64748b', width: '42px', textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Energía</span>
+                                <div style={{ flex: 1, height: '8px', background: '#e2e8f0', borderRadius: '2.5px', overflow: 'hidden', display: 'flex' }}>
+                                  <div style={{ width: `${(vEner / maxVal) * 100}%`, background: '#f48fb1' }} />
+                                </div>
+                                <span style={{ fontSize: '7.5px', fontWeight: 800, color: '#334155', width: '38px' }}>{moneyShort(vEner)}</span>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+
+                    {/* Bottom Summary Box */}
+                    {(() => {
+                      const total = activeProjection.opexTotalMesMxn || 1;
+                      const pLabor = (calculations.laborMonthlyMxn / total) * 100;
+                      const pMtto = (calculations.maintenanceMonthlyMxn / total) * 100;
+                      const pCons = (calculations.consumablesMonthlyMxn / total) * 100;
+                      const pEner = (activeProjection.energiaMesMxn / total) * 100;
+                      return (
+                        <div style={{
+                          background: '#fff1f2',
+                          border: '1px solid #ffe4e6',
+                          borderRadius: '12px',
+                          padding: '8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          marginTop: '6px'
+                        }}>
+                          <div style={{
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '50%',
+                            background: '#be185d',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#ffffff',
+                            flexShrink: 0
+                          }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                            </svg>
+                          </div>
+                          <span style={{ fontSize: '8px', fontWeight: 700, color: '#9d174d', lineHeight: '1.2' }}>
+                            El gasto operativo mensual se concentra en nómina ({pLabor.toFixed(0)}%), seguido de consumibles ({pCons.toFixed(0)}%) y mantenimiento ({pMtto.toFixed(0)}%). El costo de energía es {pEner.toFixed(0)}% en este escenario.
+                          </span>
+                        </div>
+                      );
+                    })()}
                   </div>
+
                 </div>
               </div>
               {renderPageFooter(7, 11)}
