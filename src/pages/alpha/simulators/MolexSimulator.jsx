@@ -4586,125 +4586,385 @@ export default function MolexSimulator() {
             {/* HOJA 8: REQUERIMIENTOS OPERATIVOS / ENERGÍA & CAPACIDAD */}
             <div className="lma-page" style={S.page}>
               <div className="lma-page-inner" style={S.inner}>
-                {renderPageHeader("8. REQUERIMIENTOS OPERATIVOS / ENERGÍA & CAPACIDAD", "Desglose energético operativo y comparativa de producción real vs consumo en kWh")}
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 14px' }}>
-                      <span style={{ fontSize: '8px', fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Potencia Instalada Total</span>
-                      <div style={{ fontSize: '16px', fontWeight: 950, color: '#0f172a', marginTop: 2 }}>{inputs.installedPowerKw} kW</div>
-                      <span style={{ fontSize: '8px', color: '#94a3b8', display: 'block', marginTop: 1 }}>Tensión: {inputs.voltage}V</span>
-                    </div>
-                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 14px' }}>
-                      <span style={{ fontSize: '8px', fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Consumo Promedio Hora</span>
-                      <div style={{ fontSize: '16px', fontWeight: 950, color: '#0f172a', marginTop: 2 }}>
-                        {(inputs.installedPowerKw * (inputs.averageLoadFactor / 100)).toFixed(2)} kWh
-                      </div>
-                      <span style={{ fontSize: '8px', color: '#94a3b8', display: 'block', marginTop: 1 }}>Factor de Carga: {inputs.averageLoadFactor}%</span>
-                    </div>
-                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 14px' }}>
-                      <span style={{ fontSize: '8px', fontWeight: 900, color: '#64748b', textTransform: 'uppercase' }}>Costo Eléctrico Hora</span>
-                      <div style={{ fontSize: '16px', fontWeight: 950, color: '#0f172a', marginTop: 2 }}>
-                        {money((inputs.installedPowerKw * (inputs.averageLoadFactor / 100)) * (inputs.electricityRateMxn || 2.5))}
-                      </div>
-                      <span style={{ fontSize: '8px', color: '#94a3b8', display: 'block', marginTop: 1 }}>Tarifa: {money(inputs.electricityRateMxn || 2.5)}/kWh</span>
-                    </div>
-                  </div>
+                {(() => {
+                  const horasDia = Number(inputs.horasTrabajoDia) || 2.5;
+                  const diasMes = Number(inputs.diasMes) || 26;
+                  const rate = Number(inputs.electricityRateMxn) || 2.5;
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 15, flex: 1 }}>
-                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      <div style={{ fontSize: '9px', fontWeight: 950, color: '#334155', textTransform: 'uppercase' }}>
-                        Distribución de Potencia Instalada por Equipo (kW)
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        {[
-                          { name: 'Desbobinador de Carretes', val: 2.2 },
-                          { name: 'Cortadora / Peladora', val: 1.5 },
-                          { name: 'Granulador de Cuchillas', val: 15.0 },
-                          { name: 'Mesa Densimétrica', val: 3.0 },
-                          { name: 'Prensa Briqueteadora', val: 5.5 }
-                        ].map((eq, i) => (
-                          <div key={i} style={{ display: 'flex', alignItems: 'center', fontSize: '9px' }}>
-                            <span style={{ width: '160px', fontWeight: 800, color: '#475569' }}>{eq.name}</span>
-                            <div style={{ flex: 1, height: '6px', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden', margin: '0 12px' }}>
-                              <div style={{ width: `${(eq.val / 27.2) * 100}%`, height: '100%', background: '#00b0b9' }} />
-                            </div>
-                            <span style={{ width: '40px', textAlign: 'right', fontWeight: 900, color: '#0f172a' }}>{eq.val.toFixed(1)} kW</span>
+                  const prodHoraTon = (calculations.totalCobre / (horasDia || 1)) / 1000;
+                  const prodDiaTon = calculations.totalCobre / 1000;
+                  const prodSemTon = (calculations.totalCobre * 6) / 1000;
+                  const prodMesTon = (calculations.totalCobre * diasMes) / 1000;
+
+                  const consHoraKwh = calculations.averageHourlyKwh;
+                  const consDiaKwh = calculations.dailyKwh;
+                  const consSemKwh = calculations.dailyKwh * 6;
+                  const consMesKwh = calculations.monthlyKwhBase;
+
+                  const costHoraMxn = consHoraKwh * rate;
+                  const costDiaMxn = consDiaKwh * rate;
+                  const costSemMxn = consSemKwh * rate;
+                  const costMesMxn = calculations.monthlyEnergyCostBaseMxn;
+
+                  const maxCost = Math.max(costHoraMxn, costDiaMxn, costSemMxn, costMesMxn, 1);
+                  const barData = [
+                    { label: 'Por hora', val: costHoraMxn },
+                    { label: 'Por turno', val: costDiaMxn },
+                    { label: 'Por semana (6 días)', val: costSemMxn },
+                    { label: 'Por mes', val: costMesMxn }
+                  ];
+
+                  return (
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}>
+                      
+                      {/* Header */}
+                      {renderPageHeader("8. REQUERIMIENTOS OPERATIVOS / ENERGÍA & CAPACIDAD", "Resumen operativo del sistema y análisis de potencia y consumo eléctrico")}
+
+                      {/* Top KPI Cards */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginTop: '12px' }}>
+                        
+                        {/* KPI 1: Potencia Instalada */}
+                        <div style={{ background: '#ffffff', border: '1.5px solid #e2e8f0', borderRadius: '12px', padding: '12px 18px', display: 'flex', alignItems: 'center', gap: '14px', boxShadow: '0 2px 4px rgba(0,0,0,0.01)' }}>
+                          <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: '#ecfeff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00b0b9" strokeWidth="2.5">
+                              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                            </svg>
                           </div>
-                        ))}
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontSize: '9.5px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Potencia Instalada Total</span>
+                            <span style={{ fontSize: '20px', fontWeight: 950, color: '#0f172a', marginTop: '1px' }}>{inputs.installedPowerKw} kw</span>
+                            <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 700 }}>Tensión: {inputs.voltage} V</span>
+                          </div>
+                        </div>
+
+                        {/* KPI 2: Consumo Promedio */}
+                        <div style={{ background: '#ffffff', border: '1.5px solid #e2e8f0', borderRadius: '12px', padding: '12px 18px', display: 'flex', alignItems: 'center', gap: '14px', boxShadow: '0 2px 4px rgba(0,0,0,0.01)' }}>
+                          <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: '#e6f9fa', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0891b2" strokeWidth="2.5">
+                              <circle cx="12" cy="12" r="10" />
+                              <polyline points="12 6 12 12 16 14" />
+                            </svg>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontSize: '9.5px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Consumo Promedio Hora</span>
+                            <span style={{ fontSize: '20px', fontWeight: 950, color: '#0f172a', marginTop: '1px' }}>
+                              {(inputs.installedPowerKw * (inputs.averageLoadFactor / 100)).toFixed(2)} kWh
+                            </span>
+                            <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 700 }}>Factor de carga: {inputs.averageLoadFactor}%</span>
+                          </div>
+                        </div>
+
+                        {/* KPI 3: Costo Eléctrico */}
+                        <div style={{ background: '#ffffff', border: '1.5px solid #e2e8f0', borderRadius: '12px', padding: '12px 18px', display: 'flex', alignItems: 'center', gap: '14px', boxShadow: '0 2px 4px rgba(0,0,0,0.01)' }}>
+                          <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <span style={{ fontSize: '18px', fontWeight: 950, color: '#10b981' }}>$</span>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontSize: '9.5px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Costo Eléctrico Hora</span>
+                            <span style={{ fontSize: '20px', fontWeight: 950, color: '#0f172a', marginTop: '1px' }}>
+                              {`$${Math.round(costHoraMxn).toLocaleString()} MXN`}
+                            </span>
+                            <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 700 }}>Tarifa: ${rate} MXN/kWh</span>
+                          </div>
+                        </div>
+
                       </div>
-                    </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      <div style={{ fontSize: '10px', fontWeight: 950, color: '#334155', borderBottom: '1px solid #cbd5e1', paddingBottom: 4, textTransform: 'uppercase' }}>
-                        Proyección Producción vs Consumo Eléctrico
+                      {/* Main Grid content */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1.15fr', gap: '20px', marginTop: '14px', flex: 1, alignItems: 'stretch' }}>
+                        
+                        {/* Left column: Distribución de Potencia */}
+                        <div style={{ background: '#ffffff', border: '1.5px solid #e2e8f0', borderRadius: '16px', padding: '18px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', fontSize: '12px', fontWeight: 950, color: '#0b1329', textTransform: 'uppercase' }}>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00b0b9" strokeWidth="2.5" style={{ marginRight: '6px' }}>
+                                <line x1="18" y1="20" x2="18" y2="10" />
+                                <line x1="12" y1="20" x2="12" y2="4" />
+                                <line x1="6" y1="20" x2="6" y2="14" />
+                              </svg>
+                              <span>Distribución de Potencia Instalada por Equipo (kW)</span>
+                            </div>
+                            
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                              <div style={{ display: 'flex', fontSize: '10px', fontWeight: 800, color: '#64748b', borderBottom: '1px solid #cbd5e1', paddingBottom: '4px' }}>
+                                <span style={{ width: '150px' }}>EQUIPO</span>
+                                <span style={{ flex: 1, textAlign: 'center' }}>POTENCIA (kW)</span>
+                                <span style={{ width: '80px', textAlign: 'right' }}>% DEL TOTAL</span>
+                              </div>
+                              {[
+                                { name: 'Desbobinador de Carretes', val: 2.2, pctVal: '8.1%' },
+                                { name: 'Cortadora / Peladora', val: 1.5, pctVal: '5.5%' },
+                                { name: 'Granulador de Cuchillas', val: 15.0, pctVal: '55.1%' },
+                                { name: 'Mesa Densimétrica', val: 3.0, pctVal: '11.0%' },
+                                { name: 'Prensa Briqueteadora', val: 5.5, pctVal: '20.2%' }
+                              ].map((eq, i) => (
+                                <div key={i} style={{ display: 'flex', alignItems: 'center', fontSize: '11px', height: '24px' }}>
+                                  <span style={{ width: '150px', fontWeight: 700, color: '#334155' }}>{eq.name}</span>
+                                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <div style={{ flex: 1, height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+                                      <div style={{ width: `${(eq.val / 27.2) * 100}%`, height: '100%', background: '#00b0b9', borderRadius: '4px' }} />
+                                    </div>
+                                    <span style={{ width: '40px', fontWeight: 800, color: '#1e293b', textAlign: 'right' }}>{eq.val.toFixed(1)} kW</span>
+                                  </div>
+                                  <span style={{ width: '80px', textAlign: 'right', fontWeight: 700, color: '#64748b' }}>{eq.pctVal}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
+                            <span style={{ fontSize: '11px', fontWeight: 900, color: '#00b0b9', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                              Resumen de Distribución
+                            </span>
+                            
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', border: '1.5px solid #cbd5e1', borderRadius: '12px', padding: '12px' }}>
+                              <div style={{ position: 'relative', width: '90px', height: '90px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                {makeDoughnutSVG([55.1, 20.2, 11.0, 8.1, 5.5], ['#00b0b9', '#0891b2', '#0d9488', '#0f766e', '#14b8a6'])}
+                                <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                                  <span style={{ fontSize: '14px', fontWeight: 950, color: '#0b1329' }}>{inputs.installedPowerKw}</span>
+                                  <span style={{ fontSize: '8px', fontWeight: 800, color: '#64748b' }}>kW</span>
+                                </div>
+                              </div>
+                              
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                {/* KPI 1 */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#ecfeff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00b0b9" strokeWidth="2.5">
+                                      <circle cx="12" cy="12" r="10" />
+                                      <polyline points="12 6 12 12 16 14" />
+                                    </svg>
+                                  </div>
+                                  <span style={{ fontSize: '10.5px', color: '#475569', fontWeight: 650 }}>
+                                    <strong style={{ color: '#00b0b9', fontSize: '12.5px', fontWeight: 900 }}>55.1%</strong> Concentrado en Granulador de Cuchillas
+                                  </span>
+                                </div>
+                                {/* KPI 2 */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#e6f9fa', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0891b2" strokeWidth="2.5">
+                                      <line x1="18" y1="20" x2="18" y2="10" />
+                                      <line x1="12" y1="20" x2="12" y2="4" />
+                                      <line x1="6" y1="20" x2="6" y2="14" />
+                                    </svg>
+                                  </div>
+                                  <span style={{ fontSize: '10.5px', color: '#475569', fontWeight: 650 }}>
+                                    <strong style={{ color: '#0891b2', fontSize: '12.5px', fontWeight: 900 }}>3</strong> Equipos con más de 3 kW de potencia
+                                  </span>
+                                </div>
+                                {/* KPI 3 */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5">
+                                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                                    </svg>
+                                  </div>
+                                  <span style={{ fontSize: '10.5px', color: '#475569', fontWeight: 650 }}>
+                                    <strong style={{ color: '#10b981', fontSize: '12.5px', fontWeight: 900 }}>{inputs.installedPowerKw} kW</strong> Potencia instalada total
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Right column: Proyección y Costo Eléctrico Estimado */}
+                        <div style={{ background: '#ffffff', border: '1.5px solid #e2e8f0', borderRadius: '16px', padding: '18px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', fontSize: '12px', fontWeight: 950, color: '#0b1329', textTransform: 'uppercase' }}>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00b0b9" strokeWidth="2.5" style={{ marginRight: '6px' }}>
+                                <line x1="2" y1="3" x2="22" y2="3" />
+                                <line x1="4" y1="8" x2="20" y2="8" />
+                                <line x1="4" y1="13" x2="20" y2="13" />
+                                <line x1="2" y1="18" x2="22" y2="18" />
+                              </svg>
+                              <span>Proyección Producción vs Consumo Eléctrico</span>
+                            </div>
+
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', border: '1.5px solid #cbd5e1', borderRadius: '8px', overflow: 'hidden' }}>
+                              <thead>
+                                <tr style={{ background: '#0b1329', color: '#ffffff', textAlign: 'center', fontWeight: 900, fontSize: '10px' }}>
+                                  <th style={{ padding: '8px 6px', borderRight: '1px solid #2e3e5c' }}>PERIODO</th>
+                                  <th style={{ padding: '8px 6px', borderRight: '1px solid #2e3e5c' }}>PRODUCCIÓN (ton)</th>
+                                  <th style={{ padding: '8px 6px', borderRight: '1px solid #2e3e5c' }}>CONSUMO (kWh)</th>
+                                  <th style={{ padding: '8px 6px' }}>COSTO ESTIMADO (MXN)</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr style={{ borderBottom: '1px solid #cbd5e1', textAlign: 'center' }}>
+                                  <td style={{ padding: '6px 8px', fontWeight: 800, color: '#334155', borderRight: '1px solid #cbd5e1', textAlign: 'left' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00b0b9" strokeWidth="2.5">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <polyline points="12 6 12 12 16 14" />
+                                      </svg>
+                                      <span>Por hora</span>
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: '6px 8px', borderRight: '1px solid #cbd5e1', fontWeight: 700 }}>{prodHoraTon.toFixed(4)}</td>
+                                  <td style={{ padding: '6px 8px', borderRight: '1px solid #cbd5e1', fontWeight: 700 }}>{consHoraKwh.toFixed(2)}</td>
+                                  <td style={{ padding: '6px 8px', color: '#0d9488', fontWeight: 900 }}>{`$${Math.round(costHoraMxn).toLocaleString()} MXN`}</td>
+                                </tr>
+                                <tr style={{ borderBottom: '1px solid #cbd5e1', textAlign: 'center', background: '#f8fafc' }}>
+                                  <td style={{ padding: '6px 8px', fontWeight: 800, color: '#334155', borderRight: '1px solid #cbd5e1', textAlign: 'left' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0d9488" strokeWidth="2.5">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                        <circle cx="12" cy="7" r="4" />
+                                      </svg>
+                                      <span>Por turno</span>
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: '6px 8px', borderRight: '1px solid #cbd5e1', fontWeight: 700 }}>{prodDiaTon.toFixed(3)}</td>
+                                  <td style={{ padding: '6px 8px', borderRight: '1px solid #cbd5e1', fontWeight: 700 }}>{consDiaKwh.toFixed(2)}</td>
+                                  <td style={{ padding: '6px 8px', color: '#0d9488', fontWeight: 900 }}>{`$${Math.round(costDiaMxn).toLocaleString()} MXN`}</td>
+                                </tr>
+                                <tr style={{ borderBottom: '1px solid #cbd5e1', textAlign: 'center' }}>
+                                  <td style={{ padding: '6px 8px', fontWeight: 800, color: '#334155', borderRight: '1px solid #cbd5e1', textAlign: 'left' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0f766e" strokeWidth="2.5">
+                                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                        <line x1="16" y1="2" x2="16" y2="6" />
+                                        <line x1="8" y1="2" x2="8" y2="6" />
+                                        <line x1="3" y1="10" x2="21" y2="10" />
+                                      </svg>
+                                      <span>Por semana (6 días)</span>
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: '6px 8px', borderRight: '1px solid #cbd5e1', fontWeight: 700 }}>{prodSemTon.toFixed(3)}</td>
+                                  <td style={{ padding: '6px 8px', borderRight: '1px solid #cbd5e1', fontWeight: 700 }}>{consSemKwh.toFixed(1)}</td>
+                                  <td style={{ padding: '6px 8px', color: '#0d9488', fontWeight: 900 }}>{`$${Math.round(costSemMxn).toLocaleString()} MXN`}</td>
+                                </tr>
+                                <tr style={{ textAlign: 'center', background: '#f8fafc' }}>
+                                  <td style={{ padding: '6px 8px', fontWeight: 800, color: '#334155', borderRight: '1px solid #cbd5e1', textAlign: 'left' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#14b8a6" strokeWidth="2.5">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                                        <line x1="9" y1="3" x2="9" y2="21" />
+                                        <line x1="15" y1="3" x2="15" y2="21" />
+                                        <line x1="3" y1="9" x2="21" y2="9" />
+                                        <line x1="3" y1="15" x2="21" y2="15" />
+                                      </svg>
+                                      <span>Por mes</span>
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: '6px 8px', borderRight: '1px solid #cbd5e1', fontWeight: 700 }}>{prodMesTon.toFixed(3)}</td>
+                                  <td style={{ padding: '6px 8px', borderRight: '1px solid #cbd5e1', fontWeight: 700 }}>{consMesKwh.toFixed(1)}</td>
+                                  <td style={{ padding: '6px 8px', color: '#0d9488', fontWeight: 900 }}>{`$${Math.round(costMesMxn).toLocaleString()} MXN`}</td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+
+                          {/* Cost Bar Chart */}
+                          <div style={{ background: '#ffffff', border: '1.5px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
+                            <span style={{ fontSize: '11px', fontWeight: 900, color: '#475569', textTransform: 'uppercase', marginBottom: '8px' }}>
+                              Costo Eléctrico Estimado (MXN)
+                            </span>
+                            
+                            <div style={{ display: 'flex', height: '110px', position: 'relative', borderLeft: '1.5px solid #cbd5e1', paddingLeft: '8px' }}>
+                              {/* Y-Axis Grid Lines */}
+                              <div style={{ position: 'absolute', left: '46px', right: 0, top: 0, bottom: 0, pointerEvents: 'none' }}>
+                                {[1.0, 0.75, 0.5, 0.25, 0].map((ratio) => {
+                                  const y = (1 - ratio) * 100;
+                                  return (
+                                    <div key={ratio} style={{
+                                      position: 'absolute',
+                                      left: 0,
+                                      right: 0,
+                                      top: `${y}%`,
+                                      borderTop: '1px dashed #e2e8f0',
+                                      height: 0
+                                    }} />
+                                  );
+                                })}
+                              </div>
+
+                              {/* Y-Axis Ticks */}
+                              <div style={{ width: '40px', height: '100%', position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'flex-end', paddingRight: '6px', boxSizing: 'border-box' }}>
+                                {[1.0, 0.75, 0.5, 0.25, 0].map((ratio) => {
+                                  const val = maxCost * ratio;
+                                  return (
+                                    <span key={ratio} style={{ fontSize: '9px', fontWeight: 800, color: '#64748b', lineHeight: '9px' }}>
+                                      {Math.round(val).toLocaleString()}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+
+                              {/* Bars Container */}
+                              <div style={{ flex: 1, display: 'flex', justifyContent: 'space-around', alignItems: 'flex-end', height: '100%', zIndex: 2 }}>
+                                {barData.map((b, idx) => {
+                                  const barHeight = (b.val / maxCost) * 75;
+                                  return (
+                                    <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '70px' }}>
+                                      {/* Bar Value Label */}
+                                      <span style={{ fontSize: '9px', fontWeight: 900, color: '#1e293b', marginBottom: '2px', whiteSpace: 'nowrap' }}>
+                                        {`$${Math.round(b.val).toLocaleString()} MXN`}
+                                      </span>
+                                      {/* The Bar */}
+                                      <div style={{
+                                        width: '18px',
+                                        height: `${Math.max(barHeight, 4)}px`,
+                                        background: '#00b0b9',
+                                        borderRadius: '3px 3px 0 0'
+                                      }} />
+                                      {/* Period Label */}
+                                      <span style={{ fontSize: '9px', fontWeight: 800, color: '#64748b', marginTop: '4px', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                                        {b.label}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+
+                        </div>
+
                       </div>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9px' }}>
-                        <thead>
-                          <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', textAlign: 'left', fontWeight: 800 }}>
-                            <th style={{ padding: '6px 8px' }}>Periodo</th>
-                            <th style={{ padding: '6px 8px', textAlign: 'right' }}>Producción Est. (Ton)</th>
-                            <th style={{ padding: '6px 8px', textAlign: 'right' }}>Consumo Est. (kWh)</th>
-                            <th style={{ padding: '6px 8px', textAlign: 'right' }}>Costo Energía (MXN)</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {(() => {
-                            const horasDia = Number(inputs.horasTrabajoDia) || 2.5;
-                            const diasMes = Number(inputs.diasMes) || 26;
-                            const rate = Number(inputs.electricityRateMxn) || 2.5;
 
-                            const prodHoraTon = (calculations.totalCobre / (horasDia || 1)) / 1000;
-                            const prodDiaTon = calculations.totalCobre / 1000;
-                            const prodSemTon = (calculations.totalCobre * 6) / 1000;
-                            const prodMesTon = (calculations.totalCobre * diasMes) / 1000;
+                      {/* Bottom Insight Box */}
+                      <div style={{
+                        background: '#f0fdfa',
+                        border: '1.5px solid #ccfbf1',
+                        borderRadius: '10px',
+                        padding: '10px 16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginTop: '14px'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+                          <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#00b0b9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5">
+                              <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A5 5 0 0 0 8 8c0 1 .3 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" />
+                              <line x1="9" y1="18" x2="15" y2="18" />
+                              <line x1="10" y1="22" x2="14" y2="22" />
+                            </svg>
+                          </div>
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <span style={{ fontSize: '11px', fontWeight: 900, color: '#0f766e', textTransform: 'uppercase', borderRight: '1.5px solid #cbd5e1', paddingRight: '8px', flexShrink: 0 }}>
+                              Insight Principal
+                            </span>
+                            <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#0f766e', lineHeight: '1.3' }}>
+                              El Granulador de Cuchillas concentra la mayor parte de la potencia instalada, mientras que el costo eléctrico se mantiene controlado en la operación base.
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#e6f9fa', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00b0b9" strokeWidth="2.5">
+                            <circle cx="12" cy="12" r="10" />
+                            <circle cx="12" cy="12" r="6" />
+                            <circle cx="12" cy="12" r="2" />
+                          </svg>
+                        </div>
+                      </div>
 
-                            const consHoraKwh = calculations.averageHourlyKwh;
-                            const consDiaKwh = calculations.dailyKwh;
-                            const consSemKwh = calculations.dailyKwh * 6;
-                            const consMesKwh = calculations.monthlyKwhBase;
-
-                            return (
-                              <>
-                                <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                  <td style={{ padding: '6px 8px', fontWeight: 800 }}>Por Hora</td>
-                                  <td style={{ padding: '6px 8px', textAlign: 'right' }}>{prodHoraTon.toFixed(4)}</td>
-                                  <td style={{ padding: '6px 8px', textAlign: 'right' }}>{consHoraKwh.toFixed(2)}</td>
-                                  <td style={{ padding: '6px 8px', textAlign: 'right', color: '#0d9488', fontWeight: 700 }}>
-                                    {money(consHoraKwh * rate)}
-                                  </td>
-                                </tr>
-                                <tr style={{ borderBottom: '1px solid #f1f5f9', background: '#f8fafc' }}>
-                                  <td style={{ padding: '6px 8px', fontWeight: 800 }}>Por Día ({horasDia} hrs)</td>
-                                  <td style={{ padding: '6px 8px', textAlign: 'right' }}>{prodDiaTon.toFixed(3)}</td>
-                                  <td style={{ padding: '6px 8px', textAlign: 'right' }}>{consDiaKwh.toFixed(1)}</td>
-                                  <td style={{ padding: '6px 8px', textAlign: 'right', color: '#0d9488', fontWeight: 700 }}>
-                                    {money(consDiaKwh * rate)}
-                                  </td>
-                                </tr>
-                                <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                  <td style={{ padding: '6px 8px', fontWeight: 800 }}>Por Semana (6 días)</td>
-                                  <td style={{ padding: '6px 8px', textAlign: 'right' }}>{prodSemTon.toFixed(3)}</td>
-                                  <td style={{ padding: '6px 8px', textAlign: 'right' }}>{consSemKwh.toFixed(1)}</td>
-                                  <td style={{ padding: '6px 8px', textAlign: 'right', color: '#0d9488', fontWeight: 700 }}>
-                                    {money(consSemKwh * rate)}
-                                  </td>
-                                </tr>
-                                <tr style={{ background: '#f8fafc' }}>
-                                  <td style={{ padding: '6px 8px', fontWeight: 800 }}>Por Mes ({diasMes} días)</td>
-                                  <td style={{ padding: '6px 8px', textAlign: 'right' }}>{prodMesTon.toFixed(3)}</td>
-                                  <td style={{ padding: '6px 8px', textAlign: 'right' }}>{consMesKwh.toFixed(1)}</td>
-                                  <td style={{ padding: '6px 8px', textAlign: 'right', color: '#0d9488', fontWeight: 700 }}>
-                                    {money(calculations.monthlyEnergyCostBaseMxn)}
-                                  </td>
-                                </tr>
-                              </>
-                            );
-                          })()}
-                        </tbody>
-                      </table>
                     </div>
-                  </div>
-                </div>
+                  );
+                })()}
               </div>
               {renderPageFooter(8, 11)}
             </div>
@@ -4714,24 +4974,24 @@ export default function MolexSimulator() {
               <div className="lma-page-inner" style={S.inner}>
                 {renderPageHeader("9. PROYECCIÓN PARAMÉTRICA / SIMULACIÓN DE ESCENARIOS", "Tabla comparativa de rendimiento y gráfica de escenarios económicos mensuales")}
                 
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   
                   {/* Top Cards Row */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
                     {/* Card 1: OPEX Fijo */}
                     <div style={{
                       background: '#ffffff',
                       border: '1.5px solid #e2e8f0',
-                      borderLeft: '4px solid #ef4444',
+                      borderLeft: '4.5px solid #ef4444',
                       borderRadius: '12px',
-                      padding: '8px 12px',
+                      padding: '10px 14px',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '8px',
                       boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
                     }}>
-                      <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5">
+                      <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5">
                           <path d="M20 21v-8l-8-4-8 4v8h16z" />
                           <path d="M12 9v12" />
                           <path d="M8 13h2" />
@@ -4741,8 +5001,8 @@ export default function MolexSimulator() {
                         </svg>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ fontSize: '7.5px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>OPEX mensual fijo</span>
-                        <span style={{ fontSize: '12px', fontWeight: 900, color: '#1e293b', marginTop: '1px' }}>{money(calculations.opexFixedMonthlyMxn)}</span>
+                        <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>OPEX mensual fijo</span>
+                        <span style={{ fontSize: '17.5px', fontWeight: 900, color: '#1e293b', marginTop: '1px' }}>{money(calculations.opexFixedMonthlyMxn)}</span>
                       </div>
                     </div>
 
@@ -4750,24 +5010,24 @@ export default function MolexSimulator() {
                     <div style={{
                       background: '#ffffff',
                       border: '1.5px solid #e2e8f0',
-                      borderLeft: '4px solid #06b6d4',
+                      borderLeft: '4.5px solid #06b6d4',
                       borderRadius: '12px',
-                      padding: '8px 12px',
+                      padding: '10px 14px',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '8px',
                       boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
                     }}>
-                      <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#ecfeff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="2.5">
+                      <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#ecfeff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="2.5">
                           <circle cx="9" cy="21" r="1" />
                           <circle cx="20" cy="21" r="1" />
                           <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
                         </svg>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ fontSize: '7.5px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Venta mensual x1</span>
-                        <span style={{ fontSize: '12px', fontWeight: 900, color: '#1e293b', marginTop: '1px' }}>{money(proyecciones[0].ventaMes)}</span>
+                        <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Venta mensual x1</span>
+                        <span style={{ fontSize: '17.5px', fontWeight: 900, color: '#1e293b', marginTop: '1px' }}>{money(proyecciones[0].ventaMes)}</span>
                       </div>
                     </div>
 
@@ -4775,24 +5035,24 @@ export default function MolexSimulator() {
                     <div style={{
                       background: '#ffffff',
                       border: '1.5px solid #e2e8f0',
-                      borderLeft: '4px solid #0ea5e9',
+                      borderLeft: '4.5px solid #0ea5e9',
                       borderRadius: '12px',
-                      padding: '8px 12px',
+                      padding: '10px 14px',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '8px',
                       boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
                     }}>
-                      <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#f0f9ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" strokeWidth="2.5">
+                      <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#f0f9ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" strokeWidth="2.5">
                           <line x1="18" y1="20" x2="18" y2="10" />
                           <line x1="12" y1="20" x2="12" y2="4" />
                           <line x1="6" y1="20" x2="6" y2="14" />
                         </svg>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ fontSize: '7.5px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Venta mensual x5</span>
-                        <span style={{ fontSize: '12px', fontWeight: 900, color: '#1e293b', marginTop: '1px' }}>{money(proyecciones[4].ventaMes)}</span>
+                        <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Venta mensual x5</span>
+                        <span style={{ fontSize: '17.5px', fontWeight: 900, color: '#1e293b', marginTop: '1px' }}>{money(proyecciones[4].ventaMes)}</span>
                       </div>
                     </div>
 
@@ -4800,23 +5060,23 @@ export default function MolexSimulator() {
                     <div style={{
                       background: '#ffffff',
                       border: '1.5px solid #e2e8f0',
-                      borderLeft: '4px solid #10b981',
+                      borderLeft: '4.5px solid #10b981',
                       borderRadius: '12px',
-                      padding: '8px 12px',
+                      padding: '10px 14px',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '8px',
                       boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
                     }}>
-                      <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5">
+                      <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5">
                           <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
                           <polyline points="17 6 23 6 23 12" />
                         </svg>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ fontSize: '7.5px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>EBITDA x5</span>
-                        <span style={{ fontSize: '12px', fontWeight: 900, color: '#1e293b', marginTop: '1px' }}>{money(proyecciones[4].margenMensualMxn)}</span>
+                        <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>EBITDA x5</span>
+                        <span style={{ fontSize: '17.5px', fontWeight: 900, color: '#1e293b', marginTop: '1px' }}>{money(proyecciones[4].margenMensualMxn)}</span>
                       </div>
                     </div>
                   </div>
@@ -4830,17 +5090,17 @@ export default function MolexSimulator() {
                         background: '#f0f9ff',
                         border: '1px solid #bae6fd',
                         borderRadius: '10px',
-                        padding: '6px 12px',
+                        padding: '8px 14px',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '8px'
                       }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0284c7" strokeWidth="2.5">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0284c7" strokeWidth="2.5">
                           <circle cx="12" cy="12" r="10" />
                           <line x1="12" y1="16" x2="12" y2="12" />
                           <line x1="12" y1="8" x2="12.01" y2="8" />
                         </svg>
-                        <span style={{ fontSize: '9px', fontWeight: 700, color: '#0369a1' }}>
+                        <span style={{ fontSize: '13.5px', fontWeight: 700, color: '#0369a1' }}>
                           Punto de equilibrio: el EBITDA se vuelve positivo a partir de <strong style={{ color: '#15803d', fontWeight: 900 }}>x{breakEvenScenario.m}</strong> y claramente rentable desde <strong style={{ color: '#15803d', fontWeight: 900 }}>x{clearProfitScenario.m}</strong>.
                         </span>
                       </div>
@@ -4848,18 +5108,18 @@ export default function MolexSimulator() {
                   })()}
 
                   {/* Main Grid: Table & Chart */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.65fr', gap: '16px', flex: 1, alignItems: 'stretch' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.65fr', gap: '24px', flex: 1, alignItems: 'stretch' }}>
                     
                     {/* Left: Scenarios Table */}
                     <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', border: '1.5px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', border: '1.5px solid #e2e8f0', borderRadius: '14px', overflow: 'hidden' }}>
                         <thead>
-                          <tr style={{ background: '#0b1329', color: '#ffffff', fontSize: '8.5px', fontWeight: 800, textAlign: 'center' }}>
-                            <th style={{ padding: '8px 4px', borderRight: '1px solid #2e3e5c' }}>Escenario</th>
-                            <th style={{ padding: '8px 4px', borderRight: '1px solid #2e3e5c' }}>Producción<br/>(kg/día)</th>
-                            <th style={{ padding: '8px 4px', borderRight: '1px solid #2e3e5c' }}>Cobre<br/>(kg/día)</th>
-                            <th style={{ padding: '8px 4px', borderRight: '1px solid #2e3e5c' }}>Venta mensual<br/>(MXN)</th>
-                            <th style={{ padding: '8px 4px' }}>EBITDA mensual<br/>(MXN)</th>
+                          <tr style={{ background: '#0b1329', color: '#ffffff', fontSize: '12px', fontWeight: 800, textAlign: 'center' }}>
+                            <th style={{ padding: '10px 6px', borderRight: '1px solid #2e3e5c' }}>Escenario</th>
+                            <th style={{ padding: '10px 6px', borderRight: '1px solid #2e3e5c' }}>Producción<br/>(kg/día)</th>
+                            <th style={{ padding: '10px 6px', borderRight: '1px solid #2e3e5c' }}>Cobre<br/>(kg/día)</th>
+                            <th style={{ padding: '10px 6px', borderRight: '1px solid #2e3e5c' }}>Venta mensual<br/>(MXN)</th>
+                            <th style={{ padding: '10px 6px' }}>EBITDA mensual<br/>(MXN)</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -4875,18 +5135,18 @@ export default function MolexSimulator() {
                               <tr key={p.m} style={{
                                 background: bg,
                                 borderBottom: borderStyle,
-                                fontSize: '9px',
+                                fontSize: '13px',
                                 fontWeight: fontW,
                                 color: '#334155',
-                                height: '36px',
+                                height: '42px',
                                 textAlign: 'center'
                               }}>
-                                <td style={{ padding: '6px 4px', borderRight: '1px solid #e2e8f0', fontWeight: 900, color: isTarget5x ? '#10b981' : '#1e293b' }}>
+                                <td style={{ padding: '8px 6px', borderRight: '1px solid #e2e8f0', fontWeight: 900, color: isTarget5x ? '#10b981' : '#1e293b' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}>
                                     {isTarget5x ? (
-                                      <span style={{ color: '#10b981', fontSize: '11px' }}>★</span>
+                                      <span style={{ color: '#10b981', fontSize: '14px' }}>★</span>
                                     ) : (
-                                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.5">
+                                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.5">
                                         <line x1="18" y1="20" x2="18" y2="10" />
                                         <line x1="12" y1="20" x2="12" y2="4" />
                                         <line x1="6" y1="20" x2="6" y2="14" />
@@ -4895,10 +5155,10 @@ export default function MolexSimulator() {
                                     <span>x{p.m}</span>
                                   </div>
                                 </td>
-                                <td style={{ padding: '6px 4px', borderRight: '1px solid #e2e8f0' }}>{Math.round(p.kgCableDia)}</td>
-                                <td style={{ padding: '6px 4px', borderRight: '1px solid #e2e8f0' }}>{Math.round(p.metalDia)}</td>
-                                <td style={{ padding: '6px 4px', borderRight: '1px solid #e2e8f0', color: '#0891b2', fontWeight: 800 }}>{moneyShort(p.ventaMes)}</td>
-                                <td style={{ padding: '6px 4px', color: ebitdaColor, fontWeight: 800 }}>
+                                <td style={{ padding: '8px 6px', borderRight: '1px solid #e2e8f0' }}>{Math.round(p.kgCableDia)}</td>
+                                <td style={{ padding: '8px 6px', borderRight: '1px solid #e2e8f0' }}>{Math.round(p.metalDia)}</td>
+                                <td style={{ padding: '8px 6px', borderRight: '1px solid #e2e8f0', color: '#0891b2', fontWeight: 800 }}>{moneyShort(p.ventaMes)}</td>
+                                <td style={{ padding: '8px 6px', color: ebitdaColor, fontWeight: 800 }}>
                                   {ebitda < 0 ? `-${moneyShort(Math.abs(ebitda))}` : moneyShort(ebitda)}
                                 </td>
                               </tr>
@@ -4913,7 +5173,7 @@ export default function MolexSimulator() {
                       background: '#ffffff',
                       border: '1.5px solid #e2e8f0',
                       borderRadius: '16px',
-                      padding: '16px 20px',
+                      padding: '18px 24px',
                       display: 'flex',
                       flexDirection: 'column',
                       boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.02)',
@@ -4921,41 +5181,41 @@ export default function MolexSimulator() {
                       height: '100%',
                       justifyContent: 'space-between'
                     }}>
-                      <span style={{ fontSize: '9px', fontWeight: 950, color: '#1e293b', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '13.5px', fontWeight: 950, color: '#1e293b', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '8px' }}>
                         Comparativa Gráfica Mensual (MXN)
                       </span>
                       
                       {/* Legend */}
-                      <div style={{ display: 'flex', gap: '12px', fontSize: '7.5px', color: '#64748b', marginBottom: '14px', fontWeight: 800 }}>
+                      <div style={{ display: 'flex', gap: '16px', fontSize: '11px', color: '#64748b', marginBottom: '14px', fontWeight: 800 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <div style={{ width: '8px', height: '8px', background: '#00b0b9', borderRadius: '2px' }} />
+                          <div style={{ width: '10px', height: '10px', background: '#00b0b9', borderRadius: '3px' }} />
                           <span>Ventas</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <div style={{ width: '8px', height: '8px', background: '#ef4444', borderRadius: '2px' }} />
+                          <div style={{ width: '10px', height: '10px', background: '#ef4444', borderRadius: '3px' }} />
                           <span>OPEX (Fijo)</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <div style={{ width: '8px', height: '8px', background: '#10b981', borderRadius: '2px' }} />
+                          <div style={{ width: '10px', height: '10px', background: '#10b981', borderRadius: '3px' }} />
                           <span>EBITDA</span>
                         </div>
                       </div>
 
                       {/* Chart Body */}
-                      <div style={{ position: 'relative', height: '200px', borderLeft: '1.5px solid #cbd5e1', boxSizing: 'border-box' }}>
+                      <div style={{ position: 'relative', height: '240px', borderLeft: '2px solid #cbd5e1', boxSizing: 'border-box' }}>
                         
                         {/* Y Axis Grid Lines */}
                         <div style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, pointerEvents: 'none' }}>
                           {[120000, 100000, 80000, 60000, 40000, 20000, 0, -20000, -40000].map((val) => {
-                            const y = ((val - (-40000)) / 160000) * 200;
+                            const y = ((val - (-40000)) / 160000) * 240;
                             const isZero = val === 0;
                             return (
                               <div key={val} style={{
                                 position: 'absolute',
-                                left: '46px',
+                                left: '56px',
                                 right: 0,
                                 bottom: `${y}px`,
-                                borderBottom: isZero ? '1.5px solid #94a3b8' : '1px dashed #e2e8f0',
+                                borderBottom: isZero ? '2px solid #94a3b8' : '1px dashed #e2e8f0',
                                 height: 0
                               }} />
                             );
@@ -4963,18 +5223,18 @@ export default function MolexSimulator() {
                         </div>
 
                         {/* Y Axis Labels */}
-                        <div style={{ position: 'absolute', left: 0, width: '40px', height: '200px', pointerEvents: 'none' }}>
+                        <div style={{ position: 'absolute', left: 0, width: '50px', height: '240px', pointerEvents: 'none' }}>
                           {[120000, 100000, 80000, 60000, 40000, 20000, 0, -20000, -40000].map((val) => {
-                            const y = ((val - (-40000)) / 160000) * 200;
+                            const y = ((val - (-40000)) / 160000) * 240;
                             return (
                               <div key={val} style={{
                                 position: 'absolute',
-                                right: '4px',
-                                bottom: `${y - 4.5}px`,
-                                fontSize: '7.5px',
+                                right: '6px',
+                                bottom: `${y - 6}px`,
+                                fontSize: '11px',
                                 fontWeight: 800,
                                 color: val === 0 ? '#1e293b' : '#64748b',
-                                lineHeight: '9px',
+                                lineHeight: '12px',
                                 textAlign: 'right'
                               }}>
                                 {val.toLocaleString()}
@@ -4986,10 +5246,10 @@ export default function MolexSimulator() {
                         {/* Bars Area */}
                         <div style={{
                           position: 'absolute',
-                          left: '46px',
+                          left: '56px',
                           right: 0,
                           top: 0,
-                          height: '200px',
+                          height: '240px',
                           display: 'flex',
                           justifyContent: 'space-around',
                           alignItems: 'flex-end',
@@ -5000,32 +5260,32 @@ export default function MolexSimulator() {
                             const vOpex = calculations.opexFixedMonthlyMxn;
                             const vEbitda = p.margenMensualMxn;
 
-                            const hV = (vVenta / 160000) * 200;
-                            const hOp = (vOpex / 160000) * 200;
-                            const hEb = (Math.abs(vEbitda) / 160000) * 200;
+                            const hV = (vVenta / 160000) * 240;
+                            const hOp = (vOpex / 160000) * 240;
+                            const hEb = (Math.abs(vEbitda) / 160000) * 240;
 
-                            const bottomEb = vEbitda >= 0 ? 50 : 50 - hEb;
+                            const bottomEb = vEbitda >= 0 ? 60 : 60 - hEb;
 
                             return (
-                              <div key={p.m} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '78px' }}>
-                                <div style={{ position: 'relative', width: '68px', height: '200px' }}>
+                              <div key={p.m} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '84px' }}>
+                                <div style={{ position: 'relative', width: '72px', height: '240px' }}>
                                   
                                   {/* Ventas Bar */}
                                   <div style={{
                                     position: 'absolute',
-                                    left: '4px',
-                                    bottom: '50px',
-                                    width: '12px',
+                                    left: '6px',
+                                    bottom: '60px',
+                                    width: '16px',
                                     height: `${hV}px`,
                                     background: '#00b0b9',
                                     borderRadius: '2.5px 2.5px 0 0'
                                   }}>
                                     <div style={{
                                       position: 'absolute',
-                                      bottom: `${hV + 14}px`, // Staggered higher
+                                      bottom: `${hV + 15}px`,
                                       left: '50%',
                                       transform: 'translateX(-50%)',
-                                      fontSize: '7.5px',
+                                      fontSize: '10.5px',
                                       fontWeight: 900,
                                       color: '#0f766e',
                                       whiteSpace: 'nowrap'
@@ -5037,21 +5297,22 @@ export default function MolexSimulator() {
                                   {/* OPEX Fijo Bar */}
                                   <div style={{
                                     position: 'absolute',
-                                    left: '23px',
-                                    bottom: '50px',
-                                    width: '12px',
+                                    left: '28px',
+                                    bottom: '60px',
+                                    width: '16px',
                                     height: `${hOp}px`,
                                     background: '#ef4444',
                                     borderRadius: '2.5px 2.5px 0 0'
                                   }}>
+                                    {/* Place OPEX text inside the red bar to avoid horizontal collisions */}
                                     <div style={{
                                       position: 'absolute',
-                                      bottom: `${hOp + 2}px`, // Staggered lower
+                                      bottom: '12px',
                                       left: '50%',
                                       transform: 'translateX(-50%)',
-                                      fontSize: '7.5px',
+                                      fontSize: '10.5px',
                                       fontWeight: 900,
-                                      color: '#dc2626',
+                                      color: '#ffffff',
                                       whiteSpace: 'nowrap'
                                     }}>
                                       {moneyShort(vOpex)}
@@ -5061,19 +5322,19 @@ export default function MolexSimulator() {
                                   {/* EBITDA Bar */}
                                   <div style={{
                                     position: 'absolute',
-                                    left: '42px',
+                                    left: '50px',
                                     bottom: `${bottomEb}px`,
-                                    width: '12px',
+                                    width: '16px',
                                     height: `${hEb}px`,
                                     background: '#10b981',
                                     borderRadius: vEbitda >= 0 ? '2.5px 2.5px 0 0' : '0 0 2.5px 2.5px'
                                   }}>
                                     <div style={{
                                       position: 'absolute',
-                                      bottom: vEbitda >= 0 ? `${hEb + 2}px` : `-12px`,
+                                      bottom: vEbitda >= 0 ? `${hEb + 4}px` : `-16px`,
                                       left: '50%',
                                       transform: 'translateX(-50%)',
-                                      fontSize: '7.5px',
+                                      fontSize: '10.5px',
                                       fontWeight: 900,
                                       color: vEbitda >= 0 ? '#16a34a' : '#ef4444',
                                       whiteSpace: 'nowrap'
@@ -5083,7 +5344,7 @@ export default function MolexSimulator() {
                                   </div>
 
                                 </div>
-                                <span style={{ fontSize: '8.5px', fontWeight: 900, color: '#475569', marginTop: '6px' }}>x{p.m}</span>
+                                <span style={{ fontSize: '12.5px', fontWeight: 900, color: '#475569', marginTop: '8px' }}>x{p.m}</span>
                               </div>
                             );
                           })}
@@ -5091,7 +5352,7 @@ export default function MolexSimulator() {
                       </div>
 
                       {/* Bottom Caption */}
-                      <span style={{ fontSize: '8px', fontWeight: 800, color: '#64748b', textAlign: 'center', marginTop: '12px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 800, color: '#64748b', textAlign: 'center', marginTop: '16px' }}>
                         OPEX mensual fijo constante en todos los escenarios: {money(calculations.opexFixedMonthlyMxn)}
                       </span>
                     </div>
@@ -5106,79 +5367,583 @@ export default function MolexSimulator() {
             <div className="lma-page" style={S.page}>
               <div className="lma-page-inner" style={S.inner}>
                 {renderPageHeader("10. VIABILIDAD FINANCIERA / RETORNO DE INVERSIÓN (ROI)", "Matriz de viabilidad económica y proyección del periodo de amortización de capital")}
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 15, flex: 1 }}>
-                    
-                    {/* Tabla de viabilidad */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      <div style={{ fontSize: '10px', fontWeight: 950, color: '#334155', borderBottom: '1px solid #cbd5e1', paddingBottom: 4, textTransform: 'uppercase' }}>
-                        Matriz de Viabilidad Financiera
-                      </div>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '8px' }}>
-                        <thead>
-                          <tr style={{ background: '#00989d', color: '#ffffff', textAlign: 'left', fontWeight: 900 }}>
-                            <th style={{ padding: '5px 6px', borderTopLeftRadius: '4px', borderBottomLeftRadius: '4px' }}>ESC.</th>
-                            <th style={{ padding: '5px 6px', textAlign: 'right' }}>EBITDA ANUAL</th>
-                            <th style={{ padding: '5px 6px', textAlign: 'right' }}>ROI ANUAL</th>
-                            <th style={{ padding: '5px 6px', textAlign: 'right' }}>PAYBACK</th>
-                            <th style={{ padding: '5px 6px', textAlign: 'right', borderTopRightRadius: '4px', borderBottomRightRadius: '4px' }}>P. EQUILIBRIO</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {proyecciones.map((p) => {
-                            const isAct = p.m === inputs.multiplicadorActivo;
-                            return (
-                              <tr key={p.m} style={{ borderBottom: '1px solid #cbd5e1', background: isAct ? '#ecfeff' : 'transparent', fontWeight: isAct ? 800 : 500 }}>
-                                <td style={{ padding: '5px 6px' }}>x{p.m}</td>
-                                <td style={{ padding: '5px 6px', textAlign: 'right', color: '#10b981', fontWeight: 800 }}>{money(p.margenAnualMxn)}</td>
-                                <td style={{ padding: '5px 6px', textAlign: 'right', color: '#0d9488' }}>{p.roiAnual.toFixed(1)}%</td>
-                                <td style={{ padding: '5px 6px', textAlign: 'right', fontWeight: 800 }}>
-                                  {p.paybackMeses === Infinity ? 'N/A' : `${p.paybackMeses.toFixed(1)} meses`}
-                                </td>
-                                <td style={{ padding: '5px 6px', textAlign: 'right', color: '#4f46e5' }}>
-                                  {p.puntoEquilibrioTonMes !== Infinity ? `${p.puntoEquilibrioTonMes.toFixed(2)} ton/mes` : 'N/A'}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
+                
+                {(() => {
+                  const viableInicial = proyecciones.find(p => p.margenAnualMxn > 0) || proyecciones[2];
+                  const maxRoi = Math.max(...proyecciones.map(p => p.roiAnual));
+                  const paybackValores = proyecciones.map(p => p.paybackMeses).filter(v => v !== Infinity && v > 0);
+                  const minPayback = paybackValores.length > 0 ? Math.min(...paybackValores) : 0;
+                  const pEquilibrio = proyecciones[0].puntoEquilibrioTonMes;
 
-                    {/* Gráfica de Payback (Retorno de Inversión) */}
-                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      <div style={{ fontSize: '9px', fontWeight: 950, color: '#334155', textTransform: 'uppercase' }}>
-                        Comparativa de Amortización (Meses para Retorno)
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
-                        {proyecciones.map((p) => {
-                          const isInfinity = p.paybackMeses === Infinity;
-                          const capMeses = isInfinity ? 36 : Math.min(36, p.paybackMeses);
-                          const wPct = (capMeses / 36) * 100;
-                          
-                          // Color-code
-                          const color = p.paybackMeses <= 12 ? '#10b981' : p.paybackMeses <= 24 ? '#f59e0b' : '#ef4444';
-                          
-                          return (
-                            <div key={p.m} style={{ display: 'flex', alignItems: 'center', fontSize: '8px' }}>
-                              <span style={{ width: '25px', fontWeight: 900, color: '#475569' }}>x{p.m}</span>
-                              <div style={{ flex: 1, height: '10px', background: '#e2e8f0', borderRadius: '5px', overflow: 'hidden', margin: '0 8px', position: 'relative' }}>
-                                <div style={{ width: `${wPct}%`, height: '100%', background: color }} />
-                              </div>
-                              <span style={{ width: '50px', textAlign: 'right', fontWeight: 800, color: '#0f172a' }}>
-                                {isInfinity ? 'N/A' : `${p.paybackMeses.toFixed(1)} meses`}
-                              </span>
+                  return (
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      
+                      {/* Top Cards Row */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+                        {/* Card 1: Escenario viable inicial */}
+                        <div style={{
+                          background: '#ffffff',
+                          border: '1.5px solid #e2e8f0',
+                          borderLeft: '4.5px solid #0d9488',
+                          borderRadius: '12px',
+                          padding: '8px 12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+                        }}>
+                          <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#ccfbf1', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0d9488" strokeWidth="2.5">
+                              <circle cx="12" cy="12" r="10" />
+                              <circle cx="12" cy="12" r="6" />
+                              <circle cx="12" cy="12" r="2" />
+                            </svg>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Escenario viable inicial</span>
+                            <span style={{ fontSize: '18px', fontWeight: 900, color: '#0d9488', marginTop: '0px' }}>x{viableInicial.m}</span>
+                          </div>
+                        </div>
+
+                        {/* Card 2: ROI máximo */}
+                        <div style={{
+                          background: '#ffffff',
+                          border: '1.5px solid #e2e8f0',
+                          borderLeft: '4.5px solid #16a34a',
+                          borderRadius: '12px',
+                          padding: '8px 12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+                        }}>
+                          <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5">
+                              <line x1="18" y1="20" x2="18" y2="10" />
+                              <line x1="12" y1="20" x2="12" y2="4" />
+                              <line x1="6" y1="20" x2="6" y2="14" />
+                            </svg>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>ROI máximo</span>
+                            <span style={{ fontSize: '18px', fontWeight: 900, color: '#16a34a', marginTop: '0px' }}>{maxRoi.toFixed(1)}%</span>
+                          </div>
+                        </div>
+
+                        {/* Card 3: Mejor payback */}
+                        <div style={{
+                          background: '#ffffff',
+                          border: '1.5px solid #e2e8f0',
+                          borderLeft: '4.5px solid #ea580c',
+                          borderRadius: '12px',
+                          padding: '8px 12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+                        }}>
+                          <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#ffedd5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ea580c" strokeWidth="2.5">
+                              <path d="M5 2h14" />
+                              <path d="M5 22h14" />
+                              <path d="M19 2v6c0 4-4 6-4 6s4 2 4 6v2" />
+                              <path d="M5 2v6c0 4 4 6 4 6s-4 2-4 6v2" />
+                            </svg>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Mejor payback</span>
+                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px', marginTop: '0px' }}>
+                              <span style={{ fontSize: '18px', fontWeight: 900, color: '#ea580c' }}>{minPayback.toFixed(1)}</span>
+                              <span style={{ fontSize: '11px', fontWeight: 850, color: '#ea580c' }}>meses</span>
                             </div>
-                          );
-                        })}
-                      </div>
-                      <div style={{ fontSize: '7px', color: '#64748b', borderTop: '1px solid #e2e8f0', paddingTop: 6, marginTop: 4, lineHeight: '1.3' }}>
-                        * Escala de viabilidad: <strong>Verde</strong> (&lt;12 meses), <strong>Naranja</strong> (12-24 meses), <strong>Rojo</strong> (&gt;24 meses).
-                      </div>
-                    </div>
+                          </div>
+                        </div>
 
-                  </div>
-                </div>
+                        {/* Card 4: Punto de equilibrio */}
+                        <div style={{
+                          background: '#ffffff',
+                          border: '1.5px solid #e2e8f0',
+                          borderLeft: '4.5px solid #2563eb',
+                          borderRadius: '12px',
+                          padding: '8px 12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+                        }}>
+                          <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2.5">
+                              <line x1="12" y1="3" x2="12" y2="21" />
+                              <line x1="6" y1="7" x2="18" y2="7" />
+                              <path d="M6 7l-3 6h6l-3-6M18 7l-3 6h6l-3-6" />
+                            </svg>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Punto de equilibrio</span>
+                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px', marginTop: '0px' }}>
+                              <span style={{ fontSize: '18px', fontWeight: 900, color: '#2563eb' }}>{pEquilibrio.toFixed(2)}</span>
+                              <span style={{ fontSize: '10.5px', fontWeight: 850, color: '#2563eb' }}>ton/mes</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Main Grid: Table & Charts */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: '20px', flex: 1, alignItems: 'stretch' }}>
+                        
+                        {/* Left: Table Column */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', justifyContent: 'center' }}>
+                          <span style={{ fontSize: '13.5px', fontWeight: 950, color: '#1e293b', textTransform: 'uppercase', letterSpacing: '0.3px', borderBottom: '1.5px solid #cbd5e1', paddingBottom: '6px' }}>
+                            Matriz Financiera por Escenario
+                          </span>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', border: '1.5px solid #cbd5e1', borderRadius: '12px', overflow: 'hidden' }}>
+                            <thead>
+                              <tr style={{ background: '#005b60', color: '#ffffff', fontSize: '12.5px', fontWeight: 800, textAlign: 'center' }}>
+                                <th style={{ padding: '6px 6px', borderRight: '1px solid #11787e', width: '15%' }}>Escenario</th>
+                                <th style={{ padding: '6px 6px', borderRight: '1px solid #11787e', width: '27%' }}>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', justifyContent: 'center' }}>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5">
+                                      <circle cx="8" cy="8" r="6" />
+                                      <circle cx="18" cy="18" r="4" />
+                                      <line x1="12" y1="12" x2="15" y2="15" />
+                                    </svg>
+                                    <span>EBITDA anual</span>
+                                  </div>
+                                </th>
+                                <th style={{ padding: '6px 6px', borderRight: '1px solid #11787e', width: '20%' }}>
+                                  <span>% ROI anual</span>
+                                </th>
+                                <th style={{ padding: '6px 6px', borderRight: '1px solid #11787e', width: '18%' }}>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', justifyContent: 'center' }}>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5">
+                                      <circle cx="12" cy="12" r="10" />
+                                      <polyline points="12 6 12 12 16 14" />
+                                    </svg>
+                                    <span>Payback</span>
+                                  </div>
+                                </th>
+                                <th style={{ padding: '6px 6px', width: '20%' }}>
+                                  <span>P. equilibrio</span>
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {proyecciones.map((p) => {
+                                const isTarget5x = p.m === 5;
+                                const isViableInicial = p.m === 3;
+                                
+                                const ebitda = p.margenAnualMxn;
+                                const ebitdaColor = ebitda < 0 ? '#ef4444' : '#16a34a';
+                                const roiColor = p.roiAnual < 0 ? '#ef4444' : '#16a34a';
+                                const paybackColor = p.paybackMeses === Infinity ? '#64748b' : p.paybackMeses <= 12 ? '#16a34a' : p.paybackMeses <= 24 ? '#ea580c' : '#ef4444';
+                                
+                                const bg = isTarget5x ? '#f0fdf4' : isViableInicial ? '#f0fdf4' : 'transparent';
+                                const borderStyle = isTarget5x ? '1.5px solid #10b981' : isViableInicial ? '1px solid #0d9488' : '1px solid #e2e8f0';
+                                const fontW = (isTarget5x || isViableInicial) ? 900 : 600;
+
+                                return (
+                                  <tr key={p.m} style={{
+                                    background: bg,
+                                    borderBottom: borderStyle,
+                                    fontSize: '13.5px',
+                                    fontWeight: fontW,
+                                    color: '#334155',
+                                    height: '35px',
+                                    textAlign: 'center'
+                                  }}>
+                                    <td style={{ padding: '4px 6px', borderRight: '1px solid #cbd5e1', fontWeight: 900, color: isTarget5x ? '#10b981' : isViableInicial ? '#0d9488' : '#1e293b' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                                        {isTarget5x ? (
+                                          <span style={{ color: '#10b981', fontSize: '15px' }}>★</span>
+                                        ) : (
+                                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.5">
+                                            <line x1="18" y1="20" x2="18" y2="10" />
+                                            <line x1="12" y1="20" x2="12" y2="4" />
+                                            <line x1="6" y1="20" x2="6" y2="14" />
+                                          </svg>
+                                        )}
+                                        <span>x{p.m}</span>
+                                      </div>
+                                    </td>
+                                    <td style={{ padding: '4px 6px', borderRight: '1px solid #cbd5e1', color: ebitdaColor, fontWeight: 800 }}>
+                                      {ebitda < 0 ? `-${money(Math.abs(ebitda))}` : money(ebitda)}
+                                    </td>
+                                    <td style={{ padding: '4px 6px', borderRight: '1px solid #cbd5e1', color: roiColor, fontWeight: 800 }}>
+                                      {p.roiAnual.toFixed(1)}%
+                                    </td>
+                                    <td style={{ padding: '4px 6px', borderRight: '1px solid #cbd5e1', color: paybackColor, fontWeight: 800 }}>
+                                      {p.paybackMeses === Infinity ? 'N/A' : `${p.paybackMeses.toFixed(1)} meses`}
+                                    </td>
+                                    <td style={{ padding: '4px 6px', color: '#2563eb', fontWeight: 800 }}>
+                                      {p.puntoEquilibrioTonMes.toFixed(2)} ton/mes
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                          {/* Table Legend */}
+                          <div style={{ display: 'flex', gap: '20px', fontSize: '12px', color: '#64748b', marginTop: '6px', fontWeight: 800 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ color: '#10b981', fontSize: '15px', lineHeight: '1' }}>★</span>
+                              <span>Mejor escenario (mayor ROI y menor payback)</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <div style={{ width: '14px', height: '14px', background: '#f0fdf4', border: '1.5px solid #0d9488', borderRadius: '3px' }} />
+                              <span>Primer escenario viable</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Right Column: Comparative Charts */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', justifyContent: 'center' }}>
+                          
+                          {/* Chart 1: Comparativa de Amortización */}
+                          <div style={{
+                            background: '#ffffff',
+                            border: '1.5px solid #e2e8f0',
+                            borderRadius: '16px',
+                            padding: '8px 12px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.02)',
+                            boxSizing: 'border-box'
+                          }}>
+                            <span style={{ fontSize: '13px', fontWeight: 950, color: '#1e293b', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '6px' }}>
+                              Comparativa de Amortización (Meses para Retorno)
+                            </span>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                              {proyecciones.map((p) => {
+                                const isInfinity = p.paybackMeses === Infinity;
+                                const wPct = isInfinity ? 10 : Math.min(100, (p.paybackMeses / 60) * 100);
+                                const barColor = isInfinity ? '#cbd5e1' : p.paybackMeses <= 12 ? '#16a34a' : p.paybackMeses <= 24 ? '#ea580c' : '#ef4444';
+                                
+                                return (
+                                  <div key={p.m} style={{ display: 'flex', alignItems: 'center', fontSize: '11.5px' }}>
+                                    <span style={{ width: '28px', fontWeight: 900, color: '#475569' }}>x{p.m}</span>
+                                    <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+                                      {isInfinity ? (
+                                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                          <div style={{ flex: 0.6, height: '10px', background: '#f1f5f9', borderRadius: '5px' }}>
+                                            <div style={{ width: '15%', height: '100%', background: '#cbd5e1', borderRadius: '5px' }} />
+                                          </div>
+                                          <span style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8' }}>N/A</span>
+                                        </div>
+                                      ) : (
+                                        <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: '10px' }}>
+                                          <div style={{ flex: 1, height: '10px', background: '#f1f5f9', borderRadius: '5px', overflow: 'hidden' }}>
+                                            <div style={{ width: `${wPct}%`, height: '100%', background: barColor, borderRadius: '5px' }} />
+                                          </div>
+                                          <span style={{ fontSize: '11px', fontWeight: 900, color: barColor, whiteSpace: 'nowrap', width: '70px', textAlign: 'right' }}>
+                                            {p.paybackMeses.toFixed(1)} meses
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+
+                            {/* Amortization Legend */}
+                            <div style={{ display: 'flex', gap: '14px', fontSize: '10.5px', color: '#64748b', marginTop: '6px', borderTop: '1.5px solid #f1f5f9', paddingTop: '4px', fontWeight: 800 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <div style={{ width: '8px', height: '8px', background: '#16a34a', borderRadius: '50%' }} />
+                                <span>Verde: &lt;12 meses</span>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <div style={{ width: '8px', height: '8px', background: '#ea580c', borderRadius: '50%' }} />
+                                <span>Naranja: 12-24 meses</span>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <div style={{ width: '8px', height: '8px', background: '#ef4444', borderRadius: '50%' }} />
+                                <span>Rojo: &gt;24 meses</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Chart 2: ROI y EBITDA Anual */}
+                          <div style={{
+                            background: '#ffffff',
+                            border: '1.5px solid #e2e8f0',
+                            borderRadius: '16px',
+                            padding: '8px 12px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.02)',
+                            boxSizing: 'border-box'
+                          }}>
+                            <span style={{ fontSize: '13px', fontWeight: 950, color: '#1e293b', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '4px' }}>
+                              ROI y EBITDA Anual por Escenario
+                            </span>
+
+                            {/* Legend */}
+                            <div style={{ display: 'flex', gap: '14px', fontSize: '10.5px', color: '#64748b', marginBottom: '4px', fontWeight: 800 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <div style={{ width: '10px', height: '10px', background: '#0e7490', borderRadius: '2px' }} />
+                                <span>EBITDA anual (MXN)</span>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <div style={{ width: '14px', height: '2px', background: '#1e293b' }} />
+                                <div style={{ width: '5px', height: '5px', background: '#1e293b', borderRadius: '50%', marginLeft: '-9px' }} />
+                                <span>ROI anual (%)</span>
+                              </div>
+                            </div>
+
+                            {/* Chart Body */}
+                            <div style={{ position: 'relative', height: '150px', borderLeft: '1.5px solid #cbd5e1', borderRight: '1.5px solid #cbd5e1', boxSizing: 'border-box' }}>
+                              
+                              {/* Y-Grid */}
+                              <div style={{ position: 'absolute', left: '38px', right: '32px', top: 0, bottom: 0, pointerEvents: 'none' }}>
+                                {[800000, 400000, 0, -400000].map((val) => {
+                                  const y = ((val - (-400000)) / 1200000) * 150;
+                                  return (
+                                    <div key={val} style={{
+                                      position: 'absolute',
+                                      left: 0,
+                                      right: 0,
+                                      bottom: `${y}px`,
+                                      borderBottom: val === 0 ? '1.5px solid #94a3b8' : '1px dashed #cbd5e1',
+                                      height: 0
+                                    }} />
+                                  );
+                                })}
+                              </div>
+
+                              {/* Left Y Labels (EBITDA) */}
+                              <div style={{ position: 'absolute', left: 0, width: '34px', height: '150px', pointerEvents: 'none' }}>
+                                {[800000, 400000, 0, -200000, -400000].map((val) => {
+                                  const y = ((val - (-400000)) / 1200000) * 150;
+                                  return (
+                                    <div key={val} style={{
+                                      position: 'absolute',
+                                      right: '4px',
+                                      bottom: `${y - 5}px`,
+                                      fontSize: '10px',
+                                      fontWeight: 800,
+                                      color: '#64748b',
+                                      textAlign: 'right'
+                                    }}>
+                                      {val === 0 ? '0' : val > 0 ? `${val/1000}k` : `-${Math.abs(val)/1000}k`}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
+                              {/* Right Y Labels (ROI) */}
+                              <div style={{ position: 'absolute', right: 0, width: '28px', height: '150px', pointerEvents: 'none' }}>
+                                {[80, 40, 0, -20, -40].map((val) => {
+                                  const y = ((val - (-40)) / 120) * 150;
+                                  return (
+                                    <div key={val} style={{
+                                      position: 'absolute',
+                                      left: '4px',
+                                      bottom: `${y - 5}px`,
+                                      fontSize: '10px',
+                                      fontWeight: 800,
+                                      color: '#64748b',
+                                      textAlign: 'left'
+                                    }}>
+                                      {val}%
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
+                              {/* Bars Area */}
+                              <div style={{
+                                position: 'absolute',
+                                left: '38px',
+                                right: '32px',
+                                top: 0,
+                                height: '150px',
+                                display: 'flex',
+                                justifyContent: 'space-around',
+                                zIndex: 1
+                              }}>
+                                {proyecciones.map((p) => {
+                                  const eb = p.margenAnualMxn;
+                                  const hEb = (Math.abs(eb) / 1200000) * 150;
+                                  const bottomEb = eb >= 0 ? 50 : 50 - hEb;
+
+                                  // Place EBITDA label
+                                  const labelBottom = eb >= 0 ? bottomEb + hEb + 4 : bottomEb - 16;
+
+                                  return (
+                                    <div key={p.m} style={{ position: 'relative', width: '48px', height: '150px' }}>
+                                      
+                                      {/* EBITDA Bar */}
+                                      <div style={{
+                                        position: 'absolute',
+                                        left: '16px',
+                                        bottom: `${bottomEb}px`,
+                                        width: '16px',
+                                        height: `${hEb}px`,
+                                        background: '#0e7490',
+                                        borderRadius: eb >= 0 ? '2px 2px 0 0' : '0 0 2px 2px'
+                                      }} />
+
+                                      {/* EBITDA Bar Label */}
+                                      <div style={{
+                                        position: 'absolute',
+                                        bottom: `${labelBottom}px`,
+                                        left: '50%',
+                                        transform: 'translateX(-50%)',
+                                        fontSize: '10px',
+                                        fontWeight: 900,
+                                        color: '#0e7490',
+                                        whiteSpace: 'nowrap',
+                                        zIndex: 10
+                                      }}>
+                                        {moneyShort(eb)}
+                                      </div>
+
+                                      {/* X Axis Label */}
+                                      <span style={{
+                                        position: 'absolute',
+                                        bottom: '-18px',
+                                        left: '50%',
+                                        transform: 'translateX(-50%)',
+                                        fontSize: '11px',
+                                        fontWeight: 900,
+                                        color: '#475569'
+                                      }}>
+                                        x{p.m}
+                                      </span>
+
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
+                              {/* Line Overlay (SVG) */}
+                              <svg style={{
+                                position: 'absolute',
+                                left: '38px',
+                                right: '32px',
+                                top: 0,
+                                width: 'calc(100% - 70px)',
+                                height: '150px',
+                                zIndex: 2,
+                                pointerEvents: 'none'
+                              }}>
+                                {(() => {
+                                  const points = proyecciones.map((p, i) => {
+                                    const roi = p.roiAnual;
+                                    const y = 150 - (((roi - (-40)) / 120) * 150);
+                                    return { i, roi, y };
+                                  });
+
+                                  return (
+                                    <>
+                                      <path
+                                        d={points.map((pt, i) => {
+                                          const xPct = ((i + 0.5) / 5) * 100;
+                                          return `${i === 0 ? 'M' : 'L'} ${xPct}% ${pt.y}`;
+                                        }).join(' ')}
+                                        fill="none"
+                                        stroke="#1e293b"
+                                        strokeWidth="2"
+                                      />
+                                      {points.map((pt, i) => {
+                                        const xPct = ((i + 0.5) / 5) * 100;
+                                        
+                                        // Dynamic text label position above/below the line dot to prevent collision
+                                        const labelY = pt.roi >= 0 ? pt.y - 10 : pt.y + 16;
+
+                                        return (
+                                          <g key={i}>
+                                            <circle
+                                              cx={`${xPct}%`}
+                                              cy={pt.y}
+                                              r="4.5"
+                                              fill="#ffffff"
+                                              stroke="#1e293b"
+                                              strokeWidth="2"
+                                            />
+                                            <text
+                                              x={`${xPct}%`}
+                                              y={labelY}
+                                              textAnchor="middle"
+                                              fill="#16a34a"
+                                              fontSize="10.5px"
+                                              fontWeight="900"
+                                            >
+                                              {pt.roi.toFixed(1)}%
+                                            </text>
+                                          </g>
+                                        );
+                                      })}
+                                    </>
+                                  );
+                                })()}
+                              </svg>
+
+                            </div>
+                          </div>
+
+                        </div>
+                      </div>
+
+                      {/* Footer Key Insight Box */}
+                      <div style={{
+                        background: '#ffffff',
+                        border: '1.5px solid #cbd5e1',
+                        borderRadius: '14px',
+                        padding: '12px 18px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '16px',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+                          <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#ccfbf1', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0d9488" strokeWidth="2.5">
+                              <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A5 5 0 0 0 8 8c0 1 .3 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" />
+                              <line x1="9" y1="18" x2="15" y2="18" />
+                              <line x1="10" y1="22" x2="14" y2="22" />
+                            </svg>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                            <span style={{ fontSize: '13px', fontWeight: 950, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                              Insight Clave:
+                            </span>
+                            <p style={{ fontSize: '12.5px', color: '#475569', margin: 0, lineHeight: '1.4' }}>
+                              La viabilidad financiera inicia en el escenario <strong style={{ color: '#0d9488' }}>x3</strong>. Los escenarios <strong style={{ color: '#0d9488' }}>x4</strong> y <strong style={{ color: '#0d9488' }}>x5</strong> mejoran significativamente el ROI y reducen el tiempo de retorno, destacando <strong style={{ color: '#16a34a' }}>x5 con {maxRoi.toFixed(1)}% de ROI</strong> y <strong style={{ color: '#ea580c' }}>{minPayback.toFixed(1)} meses</strong> de payback.
+                            </p>
+                          </div>
+                        </div>
+                        {/* Right side icons */}
+                        <div style={{ display: 'flex', gap: '16px', flexShrink: 0 }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0d9488" strokeWidth="2.5">
+                              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                              <polyline points="17 6 23 6 23 12" />
+                            </svg>
+                            <span style={{ fontSize: '9.5px', fontWeight: 800, color: '#64748b', textAlign: 'center', width: '60px', lineHeight: '1.2' }}>Mayor rentabilidad</span>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ea580c" strokeWidth="2.5">
+                              <circle cx="12" cy="12" r="10" />
+                              <polyline points="12 6 12 12 16 14" />
+                            </svg>
+                            <span style={{ fontSize: '9.5px', fontWeight: 800, color: '#64748b', textAlign: 'center', width: '60px', lineHeight: '1.2' }}>Menor tiempo de retorno</span>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2.5">
+                              <circle cx="12" cy="12" r="10" />
+                              <circle cx="12" cy="12" r="6" />
+                            </svg>
+                            <span style={{ fontSize: '9.5px', fontWeight: 800, color: '#64748b', textAlign: 'center', width: '60px', lineHeight: '1.2' }}>Decisiones más inteligentes</span>
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
+                  );
+                })()}
               </div>
               {renderPageFooter(10, 11)}
             </div>
@@ -5187,14 +5952,14 @@ export default function MolexSimulator() {
             <div className="lma-page" style={S.page}>
               <div className="lma-page-inner" style={S.inner}>
                 {renderPageHeader("11. MATRIZ DE RIESGOS Y CONDICIONES DE RENTABILIDAD", "Evaluación de riesgos operativos de procesamiento de cobre, contingencia y mantenimiento")}
-                <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 20 }}>
+                <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 32, marginTop: 12 }}>
                   
                   {/* Riesgos */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <div style={{ fontSize: '10px', fontWeight: 950, color: '#334155', borderBottom: '1px solid #cbd5e1', paddingBottom: 4, textTransform: 'uppercase' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    <div style={{ fontSize: '15px', fontWeight: 950, color: '#334155', borderBottom: '1px solid #cbd5e1', paddingBottom: 6, textTransform: 'uppercase', letterSpacing: '0.3px' }}>
                       Riesgos Operativos Clave
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                       {[
                         { label: 'Exposición a Polvo Fino de PVC', val: inputs.riesgoPolvo, mitigation: 'Instalación de Extractor Industrial centers-grade.' },
                         { label: 'Humedad en Envoltura Plástica', val: inputs.riesgoHumedad, mitigation: 'Secado previo y pre-clasificación del material de entrada.' },
@@ -5204,15 +5969,15 @@ export default function MolexSimulator() {
                         const color = r.val === 'alto' ? '#ef4444' : r.val === 'medio' ? '#f59e0b' : '#10b981';
                         const bg = r.val === 'alto' ? '#fef2f2' : r.val === 'medio' ? '#fffbeb' : '#f0fdf4';
                         return (
-                          <div key={i} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <div key={i} style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: 12, padding: '12px 18px', display: 'flex', flexDirection: 'column', gap: 6, boxShadow: '0 2px 4px rgba(0,0,0,0.01)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span style={{ fontSize: '9px', fontWeight: 800, color: '#0f172a' }}>{r.label}</span>
-                              <span style={{ fontSize: '8px', fontWeight: 900, color: color, background: bg, border: `1px solid ${color}`, padding: '1px 6px', borderRadius: 10, textTransform: 'uppercase' }}>
+                              <span style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>{r.label}</span>
+                              <span style={{ fontSize: '12px', fontWeight: 900, color: color, background: bg, border: `1.5px solid ${color}`, padding: '2px 10px', borderRadius: 14, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                 {r.val}
                               </span>
                             </div>
-                            <p style={{ fontSize: '8px', color: '#64748b', margin: 0 }}>
-                              <strong>Mitigación:</strong> {r.mitigation}
+                            <p style={{ fontSize: '12.5px', color: '#475569', margin: 0, lineHeight: '1.4' }}>
+                              <strong style={{ color: '#334155' }}>Mitigación:</strong> {r.mitigation}
                             </p>
                           </div>
                         );
@@ -5221,26 +5986,26 @@ export default function MolexSimulator() {
                   </div>
 
                   {/* Mtto y seguridad */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    <div style={{ fontSize: '10px', fontWeight: 950, color: '#334155', borderBottom: '1px solid #cbd5e1', paddingBottom: 4, textTransform: 'uppercase' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    <div style={{ fontSize: '15px', fontWeight: 950, color: '#334155', borderBottom: '1px solid #cbd5e1', paddingBottom: 6, textTransform: 'uppercase', letterSpacing: '0.3px' }}>
                       Mantenimiento & Seguridad Requerida
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                      <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px', textAlign: 'center' }}>
-                        <span style={{ display: 'block', fontSize: '8px', fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase' }}>Vida Útil Cuchillas</span>
-                        <span style={{ fontSize: '14px', fontWeight: 950, color: '#0f172a' }}>{inputs.vidaUtilCuchillasHoras} hrs</span>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                      <div style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: 12, padding: '14px 10px', textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.01)' }}>
+                        <span style={{ display: 'block', fontSize: '12px', fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', marginBottom: 4, letterSpacing: '0.3px' }}>Vida Útil Cuchillas</span>
+                        <span style={{ fontSize: '22px', fontWeight: 950, color: '#0f172a' }}>{inputs.vidaUtilCuchillasHoras} hrs</span>
                       </div>
-                      <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px', textAlign: 'center' }}>
-                        <span style={{ display: 'block', fontSize: '8px', fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase' }}>Mtto Preventivo</span>
-                        <span style={{ fontSize: '14px', fontWeight: 950, color: '#0f172a' }}>{inputs.frecuenciaMantenimientoHoras} hrs</span>
+                      <div style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: 12, padding: '14px 10px', textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.01)' }}>
+                        <span style={{ display: 'block', fontSize: '12px', fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', marginBottom: 4, letterSpacing: '0.3px' }}>Mtto Preventivo</span>
+                        <span style={{ fontSize: '22px', fontWeight: 950, color: '#0f172a' }}>{inputs.frecuenciaMantenimientoHoras} hrs</span>
                       </div>
                     </div>
 
-                    <div style={{ background: '#faf5ff', border: '1px solid #f3e8ff', borderRadius: 10, padding: '10px 14px' }}>
-                      <span style={{ fontSize: '9px', fontWeight: 950, color: '#6b21a8', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
+                    <div style={{ background: '#faf5ff', border: '1.5px solid #f3e8ff', borderRadius: 14, padding: '16px 20px', boxShadow: '0 2px 4px rgba(0,0,0,0.01)' }}>
+                      <span style={{ fontSize: '14px', fontWeight: 950, color: '#6b21a8', textTransform: 'uppercase', display: 'block', marginBottom: 10, letterSpacing: '0.3px' }}>
                         Requisitos de Infraestructura Obligatorios
                       </span>
-                      <ul style={{ margin: 0, paddingLeft: 12, fontSize: '8px', color: '#581c87', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <ul style={{ margin: 0, paddingLeft: 14, fontSize: '12.5px', color: '#581c87', display: 'flex', flexDirection: 'column', gap: 8, lineHeight: '1.4' }}>
                         <li>Extractor de polvo PVC con filtro HEPA activo.</li>
                         <li>Protección acústica obligatoria (cabina o PPE &gt; 85dB).</li>
                         <li>Imán de neodimio de alta potencia en la tolva de entrada.</li>
