@@ -19,7 +19,7 @@ import html2canvas from "html2canvas";
 import { createPortal } from "react-dom";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
-  ResponsiveContainer, Cell, AreaChart, Area, LineChart, Line 
+  ResponsiveContainer, Cell, AreaChart, Area, LineChart, Line, ComposedChart 
 } from "recharts";
 
 
@@ -3691,112 +3691,162 @@ export default function MolexSimulator() {
             <div className="lma-page" style={S.page}>
               <div className="lma-page-inner" style={S.inner}>
                 {renderPageHeader("3. FICHA TÉCNICA Y COMPONENTES / FLUJO DEL PROCESO", "Esquema secuencial de la línea de separación y granulación de cables")}
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10, alignItems: 'stretch' }}>
-                    
-                    {/* Card 1 */}
-                    <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderTop: '4px solid #00989d', borderRadius: '12px', padding: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '8px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontSize: '8px', fontWeight: 900, background: '#00989d', color: '#fff', padding: '2px 5px', borderRadius: '4px' }}>01</span>
-                          <span style={{ fontSize: '8px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>FEED_01</span>
-                        </div>
-                        <h4 style={{ fontSize: '10px', fontWeight: 900, color: '#0f172a', marginTop: '6px', textTransform: 'uppercase' }}>Alimentación</h4>
-                        <p style={{ fontSize: '8px', color: '#64748b', marginTop: '4px', lineHeight: '1.3' }}>
-                          Carga continua y desbobinado de cables de cobre descarte hacia la peladora.
-                        </p>
-                      </div>
-                      <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '6px', fontSize: '8px', fontWeight: 900, color: '#00989d', textTransform: 'uppercase', textAlign: 'center' }}>
-                        BOBINA: ACTIVA
-                      </div>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '16px', padding: '4px 10px' }}>
+                  
+                  {/* Title Area */}
+                  <div style={{ textAlign: 'center' }}>
+                    <h2 style={{ fontSize: '22px', fontWeight: 950, color: '#1e3a8a', textTransform: 'uppercase', margin: 0, letterSpacing: '0.5px' }}>Flujo de Trabajo</h2>
+                    <h3 style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', margin: '4px 0 0 0', letterSpacing: '0.5px' }}>Proceso Integrado de Reciclaje de Cobre</h3>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginTop: '10px' }}>
+                      <div style={{ width: '28px', height: '3px', background: '#00b0b9' }} />
+                      <div style={{ width: '28px', height: '3px', background: '#3b82f6' }} />
+                      <div style={{ width: '28px', height: '3px', background: '#f97316' }} />
+                      <div style={{ width: '28px', height: '3px', background: '#a855f7' }} />
+                      <div style={{ width: '28px', height: '3px', background: '#22c55e' }} />
+                      <div style={{ width: '28px', height: '3px', background: '#ef4444' }} />
                     </div>
-
-                    {/* Card 2 */}
-                    <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderTop: '4px solid #3b82f6', borderRadius: '12px', padding: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '8px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontSize: '8px', fontWeight: 900, background: '#3b82f6', color: '#fff', padding: '2px 5px', borderRadius: '4px' }}>02</span>
-                          <span style={{ fontSize: '8px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>INLET_02</span>
-                        </div>
-                        <h4 style={{ fontSize: '10px', fontWeight: 900, color: '#0f172a', marginTop: '6px', textTransform: 'uppercase' }}>Pre-Corte</h4>
-                        <p style={{ fontSize: '8px', color: '#64748b', marginTop: '4px', lineHeight: '1.3' }}>
-                          Peladora mecánica y cortadora longitudinal para reducir el tamaño inicial.
-                        </p>
-                      </div>
-                      <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '6px', fontSize: '8px', fontWeight: 900, color: '#3b82f6', textTransform: 'uppercase', textAlign: 'center' }}>
-                        CORTE: ACTIVO
-                      </div>
-                    </div>
-
-                    {/* Card 3 */}
-                    <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderTop: '4px solid #ea580c', borderRadius: '12px', padding: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '8px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontSize: '8px', fontWeight: 900, background: '#ea580c', color: '#fff', padding: '2px 5px', borderRadius: '4px' }}>03</span>
-                          <span style={{ fontSize: '8px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>SHRED_03</span>
-                        </div>
-                        <h4 style={{ fontSize: '10px', fontWeight: 900, color: '#0f172a', marginTop: '6px', textTransform: 'uppercase' }}>Granulación</h4>
-                        <p style={{ fontSize: '8px', color: '#64748b', marginTop: '4px', lineHeight: '1.3' }}>
-                          Granulador de cuchillas rotativas que pulveriza el cable a partículas.
-                        </p>
-                      </div>
-                      <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '6px', fontSize: '8px', fontWeight: 900, color: '#ea580c', textTransform: 'uppercase', textAlign: 'center' }}>
-                        MEDIDA: 3-5 MM
-                      </div>
-                    </div>
-
-                    {/* Card 4 */}
-                    <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderTop: '4px solid #a855f7', borderRadius: '12px', padding: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '8px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontSize: '8px', fontWeight: 900, background: '#a855f7', color: '#fff', padding: '2px 5px', borderRadius: '4px' }}>04</span>
-                          <span style={{ fontSize: '8px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>SEP_04</span>
-                        </div>
-                        <h4 style={{ fontSize: '10px', fontWeight: 900, color: '#0f172a', marginTop: '6px', textTransform: 'uppercase' }}>Separación</h4>
-                        <p style={{ fontSize: '8px', color: '#64748b', marginTop: '4px', lineHeight: '1.3' }}>
-                          Separación neumática y densimétrica por vibración de alta frecuencia.
-                        </p>
-                      </div>
-                      <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '6px', fontSize: '8px', fontWeight: 900, color: '#a855f7', textTransform: 'uppercase', textAlign: 'center' }}>
-                        EFIC: {calculations.recTotalPct.toFixed(2)}%
-                      </div>
-                    </div>
-
-                    {/* Card 5 */}
-                    <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderTop: '4px solid #10b981', borderRadius: '12px', padding: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '8px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontSize: '8px', fontWeight: 900, background: '#10b981', color: '#fff', padding: '2px 5px', borderRadius: '4px' }}>05</span>
-                          <span style={{ fontSize: '8px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>PRESS_05</span>
-                        </div>
-                        <h4 style={{ fontSize: '10px', fontWeight: 900, color: '#0f172a', marginTop: '6px', textTransform: 'uppercase' }}>Compactación</h4>
-                        <p style={{ fontSize: '8px', color: '#64748b', marginTop: '4px', lineHeight: '1.3' }}>
-                          Prensa briqueteadora que compacta el polvo fino de cobre en piezas sólidas.
-                        </p>
-                      </div>
-                      <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '6px', fontSize: '8px', fontWeight: 900, color: '#10b981', textTransform: 'uppercase', textAlign: 'center' }}>
-                        BRIQUETA: ALTA D.
-                      </div>
-                    </div>
-
-                    {/* Card 6 */}
-                    <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderTop: '4px solid #ef4444', borderRadius: '12px', padding: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '8px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontSize: '8px', fontWeight: 900, background: '#ef4444', color: '#fff', padding: '2px 5px', borderRadius: '4px' }}>06</span>
-                          <span style={{ fontSize: '8px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>OUTPUT_06</span>
-                        </div>
-                        <h4 style={{ fontSize: '10px', fontWeight: 900, color: '#0f172a', marginTop: '6px', textTransform: 'uppercase' }}>Cobre Limpio</h4>
-                        <p style={{ fontSize: '8px', color: '#64748b', marginTop: '4px', lineHeight: '1.3' }}>
-                          Obtención de cobre rojo (99% pureza) y estañado listos para comercializar.
-                        </p>
-                      </div>
-                      <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '6px', fontSize: '8px', fontWeight: 900, color: '#ef4444', textTransform: 'uppercase', textAlign: 'center' }}>
-                        COBRE: P/EST.
-                      </div>
-                    </div>
-
                   </div>
+
+                  {/* Cards Area */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px' }}>
+                    {[
+                      { id: '01', title: 'Alimentación', code: 'FEED_01', color: '#00b0b9', desc: 'Carga continua y desbobinado de cables de cobre hacia la peladora.', footer: 'BOBINA: ACTIVA' },
+                      { id: '02', title: 'Pre-Corte', code: 'INLET_02', color: '#3b82f6', desc: 'Peladora mecánica y cortadora longitudinal para reducir el tamaño inicial.', footer: 'CORTE: ACTIVO' },
+                      { id: '03', title: 'Granulación', code: 'SHRED_03', color: '#f97316', desc: 'Granulador de cuchillas rotativas que pulveriza el cable a partículas uniformes.', footer: 'MEDIDA: 3-5 MM' },
+                      { id: '04', title: 'Separación', code: 'SEP_04', color: '#a855f7', desc: 'Separación neumática y densimétrica por vibración de alta frecuencia para separar cobre del aislante.', footer: `EFICIENCIA: ${calculations.recTotalPct.toFixed(2)}%` },
+                      { id: '05', title: 'Almacenamiento', code: 'STORE_05', color: '#22c55e', desc: 'Almacenamiento temporal y controlado del cobre granulado para su manejo y clasificación final.', footer: 'RESGUARDO: SEGURO' },
+                      { id: '06', title: 'Cobre Granulado', code: 'OUTPUT_06', color: '#ef4444', desc: 'Obtención y almacenamiento separado de cobre granulado, clasificado en cobre puro y cobre estañado listo para comercializar.', footer: 'SALIDA: 2 FRACCIONES' }
+                    ].map((step, idx) => (
+                      <React.Fragment key={step.id}>
+                        {/* Card */}
+                        <div style={{ 
+                          flex: 1, 
+                          background: '#ffffff', 
+                          border: `1.5px solid ${step.color}30`, 
+                          borderTop: `4.5px solid ${step.color}`, 
+                          borderRadius: '12px', 
+                          padding: '12px 10px', 
+                          display: 'flex', 
+                          flexDirection: 'column', 
+                          alignItems: 'center',
+                          textAlign: 'center',
+                          position: 'relative',
+                          height: '180px',
+                          boxShadow: '0 4px 10px rgba(0,0,0,0.03)'
+                        }}>
+                          {/* Top circle */}
+                          <div style={{
+                            width: '24px', height: '24px', borderRadius: '50%', background: step.color, color: '#fff', fontSize: '10px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '8px'
+                          }}>
+                            {step.id}
+                          </div>
+                          
+                          <h4 style={{ fontSize: '10px', fontWeight: 900, color: step.color, margin: 0, textTransform: 'uppercase' }}>{step.title}</h4>
+                          <span style={{ fontSize: '7.5px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '8px' }}>{step.code}</span>
+                          
+                          <p style={{ fontSize: '8px', color: '#475569', lineHeight: '1.4', flex: 1, margin: 0 }}>
+                            {step.desc}
+                          </p>
+                          
+                          <div style={{ width: '100%', borderTop: `1px solid ${step.color}20`, paddingTop: '8px', fontSize: '8px', fontWeight: 900, color: step.color, textTransform: 'uppercase', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            {step.footer}
+                          </div>
+                        </div>
+
+                        {/* Arrow */}
+                        {idx < 5 && (
+                          <div style={{ color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 2px' }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                          </div>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </div>
+
+                  {/* Timeline Below Cards */}
+                  <div style={{ position: 'relative', marginTop: '6px', padding: '0 10px' }}>
+                    <div style={{ position: 'absolute', left: '46px', right: '46px', top: '5px', height: '1.5px', background: '#cbd5e1', zIndex: 0 }} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative', zIndex: 1 }}>
+                      {[
+                        { color: '#00b0b9', title: 'Entrada Continua', desc: 'Alimentación automática desde bobina' },
+                        { color: '#3b82f6', title: 'Preparación', desc: 'Reducción de tamaño para proceso eficiente' },
+                        { color: '#f97316', title: 'Granulación', desc: 'Partículas uniformes de 3 a 5 mm' },
+                        { color: '#a855f7', title: 'Separación Avanzada', desc: 'Tecnología neumática y vibración de alta frecuencia' },
+                        { color: '#22c55e', title: 'Almacenamiento', desc: 'Resguardo ordenado del material granulado' },
+                        { color: '#ef4444', title: 'Clasificación Final', desc: 'Separado en cobre puro y cobre estañado' }
+                      ].map((tl, i) => (
+                        <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '15%', textAlign: 'center' }}>
+                          <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: tl.color, border: '2px solid #fff', boxShadow: '0 0 0 1.5px #cbd5e1' }} />
+                          <span style={{ fontSize: '8.5px', fontWeight: 900, color: tl.color, marginTop: '8px' }}>{tl.title}</span>
+                          <span style={{ fontSize: '7.5px', fontWeight: 600, color: '#64748b', marginTop: '2px', lineHeight: '1.2' }}>{tl.desc}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Bottom Feature Boxes */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', marginTop: '6px' }}>
+                    {[
+                      { 
+                        title: 'PROCESO AUTOMATIZADO', 
+                        desc: 'Sistema continuo con control automatizado en cada etapa', 
+                        icon: (
+                          <g>
+                            <circle cx="12" cy="12" r="9" stroke="#0ea5e9" strokeWidth="2" fill="none"/>
+                            <circle cx="12" cy="12" r="3" stroke="#0ea5e9" strokeWidth="2" fill="none"/>
+                            <line x1="12" y1="2" x2="12" y2="6" stroke="#0ea5e9" strokeWidth="2" strokeLinecap="round"/>
+                            <line x1="12" y1="18" x2="12" y2="22" stroke="#0ea5e9" strokeWidth="2" strokeLinecap="round"/>
+                            <line x1="2" y1="12" x2="6" y2="12" stroke="#0ea5e9" strokeWidth="2" strokeLinecap="round"/>
+                            <line x1="18" y1="12" x2="22" y2="12" stroke="#0ea5e9" strokeWidth="2" strokeLinecap="round"/>
+                          </g>
+                        ) 
+                      },
+                      { 
+                        title: 'ALTA EFICIENCIA', 
+                        desc: `${calculations.recTotalPct.toFixed(2)}% de eficiencia en separación de cobre`, 
+                        icon: (
+                          <g>
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="#3b82f6" strokeWidth="2" fill="none"/>
+                            <path d="m9 12 2 2 4-4" stroke="#3b82f6" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                          </g>
+                        ) 
+                      },
+                      { 
+                        title: 'SOSTENIBLE', 
+                        desc: 'Tecnología limpia que cuida el medio ambiente', 
+                        icon: (
+                          <g>
+                            <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" stroke="#22c55e" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M2 22 12 12" stroke="#22c55e" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                          </g>
+                        ) 
+                      },
+                      { 
+                        title: 'RENTABLE', 
+                        desc: 'Maximización del valor comercial del cobre', 
+                        icon: (
+                          <g>
+                            <rect x="18" y="4" width="4" height="16" rx="1" fill="#ef4444"/>
+                            <rect x="11" y="10" width="4" height="10" rx="1" fill="#ef4444"/>
+                            <rect x="4" y="14" width="4" height="6" rx="1" fill="#ef4444"/>
+                            <path d="M2 22h20" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"/>
+                          </g>
+                        ) 
+                      }
+                    ].map((box, i) => (
+                      <div key={i} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 8px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        <svg width="22" height="22" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+                          {box.icon}
+                        </svg>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '8.5px', fontWeight: 900, color: '#1e293b' }}>{box.title}</span>
+                          <span style={{ fontSize: '7.5px', color: '#64748b', lineHeight: '1.2' }}>{box.desc}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
                 </div>
               </div>
               {renderPageFooter(3, 11)}
@@ -5185,170 +5235,42 @@ export default function MolexSimulator() {
                         Comparativa Gráfica Mensual (MXN)
                       </span>
                       
-                      {/* Legend */}
-                      <div style={{ display: 'flex', gap: '16px', fontSize: '11px', color: '#64748b', marginBottom: '14px', fontWeight: 800 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <div style={{ width: '10px', height: '10px', background: '#00b0b9', borderRadius: '3px' }} />
-                          <span>Ventas</span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <div style={{ width: '10px', height: '10px', background: '#ef4444', borderRadius: '3px' }} />
-                          <span>OPEX (Fijo)</span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <div style={{ width: '10px', height: '10px', background: '#10b981', borderRadius: '3px' }} />
-                          <span>EBITDA</span>
-                        </div>
-                      </div>
-
                       {/* Chart Body */}
-                      <div style={{ position: 'relative', height: '240px', borderLeft: '2px solid #cbd5e1', boxSizing: 'border-box' }}>
-                        
-                        {/* Y Axis Grid Lines */}
-                        <div style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, pointerEvents: 'none' }}>
-                          {[120000, 100000, 80000, 60000, 40000, 20000, 0, -20000, -40000].map((val) => {
-                            const y = ((val - (-40000)) / 160000) * 240;
-                            const isZero = val === 0;
-                            return (
-                              <div key={val} style={{
-                                position: 'absolute',
-                                left: '56px',
-                                right: 0,
-                                bottom: `${y}px`,
-                                borderBottom: isZero ? '2px solid #94a3b8' : '1px dashed #e2e8f0',
-                                height: 0
-                              }} />
-                            );
-                          })}
-                        </div>
-
-                        {/* Y Axis Labels */}
-                        <div style={{ position: 'absolute', left: 0, width: '50px', height: '240px', pointerEvents: 'none' }}>
-                          {[120000, 100000, 80000, 60000, 40000, 20000, 0, -20000, -40000].map((val) => {
-                            const y = ((val - (-40000)) / 160000) * 240;
-                            return (
-                              <div key={val} style={{
-                                position: 'absolute',
-                                right: '6px',
-                                bottom: `${y - 6}px`,
-                                fontSize: '11px',
-                                fontWeight: 800,
-                                color: val === 0 ? '#1e293b' : '#64748b',
-                                lineHeight: '12px',
-                                textAlign: 'right'
-                              }}>
-                                {val.toLocaleString()}
-                              </div>
-                            );
-                          })}
-                        </div>
-
-                        {/* Bars Area */}
-                        <div style={{
-                          position: 'absolute',
-                          left: '56px',
-                          right: 0,
-                          top: 0,
-                          height: '240px',
-                          display: 'flex',
-                          justifyContent: 'space-around',
-                          alignItems: 'flex-end',
-                          zIndex: 1
-                        }}>
-                          {proyecciones.map((p) => {
-                            const vVenta = p.ventaMes;
-                            const vOpex = calculations.opexFixedMonthlyMxn;
-                            const vEbitda = p.margenMensualMxn;
-
-                            const hV = (vVenta / 160000) * 240;
-                            const hOp = (vOpex / 160000) * 240;
-                            const hEb = (Math.abs(vEbitda) / 160000) * 240;
-
-                            const bottomEb = vEbitda >= 0 ? 60 : 60 - hEb;
-
-                            return (
-                              <div key={p.m} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '84px' }}>
-                                <div style={{ position: 'relative', width: '72px', height: '240px' }}>
-                                  
-                                  {/* Ventas Bar */}
-                                  <div style={{
-                                    position: 'absolute',
-                                    left: '6px',
-                                    bottom: '60px',
-                                    width: '16px',
-                                    height: `${hV}px`,
-                                    background: '#00b0b9',
-                                    borderRadius: '2.5px 2.5px 0 0'
-                                  }}>
-                                    <div style={{
-                                      position: 'absolute',
-                                      bottom: `${hV + 15}px`,
-                                      left: '50%',
-                                      transform: 'translateX(-50%)',
-                                      fontSize: '10.5px',
-                                      fontWeight: 900,
-                                      color: '#0f766e',
-                                      whiteSpace: 'nowrap'
-                                    }}>
-                                      {moneyShort(vVenta)}
-                                    </div>
-                                  </div>
-
-                                  {/* OPEX Fijo Bar */}
-                                  <div style={{
-                                    position: 'absolute',
-                                    left: '28px',
-                                    bottom: '60px',
-                                    width: '16px',
-                                    height: `${hOp}px`,
-                                    background: '#ef4444',
-                                    borderRadius: '2.5px 2.5px 0 0'
-                                  }}>
-                                    {/* Place OPEX text inside the red bar to avoid horizontal collisions */}
-                                    <div style={{
-                                      position: 'absolute',
-                                      bottom: '12px',
-                                      left: '50%',
-                                      transform: 'translateX(-50%)',
-                                      fontSize: '10.5px',
-                                      fontWeight: 900,
-                                      color: '#ffffff',
-                                      whiteSpace: 'nowrap'
-                                    }}>
-                                      {moneyShort(vOpex)}
-                                    </div>
-                                  </div>
-
-                                  {/* EBITDA Bar */}
-                                  <div style={{
-                                    position: 'absolute',
-                                    left: '50px',
-                                    bottom: `${bottomEb}px`,
-                                    width: '16px',
-                                    height: `${hEb}px`,
-                                    background: '#10b981',
-                                    borderRadius: vEbitda >= 0 ? '2.5px 2.5px 0 0' : '0 0 2.5px 2.5px'
-                                  }}>
-                                    <div style={{
-                                      position: 'absolute',
-                                      bottom: vEbitda >= 0 ? `${hEb + 4}px` : `-16px`,
-                                      left: '50%',
-                                      transform: 'translateX(-50%)',
-                                      fontSize: '10.5px',
-                                      fontWeight: 900,
-                                      color: vEbitda >= 0 ? '#16a34a' : '#ef4444',
-                                      whiteSpace: 'nowrap'
-                                    }}>
-                                      {vEbitda < 0 ? `-${moneyShort(Math.abs(vEbitda))}` : moneyShort(vEbitda)}
-                                    </div>
-                                  </div>
-
-                                </div>
-                                <span style={{ fontSize: '12.5px', fontWeight: 900, color: '#475569', marginTop: '8px' }}>x{p.m}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
+                      <div style={{ height: '260px', width: '100%', marginTop: '10px' }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart 
+                            data={proyecciones.map(p => ({
+                              name: `x${p.m}`,
+                              Ventas: p.ventaMes,
+                              'OPEX (Fijo)': calculations.opexFixedMonthlyMxn,
+                              EBITDA: p.margenMensualMxn
+                            }))} 
+                            margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                            <XAxis 
+                              dataKey="name" 
+                              axisLine={{ stroke: '#94a3b8', strokeWidth: 2 }} 
+                              tickLine={false} 
+                              tick={{ fontSize: 12, fontWeight: 800, fill: '#64748b' }} 
+                            />
+                            <YAxis 
+                              tickFormatter={(val) => val === 0 ? '0' : (val / 1000) + 'k'} 
+                              axisLine={false} 
+                              tickLine={false} 
+                              tick={{ fontSize: 11, fill: '#64748b', fontWeight: 700 }} 
+                            />
+                            <Tooltip 
+                              formatter={(value) => moneyShort(value)}
+                              cursor={{ fill: 'rgba(0,0,0,0.04)' }}
+                              contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+                            />
+                            <Legend wrapperStyle={{ fontSize: '11px', fontWeight: 800, paddingTop: '10px' }} />
+                            <Bar dataKey="Ventas" fill="#00b0b9" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="OPEX (Fijo)" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="EBITDA" fill="#10b981" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
                       </div>
 
                       {/* Bottom Caption */}
@@ -5678,208 +5600,58 @@ export default function MolexSimulator() {
                               ROI y EBITDA Anual por Escenario
                             </span>
 
-                            {/* Legend */}
-                            <div style={{ display: 'flex', gap: '14px', fontSize: '10.5px', color: '#64748b', marginBottom: '4px', fontWeight: 800 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <div style={{ width: '10px', height: '10px', background: '#0e7490', borderRadius: '2px' }} />
-                                <span>EBITDA anual (MXN)</span>
-                              </div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <div style={{ width: '14px', height: '2px', background: '#1e293b' }} />
-                                <div style={{ width: '5px', height: '5px', background: '#1e293b', borderRadius: '50%', marginLeft: '-9px' }} />
-                                <span>ROI anual (%)</span>
-                              </div>
-                            </div>
-
                             {/* Chart Body */}
-                            <div style={{ position: 'relative', height: '150px', borderLeft: '1.5px solid #cbd5e1', borderRight: '1.5px solid #cbd5e1', boxSizing: 'border-box' }}>
-                              
-                              {/* Y-Grid */}
-                              <div style={{ position: 'absolute', left: '38px', right: '32px', top: 0, bottom: 0, pointerEvents: 'none' }}>
-                                {[800000, 400000, 0, -400000].map((val) => {
-                                  const y = ((val - (-400000)) / 1200000) * 150;
-                                  return (
-                                    <div key={val} style={{
-                                      position: 'absolute',
-                                      left: 0,
-                                      right: 0,
-                                      bottom: `${y}px`,
-                                      borderBottom: val === 0 ? '1.5px solid #94a3b8' : '1px dashed #cbd5e1',
-                                      height: 0
-                                    }} />
-                                  );
-                                })}
-                              </div>
-
-                              {/* Left Y Labels (EBITDA) */}
-                              <div style={{ position: 'absolute', left: 0, width: '34px', height: '150px', pointerEvents: 'none' }}>
-                                {[800000, 400000, 0, -200000, -400000].map((val) => {
-                                  const y = ((val - (-400000)) / 1200000) * 150;
-                                  return (
-                                    <div key={val} style={{
-                                      position: 'absolute',
-                                      right: '4px',
-                                      bottom: `${y - 5}px`,
-                                      fontSize: '10px',
-                                      fontWeight: 800,
-                                      color: '#64748b',
-                                      textAlign: 'right'
-                                    }}>
-                                      {val === 0 ? '0' : val > 0 ? `${val/1000}k` : `-${Math.abs(val)/1000}k`}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-
-                              {/* Right Y Labels (ROI) */}
-                              <div style={{ position: 'absolute', right: 0, width: '28px', height: '150px', pointerEvents: 'none' }}>
-                                {[80, 40, 0, -20, -40].map((val) => {
-                                  const y = ((val - (-40)) / 120) * 150;
-                                  return (
-                                    <div key={val} style={{
-                                      position: 'absolute',
-                                      left: '4px',
-                                      bottom: `${y - 5}px`,
-                                      fontSize: '10px',
-                                      fontWeight: 800,
-                                      color: '#64748b',
-                                      textAlign: 'left'
-                                    }}>
-                                      {val}%
-                                    </div>
-                                  );
-                                })}
-                              </div>
-
-                              {/* Bars Area */}
-                              <div style={{
-                                position: 'absolute',
-                                left: '38px',
-                                right: '32px',
-                                top: 0,
-                                height: '150px',
-                                display: 'flex',
-                                justifyContent: 'space-around',
-                                zIndex: 1
-                              }}>
-                                {proyecciones.map((p) => {
-                                  const eb = p.margenAnualMxn;
-                                  const hEb = (Math.abs(eb) / 1200000) * 150;
-                                  const bottomEb = eb >= 0 ? 50 : 50 - hEb;
-
-                                  // Place EBITDA label
-                                  const labelBottom = eb >= 0 ? bottomEb + hEb + 4 : bottomEb - 16;
-
-                                  return (
-                                    <div key={p.m} style={{ position: 'relative', width: '48px', height: '150px' }}>
-                                      
-                                      {/* EBITDA Bar */}
-                                      <div style={{
-                                        position: 'absolute',
-                                        left: '16px',
-                                        bottom: `${bottomEb}px`,
-                                        width: '16px',
-                                        height: `${hEb}px`,
-                                        background: '#0e7490',
-                                        borderRadius: eb >= 0 ? '2px 2px 0 0' : '0 0 2px 2px'
-                                      }} />
-
-                                      {/* EBITDA Bar Label */}
-                                      <div style={{
-                                        position: 'absolute',
-                                        bottom: `${labelBottom}px`,
-                                        left: '50%',
-                                        transform: 'translateX(-50%)',
-                                        fontSize: '10px',
-                                        fontWeight: 900,
-                                        color: '#0e7490',
-                                        whiteSpace: 'nowrap',
-                                        zIndex: 10
-                                      }}>
-                                        {moneyShort(eb)}
-                                      </div>
-
-                                      {/* X Axis Label */}
-                                      <span style={{
-                                        position: 'absolute',
-                                        bottom: '-18px',
-                                        left: '50%',
-                                        transform: 'translateX(-50%)',
-                                        fontSize: '11px',
-                                        fontWeight: 900,
-                                        color: '#475569'
-                                      }}>
-                                        x{p.m}
-                                      </span>
-
-                                    </div>
-                                  );
-                                })}
-                              </div>
-
-                              {/* Line Overlay (SVG) */}
-                              <svg style={{
-                                position: 'absolute',
-                                left: '38px',
-                                right: '32px',
-                                top: 0,
-                                width: 'calc(100% - 70px)',
-                                height: '150px',
-                                zIndex: 2,
-                                pointerEvents: 'none'
-                              }}>
-                                {(() => {
-                                  const points = proyecciones.map((p, i) => {
-                                    const roi = p.roiAnual;
-                                    const y = 150 - (((roi - (-40)) / 120) * 150);
-                                    return { i, roi, y };
-                                  });
-
-                                  return (
-                                    <>
-                                      <path
-                                        d={points.map((pt, i) => {
-                                          const xPct = ((i + 0.5) / 5) * 100;
-                                          return `${i === 0 ? 'M' : 'L'} ${xPct}% ${pt.y}`;
-                                        }).join(' ')}
-                                        fill="none"
-                                        stroke="#1e293b"
-                                        strokeWidth="2"
-                                      />
-                                      {points.map((pt, i) => {
-                                        const xPct = ((i + 0.5) / 5) * 100;
-                                        
-                                        // Dynamic text label position above/below the line dot to prevent collision
-                                        const labelY = pt.roi >= 0 ? pt.y - 10 : pt.y + 16;
-
-                                        return (
-                                          <g key={i}>
-                                            <circle
-                                              cx={`${xPct}%`}
-                                              cy={pt.y}
-                                              r="4.5"
-                                              fill="#ffffff"
-                                              stroke="#1e293b"
-                                              strokeWidth="2"
-                                            />
-                                            <text
-                                              x={`${xPct}%`}
-                                              y={labelY}
-                                              textAnchor="middle"
-                                              fill="#16a34a"
-                                              fontSize="10.5px"
-                                              fontWeight="900"
-                                            >
-                                              {pt.roi.toFixed(1)}%
-                                            </text>
-                                          </g>
-                                        );
-                                      })}
-                                    </>
-                                  );
-                                })()}
-                              </svg>
-
+                            <div style={{ height: '180px', width: '100%', marginTop: '4px' }}>
+                              <ResponsiveContainer width="100%" height="100%">
+                                <ComposedChart 
+                                  data={proyecciones.map(p => ({
+                                    name: `x${p.m}`,
+                                    'EBITDA anual (MXN)': p.margenAnualMxn,
+                                    'ROI anual (%)': p.roiAnual
+                                  }))}
+                                  margin={{ top: 10, right: 0, left: -20, bottom: 0 }}
+                                >
+                                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                  <XAxis 
+                                    dataKey="name" 
+                                    axisLine={{ stroke: '#94a3b8', strokeWidth: 1.5 }} 
+                                    tickLine={false} 
+                                    tick={{ fontSize: 11, fontWeight: 800, fill: '#64748b' }} 
+                                  />
+                                  <YAxis 
+                                    yAxisId="left"
+                                    orientation="left"
+                                    tickFormatter={(val) => val === 0 ? '0' : val > 0 ? `${val/1000}k` : `-${Math.abs(val)/1000}k`} 
+                                    axisLine={false} 
+                                    tickLine={false} 
+                                    tick={{ fontSize: 10, fill: '#64748b', fontWeight: 700 }} 
+                                  />
+                                  <YAxis 
+                                    yAxisId="right"
+                                    orientation="right"
+                                    tickFormatter={(val) => `${val}%`} 
+                                    axisLine={false} 
+                                    tickLine={false} 
+                                    tick={{ fontSize: 10, fill: '#64748b', fontWeight: 700 }} 
+                                  />
+                                  <Tooltip 
+                                    formatter={(value, name) => name === 'EBITDA anual (MXN)' ? moneyShort(value) : `${value.toFixed(1)}%`}
+                                    cursor={{ fill: 'rgba(0,0,0,0.04)' }}
+                                    contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+                                  />
+                                  <Legend wrapperStyle={{ fontSize: '10px', fontWeight: 800, paddingTop: '5px' }} />
+                                  <Bar yAxisId="left" dataKey="EBITDA anual (MXN)" fill="#0e7490" barSize={16} radius={[2, 2, 0, 0]} />
+                                  <Line 
+                                    yAxisId="right" 
+                                    type="monotone" 
+                                    dataKey="ROI anual (%)" 
+                                    stroke="#1e293b" 
+                                    strokeWidth={2} 
+                                    dot={{ fill: '#ffffff', stroke: '#1e293b', strokeWidth: 2, r: 4.5 }} 
+                                    activeDot={{ r: 6 }} 
+                                  />
+                                </ComposedChart>
+                              </ResponsiveContainer>
                             </div>
                           </div>
 

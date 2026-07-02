@@ -5,7 +5,8 @@ const LanguageContext = createContext();
 
 export function LanguageProvider({ children }) {
   const [language, setLanguage] = useState(() => {
-    return localStorage.getItem('pandora_language') || 'es';
+    localStorage.setItem('pandora_language', 'es');
+    return 'es';
   });
 
   useEffect(() => {
