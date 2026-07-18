@@ -17,7 +17,11 @@ export default function RyderReportModal({ reportData, printWindow, clearPrintWi
     conclusions, installedPowerKw, waterParams, productImageBase64,
     twinSnapshotLateral: reportTwinSnapshotLateral,
     twinSnapshotSuperior: reportTwinSnapshotSuperior,
-    twinSnapshotIsometrica: reportTwinSnapshotIsometrica
+    twinSnapshotIsometrica: reportTwinSnapshotIsometrica,
+    pumpsKw: passedPumpsKw,
+    blowersKw: passedBlowersKw,
+    heatingKw: passedHeatingKw,
+    beltKw: passedBeltKw,
   } = reportData;
 
   // Parámetros Hídricos y Cálculos
@@ -168,10 +172,10 @@ export default function RyderReportModal({ reportData, printWindow, clearPrintWi
   const energyInputs = inputs || { shifts: 2, hoursPerShift: 8, daysPerMonth: 26 };
   const totalPowerKw = installedPowerKw ?? 89.5;
   const energyConfig = {
-    pumpsKw: totalPowerKw * (30.0 / 89.5),
-    blowersKw: totalPowerKw * (22.0 / 89.5),
-    beltKw: totalPowerKw * (1.5 / 89.5),
-    heatingKw: totalPowerKw * (36.0 / 89.5),
+    pumpsKw: passedPumpsKw !== undefined ? passedPumpsKw : totalPowerKw * (30.0 / 89.5),
+    blowersKw: passedBlowersKw !== undefined ? passedBlowersKw : totalPowerKw * (22.0 / 89.5),
+    beltKw: passedBeltKw !== undefined ? passedBeltKw : totalPowerKw * (1.5 / 89.5),
+    heatingKw: passedHeatingKw !== undefined ? passedHeatingKw : totalPowerKw * (36.0 / 89.5),
     electricityRate: 2.50, // MXN por kWh
   };
   const activeLoadFactor = 0.85;

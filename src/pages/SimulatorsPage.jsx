@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Layers, Activity, Plus, Copy, Trash2, Edit3, X, Eye } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -70,7 +71,7 @@ function SimulatorsPage() {
       {
         id: 'forvia',
         name: 'FORVIA',
-        description: 'Simulador de Velocidad vs Cajas para línea de lavado y secado BDW 200 (140 m/h max) con Digital Twin 3D.',
+        description: 'Simulador de Velocidad vs Cajas para línea de lavado y secado BWS-250 (140 m/h max) con Digital Twin 3D.',
         icon: 'Activity',
         color: '#e11d48',
         isSystem: true
@@ -90,22 +91,32 @@ function SimulatorsPage() {
         icon: 'Activity',
         color: '#0f766e',
         isSystem: true
+      },
+      {
+        id: 'dhl',
+        name: 'DHL',
+        description: 'Simulador de Velocidad vs Cajas para línea de lavado y secado BWS-250 con acomodo premium e informe dinámico estilo Electriz.',
+        icon: 'Activity',
+        color: '#eab308',
+        isSystem: true
       }
     ];
 
-    // Filtrar de la lista cargada cualquier duplicado de sistema o preset manual antiguo
     const filteredList = Array.isArray(list) ? list.filter(s => {
       if (!s || !s.id) return false;
       const lowerId = s.id.toLowerCase();
-      const lowerName = (s.name || '').toLowerCase();
-      if (['rider', 'grupo-gusi', 'iase', 'lma-500', 'smq-automatic', 'carrier', 'forvia', 'wm-500', 'molex'].includes(lowerId)) return false;
-      if (['iase', 'lma-500', 'smq cotizador', 'carrier', 'forvia', 'wm-500', 'molex'].includes(lowerName)) return false;
+      // Solo filtrar por IDs de sistema, no por nombre, para que los clones legítimos con el mismo nombre no sean borrados
+      if (['rider', 'grupo-gusi', 'iase', 'lma-500', 'smq-automatic', 'carrier', 'forvia', 'wm-500', 'molex', 'dhl'].includes(lowerId)) return false;
       return true;
     }) : [];
 
     const merged = [...filteredList];
+    
+    let hiddenSims = [];
+    try { hiddenSims = JSON.parse(localStorage.getItem('pandora_hidden_simulators') || '[]'); } catch(e) {}
+    
     defaults.forEach(d => {
-      if (!merged.some(s => s.id === d.id)) {
+      if (!merged.some(s => s.id === d.id) && !hiddenSims.includes(d.id)) {
         merged.push(d);
       }
     });
@@ -117,6 +128,34 @@ function SimulatorsPage() {
   useEffect(() => {
     localStorage.setItem('pandora_simulators', JSON.stringify(simulators));
   }, [simulators]);
+
+  // Asegurar que DHL siempre se restaure si no aparece en el Hub
+  useEffect(() => {
+    try {
+      const hidden = JSON.parse(localStorage.getItem('pandora_hidden_simulators') || '[]');
+      if (hidden.includes('dhl')) {
+        const newHidden = hidden.filter(x => x !== 'dhl');
+        localStorage.setItem('pandora_hidden_simulators', JSON.stringify(newHidden));
+      }
+      
+      setSimulators(prev => {
+        if (!prev.some(s => s.id === 'dhl')) {
+          const dhlSim = {
+            id: 'dhl',
+            name: 'DHL',
+            description: 'Simulador de Velocidad vs Cajas para línea de lavado y secado BWS-250 con acomodo premium e informe dinámico estilo Electriz.',
+            icon: 'Activity',
+            color: '#eab308',
+            isSystem: true
+          };
+          return [...prev, dhlSim];
+        }
+        return prev;
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
 
   // 2. Estados de control de Modales
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -139,7 +178,13 @@ function SimulatorsPage() {
     { value: '#8b5cf6', name: 'Violeta Profundo' },
     { value: '#ec4899', name: 'Rosa Neón' },
     { value: '#10b981', name: 'Verde Esmeralda' },
-    { value: '#f59e0b', name: 'Ámbar Cálido' }
+    { value: '#f59e0b', name: 'Ámbar Cálido' },
+    { value: '#ef4444', name: 'Rojo Carmesí' },
+    { value: '#f43f5e', name: 'Rosa Fresa' },
+    { value: '#14b8a6', name: 'Menta' },
+    { value: '#06b6d4', name: 'Turquesa' },
+    { value: '#f97316', name: 'Naranja Vibrante' },
+    { value: '#eab308', name: 'Amarillo Neón' }
   ];
 
   // Helper de valores predeterminados para cada tipo de simulador
@@ -223,7 +268,7 @@ function SimulatorsPage() {
         pesoKg: 13000,
         bocaAlimentacion: '1300 x 300 mm',
         rotorRpm: 650,
-        particulaFinal: '2–3 cm',
+        particulaFinal: '2â€“3 cm',
         ruidoDb: 80,
         separadorMagnetico: 'Incluido',
         componentesElectricos: 'Schneider Electric',
@@ -312,8 +357,33 @@ function SimulatorsPage() {
     if (norm.includes('forvia')) {
       return {
         clientName: 'CENTRAL DE INTELIGENCIA',
-        projectName: 'FORVIA - BDW 200',
-        evaluationName: 'MÁQUINA EN EVALUACIÓN - PLD-140',
+        projectName: 'FORVIA - BWS-250',
+        evaluationName: 'MÁQUINA EN EVALUACIÃ“N - PLD-140',
+        nominalBoxes: 200,
+        machineLength: 7.60,
+        maxSpeed: 140,
+        defaultGap: 0.10,
+        calcMode: 'manual',
+        shifts: 2,
+        hoursPerShift: 8,
+        daysPerMonth: 26,
+        electricityRate: 2.50,
+        loadFactor: 85,
+        installedPowerKw: 89.5,
+        sueldoOperadorMensual: 12000,
+        operatorsPerShift: 1,
+        waterFlowLh: 1000,
+        waterReplenishLh: 150,
+        tankCapacityL: 1200,
+        waterChangeInterval: '3-5 días'
+      };
+    }
+    if (norm.includes('dhl')) {
+      return {
+        companyName: 'DHL',
+        clientName: 'DHL',
+        projectName: 'DHL - BWS-250',
+        evaluationName: 'MÁQUINA EN EVALUACIÃ“N - PLD-140',
         nominalBoxes: 200,
         machineLength: 7.60,
         maxSpeed: 140,
@@ -541,7 +611,7 @@ function SimulatorsPage() {
     const normalizedDest = destId.toLowerCase();
 
     // Primero copiar llaves específicas conocidas
-    const keys = ['inputs', 'customer_scenarios', 'machine_configs', 'boxes', 'daily_reqs', 'physical_max_mh', 'req_locked'];
+    const keys = ['inputs', 'v2_inputs', 'customer_scenarios', 'machine_configs', 'boxes', 'daily_reqs', 'physical_max_mh', 'req_locked'];
     keys.forEach(key => {
       let srcKey = `sim_${srcId}_${key}`;
       if (srcId === 'rider') {
@@ -557,25 +627,30 @@ function SimulatorsPage() {
     });
 
     // Luego hacer una copia genérica de cualquier otra llave que contenga el ID del origen
+    const keysToCopy = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key && (key.toLowerCase().includes(normalizedSrc) || key.toLowerCase().includes(srcId.toLowerCase()))) {
-        const val = localStorage.getItem(key);
-        if (val !== null) {
-          let newKey = key;
-          if (key.toLowerCase().includes(normalizedSrc)) {
-            const index = key.toLowerCase().indexOf(normalizedSrc);
-            newKey = key.substring(0, index) + normalizedDest + key.substring(index + normalizedSrc.length);
-          } else if (key.toLowerCase().includes(srcId.toLowerCase())) {
-            const index = key.toLowerCase().indexOf(srcId.toLowerCase());
-            newKey = key.substring(0, index) + normalizedDest + key.substring(index + srcId.length);
-          }
-          if (!localStorage.getItem(newKey)) {
-            localStorage.setItem(newKey, val);
-          }
-        }
+        keysToCopy.push(key);
       }
     }
+
+    keysToCopy.forEach(key => {
+      const val = localStorage.getItem(key);
+      if (val !== null) {
+        let newKey = key;
+        if (key.toLowerCase().includes(normalizedSrc)) {
+          const index = key.toLowerCase().indexOf(normalizedSrc);
+          newKey = key.substring(0, index) + normalizedDest + key.substring(index + normalizedSrc.length);
+        } else if (key.toLowerCase().includes(srcId.toLowerCase())) {
+          const index = key.toLowerCase().indexOf(srcId.toLowerCase());
+          newKey = key.substring(0, index) + normalizedDest + key.substring(index + srcId.length);
+        }
+        if (!localStorage.getItem(newKey)) {
+          localStorage.setItem(newKey, val);
+        }
+      }
+    });
   };
 
   // Eliminar un simulador
@@ -587,6 +662,13 @@ function SimulatorsPage() {
     if (!confirm) return;
 
     setSimulators(simulators.filter(s => s.id !== id));
+
+    let hiddenSims = [];
+    try { hiddenSims = JSON.parse(localStorage.getItem('pandora_hidden_simulators') || '[]'); } catch(e) {}
+    if (!hiddenSims.includes(id)) {
+      hiddenSims.push(id);
+      localStorage.setItem('pandora_hidden_simulators', JSON.stringify(hiddenSims));
+    }
 
     // Opcional: limpiar claves de localStorage
     const keys = ['inputs', 'customer_scenarios', 'machine_configs', 'boxes', 'daily_reqs', 'physical_max_mh', 'req_locked'];
@@ -674,15 +756,13 @@ function SimulatorsPage() {
                   >
                     <Edit3 className="w-3.5 h-3.5" />
                   </button>
-                  {!sim.isSystem && (
-                    <button
-                      onClick={(e) => handleDelete(sim.id, sim.name, e)}
-                      className="p-1.5 rounded-lg bg-[#181818] border border-red-900/50 hover:border-red-500 text-red-500 hover:text-red-400 transition-all hover:bg-red-950/20"
-                      title="Eliminar"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
+                  <button
+                    onClick={(e) => handleDelete(sim.id, sim.name, e)}
+                    className="p-1.5 rounded-lg bg-[#181818] border border-red-900/50 hover:border-red-500 text-red-500 hover:text-red-400 transition-all hover:bg-red-950/20"
+                    title="Eliminar"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
 
                 {/* Contenido Superior */}
@@ -728,14 +808,14 @@ function SimulatorsPage() {
       </div>
 
       {/* MODAL MULTIPROPÓSITO (Crear, Editar, Clonar) */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md transition-all duration-300">
-          <div className="relative bg-[#0d0d0d] border border-gray-800 rounded-3xl p-8 w-full max-w-lg shadow-[0_20px_50px_rgba(0,0,0,0.8)] mx-4 overflow-hidden">
+      {isModalOpen && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md transition-all duration-300 p-4">
+          <div className="relative bg-[#0d0d0d] border border-gray-800 rounded-3xl p-6 md:p-8 w-full max-w-lg shadow-[0_20px_50px_rgba(0,0,0,0.8)] mx-auto overflow-hidden flex flex-col max-h-[90vh]">
             {/* Acento del Modal */}
             <div className="absolute top-0 left-0 w-full h-[3px]" style={{ backgroundColor: formColor }} />
             
             {/* Header del Modal */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-6 flex-shrink-0">
               <h3 className="text-lg font-black uppercase tracking-widest text-white flex items-center gap-2">
                 {modalType === 'create' && 'Crear Nuevo Simulador'}
                 {modalType === 'edit' && 'Editar Simulador'}
@@ -750,8 +830,8 @@ function SimulatorsPage() {
             </div>
 
             {/* Formulario */}
-            <form onSubmit={handleSave} className="space-y-6">
-              
+            <form onSubmit={handleSave} className="flex flex-col flex-1 overflow-hidden min-h-0">
+              <div className="space-y-6 overflow-y-auto pr-2 pb-4 scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-transparent">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
                   Nombre del Simulador
@@ -784,23 +864,42 @@ function SimulatorsPage() {
                 <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">
                   Color Identificador (Branding)
                 </label>
-                <div className="grid grid-cols-6 gap-3">
+                <div className="flex flex-wrap gap-2.5">
                   {COLORS.map((c) => (
                     <button
                       key={c.value}
                       type="button"
                       onClick={() => setFormColor(c.value)}
-                      className="h-10 rounded-xl transition-all relative border border-[#222] hover:scale-105"
+                      className="w-10 h-10 rounded-xl transition-all relative border border-[#222] hover:scale-105 cursor-pointer"
                       style={{ backgroundColor: c.value }}
                       title={c.name}
                     >
-                      {formColor === c.value && (
+                      {formColor.toLowerCase() === c.value.toLowerCase() && (
                         <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-xl">
                           <div className="w-2.5 h-2.5 bg-white rounded-full shadow" />
                         </div>
                       )}
                     </button>
                   ))}
+
+                  {/* Selector de Color Personalizado (HTML5 Color Picker) */}
+                  <div 
+                    className="relative w-10 h-10 rounded-xl border border-dashed border-gray-600 hover:border-gray-400 bg-[#141414] hover:scale-105 transition-all flex items-center justify-center cursor-pointer overflow-hidden"
+                    title="Color Personalizado"
+                  >
+                    <input
+                      type="color"
+                      value={formColor}
+                      onChange={e => setFormColor(e.target.value)}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                    <span className="text-gray-400 text-sm font-bold">ï¼‹</span>
+                    {!COLORS.some(c => c.value.toLowerCase() === formColor.toLowerCase()) && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                        <div className="w-4.5 h-4.5 rounded-full border border-white/60 shadow" style={{ backgroundColor: formColor }} />
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -843,8 +942,10 @@ function SimulatorsPage() {
                 />
               </div>
 
+              </div>
+
               {/* Botones de acción */}
-              <div className="flex gap-4 pt-4 border-t border-[#1C1C1C]">
+              <div className="flex gap-4 pt-4 border-t border-[#1C1C1C] mt-4 flex-shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
@@ -853,7 +954,13 @@ function SimulatorsPage() {
                   Cancelar
                 </button>
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={(e) => {
+                    // Forzar el guardado si el portal bloquea el onSubmit natural
+                    if (formName.trim()) {
+                      handleSave(e);
+                    }
+                  }}
                   className="flex-1 py-3.5 rounded-xl font-bold text-sm text-black transition-all hover:scale-[1.02] active:scale-[0.98]"
                   style={{ backgroundColor: formColor }}
                 >
@@ -865,7 +972,8 @@ function SimulatorsPage() {
 
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>
@@ -873,3 +981,4 @@ function SimulatorsPage() {
 }
 
 export default SimulatorsPage;
+

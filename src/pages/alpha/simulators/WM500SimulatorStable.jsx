@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { 
   ArrowLeft, Zap, DollarSign, Activity, Settings, 
   AlertCircle, ShieldAlert, Cpu, Layers, Wrench, 
@@ -91,6 +91,8 @@ async function deleteModelFromIndexedDB(key) {
 
 export default function WM500SimulatorStable() {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const simId = id || 'wm500';
   const { t } = useTranslation();
   const { activeProject, updateProjectName } = useBeta();
   const reportRef = useRef(null);
@@ -375,7 +377,7 @@ export default function WM500SimulatorStable() {
       const savedMeta = localStorage.getItem('sim_wm500_layout_meta');
       if (!savedMeta) return;
       
-      const savedModel = await getModelFromIndexedDB('sim_wm500_active_model');
+      const savedModel = await getModelFromIndexedDB(`sim_${simId}_active_model`);
       if (savedModel && savedModel.blob) {
         try {
           const result = await process3DFile(savedModel.blob);
@@ -718,7 +720,7 @@ export default function WM500SimulatorStable() {
       if (savedDesign?.id) setCurrentDesignId(savedDesign.id);
 
       // Guardar también en IndexedDB localmente para velocidad de carga
-      await saveModelToIndexedDB('sim_wm500_active_model', file, file.name, processedResult.type);
+      await saveModelToIndexedDB(`sim_${simId}_active_model`, file, file.name, processedResult.type);
       localStorage.setItem('sim_wm500_layout_meta', JSON.stringify({ name: file.name, type: processedResult.type }));
 
       setPendingUpload(null);
@@ -870,16 +872,37 @@ export default function WM500SimulatorStable() {
     setTwinSnapshotSuperior(localStorage.getItem(`sim_wm500_${suffix}twin_snapshot_superior`));
     setTwinSnapshotIsometrica(localStorage.getItem(`sim_wm500_${suffix}twin_snapshot_isometrica`));
     
+    const waitForImages = (el) => {
+      const images = el.querySelectorAll('img');
+      const promises = Array.from(images).map(img => {
+        if (img.complete) return Promise.resolve();
+        return new Promise(resolve => {
+          img.onload = resolve;
+          img.onerror = resolve;
+        });
+      });
+      return Promise.all(promises);
+    };
+
     try {
       setIsPreviewMode(false);
       setIsReportModalOpen(true);
-      await new Promise(resolve => setTimeout(resolve, 800)); // Esperar carga
+      
+      // Esperar a que el componente se monte en el DOM
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      const element = reportRef.current;
+      if (element) {
+        await waitForImages(element);
+      }
+      
+      // Espera de estabilidad del motor de pintado del navegador
+      await new Promise(resolve => setTimeout(resolve, 300));
       
       const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4', compress: true });
       const width = doc.internal.pageSize.getWidth();
       const height = doc.internal.pageSize.getHeight();
       
-      const element = reportRef.current;
       const pages = element.querySelectorAll('.pdf-page');
 
       for (let i = 0; i < pages.length; i++) {
@@ -906,7 +929,7 @@ export default function WM500SimulatorStable() {
     
     // Hoja 1: Parámetros e Indicadores
     const generalData = [
-      ['SIMULADOR PARAMÉTRICO TRITURADORA WM-500'],
+      [`SIMULADOR PARAMÉTRICO TRITURADORA ${inputs.machineName?.toUpperCase() || 'WM-500'}`],
       ['Cliente:', inputs.clientName],
       ['Proyecto:', inputs.projectName],
       ['Subtítulo:', inputs.evaluationName],
@@ -1072,7 +1095,7 @@ export default function WM500SimulatorStable() {
 
   const REPORT_STYLES = {
     th: { padding: '8px 12px', fontSize: 9, fontWeight: 900, color: '#008299', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '2px solid #b2f5ea', borderTop: '2px solid #b2f5ea', textAlign: 'left' },
-    td: { padding: '12px 12px', borderBottom: '1px solid #e2e8f0', color: '#334155', fontWeight: 600 }
+    td: { padding: '8px 12px', borderBottom: '1px solid #e2e8f0', color: '#334155', fontWeight: 600 }
   };
 
   const getSplitTitle = (title) => {
@@ -1127,7 +1150,7 @@ export default function WM500SimulatorStable() {
 
   const renderPageFooter = (pageNum, total) => (
     <div style={{ borderTop: '1px solid #dbe5ee', paddingTop: 16, display: 'flex', justifyContent: 'space-between', fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1 }}>
-      <span>{inputs.clientName.toUpperCase()} · MÁQUINA: WM-500</span>
+      <span>{inputs.clientName.toUpperCase()} · MÁQUINA: {inputs.machineName?.toUpperCase() || 'WM-500'}</span>
       <span>PÁGINA {pageNum} DE {total}</span>
     </div>
   );
@@ -1533,7 +1556,7 @@ export default function WM500SimulatorStable() {
                 <div className="relative z-10 flex flex-col justify-between h-full">
                   <div>
                     <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest font-mono">INFORME TÉCNICO DE CAPACIDAD</span>
-                    <h2 className="text-3xl font-black text-white uppercase tracking-tight mt-1">SIMULADOR PARAMÉTRICO WM-500</h2>
+                    <h2 className="text-3xl font-black text-white uppercase tracking-tight mt-1">SIMULADOR PARAMÉTRICO {inputs.machineName || 'WM-500'}</h2>
                     <p className="text-xs text-slate-300 font-bold uppercase tracking-wider mt-1">{inputs.evaluationName}</p>
                   </div>
                   <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-white/10 pt-6">
@@ -2796,11 +2819,11 @@ export default function WM500SimulatorStable() {
                         Evaluación de Capacidad y Eficiencia
                       </div>
 
-                      <p style={{ color: '#475569', fontSize: 12, lineHeight: 1.6, margin: 0 }}>Análisis de capacidad, potencia instalada y viabilidad financiera para la línea de trituración de materiales sólidos con la WM-500.</p>
+                      <p style={{ color: '#475569', fontSize: 12, lineHeight: 1.6, margin: 0 }}>Análisis de capacidad, potencia instalada y viabilidad financiera para la línea de trituración de materiales sólidos con la {inputs.machineName || 'WM-500'}.</p>
 
                       <div style={{ background: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 16, padding: 18 }}>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px', fontSize: 11, color: '#475569' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#008299', fontWeight: 700 }}>Empresa</span><strong style={{ color: '#1e293b' }}>{inputs.companyName || 'MÁQUINA EN EVALUACIÓN - WM-500'}</strong></div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#008299', fontWeight: 700 }}>Empresa</span><strong style={{ color: '#1e293b' }}>{inputs.companyName || `MÁQUINA EN EVALUACIÓN - ${inputs.machineName || 'WM-500'}`}</strong></div>
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#008299', fontWeight: 700 }}>Cliente</span><strong style={{ color: '#1e293b' }}>{inputs.clientName}</strong></div>
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#008299', fontWeight: 700 }}>Máquina</span><strong style={{ color: '#1e293b' }}>{inputs.machineName || 'WM-500'}</strong></div>
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#008299', fontWeight: 700 }}>Proyecto</span><strong style={{ color: '#1e293b' }}>{inputs.projectName}</strong></div>
@@ -2848,17 +2871,17 @@ export default function WM500SimulatorStable() {
 
                 {/* PÁGINA 2: DATOS TÉCNICOS Y DICTAMEN AI */}
                 <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
-                  <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                  <div style={{ ...S.inner, flex: 1, paddingTop: 30, display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {renderPageHeader('2. Especificaciones Técnicas', 'Listado físico nominal con potencias individuales calculadas al factor de carga')}
 
                     <div style={{ width: '100%' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10 }}>
                         <thead>
                           <tr>
-                            <th style={{ ...REPORT_STYLES.th, background: '#edfbfd' }}>Equipo</th>
-                            <th style={{ ...REPORT_STYLES.th, background: '#edfbfd', textAlign: 'center' }}>Capacidad</th>
-                            <th style={{ ...REPORT_STYLES.th, background: '#edfbfd', textAlign: 'center' }}>kW Instalados</th>
-                            <th style={{ ...REPORT_STYLES.th, background: '#edfbfd', textAlign: 'center' }}>Carga Activa ({inputs.loadFactor}%)</th>
+                            <th style={{ ...REPORT_STYLES.th, padding: '6px 12px', background: '#edfbfd' }}>Equipo</th>
+                            <th style={{ ...REPORT_STYLES.th, padding: '6px 12px', background: '#edfbfd', textAlign: 'center' }}>Capacidad</th>
+                            <th style={{ ...REPORT_STYLES.th, padding: '6px 12px', background: '#edfbfd', textAlign: 'center' }}>kW Instalados</th>
+                            <th style={{ ...REPORT_STYLES.th, padding: '6px 12px', background: '#edfbfd', textAlign: 'center' }}>Carga Activa ({inputs.loadFactor}%)</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -2898,13 +2921,13 @@ export default function WM500SimulatorStable() {
                       </table>
                     </div>
 
-                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 12, fontSize: 10, color: '#475569', lineHeight: 1.4 }}>
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: '8px 12px', fontSize: 10, color: '#475569', lineHeight: 1.4 }}>
                       <strong>Nota del Ingeniero:</strong> Los componentes han sido calibrados mecánicamente para un voltaje nominal adaptado a los requerimientos eléctricos del sitio, con una carga activa basada en un OEE del {inputs.oee}%.
                     </div>
 
-                    <div style={{ marginTop: 5, background: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 16, padding: '14px 20px' }}>
-                      <span style={{ fontSize: 9, fontWeight: 900, color: '#008299', textTransform: 'uppercase', letterSpacing: 1, display: 'block', marginBottom: 8 }}>DISTRIBUCIÓN DE POTENCIA INSTALADA POR EQUIPO (kW)</span>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', border: 'none', fontSize: 9, lineHeight: '1.4' }}>
+                    <div style={{ marginTop: 0, background: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 16, padding: '8px 20px' }}>
+                      <span style={{ fontSize: 9, fontWeight: 900, color: '#008299', textTransform: 'uppercase', letterSpacing: 1, display: 'block', marginBottom: 2 }}>DISTRIBUCIÓN DE POTENCIA INSTALADA POR EQUIPO (kW)</span>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', border: 'none', fontSize: 10, lineHeight: '1.2' }}>
                         <tbody>
                           {[
                             { name: 'Banda Alimentadora', kw: 1.65 },
@@ -2915,15 +2938,15 @@ export default function WM500SimulatorStable() {
                             const percentage = (eq.kw / (results.installedPowerKw || 100.26)) * 100;
                             return (
                               <tr key={i} style={{ border: 'none' }}>
-                                <td style={{ width: 160, color: '#475569', fontWeight: 600, padding: '4px 0 4px 10px', verticalAlign: 'middle', whiteSpace: 'nowrap', border: 'none' }}>
+                                <td style={{ width: 160, color: '#475569', fontWeight: 650, padding: '2px 0 2px 10px', verticalAlign: 'middle', whiteSpace: 'nowrap', border: 'none' }}>
                                   {eq.name}
                                 </td>
-                                <td style={{ padding: '4px 10px', verticalAlign: 'middle', border: 'none' }}>
+                                <td style={{ padding: '2px 10px', verticalAlign: 'middle', border: 'none' }}>
                                   <div style={{ height: 6, background: '#e2e8f0', borderRadius: 3, overflow: 'hidden', width: '100%' }}>
                                     <div style={{ width: `${percentage}%`, height: '100%', background: 'linear-gradient(90deg, #008299, #00c2cb)', borderRadius: 3 }} />
                                   </div>
                                 </td>
-                                <td style={{ width: 75, textAlign: 'right', fontWeight: 700, color: '#1e293b', padding: '4px 10px 4px 0', verticalAlign: 'middle', whiteSpace: 'nowrap', border: 'none' }}>
+                                <td style={{ width: 75, textAlign: 'right', fontWeight: 700, color: '#1e293b', padding: '2px 10px 2px 0', verticalAlign: 'middle', whiteSpace: 'nowrap', border: 'none' }}>
                                   {eq.kw.toFixed(2)} kW
                                 </td>
                               </tr>
@@ -2933,11 +2956,11 @@ export default function WM500SimulatorStable() {
                       </table>
                     </div>
 
-                    <div style={{ marginTop: 5 }}>
-                      <span style={{ fontSize: 9, fontWeight: 900, color: '#0f766e', letterSpacing: 1.5, textTransform: 'uppercase', display: 'block', marginBottom: 12 }}>DICTAMEN TÉCNICO AUTOMÁTICO</span>
-                      <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 16, padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div style={{ marginTop: 0 }}>
+                      <span style={{ fontSize: 9, fontWeight: 900, color: '#0f766e', letterSpacing: 1.5, textTransform: 'uppercase', display: 'block', marginBottom: 2 }}>DICTAMEN TÉCNICO AUTOMÁTICO</span>
+                      <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 16, padding: '10px 20px', display: 'flex', flexDirection: 'column', gap: 6 }}>
                         {conclusions.map((c, i) => (
-                          <div key={i} style={{ fontSize: 11, lineHeight: 1.5, fontWeight: 600, color: '#334155' }}>
+                          <div key={i} style={{ fontSize: 10, lineHeight: 1.35, fontWeight: 600, color: '#334155' }}>
                             <span style={{ color: '#00c2cb', fontWeight: 900, marginRight: 6 }}>▪</span>{c.text}
                           </div>
                         ))}
@@ -2951,16 +2974,16 @@ export default function WM500SimulatorStable() {
 
                 {/* PÁGINA 3: FICHA TÉCNICA DE HOMOLOGACIÓN */}
                 <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
-                  <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                  <div style={{ ...S.inner, flex: 1, paddingTop: 30, display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {renderPageHeader(`3. ${inputs.technicalSheetName}`, 'Desglose detallado de especificaciones, capacidades y componentes de fabricación')}
 
                     <div style={{ width: '100%', flex: 1 }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10 }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 9.5 }}>
                         <thead>
                           <tr>
-                            <th style={{ ...REPORT_STYLES.th, background: '#edfbfd' }}>Componente / Característica</th>
-                            <th style={{ ...REPORT_STYLES.th, background: '#edfbfd', textAlign: 'center' }}>Especificación Original</th>
-                            <th style={{ ...REPORT_STYLES.th, background: '#edfbfd', textAlign: 'right' }}>Detalle Técnico</th>
+                            <th style={{ ...REPORT_STYLES.th, padding: '5px 10px', background: '#edfbfd' }}>Componente / Característica</th>
+                            <th style={{ ...REPORT_STYLES.th, padding: '5px 10px', background: '#edfbfd', textAlign: 'center' }}>Especificación Original</th>
+                            <th style={{ ...REPORT_STYLES.th, padding: '5px 10px', background: '#edfbfd', textAlign: 'right' }}>Detalle Técnico</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -2982,9 +3005,9 @@ export default function WM500SimulatorStable() {
                             { comp: 'Nivel de Ruido', spec: '80 dB', detail: 'Diseño aislante de vibraciones' },
                           ].map((t, idx) => (
                             <tr key={idx}>
-                              <td style={REPORT_STYLES.td}>{t.comp}</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#008299' }}>{t.spec}</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'right' }}>{t.detail}</td>
+                              <td style={{ ...REPORT_STYLES.td, padding: '5px 10px' }}>{t.comp}</td>
+                              <td style={{ ...REPORT_STYLES.td, padding: '5px 10px', textAlign: 'center', color: '#008299' }}>{t.spec}</td>
+                              <td style={{ ...REPORT_STYLES.td, padding: '5px 10px', textAlign: 'right' }}>{t.detail}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -3084,12 +3107,12 @@ export default function WM500SimulatorStable() {
                       {renderPageHeader(`${index + 5}. Vista ${page.type.charAt(0).toUpperCase() + page.type.slice(1)}`, 'Renderizado CAD de alta resolución del equipo en configuración de planta')}
                       
                       <div style={{ flex: 1, border: '1px solid #e2e8f0', borderRadius: 16, background: '#edf4f9', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <img src={page.src} alt={page.type} style={{ width: '100%', height: '100%', objectFit: 'contain', mixBlendMode: 'darken', objectPosition: 'center' }} className="animate-fade-in" />
+                        <img src={page.src} alt={page.type} style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center' }} />
                       </div>
 
                       <div style={{ background: '#f0fdfa', border: '1px solid #ccfbf1', borderRadius: 12, padding: 16, fontSize: 10, lineHeight: 1.5, color: '#334155', fontWeight: 600 }}>
                         <span style={{ color: '#0f766e', fontWeight: 900, textTransform: 'uppercase', marginRight: 6 }}>Nota de Escala Visual ({page.type}): </span>
-                        Esta proyección tridimensional corresponde a la captura exacta de la Trituradora WM-500 evaluada bajo la perspectiva {page.type.toLowerCase()}. Las proporciones y el diseño representan el volumen real del equipo industrial proyectado en el software PANDORA 3.0.
+                        Esta proyección tridimensional corresponde a la captura exacta de la Trituradora {inputs.machineName || 'WM-500'} evaluada bajo la perspectiva {page.type.toLowerCase()}. Las proporciones y el diseño representan el volumen real del equipo industrial proyectado en el software PANDORA 3.0.
                       </div>
                       
                       {renderPageFooter(index + 5, totalPdfPages)}

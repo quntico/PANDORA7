@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Settings, User, LayoutGrid, Calculator, PanelLeftClose, PanelLeftOpen, ChevronDown } from 'lucide-react';
 import { useProject } from '@/context/ProjectContext';
@@ -22,17 +22,66 @@ function Header() {
   
   const [simMenuOpen, setSimMenuOpen] = useState(false);
 
-  const simulatorShortcuts = [
-    { name: 'FORVIA - BDW 200', path: '/alpha/simulators/forvia', color: '#e11d48' },
-    { name: 'CARRIER (Tubo Cobre)', path: '/alpha/simulators/carrier', color: '#00F0FF' },
-    { name: 'LMA-500 (Reciclado)', path: '/alpha/simulators/lma-500', color: '#0d9488' },
-    { name: 'WM-500 (Trituradora)', path: '/alpha/simulators/wm-500', color: '#06b6d4' },
-    { name: 'SMQ COTIZADOR', path: '/alpha/simulators/smq-automatic', color: '#F5C400' },
-    { name: 'RYDER (Lavado)', path: '/alpha/simulators/rider', color: '#3b82f6' },
-    { name: 'GRUPO GUSI', path: '/alpha/simulators/grupo-gusi', color: '#a855f7' },
-    { name: 'IASE', path: '/alpha/simulators/iase', color: '#10b981' },
-    { name: 'MOLEX (Cobre)', path: '/alpha/simulators/molex', color: '#ea580c' },
-  ];
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const processedShortcuts = useMemo(() => {
+    let list = [];
+    
+    // 1. Extraer simuladores de localStorage (los que ve el Hub)
+    if (simMenuOpen || true) { // siempre activo para que al abrir no parpadee
+      try {
+        const saved = JSON.parse(localStorage.getItem('pandora_simulators') || '[]');
+        if (Array.isArray(saved)) {
+          list = saved.map(sim => ({
+            id: sim.id,
+            name: sim.name,
+            path: `/alpha/simulators/${sim.id}`,
+            color: sim.color || '#00F0FF'
+          }));
+        }
+      } catch(e) {}
+    }
+
+    // 2. Base por defecto por si localStorage está vacío o incompleto
+    const defaults = [
+      { id: 'forvia', name: 'FORVIA - BDW 200', path: '/alpha/simulators/forvia', color: '#e11d48' },
+      { id: 'carrier', name: 'CARRIER (Tubo Cobre)', path: '/alpha/simulators/carrier', color: '#00F0FF' },
+      { id: 'lma-500', name: 'LMA-500 (Reciclado)', path: '/alpha/simulators/lma-500', color: '#0d9488' },
+      { id: 'wm-500', name: 'WM-500 (Trituradora)', path: '/alpha/simulators/wm-500', color: '#06b6d4' },
+      { id: 'smq-automatic', name: 'SMQ COTIZADOR', path: '/alpha/simulators/smq-automatic', color: '#F5C400' },
+      { id: 'rider', name: 'RYDER (Lavado)', path: '/alpha/simulators/rider', color: '#3b82f6' },
+      { id: 'grupo-gusi', name: 'GRUPO GUSI', path: '/alpha/simulators/grupo-gusi', color: '#a855f7' },
+      { id: 'iase', name: 'IASE', path: '/alpha/simulators/iase', color: '#10b981' },
+      { id: 'molex', name: 'MOLEX (Cobre)', path: '/alpha/simulators/molex', color: '#ea580c' },
+      { id: 'dhl', name: 'DHL', path: '/alpha/simulators/dhl', color: '#eab308' },
+    ];
+
+    // Fusionar
+    let hiddenSims = [];
+    try { hiddenSims = JSON.parse(localStorage.getItem('pandora_hidden_simulators') || '[]'); } catch(e) {}
+    
+    defaults.forEach(d => {
+      if (!list.some(s => s.id === d.id) && !hiddenSims.includes(d.id)) {
+        list.push(d);
+      }
+    });
+    
+    // 3. Filtrar por búsqueda
+    if (searchQuery.trim()) {
+      list = list.filter(sim => sim.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    }
+
+    // 4. Ordenar (poner el activo primero)
+    list.sort((a, b) => {
+      const aActive = location.pathname === a.path;
+      const bActive = location.pathname === b.path;
+      if (aActive && !bActive) return -1;
+      if (!aActive && bActive) return 1;
+      return 0;
+    });
+
+    return list;
+  }, [searchQuery, location.pathname, simMenuOpen]);
 
   const toggleNav = () => {
     setNavCollapsed(v => {
@@ -131,28 +180,58 @@ function Header() {
                             className="fixed inset-0 z-30" 
                             onClick={() => setSimMenuOpen(false)} 
                           />
-                          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 rounded-xl bg-[#08080a]/95 backdrop-blur-3xl border border-glass-border p-2 shadow-2xl z-40 animate-in fade-in slide-in-from-top-2 duration-200">
-                            <div className="text-[10px] text-gray-500 font-black px-3 py-1.5 uppercase tracking-wider border-b border-glass-border/30">
+                          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 rounded-xl bg-[#08080a]/95 backdrop-blur-3xl border border-glass-border p-2 shadow-2xl z-40 animate-in fade-in slide-in-from-top-2 duration-200 flex flex-col max-h-[75vh]">
+                            <div className="text-[10px] text-gray-500 font-black px-3 pt-1.5 pb-2 uppercase tracking-wider flex justify-between items-center">
                               Atajos de Simuladores
                             </div>
-                            <div className="space-y-0.5 mt-1">
-                              {simulatorShortcuts.map((sim) => (
+                            
+                            {/* Buscador */}
+                            <div className="px-2 pb-2 mb-1 border-b border-glass-border/30 shrink-0">
+                              <input 
+                                type="text"
+                                placeholder="Buscar simulador..."
+                                value={searchQuery}
+                                onChange={e => setSearchQuery(e.target.value)}
+                                className="w-full bg-black/40 border border-gray-800 rounded-md px-3 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-neon-cyan transition-colors"
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            </div>
+
+                            <div className="space-y-0.5 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-transparent pr-1">
+                              {processedShortcuts.length > 0 ? processedShortcuts.map((sim) => {
+                                const isActive = location.pathname === sim.path;
+                                return (
                                 <Link
                                   key={sim.path}
                                   to={sim.path}
-                                  onClick={() => setSimMenuOpen(false)}
+                                  onClick={() => {
+                                    setSimMenuOpen(false);
+                                    setSearchQuery('');
+                                  }}
                                   className={cn(
-                                    "flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold hover:bg-glass-hover hover:text-white transition-all text-gray-300",
-                                    location.pathname === sim.path && "text-neon-cyan bg-neon-cyan/5 border-l-2 border-neon-cyan"
+                                    "flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold hover:bg-glass-hover hover:text-white transition-all",
+                                    isActive ? "text-neon-cyan bg-neon-cyan/10 border-l-2 border-neon-cyan" : "text-gray-300"
                                   )}
                                 >
-                                  <span 
-                                    className="w-2 h-2 rounded-full shrink-0" 
-                                    style={{ backgroundColor: sim.color }}
-                                  />
-                                  <span>{sim.name}</span>
+                                  <div className="relative shrink-0 flex items-center justify-center w-2 h-2">
+                                    <span 
+                                      className="absolute w-2 h-2 rounded-full" 
+                                      style={{ backgroundColor: sim.color }}
+                                    />
+                                    {isActive && (
+                                      <span 
+                                        className="absolute w-2 h-2 rounded-full animate-ping opacity-75"
+                                        style={{ backgroundColor: sim.color }}
+                                      />
+                                    )}
+                                  </div>
+                                  <span className="truncate">{sim.name}</span>
                                 </Link>
-                              ))}
+                              )}) : (
+                                <div className="px-3 py-4 text-xs text-gray-500 text-center font-medium">
+                                  No hay coincidencias
+                                </div>
+                              )}
                             </div>
                             <div className="border-t border-glass-border/30 mt-1.5 pt-1.5">
                               <Link

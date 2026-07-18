@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { 
   ArrowLeft, Zap, DollarSign, Activity, Settings, 
   AlertCircle, ShieldAlert, Cpu, Layers, Wind, Droplet, 
@@ -104,6 +104,8 @@ async function deleteModelFromIndexedDB(key) {
 
 export default function ForviaSimulator() {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const simId = id || 'forvia';
   const { t } = useTranslation();
   const { activeProject, updateProjectName } = useBeta();
   const reportRef = useRef(null);
@@ -221,7 +223,7 @@ export default function ForviaSimulator() {
       const savedMeta = localStorage.getItem('sim_forvia_layout_meta');
       if (!savedMeta) return;
       
-      const savedModel = await getModelFromIndexedDB('sim_forvia_active_model');
+      const savedModel = await getModelFromIndexedDB(`sim_${simId}_active_model`);
       if (savedModel && savedModel.blob) {
         try {
           const result = await process3DFile(savedModel.blob);
@@ -302,7 +304,7 @@ export default function ForviaSimulator() {
     try {
       const result = await process3DFile(file);
       // Guardar el archivo Blob en IndexedDB para persistencia local
-      await saveModelToIndexedDB('sim_forvia_active_model', file, file.name, result.type);
+      await saveModelToIndexedDB(`sim_${simId}_active_model`, file, file.name, result.type);
       
       const layoutData = {
         url: result.url,

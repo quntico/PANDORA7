@@ -327,7 +327,7 @@ function BetaChat() {
                   {/* Modelo y motor */}
                   <div className="p-3 rounded-xl bg-[#0A0A0A] border border-[#1A1A1A]">
                     <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-2 flex items-center gap-1">
-                      <Cpu className="w-2.5 h-2.5" /> Engine
+                      <Cpu className="w-2.5 h-2.5" /> Motor
                     </p>
                     <div className="space-y-1.5">
                       <div className="flex justify-between">
@@ -475,7 +475,7 @@ function BetaChat() {
                    <h2 className="text-[120px] font-black text-white tracking-[-5px] leading-none select-none opacity-20">PANDORA</h2>
                    <div className="flex flex-col items-center gap-4">
                       <div className="w-12 h-1 bg-neon-cyan shadow-glow-sm" />
-                      <p className="text-[14px] text-gray-500 font-bold uppercase tracking-[8px] opacity-60">Strategic AI Console V3</p>
+                      <p className="text-[14px] text-gray-500 font-bold uppercase tracking-[8px] opacity-60">Consola Estratégica de IA V3</p>
                    </div>
                 </div>
             </div>
@@ -638,7 +638,7 @@ function BetaChat() {
         >
           <Activity className="w-5 h-5 flex-shrink-0" />
           {isActionsExpanded ? (
-            <span className="text-[11px] font-black uppercase tracking-[2px] leading-none text-white whitespace-nowrap">Engine Log</span>
+            <span className="text-[11px] font-black uppercase tracking-[2px] leading-none text-white whitespace-nowrap">Log del Motor</span>
           ) : (
             <span className="text-[7px] font-black uppercase tracking-wider leading-none">LOG</span>
           )}

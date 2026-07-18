@@ -9,10 +9,10 @@ function BottomNavigation() {
         
         {/* Left Icons */}
         <div className="flex items-center gap-1">
-          <NavIconButton icon={LayoutDashboard} label="Dashboard" active />
+          <NavIconButton icon={LayoutDashboard} label="Panel" active />
           <NavIconButton icon={FolderKanban} label="Proyectos" />
           <NavIconButton icon={BarChart2} label="Simulación" />
-          <NavIconButton icon={FileText} label="Reports" />
+          <NavIconButton icon={FileText} label="Reportes" />
         </div>
 
         {/* Center Pagination */}

@@ -16,7 +16,6 @@ import ChatPage from '@/pages/ChatPage';
 import FlowDesignerPage from '@/pages/FlowDesignerPage';
 import AdminCotizadorPage from '@/pages/AdminCotizadorPage';
 import SimulatorsPage from '@/pages/SimulatorsPage';
-import RiderSimulatorPage from '@/pages/RiderSimulatorPage';
 import DynamicSimulatorBuilder from '@/pages/alpha/simulators/DynamicSimulatorBuilder';
 import LMA500Simulator from '@/pages/alpha/simulators/LMA500Simulator';
 import SMQSimulator from '@/pages/alpha/simulators/SMQSimulator';
@@ -25,6 +24,8 @@ import ForviaSimulator from '@/pages/alpha/simulators/ForviaSimulator';
 import WM500Simulator from '@/pages/alpha/simulators/WM500Simulator';
 import WM500SimulatorStable from '@/pages/alpha/simulators/WM500SimulatorStable';
 import MolexSimulator from '@/pages/alpha/simulators/MolexSimulator';
+import DHLSimulator from '@/pages/alpha/simulators/DHLSimulator';
+import DHLAdvancedSimulator from '@/pages/alpha/simulators/DHLAdvancedSimulator';
 import VerifyPage from '@/pages/VerifyPage';
 import AvatarPage from '@/pages/AvatarPage';
 
@@ -42,7 +43,11 @@ function SimulatorPageWrapper() {
         const simulators = JSON.parse(saved);
         const found = simulators.find(s => s.id === id);
         if (found) {
-          setSimulatorType(found.type || found.id);
+          if (id === 'sim_1784273988247') {
+            setSimulatorType('dhl');
+          } else {
+            setSimulatorType(found.type || found.id);
+          }
         }
       } catch (e) {
         console.error(e);
@@ -126,8 +131,11 @@ function SimulatorPageWrapper() {
     return <WM500Simulator key={id} />;
   } else if (normType.includes('molex')) {
     return <MolexSimulator key={id} />;
+  } else if (normType.includes('dhl')) {
+    return <DHLAdvancedSimulator key={id} />;
   } else {
-    return <RiderSimulatorPage key={id} />;
+    // Todos los clones por defecto heredan la estructura limpia de DHLAdvancedSimulator
+    return <DHLAdvancedSimulator key={id} />;
   }
 }
 
@@ -156,6 +164,7 @@ function AppContent() {
           <Route path='wm-500' element={<WM500Simulator />} />
           <Route path='wm-500-stable' element={<WM500SimulatorStable />} />
           <Route path='molex' element={<MolexSimulator />} />
+          <Route path='dhl' element={<DHLAdvancedSimulator />} />
           <Route path=':id' element={<SimulatorPageWrapper />} />
         </Route>
         <Route path='analysis' element={<AnalysisPage />} />

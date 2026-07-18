@@ -14,6 +14,10 @@ export function buildRyderReportData({
   physicalMaxMH,
   simulatorName,
   installedPowerKw,
+  pumpsKw,
+  blowersKw,
+  heatingKw,
+  beltKw,
   washFlowLh,
   waterReplenishLh,
   tankCapacityL,
@@ -34,11 +38,18 @@ export function buildRyderReportData({
   // Filtrar solo los modelos incluidos/activos para no mostrar ni calcular sobre modelos apagados
   const activeComputedRows = computedRows.filter(r => r.included !== false);
 
-  // ── capDia Y1 usando el selectedRow y el primer escenario ───────────────
+  // ── capDia Y1 usando el promedio de paso (mix) de los modelos activos ──
+  const mixRows = activeComputedRows.filter(r => r.requiredDaily > 0);
+  const finalMix = mixRows.length ? mixRows : (selectedRow ? [selectedRow] : []);
+  const avgPitch = finalMix.length ? (finalMix.reduce((s, r) => s + r.pitch, 0) / finalMix.length) : 0;
+  const avgCapH = avgPitch > 0 ? ((physicalMaxMH ?? 140) / avgPitch) : 0;
+
   const y1Scenario = scenarioResults?.lavadoSecado?.[0];
-  const capDiaY1   = y1Scenario
-    ? +(y1Scenario.machineBoxesPerHour * y1Scenario.availableDailyTime).toFixed(0)
-    : +(selectedRow?.boxesPerDay ?? 0).toFixed(0);
+  const y1H = y1Scenario
+    ? y1Scenario.availableDailyTime
+    : ((inputs?.hoursPerShift ?? 8) * (inputs?.shifts ?? 2));
+
+  const capDiaY1 = Math.round(avgCapH * y1H);
 
   // ── requerimiento total diario (suma de todos los modelos activos) ───────
   const reqTotalDia = activeComputedRows
@@ -50,8 +61,8 @@ export function buildRyderReportData({
   const maxMH   = physicalMaxMH ?? 140;
   const utilPct = capDiaY1 > 0 ? (reqTotalDia / capDiaY1) * 100 : 0;
 
-  // ── promedio de capacidad por hora (solo filas con datos) ───────────────
-  const activeRows = activeComputedRows.filter(r => r.realBoxesHr > 0);
+  // ── promedio de capacidad por hora (solo de las cajas en el mix) ────────
+  const activeRows = finalMix.filter(r => r.realBoxesHr > 0);
   const avgCapHr   = activeRows.length
     ? activeRows.reduce((s, r) => s + r.realBoxesHr, 0) / activeRows.length
     : 0;
@@ -120,6 +131,10 @@ export function buildRyderReportData({
   return {
     inputs,
     installedPowerKw,
+    pumpsKw,
+    blowersKw,
+    heatingKw,
+    beltKw,
     meta: {
       empresa:   simulatorName || 'FRUITEX',
       cliente:   customerName || 'IVAN CLEMENT',

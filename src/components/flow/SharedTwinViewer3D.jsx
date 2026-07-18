@@ -102,20 +102,36 @@ function TwinScene({
   customMetalness = 0.95,
   customOutlineOpacity = 0.0,
   gridVisibility = 1.0,
-  fogDensity = 0.015
+  fogDensity = 0.015,
+  captureTriggerRef
 }) {
   const isBlueprint = theme === 'blueprint';
   const isToxic = theme === 'toxic';
   const isAluminum = theme === 'aluminum';
   const isCustom = typeof theme === 'object' && theme !== null;
-  const { camera, invalidate } = useThree();
+  const { camera, invalidate, gl, scene } = useThree();
   const controlsRef = useRef();
 
   useEffect(() => {
-    const handleForceRender = () => invalidate();
+    if (captureTriggerRef) {
+      captureTriggerRef.current = () => {
+        // Capturar exactamente lo que el usuario ve en pantalla (sin mover la cámara)
+        gl.render(scene, camera);
+        return gl.domElement.toDataURL('image/png');
+      };
+    }
+    return () => {
+      if (captureTriggerRef) captureTriggerRef.current = null;
+    };
+  }, [gl, scene, camera, captureTriggerRef]);
+
+  useEffect(() => {
+    const handleForceRender = () => {
+      gl.render(scene, camera);
+    };
     window.addEventListener('force-twin-render', handleForceRender);
     return () => window.removeEventListener('force-twin-render', handleForceRender);
-  }, [invalidate]);
+  }, [gl, scene, camera]);
 
   // Cargar estado inicial de la cámara al montar
   useEffect(() => {
@@ -173,7 +189,9 @@ function TwinScene({
           position: { x: camera.position.x, y: camera.position.y, z: camera.position.z },
           target: { x: controlsRef.current.target.x, y: controlsRef.current.target.y, z: controlsRef.current.target.z }
         };
-        localStorage.setItem(cameraKey, JSON.stringify(state));
+        try {
+          localStorage.setItem(cameraKey, JSON.stringify(state));
+        } catch(e) {}
       }
     };
     
@@ -196,7 +214,9 @@ function TwinScene({
         z: controlsRef.current.target.z
       } : { x: 0, y: 0, z: 0 }
     };
-    localStorage.setItem(cameraKey, JSON.stringify(state));
+    try {
+      localStorage.setItem(cameraKey, JSON.stringify(state));
+    } catch(e) {}
   }, [layout, camera]);
 
   const angleRad = (sunAngle * Math.PI) / 180;
@@ -350,7 +370,8 @@ export default function SharedTwinViewer3D({
     // skip
   }
   const projectSuffix = activeProject?.id ? `${activeProject.id}_` : '';
-  const resolvedPrefix = `${storagePrefix}${projectSuffix}`;
+  const resolvedPrefix = storagePrefix || `sim_default_${projectSuffix}`;
+  const captureTriggerRef = useRef(null);
 
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
@@ -659,6 +680,11 @@ export default function SharedTwinViewer3D({
   const [hasSuperior, setHasSuperior] = useState(() => !!localStorage.getItem(`${resolvedPrefix}twin_snapshot_superior`));
   const [hasIsometrica, setHasIsometrica] = useState(() => !!localStorage.getItem(`${resolvedPrefix}twin_snapshot_isometrica`));
 
+  // Estados de "capturando" para retroalimentación visual inmediata al presionar
+  const [capturingLateral, setCapturingLateral] = useState(false);
+  const [capturingSuperior, setCapturingSuperior] = useState(false);
+  const [capturingIsometrica, setCapturingIsometrica] = useState(false);
+
   const [lateralImg, setLateralImg] = useState(() => localStorage.getItem(`${resolvedPrefix}twin_snapshot_lateral`));
   const [superiorImg, setSuperiorImg] = useState(() => localStorage.getItem(`${resolvedPrefix}twin_snapshot_superior`));
   const [isometricaImg, setIsometricaImg] = useState(() => localStorage.getItem(`${resolvedPrefix}twin_snapshot_isometrica`));
@@ -668,7 +694,17 @@ export default function SharedTwinViewer3D({
   const [previewTitle, setPreviewTitle] = useState('');
 
   const handleOpenPreview = (viewType, title) => {
-    const dataUrl = localStorage.getItem(`${resolvedPrefix}twin_snapshot_${viewType}`);
+    // Prioridad 1: estado en memoria (siempre actualizado)
+    let dataUrl = null;
+    if (viewType === 'lateral') dataUrl = lateralImg;
+    else if (viewType === 'superior') dataUrl = superiorImg;
+    else if (viewType === 'isometrica') dataUrl = isometricaImg;
+
+    // Prioridad 2: localStorage como respaldo
+    if (!dataUrl) {
+      dataUrl = localStorage.getItem(`${resolvedPrefix}twin_snapshot_${viewType}`);
+    }
+
     if (dataUrl) {
       setPreviewImage(dataUrl);
       setPreviewTitle(title);
@@ -678,18 +714,31 @@ export default function SharedTwinViewer3D({
   };
 
   useEffect(() => {
-    const checkCaptures = () => {
+    const checkCaptures = (e) => {
+      // Si el evento viene con key+newValue (StorageEvent sintético cuando localStorage falla),
+      // actualizar solo la clave afectada para no pisotear el estado ya guardado en memoria.
+      if (e && e.key && e.newValue !== undefined && e.newValue !== null) {
+        if (e.key === `${resolvedPrefix}twin_snapshot_lateral`) {
+          setHasLateral(true); setLateralImg(e.newValue);
+        } else if (e.key === `${resolvedPrefix}twin_snapshot_superior`) {
+          setHasSuperior(true); setSuperiorImg(e.newValue);
+        } else if (e.key === `${resolvedPrefix}twin_snapshot_isometrica`) {
+          setHasIsometrica(true); setIsometricaImg(e.newValue);
+        }
+        return; // No releer localStorage
+      }
+
+      // Sincronización normal desde localStorage (evento genérico sin key)
       const lat = localStorage.getItem(`${resolvedPrefix}twin_snapshot_lateral`);
       const sup = localStorage.getItem(`${resolvedPrefix}twin_snapshot_superior`);
       const iso = localStorage.getItem(`${resolvedPrefix}twin_snapshot_isometrica`);
-      setHasLateral(!!lat);
-      setHasSuperior(!!sup);
-      setHasIsometrica(!!iso);
-      setLateralImg(lat);
-      setSuperiorImg(sup);
-      setIsometricaImg(iso);
+      // Solo sobreescribir si localStorage tiene un valor; si no, conservar el estado actual en memoria
+      if (lat !== null) { setHasLateral(true); setLateralImg(lat); }
+      if (sup !== null) { setHasSuperior(true); setSuperiorImg(sup); }
+      if (iso !== null) { setHasIsometrica(true); setIsometricaImg(iso); }
+      // Nota: no llamamos setHasLateral(false) aquí para no apagar LEDs de capturas en memoria
     };
-    checkCaptures();
+    checkCaptures(null); // carga inicial
     window.addEventListener('storage', checkCaptures);
     return () => window.removeEventListener('storage', checkCaptures);
   }, [resolvedPrefix]);
@@ -766,94 +815,102 @@ export default function SharedTwinViewer3D({
   };
 
   const handleCaptureView = (viewType) => {
-    window.dispatchEvent(new Event('force-twin-render'));
-    setTimeout(() => {
-      try {
-        const canvas = canvasRef.current || containerRef.current?.querySelector('canvas');
-        if (canvas) {
-          const dataUrl = canvas.toDataURL('image/png');
-          
-          const img = new Image();
-          img.onload = () => {
-            const offscreen = document.createElement('canvas');
-            offscreen.width = canvas.width;
-            offscreen.height = canvas.height;
-            const ctx = offscreen.getContext('2d');
-            
-            ctx.fillStyle = theme === 'blueprint' ? '#edf4f9' : '#05070f';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 0, 0);
-            
-            if (theme === 'blueprint') {
-              const finalDataUrl = offscreen.toDataURL('image/jpeg', 0.85);
-              localStorage.setItem(`${resolvedPrefix}twin_snapshot_${viewType}`, finalDataUrl);
-              localStorage.setItem(`${resolvedPrefix}twin_snapshot_base64`, finalDataUrl);
-              window.dispatchEvent(new Event('storage'));
-              
-              if (viewType === 'lateral') { setHasLateral(true); setLateralImg(finalDataUrl); }
-              if (viewType === 'superior') { setHasSuperior(true); setSuperiorImg(finalDataUrl); }
-              if (viewType === 'isometrica') { setHasIsometrica(true); setIsometricaImg(finalDataUrl); }
-              
-              return;
-            }
+    // 1. Posicionar la cámara automáticamente en la vista seleccionada
+    window.dispatchEvent(new CustomEvent('set-twin-camera-preset', { detail: viewType }));
 
-            let finalDataUrl = dataUrl;
-            try {
-              const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-              const data = imgData.data;
-              for (let i = 0; i < data.length; i += 4) {
-                let r = data[i] / 255, g = data[i + 1] / 255, b = data[i + 2] / 255;
-                let max = Math.max(r, g, b), min = Math.min(r, g, b);
-                let h, s, l = (max + min) / 2;
-                if (max === min) { h = s = 0; } 
-                else {
-                  let d = max - min;
-                  s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-                  switch (max) {
-                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-                    case g: h = (b - r) / d + 2; break;
-                    case b: h = (r - g) / d + 4; break;
-                  }
-                  h /= 6;
-                }
-                l = 1 - l;
-                if (s === 0) { r = g = b = l; } 
-                else {
-                  const hue2rgb = (p, q, t) => {
-                    if (t < 0) t += 1; if (t > 1) t -= 1;
-                    if (t < 1/6) return p + (q - p) * 6 * t;
-                    if (t < 1/2) return q;
-                    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-                    return p;
-                  };
-                  let q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-                  let p = 2 * l - q;
-                  r = hue2rgb(p, q, h + 1/3); g = hue2rgb(p, q, h); b = hue2rgb(p, q, h - 1/3);
-                }
-                data[i] = r * 255; data[i + 1] = g * 255; data[i + 2] = b * 255;
-              }
-              ctx.putImageData(imgData, 0, 0);
-              finalDataUrl = offscreen.toDataURL('image/jpeg', 0.85);
-            } catch(e) {
-              console.warn("CORS evitó inversión de color. Se guarda imagen pura.");
-            }
-            
-            localStorage.setItem(`${resolvedPrefix}twin_snapshot_${viewType}`, finalDataUrl);
-            localStorage.setItem(`${resolvedPrefix}twin_snapshot_base64`, finalDataUrl);
-            window.dispatchEvent(new Event('storage'));
-            
-            if (viewType === 'lateral') { setHasLateral(true); setLateralImg(finalDataUrl); }
-            if (viewType === 'superior') { setHasSuperior(true); setSuperiorImg(finalDataUrl); }
-            if (viewType === 'isometrica') { setHasIsometrica(true); setIsometricaImg(finalDataUrl); }
-          };
-          img.onerror = () => alert("Error interno al exportar WebGL.");
-          img.src = dataUrl;
-        }
-      } catch (err) {
-        console.error("CORS Error al capturar canvas:", err);
-        alert("La captura fue bloqueada. Tu modelo 3D usa texturas externas incompatibles con la exportación de seguridad del navegador.");
+    // 2. Dar tiempo (300ms) para que el WebGL renderice la nueva posición antes de tomar la foto
+    setTimeout(() => {
+      // Flash visual: indicar que se está capturando
+      if (viewType === 'lateral') setCapturingLateral(true);
+      if (viewType === 'superior') setCapturingSuperior(true);
+      if (viewType === 'isometrica') setCapturingIsometrica(true);
+    setTimeout(() => {
+      if (viewType === 'lateral') setCapturingLateral(false);
+      if (viewType === 'superior') setCapturingSuperior(false);
+      if (viewType === 'isometrica') setCapturingIsometrica(false);
+    }, 700);
+
+    try {
+      let dataUrl = null;
+      if (captureTriggerRef.current) {
+        dataUrl = captureTriggerRef.current(viewType);
       }
-    }, 150);
+
+      if (!dataUrl) {
+        window.dispatchEvent(new Event('force-twin-render'));
+        setTimeout(() => {
+          const canvas = canvasRef.current || containerRef.current?.querySelector('canvas');
+          if (canvas) {
+            const fallbackDataUrl = canvas.toDataURL('image/png');
+            if (viewType === 'lateral') setHasLateral(true);
+            if (viewType === 'superior') setHasSuperior(true);
+            if (viewType === 'isometrica') setHasIsometrica(true);
+            processCaptureImage(fallbackDataUrl, viewType);
+          }
+        }, 150);
+      } else {
+        // Encender LED de inmediato
+        if (viewType === 'lateral') setHasLateral(true);
+        if (viewType === 'superior') setHasSuperior(true);
+        if (viewType === 'isometrica') setHasIsometrica(true);
+        processCaptureImage(dataUrl, viewType);
+      }
+    } catch (err) {
+      console.error("Error al capturar la vista:", err);
+      if (viewType === 'lateral') setCapturingLateral(false);
+      if (viewType === 'superior') setCapturingSuperior(false);
+      if (viewType === 'isometrica') setCapturingIsometrica(false);
+    }
+    }, 300);
+  };
+
+  const processCaptureImage = (dataUrl, viewType) => {
+    const img = new Image();
+    img.onload = () => {
+      // --- Resolución optimizada para PDF y LocalStorage (Bypass QuotaExceededError) ---
+      const MAX_WIDTH = 1400; // Reducido para evitar límite de 5MB
+      const scale = Math.min(1, MAX_WIDTH / img.width);
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+
+      const offscreen = document.createElement('canvas');
+      offscreen.width = w;
+      offscreen.height = h;
+      const ctx = offscreen.getContext('2d');
+
+      // Mejorar antialiasing
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+
+      // Fondo sólido para evitar transparencia en JPEG
+      ctx.fillStyle = activeTheme === 'blueprint' ? '#edf4f9' : '#05070f';
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+
+      // Compresión agresiva para que 4 imágenes quepan en localStorage
+      const finalDataUrl = offscreen.toDataURL('image/jpeg', 0.65);
+
+      // Guardar en estado en memoria SIEMPRE (no depende de localStorage)
+      if (viewType === 'lateral') { setHasLateral(true); setLateralImg(finalDataUrl); }
+      if (viewType === 'superior') { setHasSuperior(true); setSuperiorImg(finalDataUrl); }
+      if (viewType === 'isometrica') { setHasIsometrica(true); setIsometricaImg(finalDataUrl); }
+
+      // Disparar siempre el evento personalizado (100% fiable para sincronizar la UI padre)
+      window.dispatchEvent(new CustomEvent('twin_snapshot_captured', {
+        detail: { key: `${resolvedPrefix}twin_snapshot_${viewType}`, value: finalDataUrl }
+      }));
+
+      // Intentar persistir en localStorage (puede fallar por cuota)
+      try {
+        localStorage.setItem(`${resolvedPrefix}twin_snapshot_${viewType}`, finalDataUrl);
+        localStorage.setItem(`${resolvedPrefix}twin_snapshot_base64`, finalDataUrl);
+        window.dispatchEvent(new Event('storage'));
+      } catch (e) {
+        console.warn('[TwinViewer] localStorage lleno. La captura se mantiene en memoria de sesión vía CustomEvent.', e);
+      }
+    };
+    img.onerror = () => console.error("Error interno al exportar WebGL.");
+    img.src = dataUrl;
   };
 
   const handleScreenshot = () => {
@@ -964,8 +1021,10 @@ export default function SharedTwinViewer3D({
         
         if (theme === 'blueprint') {
           const finalDataUrl = offscreen.toDataURL('image/jpeg', 0.85);
-          localStorage.setItem(`${resolvedPrefix}twin_snapshot_base64`, finalDataUrl);
-          window.dispatchEvent(new Event('storage'));
+          try {
+            localStorage.setItem(`${resolvedPrefix}twin_snapshot_base64`, finalDataUrl);
+            window.dispatchEvent(new Event('storage'));
+          } catch(e) {}
           return;
         }
 
@@ -1016,8 +1075,10 @@ export default function SharedTwinViewer3D({
         ctx.putImageData(imgData, 0, 0);
         
         const finalDataUrl = offscreen.toDataURL('image/jpeg', 0.85);
-        localStorage.setItem(`${resolvedPrefix}twin_snapshot_base64`, finalDataUrl);
-        window.dispatchEvent(new Event('storage'));
+        try {
+          localStorage.setItem(`${resolvedPrefix}twin_snapshot_base64`, finalDataUrl);
+          window.dispatchEvent(new Event('storage'));
+        } catch(e) {}
       };
       img.src = dataUrl;
       } catch (e) {
@@ -1186,6 +1247,7 @@ export default function SharedTwinViewer3D({
             customOutlineOpacity={customOutlineOpacity}
             gridVisibility={gridVisibility}
             fogDensity={fogDensity}
+            captureTriggerRef={captureTriggerRef}
           />
         </Canvas>
 
@@ -1223,15 +1285,21 @@ export default function SharedTwinViewer3D({
                   <button 
                     onClick={() => handleCaptureView('lateral')}
                     className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border transition-all text-[9px] font-black uppercase tracking-wider ${
-                      hasLateral 
-                        ? 'bg-cyan-500/25 border-cyan-400 text-cyan-300 hover:bg-cyan-500/40 hover:text-white shadow-[0_0_10px_rgba(6,182,212,0.25)]' 
-                        : 'bg-slate-800/90 border-slate-700 text-slate-100 hover:text-white hover:bg-slate-700 hover:border-slate-500'
+                      capturingLateral
+                        ? 'bg-yellow-400/25 border-yellow-300 text-yellow-200 scale-95 shadow-[0_0_12px_rgba(250,204,21,0.4)]'
+                        : hasLateral 
+                          ? 'bg-cyan-500/25 border-cyan-400 text-cyan-300 hover:bg-cyan-500/40 hover:text-white shadow-[0_0_10px_rgba(6,182,212,0.25)]' 
+                          : 'bg-slate-800/90 border-slate-700 text-slate-100 hover:text-white hover:bg-slate-700 hover:border-slate-500'
                     }`}
-                    title="Capturar Vista Lateral actual"
+                    title={hasLateral ? 'Retomar foto Lateral (reemplaza la actual)' : 'Capturar vista actual como foto Lateral'}
                   >
-                    <Camera className="w-3 h-3" />
-                    <span>Lateral</span>
-                    <span className={`w-2 h-2 rounded-full ${hasLateral ? 'bg-cyan-400 animate-pulse shadow-[0_0_6px_#22d3ee]' : 'bg-slate-600'}`} />
+                    <Camera className={`w-3 h-3 ${capturingLateral ? 'animate-spin' : ''}`} />
+                    <span>{capturingLateral ? '...' : 'Lateral'}</span>
+                    <span className={`w-2 h-2 rounded-full ${
+                      capturingLateral ? 'bg-yellow-400 animate-pulse shadow-[0_0_6px_#facc15]'
+                      : hasLateral ? 'bg-cyan-400 animate-pulse shadow-[0_0_6px_#22d3ee]' 
+                      : 'bg-slate-600'
+                    }`} />
                   </button>
                   {hasLateral && (
                     <button
@@ -1249,15 +1317,21 @@ export default function SharedTwinViewer3D({
                   <button 
                     onClick={() => handleCaptureView('superior')}
                     className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border transition-all text-[9px] font-black uppercase tracking-wider ${
-                      hasSuperior 
-                        ? 'bg-cyan-500/25 border-cyan-400 text-cyan-300 hover:bg-cyan-500/40 hover:text-white shadow-[0_0_10px_rgba(6,182,212,0.25)]' 
-                        : 'bg-slate-800/90 border-slate-700 text-slate-100 hover:text-white hover:bg-slate-700 hover:border-slate-500'
+                      capturingSuperior
+                        ? 'bg-yellow-400/25 border-yellow-300 text-yellow-200 scale-95 shadow-[0_0_12px_rgba(250,204,21,0.4)]'
+                        : hasSuperior 
+                          ? 'bg-cyan-500/25 border-cyan-400 text-cyan-300 hover:bg-cyan-500/40 hover:text-white shadow-[0_0_10px_rgba(6,182,212,0.25)]' 
+                          : 'bg-slate-800/90 border-slate-700 text-slate-100 hover:text-white hover:bg-slate-700 hover:border-slate-500'
                     }`}
-                    title="Capturar Vista Superior actual"
+                    title={hasSuperior ? 'Retomar foto Superior (reemplaza la actual)' : 'Capturar vista actual como foto Superior'}
                   >
-                    <Camera className="w-3 h-3" />
-                    <span>Superior</span>
-                    <span className={`w-2 h-2 rounded-full ${hasSuperior ? 'bg-cyan-400 animate-pulse shadow-[0_0_6px_#22d3ee]' : 'bg-slate-600'}`} />
+                    <Camera className={`w-3 h-3 ${capturingSuperior ? 'animate-spin' : ''}`} />
+                    <span>{capturingSuperior ? '...' : 'Superior'}</span>
+                    <span className={`w-2 h-2 rounded-full ${
+                      capturingSuperior ? 'bg-yellow-400 animate-pulse shadow-[0_0_6px_#facc15]'
+                      : hasSuperior ? 'bg-cyan-400 animate-pulse shadow-[0_0_6px_#22d3ee]' 
+                      : 'bg-slate-600'
+                    }`} />
                   </button>
                   {hasSuperior && (
                     <button
@@ -1275,15 +1349,21 @@ export default function SharedTwinViewer3D({
                   <button 
                     onClick={() => handleCaptureView('isometrica')}
                     className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border transition-all text-[9px] font-black uppercase tracking-wider ${
-                      hasIsometrica 
-                        ? 'bg-cyan-500/25 border-cyan-400 text-cyan-300 hover:bg-cyan-500/40 hover:text-white shadow-[0_0_10px_rgba(6,182,212,0.25)]' 
-                        : 'bg-slate-800/90 border-slate-700 text-slate-100 hover:text-white hover:bg-slate-700 hover:border-slate-500'
+                      capturingIsometrica
+                        ? 'bg-yellow-400/25 border-yellow-300 text-yellow-200 scale-95 shadow-[0_0_12px_rgba(250,204,21,0.4)]'
+                        : hasIsometrica 
+                          ? 'bg-cyan-500/25 border-cyan-400 text-cyan-300 hover:bg-cyan-500/40 hover:text-white shadow-[0_0_10px_rgba(6,182,212,0.25)]' 
+                          : 'bg-slate-800/90 border-slate-700 text-slate-100 hover:text-white hover:bg-slate-700 hover:border-slate-500'
                     }`}
-                    title="Capturar Vista Isométrica actual"
+                    title={hasIsometrica ? 'Retomar foto Isométrica (reemplaza la actual)' : 'Capturar vista actual como foto Isométrica'}
                   >
-                    <Camera className="w-3 h-3" />
-                    <span>Isométrica</span>
-                    <span className={`w-2 h-2 rounded-full ${hasIsometrica ? 'bg-cyan-400 animate-pulse shadow-[0_0_6px_#22d3ee]' : 'bg-slate-600'}`} />
+                    <Camera className={`w-3 h-3 ${capturingIsometrica ? 'animate-spin' : ''}`} />
+                    <span>{capturingIsometrica ? '...' : 'Isométrica'}</span>
+                    <span className={`w-2 h-2 rounded-full ${
+                      capturingIsometrica ? 'bg-yellow-400 animate-pulse shadow-[0_0_6px_#facc15]'
+                      : hasIsometrica ? 'bg-cyan-400 animate-pulse shadow-[0_0_6px_#22d3ee]' 
+                      : 'bg-slate-600'
+                    }`} />
                   </button>
                   {hasIsometrica && (
                     <button
@@ -1369,9 +1449,31 @@ export default function SharedTwinViewer3D({
         {/* Panel de Ajustes de Estudio CAD (Luz, Piso, Visibilidad) - Visible en pantalla completa */}
         {isFullscreen && !isRecording && (
           <div 
-            style={{ backgroundColor: '#090d16', zIndex: 9999 }}
-            className={`absolute top-4 right-4 p-4 rounded-3xl border border-slate-700/80 w-[270px] pointer-events-auto shadow-[0_15px_50px_rgba(0,0,0,0.85)] flex flex-col ${isPanelCollapsed ? 'gap-0 py-3' : 'gap-4 max-h-[90vh] overflow-y-auto'} text-white animate-fade-in transition-all duration-300`}
+            style={{ 
+              backgroundColor: '#090d16', 
+              zIndex: 9999,
+              scrollbarWidth: 'thin',
+              scrollbarColor: '#0891b2 #090d16'
+            }}
+            className={`absolute top-4 right-4 p-3.5 rounded-3xl border border-slate-700/80 w-[270px] pointer-events-auto shadow-[0_15px_50px_rgba(0,0,0,0.85)] flex flex-col estudio-cad-panel ${isPanelCollapsed ? 'gap-0 py-3' : 'gap-3 max-h-[calc(100vh-60px)] lg:max-h-[75vh] overflow-y-auto'} text-white animate-fade-in transition-all duration-300`}
           >
+            {/* Scrollbar Custom Styles */}
+            <style>{`
+              .estudio-cad-panel::-webkit-scrollbar {
+                width: 4px;
+              }
+              .estudio-cad-panel::-webkit-scrollbar-track {
+                background: #090d16;
+              }
+              .estudio-cad-panel::-webkit-scrollbar-thumb {
+                background: #0891b2;
+                border-radius: 10px;
+              }
+              .estudio-cad-panel::-webkit-scrollbar-thumb:hover {
+                background: #06b6d4;
+              }
+            `}</style>
+
             {/* Cabecera */}
             <div className={`flex items-center justify-between ${isPanelCollapsed ? '' : 'pb-2 border-b border-slate-800/80'}`}>
               <div className="flex items-center gap-2">

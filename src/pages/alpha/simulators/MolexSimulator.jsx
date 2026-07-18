@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { 
   ArrowLeft, Sliders, Save, FileSpreadsheet, Printer, RotateCcw, 
   Settings, Award, Activity, Coins, TrendingUp, ShieldAlert, Check,
@@ -14,6 +14,7 @@ import SharedTwinViewer3D from "@/components/flow/SharedTwinViewer3D";
 import FlowDesignsLibrary from "@/components/flow/FlowDesignsLibrary";
 import { useFlowDesigns } from "@/hooks/useFlowDesigns";
 import { process3DFile } from "@/utils/fileProcessor";
+import { useTranslation } from "@/context/LanguageContext";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { createPortal } from "react-dom";
@@ -96,7 +97,7 @@ const defaultRows = [
     descripcion:
       "Cable con 4 polos, material estañado calibre 18, rafia, armadura de acero y cobertura PVC. Diámetro nominal 12 mm.",
     tipo: "estanado",
-    kgLote: 5,
+    kgLote: 100,
     metros: 0,
     kgmCable: 0,
     kgmCobre: 4 * 0.823 * 0.00896,
@@ -110,7 +111,7 @@ const defaultRows = [
     descripcion:
       "Cable de 8 polos, cobre calibre 16, posible non woven y cobertura de PVC amarillo. Con cobre.",
     tipo: "rojo",
-    kgLote: 5,
+    kgLote: 100,
     metros: 0,
     kgmCable: 0,
     kgmCobre: 8 * 1.31 * 0.00896,
@@ -124,7 +125,7 @@ const defaultRows = [
     descripcion:
       "Cable con cobre estañado, 8 polos con armadura y cobertura de PVC gris.",
     tipo: "estanado",
-    kgLote: 5,
+    kgLote: 100,
     metros: 0,
     kgmCable: 0,
     kgmCobre: 8 * 0.823 * 0.00896,
@@ -138,7 +139,7 @@ const defaultRows = [
     descripcion:
       "Cable con armadura y 6 polos: 4 polos calibre 12 y 2 polos de control calibre 16. Cobre estañado.",
     tipo: "estanado",
-    kgLote: 5,
+    kgLote: 100,
     metros: 0,
     kgmCable: 0,
     kgmCobre: ((4 * 3.31) + (2 * 1.31)) * 0.00896,
@@ -216,7 +217,10 @@ const pct = (v) =>
 
 export default function MolexSimulator() {
   const navigate = useNavigate();
-  const { activeProject } = useBeta();
+  const { id } = useParams();
+  const simId = id || 'molex';
+  const { t } = useTranslation();
+  const { activeProject, updateProjectName } = useBeta();
   const [activeTab, setActiveTab] = useState("portada");
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
@@ -225,8 +229,9 @@ export default function MolexSimulator() {
     companyName: "CENTRAL DE INTELIGENCIA",
     clientName: "PEDRO PEREZ",
     projectName: "MOLEX - RECUPERACIÓN COBRE",
+    machineName: "MOLEX RECUPERACIÓN",
     evaluationDate: new Date().toLocaleDateString("es-MX"),
-    pesoObjetivo: 20,
+    pesoObjetivo: 400,
     precioRojo: 195,
     precioEstanado: 175,
     costoCompra: 0,
@@ -271,6 +276,9 @@ export default function MolexSimulator() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
+        if (!parsed.pesoObjetivo || Number(parsed.pesoObjetivo) < 50) {
+          return defaultInputs;
+        }
         return { ...defaultInputs, ...parsed };
       } catch (e) {
         console.error("Error al parsear localStorage:", e);
@@ -321,6 +329,9 @@ export default function MolexSimulator() {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [pdfProgress, setPdfProgress] = useState(0);
   const [isExportOnly, setIsExportOnly] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [exportFileName, setExportFileName] = useState('');
+  const [exportExchangeRate, setExportExchangeRate] = useState(18.2);
   const reportRef = useRef(null);
 
   const [twinSnapshot, setTwinSnapshot] = useState(null);
@@ -371,7 +382,7 @@ export default function MolexSimulator() {
       const savedMeta = localStorage.getItem('sim_molex_layout_meta');
       if (!savedMeta) return;
       
-      const savedModel = await getModelFromIndexedDB('sim_molex_active_model');
+      const savedModel = await getModelFromIndexedDB(`sim_${simId}_active_model`);
       if (savedModel && savedModel.blob) {
         try {
           const result = await process3DFile(savedModel.blob);
@@ -394,7 +405,7 @@ export default function MolexSimulator() {
     setIsProcessingModel(true);
     try {
       const result = await process3DFile(file);
-      await saveModelToIndexedDB('sim_molex_active_model', file, file.name, result.type);
+      await saveModelToIndexedDB(`sim_${simId}_active_model`, file, file.name, result.type);
       
       const layoutData = {
         url: result.url,
@@ -947,7 +958,38 @@ export default function MolexSimulator() {
     }
   };
 
-  const printReport = async () => {
+  const handlePrintFromMain = () => {
+    const clientNameClean = (inputs.clientName || 'CLIENTE').trim().toUpperCase().replace(/\s+/g, '_');
+    const projectNameClean = (inputs.projectName || 'PROYECTO').trim().toUpperCase().replace(/\s+/g, '_');
+    setExportFileName(`SOLIMAQ_MOLEX_INFORME_${projectNameClean}_${clientNameClean}.pdf`);
+    setExportExchangeRate(Number(inputs.exchangeRate) || 18.2);
+    setShowExportDialog(true);
+  };
+
+  const confirmExportPdf = () => {
+    setShowExportDialog(false);
+    
+    // Actualizar el TC global si el usuario lo modificó en el dialog
+    if (exportExchangeRate !== inputs.exchangeRate) {
+      updateGlobal("exchangeRate", exportExchangeRate);
+    }
+
+    const suffix = activeProject?.id ? `${activeProject.id}_` : '';
+    setTwinSnapshot(localStorage.getItem(`sim_molex_${suffix}twin_snapshot_base64`) || localStorage.getItem(`sim_molex_twin_snapshot_base64`));
+    setTwinSnapshotLateral(localStorage.getItem(`sim_molex_${suffix}twin_snapshot_lateral`) || localStorage.getItem(`sim_molex_twin_snapshot_lateral`));
+    setTwinSnapshotSuperior(localStorage.getItem(`sim_molex_${suffix}twin_snapshot_superior`) || localStorage.getItem(`sim_molex_twin_snapshot_superior`));
+    setTwinSnapshotIsometrica(localStorage.getItem(`sim_molex_${suffix}twin_snapshot_isometrica`) || localStorage.getItem(`sim_molex_twin_snapshot_isometrica`));
+    
+    setIsExportOnly(true);
+    setIsReportModalOpen(true);
+    
+    // Dar un breve tiempo para rerenderizar las proyecciones con el nuevo TC y luego exportar
+    setTimeout(() => {
+      printReport(exportFileName, true);
+    }, 1000);
+  };
+
+  const printReport = async (customFileName = null, exportOnly = false) => {
     const reportWrap = reportRef.current;
     if (!reportWrap) return;
 
@@ -996,7 +1038,7 @@ export default function MolexSimulator() {
       
       const clientNameClean = (inputs.clientName || 'CLIENTE').trim().toUpperCase().replace(/\s+/g, '_');
       const projectNameClean = (inputs.projectName || 'PROYECTO').trim().toUpperCase().replace(/\s+/g, '_');
-      const finalFileName = `SOLIMAQ_MOLEX_INFORME_${projectNameClean}_${clientNameClean}.pdf`;
+      const finalFileName = customFileName || `SOLIMAQ_MOLEX_INFORME_${projectNameClean}_${clientNameClean}.pdf`;
       
       pdf.save(finalFileName);
       
@@ -1006,6 +1048,10 @@ export default function MolexSimulator() {
     } finally {
       setIsGeneratingPdf(false);
       setPdfProgress(0);
+      if (exportOnly) {
+        setIsReportModalOpen(false);
+        setIsExportOnly(false);
+      }
     }
   };
 
@@ -1304,7 +1350,7 @@ export default function MolexSimulator() {
   const renderPageFooter = (pageNum, totalPages) => {
     return (
       <div style={{ position: 'absolute', bottom: '24px', left: '48px', right: '48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #e2e8f0', paddingTop: '12px', fontSize: '9px', color: '#94a3b8', fontWeight: 700 }}>
-        <span>PROYECTO: {inputs.projectName?.toUpperCase()} &nbsp;|&nbsp; CLIENTE: {inputs.clientName?.toUpperCase()}</span>
+        <span>PROYECTO: {inputs.projectName?.toUpperCase()} &nbsp;|&nbsp; CLIENTE: {inputs.clientName?.toUpperCase()} &nbsp;|&nbsp; EQUIPO: {inputs.machineName?.toUpperCase() || 'MOLEX RECUPERACIÓN'}</span>
         <span>PÁGINA {pageNum} DE {totalPages}</span>
       </div>
     );
@@ -1335,7 +1381,7 @@ export default function MolexSimulator() {
               <span>Cliente:</span>
               <span className="text-cyan-600 font-black uppercase">{inputs.clientName}</span>
               <span className="text-slate-300">|</span>
-              <span>MOLEX RECUPERACIÓN</span>
+              <span>{inputs.machineName || 'MOLEX RECUPERACIÓN'}</span>
             </div>
           </div>
         </div>
@@ -1367,7 +1413,7 @@ export default function MolexSimulator() {
           </button>
 
           <button 
-            onClick={() => window.print()}
+            onClick={handlePrintFromMain}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-white border border-slate-200 hover:bg-red-50 hover:text-red-700 hover:border-red-200 text-slate-750 transition-all uppercase tracking-wider shadow-sm"
           >
             <Printer className="w-4 h-4 text-red-500" />
@@ -1426,6 +1472,15 @@ export default function MolexSimulator() {
                     type="text" 
                     value={inputs.projectName} 
                     onChange={e => updateMetadata("projectName", e.target.value)} 
+                    className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none uppercase" 
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[9px] font-bold text-slate-500 uppercase">Nombre del Equipo</span>
+                  <input 
+                    type="text" 
+                    value={inputs.machineName || ''} 
+                    onChange={e => updateMetadata("machineName", e.target.value)} 
                     className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none uppercase" 
                   />
                 </div>
@@ -3167,7 +3222,7 @@ export default function MolexSimulator() {
                                 x{p.m}
                               </span>
                             </td>
-                            <td className="px-4 py-2.5 border-r border-slate-100 font-semibold">{p.kgCableDia.toFixed(0)} kg/día</td>
+                            <td className="px-4 py-2.5 border-r border-slate-100 font-semibold">{p.kgCableDia.toFixed(0)} kg/día ({Number(p.kgCableDia * inputs.diasMes).toLocaleString('es-MX', { maximumFractionDigits: 0 })} kg/mes)</td>
                             <td className="px-4 py-2.5 border-r border-slate-100 font-semibold">{money(p.ventaMes)}</td>
                             <td className="px-4 py-2.5 border-r border-slate-100 text-rose-600 font-semibold">{money(p.opexTotalMesMxn)}</td>
                             <td className={`px-4 py-2.5 border-r border-slate-100 font-bold ${p.margenMensualMxn >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -3183,7 +3238,7 @@ export default function MolexSimulator() {
                               {p.roiAnual.toFixed(1)}%
                             </td>
                             <td className="px-4 py-2.5 border-r border-slate-100 font-semibold">
-                              {p.paybackMeses === Infinity ? 'N/A' : `${p.paybackMeses.toFixed(1)} meses`}
+                              {p.paybackMeses === Infinity || p.paybackMeses > 240 ? 'No viable' : `${p.paybackMeses.toFixed(1)} meses`}
                             </td>
                             <td className="px-4 py-2.5 font-bold text-indigo-650">
                               {p.puntoEquilibrioTonMes !== Infinity ? `${p.puntoEquilibrioTonMes.toFixed(2)} ton/mes` : 'N/A'}
@@ -3218,7 +3273,7 @@ export default function MolexSimulator() {
                     <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col justify-between">
                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Dictamen de Retorno (Payback)</span>
                       <p className="text-xs text-slate-650 leading-relaxed font-semibold">
-                        Para el escenario de <strong>{activeProjection.kgCableDia.toFixed(0)} kg/día</strong>, la inversión inicial (CAPEX) de <strong>{money(calculations.capexTotalMxn)}</strong> se recuperará en un período estimado de <strong>{activeProjection.paybackMeses === Infinity ? 'N/A' : `${activeProjection.paybackMeses.toFixed(1)} meses`}</strong>, operando con un ROI anualizado de <strong>{activeProjection.roiAnual.toFixed(1)}%</strong>.
+                        Para el escenario de <strong>{activeProjection.kgCableDia.toFixed(0)} kg/día</strong>, la inversión inicial (CAPEX) de <strong>{money(calculations.capexTotalMxn)}</strong> se recuperará en un período estimado de <strong>{activeProjection.paybackMeses === Infinity || activeProjection.paybackMeses > 240 ? 'No viable' : `${activeProjection.paybackMeses.toFixed(1)} meses`}</strong>, operando con un ROI anualizado de <strong>{activeProjection.roiAnual.toFixed(1)}%</strong>.
                       </p>
                     </div>
 
@@ -3382,7 +3437,7 @@ export default function MolexSimulator() {
           MODAL VISOR DE INFORME INDUSTRIAL PDF (1120x792 px)
           ==================================================== */}
       {isReportModalOpen && createPortal(
-        <div className="fixed inset-0 z-[99999] bg-[#090b10]/95 backdrop-blur-xl flex flex-col items-center justify-start overflow-y-auto p-6">
+        <div className={`fixed inset-0 z-[99999] bg-[#090b10]/95 backdrop-blur-xl flex flex-col items-center justify-start overflow-y-auto p-6 ${isExportOnly ? 'opacity-0 pointer-events-none' : ''}`}>
           {/* Barra de Control Superior */}
           <div className="w-full max-w-[1120px] flex items-center justify-between bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-6 shadow-2xl">
             <div className="flex items-center gap-3">
@@ -3441,7 +3496,7 @@ export default function MolexSimulator() {
                     SIMULADOR DE RECUPERACIÓN DE COBRE
                   </div>
                   <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 9, fontWeight: 700, marginTop: 3 }}>
-                    CLIENTE: {inputs.clientName?.toUpperCase() || 'PEDRO PEREZ'} &nbsp;|&nbsp; MÁQUINA: MOLEX &nbsp;|&nbsp; FECHA: {inputs.evaluationDate || new Date().toLocaleDateString("es-MX")}
+                    CLIENTE: {inputs.clientName?.toUpperCase() || 'PEDRO PEREZ'} &nbsp;|&nbsp; MÁQUINA: {inputs.machineName?.toUpperCase() || 'MOLEX RECUPERACIÓN'} &nbsp;|&nbsp; FECHA: {inputs.evaluationDate || new Date().toLocaleDateString("es-MX")}
                   </div>
                 </div>
               </div>
@@ -3486,7 +3541,7 @@ export default function MolexSimulator() {
                     <tbody>
                       <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
                         <td style={{ padding: '6px 0', fontWeight: 800, color: '#00989d' }}>Empresa</td>
-                        <td style={{ padding: '6px 0', textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>{inputs.clientName?.toUpperCase() || 'PEDRO PEREZ'}</td>
+                        <td style={{ padding: '6px 0', textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>{inputs.companyName?.toUpperCase() || 'CENTRAL DE INTELIGENCIA'}</td>
                       </tr>
                       <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
                         <td style={{ padding: '6px 0', fontWeight: 800, color: '#00989d' }}>Cliente</td>
@@ -3494,7 +3549,7 @@ export default function MolexSimulator() {
                       </tr>
                       <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
                         <td style={{ padding: '6px 0', fontWeight: 800, color: '#00989d' }}>Máquina</td>
-                        <td style={{ padding: '6px 0', textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>MOLEX</td>
+                        <td style={{ padding: '6px 0', textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>{inputs.machineName?.toUpperCase() || 'MOLEX RECUPERACIÓN'}</td>
                       </tr>
                       <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
                         <td style={{ padding: '6px 0', fontWeight: 800, color: '#00989d' }}>Proyecto</td>
@@ -5291,9 +5346,9 @@ export default function MolexSimulator() {
                 {renderPageHeader("10. VIABILIDAD FINANCIERA / RETORNO DE INVERSIÓN (ROI)", "Matriz de viabilidad económica y proyección del periodo de amortización de capital")}
                 
                 {(() => {
-                  const viableInicial = proyecciones.find(p => p.margenAnualMxn > 0) || proyecciones[2];
+                  const viableInicial = proyecciones.find(p => p.margenAnualMxn > 0) || null;
                   const maxRoi = Math.max(...proyecciones.map(p => p.roiAnual));
-                  const paybackValores = proyecciones.map(p => p.paybackMeses).filter(v => v !== Infinity && v > 0);
+                  const paybackValores = proyecciones.map(p => p.paybackMeses).filter(v => v !== Infinity && v > 0 && v <= 240);
                   const minPayback = paybackValores.length > 0 ? Math.min(...paybackValores) : 0;
                   const pEquilibrio = proyecciones[0].puntoEquilibrioTonMes;
 
@@ -5323,7 +5378,7 @@ export default function MolexSimulator() {
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Escenario viable inicial</span>
-                            <span style={{ fontSize: '18px', fontWeight: 900, color: '#0d9488', marginTop: '0px' }}>x{viableInicial.m}</span>
+                            <span style={{ fontSize: '18px', fontWeight: 900, color: '#0d9488', marginTop: '0px' }}>{viableInicial ? `x${viableInicial.m}` : 'N/A'}</span>
                           </div>
                         </div>
 
@@ -5375,8 +5430,8 @@ export default function MolexSimulator() {
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Mejor payback</span>
                             <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px', marginTop: '0px' }}>
-                              <span style={{ fontSize: '18px', fontWeight: 900, color: '#ea580c' }}>{minPayback.toFixed(1)}</span>
-                              <span style={{ fontSize: '11px', fontWeight: 850, color: '#ea580c' }}>meses</span>
+                              <span style={{ fontSize: '18px', fontWeight: 900, color: '#ea580c' }}>{minPayback > 0 ? minPayback.toFixed(1) : 'N/A'}</span>
+                              {minPayback > 0 && <span style={{ fontSize: '11px', fontWeight: 850, color: '#ea580c' }}>meses</span>}
                             </div>
                           </div>
                         </div>
@@ -5403,8 +5458,8 @@ export default function MolexSimulator() {
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Punto de equilibrio</span>
                             <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px', marginTop: '0px' }}>
-                              <span style={{ fontSize: '18px', fontWeight: 900, color: '#2563eb' }}>{pEquilibrio.toFixed(2)}</span>
-                              <span style={{ fontSize: '10.5px', fontWeight: 850, color: '#2563eb' }}>ton/mes</span>
+                              <span style={{ fontSize: '18px', fontWeight: 900, color: '#2563eb' }}>{pEquilibrio !== Infinity ? pEquilibrio.toFixed(2) : 'N/A'}</span>
+                              {pEquilibrio !== Infinity && <span style={{ fontSize: '10.5px', fontWeight: 850, color: '#2563eb' }}>ton/mes</span>}
                             </div>
                           </div>
                         </div>
@@ -5421,8 +5476,16 @@ export default function MolexSimulator() {
                           <table style={{ width: '100%', borderCollapse: 'collapse', border: '1.5px solid #cbd5e1', borderRadius: '12px', overflow: 'hidden' }}>
                             <thead>
                               <tr style={{ background: '#005b60', color: '#ffffff', fontSize: '12.5px', fontWeight: 800, textAlign: 'center' }}>
-                                <th style={{ padding: '6px 6px', borderRight: '1px solid #11787e', width: '15%' }}>Escenario</th>
-                                <th style={{ padding: '6px 6px', borderRight: '1px solid #11787e', width: '27%' }}>
+                                <th style={{ padding: '6px 6px', borderRight: '1px solid #11787e', width: '12%' }}>Escenario</th>
+                                <th style={{ padding: '6px 6px', borderRight: '1px solid #11787e', width: '18%' }}>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', justifyContent: 'center' }}>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5">
+                                      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                                    </svg>
+                                    <span>Kilos/mes</span>
+                                  </div>
+                                </th>
+                                <th style={{ padding: '6px 6px', borderRight: '1px solid #11787e', width: '22%' }}>
                                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', justifyContent: 'center' }}>
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5">
                                       <circle cx="8" cy="8" r="6" />
@@ -5432,10 +5495,10 @@ export default function MolexSimulator() {
                                     <span>EBITDA anual</span>
                                   </div>
                                 </th>
-                                <th style={{ padding: '6px 6px', borderRight: '1px solid #11787e', width: '20%' }}>
+                                <th style={{ padding: '6px 6px', borderRight: '1px solid #11787e', width: '16%' }}>
                                   <span>% ROI anual</span>
                                 </th>
-                                <th style={{ padding: '6px 6px', borderRight: '1px solid #11787e', width: '18%' }}>
+                                <th style={{ padding: '6px 6px', borderRight: '1px solid #11787e', width: '16%' }}>
                                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', justifyContent: 'center' }}>
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5">
                                       <circle cx="12" cy="12" r="10" />
@@ -5444,20 +5507,20 @@ export default function MolexSimulator() {
                                     <span>Payback</span>
                                   </div>
                                 </th>
-                                <th style={{ padding: '6px 6px', width: '20%' }}>
+                                <th style={{ padding: '6px 6px', width: '16%' }}>
                                   <span>P. equilibrio</span>
                                 </th>
                               </tr>
                             </thead>
                             <tbody>
                               {proyecciones.map((p) => {
-                                const isTarget5x = p.m === 5;
-                                const isViableInicial = p.m === 3;
+                                const isTarget5x = p.roiAnual === maxRoi;
+                                const isViableInicial = viableInicial && p.m === viableInicial.m;
                                 
                                 const ebitda = p.margenAnualMxn;
                                 const ebitdaColor = ebitda < 0 ? '#ef4444' : '#16a34a';
                                 const roiColor = p.roiAnual < 0 ? '#ef4444' : '#16a34a';
-                                const paybackColor = p.paybackMeses === Infinity ? '#64748b' : p.paybackMeses <= 12 ? '#16a34a' : p.paybackMeses <= 24 ? '#ea580c' : '#ef4444';
+                                const paybackColor = p.paybackMeses === Infinity || p.paybackMeses > 240 ? '#64748b' : p.paybackMeses <= 12 ? '#16a34a' : p.paybackMeses <= 24 ? '#ea580c' : '#ef4444';
                                 
                                 const bg = isTarget5x ? '#f0fdf4' : isViableInicial ? '#f0fdf4' : 'transparent';
                                 const borderStyle = isTarget5x ? '1.5px solid #10b981' : isViableInicial ? '1px solid #0d9488' : '1px solid #e2e8f0';
@@ -5487,6 +5550,9 @@ export default function MolexSimulator() {
                                         <span>x{p.m}</span>
                                       </div>
                                     </td>
+                                    <td style={{ padding: '4px 6px', borderRight: '1px solid #cbd5e1', color: '#0d9488', fontWeight: 800 }}>
+                                      {Number(p.kgCableDia * inputs.diasMes).toLocaleString('es-MX', { maximumFractionDigits: 0 })} kg/mes
+                                    </td>
                                     <td style={{ padding: '4px 6px', borderRight: '1px solid #cbd5e1', color: ebitdaColor, fontWeight: 800 }}>
                                       {ebitda < 0 ? `-${money(Math.abs(ebitda))}` : money(ebitda)}
                                     </td>
@@ -5494,10 +5560,10 @@ export default function MolexSimulator() {
                                       {p.roiAnual.toFixed(1)}%
                                     </td>
                                     <td style={{ padding: '4px 6px', borderRight: '1px solid #cbd5e1', color: paybackColor, fontWeight: 800 }}>
-                                      {p.paybackMeses === Infinity ? 'N/A' : `${p.paybackMeses.toFixed(1)} meses`}
+                                      {p.paybackMeses === Infinity || p.paybackMeses > 240 ? 'No viable' : `${p.paybackMeses.toFixed(1)} meses`}
                                     </td>
                                     <td style={{ padding: '4px 6px', color: '#2563eb', fontWeight: 800 }}>
-                                      {p.puntoEquilibrioTonMes.toFixed(2)} ton/mes
+                                      {p.puntoEquilibrioTonMes !== Infinity ? `${p.puntoEquilibrioTonMes.toFixed(2)} ton/mes` : 'N/A'}
                                     </td>
                                   </tr>
                                 );
@@ -5683,7 +5749,13 @@ export default function MolexSimulator() {
                               Insight Clave:
                             </span>
                             <p style={{ fontSize: '12.5px', color: '#475569', margin: 0, lineHeight: '1.4' }}>
-                              La viabilidad financiera inicia en el escenario <strong style={{ color: '#0d9488' }}>x3</strong>. Los escenarios <strong style={{ color: '#0d9488' }}>x4</strong> y <strong style={{ color: '#0d9488' }}>x5</strong> mejoran significativamente el ROI y reducen el tiempo de retorno, destacando <strong style={{ color: '#16a34a' }}>x5 con {maxRoi.toFixed(1)}% de ROI</strong> y <strong style={{ color: '#ea580c' }}>{minPayback.toFixed(1)} meses</strong> de payback.
+                              {viableInicial ? (
+                                <>
+                                  La viabilidad financiera inicia en el escenario <strong style={{ color: '#0d9488' }}>x{viableInicial.m}</strong>. Los escenarios posteriores mejoran significativamente el ROI y reducen el tiempo de retorno, destacando <strong style={{ color: '#16a34a' }}>el de mayor volumen con {maxRoi.toFixed(1)}% de ROI</strong> y <strong style={{ color: '#ea580c' }}>{minPayback.toFixed(1)} meses</strong> de payback.
+                                </>
+                              ) : (
+                                "No se identificaron escenarios financieramente viables bajo las condiciones actuales de operación."
+                              )}
                             </p>
                           </div>
                         </div>
@@ -5744,7 +5816,22 @@ export default function MolexSimulator() {
                           <div key={i} style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: 12, padding: '12px 18px', display: 'flex', flexDirection: 'column', gap: 6, boxShadow: '0 2px 4px rgba(0,0,0,0.01)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                               <span style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>{r.label}</span>
-                              <span style={{ fontSize: '12px', fontWeight: 900, color: color, background: bg, border: `1.5px solid ${color}`, padding: '2px 10px', borderRadius: 14, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                              <span style={{ 
+                                display: 'inline-block',
+                                textAlign: 'center',
+                                fontSize: '11px', 
+                                fontWeight: 900, 
+                                color: color, 
+                                backgroundColor: bg, 
+                                border: `1.5px solid ${color}`, 
+                                borderRadius: '12px', 
+                                textTransform: 'uppercase', 
+                                letterSpacing: '0.5px',
+                                width: '70px',
+                                height: '24px',
+                                lineHeight: '19px',
+                                boxSizing: 'border-box'
+                              }}>
                                 {r.val}
                               </span>
                             </div>
@@ -5791,6 +5878,80 @@ export default function MolexSimulator() {
               {renderPageFooter(11, 11)}
             </div>
 
+          </div>
+        </div>
+      , document.body)}
+
+      {showExportDialog && createPortal(
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-slate-950/80 backdrop-blur-md px-4">
+          <div className="bg-white border border-slate-200 rounded-3xl p-8 max-w-md w-full shadow-2xl relative">
+            <button
+              onClick={() => setShowExportDialog(false)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-all"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-cyan-50 flex items-center justify-center border border-cyan-100">
+                <FileText className="w-5 h-5 text-cyan-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Exportar Informe PDF</h3>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Molex Simulator Report</p>
+              </div>
+            </div>
+            
+            <p className="text-xs text-slate-500 mb-6 font-semibold">
+              Personaliza el nombre del archivo y define el Tipo de Cambio (TC) que se aplicará para recalcular las proyecciones financieras en el reporte.
+            </p>
+            
+            <div className="space-y-5">
+              <div>
+                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Nombre del Archivo</label>
+                <input
+                  type="text"
+                  value={exportFileName}
+                  onChange={(e) => setExportFileName(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-cyan-500 focus:bg-white transition-all text-xs font-bold uppercase"
+                  placeholder="Ej. SOLIMAQ_MOLEX_INFORME.pdf"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Tipo de Cambio (TC) MXN/USD</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">$</span>
+                  <input
+                    type="number"
+                    value={exportExchangeRate}
+                    onChange={(e) => setExportExchangeRate(parseFloat(e.target.value) || 0)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-16 py-3 text-slate-850 focus:outline-none focus:border-cyan-500 focus:bg-white transition-all font-mono text-sm font-bold"
+                    min="1"
+                    step="0.01"
+                  />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-[10px] font-bold uppercase tracking-wider">MXN/USD</span>
+                </div>
+                <p className="text-[9px] text-slate-400 font-semibold mt-2">
+                  * El reporte completo se re-calculará usando este valor de tipo de cambio antes de exportar el PDF.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-8">
+              <button
+                onClick={() => setShowExportDialog(false)}
+                className="flex-1 px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all text-xs font-bold uppercase tracking-wider"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmExportPdf}
+                className="flex-1 px-4 py-3 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white transition-all text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm"
+              >
+                <Download size={14} /> Exportar a PDF
+              </button>
+            </div>
           </div>
         </div>
       , document.body)}

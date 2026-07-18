@@ -7,11 +7,12 @@ import {
   TrendingUp, RotateCcw, Printer, Info, Eye, X, Download, 
   Upload, Check, Sliders, Play, Pause, Save, Scale, ArrowRight, Loader2,
   FolderOpen, Link2, Plus, Maximize2, Minimize2, Lock, Unlock, MousePointer, Edit2,
-  Ruler, Grid
+  Ruler, Grid, Trash2, Box, Droplet, Shield, Target, Trophy, Package, Gauge,
+  Building2, Factory, Users, FlaskConical, Volume2, Star, PieChart as PieChartLucide
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
-  Legend, ResponsiveContainer, Cell, AreaChart, Area, LineChart, Line, PieChart, Pie
+  Legend, ResponsiveContainer, Cell, AreaChart, Area, LineChart, Line, PieChart, Pie, ComposedChart
 } from 'recharts';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -25,7 +26,7 @@ import FlowDesignsLibrary from '@/components/flow/FlowDesignsLibrary';
 import { useFlowDesigns } from '@/hooks/useFlowDesigns';
 import { process3DFile } from '@/utils/fileProcessor';
 
-// ── Helpers de IndexedDB para almacenamiento de Modelos 3D persistentes locales ──
+// â”€â”€ Helpers de IndexedDB para almacenamiento de Modelos 3D persistentes locales â”€â”€
 const dbName = "PandoraWM500DB";
 const storeName = "wm500_models";
 
@@ -90,7 +91,7 @@ async function deleteModelFromIndexedDB(key) {
   }
 }
 
-export default function WM500Simulator() {
+export default function DHLAdvancedSimulator() {
   const navigate = useNavigate();
   const { id } = useParams();
   const simId = id || 'wm500';
@@ -102,116 +103,135 @@ export default function WM500Simulator() {
   // --- 1. ESTADO DE ENTRADAS ---
   const defaultInputs = {
     // Metadatos
-    companyName: 'ELECTRIZ',
-    clientName: 'CENTRAL DE INTELIGENCIA',
-    machineName: 'WM 500',
-    projectName: 'PROYECTO PREDETERMINADO PANDORA',
-    evaluationDate: '20/6/2026',
-    materialType: 'TARIMA PESADA',
-    evaluationName: 'Trituradora para Maderas y Tarimas',
-    technicalSheetName: 'Ficha Técnica de Homologación WM-500',
+    companyName: 'SOLIWASTE',
+    clientName: 'FRANCISCO LOUVIER',
+    machineName: 'BWS-250',
+    projectName: 'PROYECTO LAVADO DE CAJAS',
+    evaluationDate: '17/7/2026',
+    materialType: 'CAJAS DE PLÁSTICO',
+    evaluationName: 'Lavadora y Secadora de Cajas BWS-250',
+    technicalSheetName: 'Ficha Técnica de Máquina de Lavado BWS-250',
     energySectionTitle: 'Desglose Energético Operativo',
     capacityCardTitle: 'Capacidad Real Ajustada',
 
     // Visibilidad de Pestañas
     hideFinanciero: false,
     hideCapex: false,
-    hideEnergia: false,
+    hideEnergía: false,
     hideEscenarios: false,
     hideRiesgos: false,
 
     // Obra Civil y Piso
-    civilExcavacionM3: 4.5,
+    civilExcavacionM3: 2.0,
     civilConcretoFc: 250,
-    civilEspesorPisoCm: 20,
-    civilRefuerzoPiso: 'Doble Parrilla de Varilla 3/8" @ 20cm',
-    civilCargaSoportada: 8.0,
-    civilAreaRequeridaM2: 75,
-    civilAcabadoPiso: 'Pulido espejo con endurecedor de cuarzo',
-    civilJuntasDilatacion: 'Sello elastomérico de poliuretano',
-    civilAnclajeTornillos: 'Hilti HAS-E con resina HIT-RE 500 V3',
-    civilCanalizacionesSubterraneas: '2 tubos PVC de 4" y 1 tubo de 2"',
-    civilSistemaVibracion: 'Neopreno de alta densidad / elastómero amortiguador',
+    civilEspesorPisoCm: 15,
+    civilRefuerzoPiso: 'Malla Electrosoldada',
+    civilCargaSoportada: 5.0,
+    civilAreaRequeridaM2: 25,
+    civilAcabadoPiso: 'Pulido con pintura epóxica',
+    civilJuntasDilatacion: 'Sello elastomérico',
+    civilAnclajeTornillos: 'Taquetes expansivos',
+    civilCanalizacionesSubterraneas: 'Tubería y Drenaje',
+    civilSistemaVibracion: 'Placas de neopreno',
 
     // Operación
-    nominalCapacity: 4000,
+    nominalCapacity: 200, // Cajas por hora
     utilization: 90,
     oee: 85,
     loadFactor: 85,
-    hoursPerDay: 20,
+    hoursPerDay: 8,
     shiftsPerDay: 2,
     daysPerMonth: 24,
-    dailyGoalKg: 50000,
-    reductionFactor: 90,
+    dailyGoalKg: 2000, // Meta en cajas
+    reductionFactor: 95,
+    cajas: [
+      { id: '1', nombre: 'Packaging 460 (blue box + lid)', largoCm: 60, anchoCm: 40, altoCm: 20, color: '#3b82f6', suciedad: 'Polvo' },
+      { id: '2', nombre: 'Packaging 500 (blue box)', largoCm: 30, anchoCm: 20, altoCm: 15, color: '#0ea5e9', suciedad: 'Polvo' },
+      { id: '3', nombre: 'Packaging 600 (blue box)', largoCm: 60, anchoCm: 20, altoCm: 15, color: '#06b6d4', suciedad: 'Polvo' },
+      { id: '4', nombre: 'Packaging 750 (blue box + lid)', largoCm: 60, anchoCm: 40, altoCm: 20, color: '#14b8a6', suciedad: 'Polvo' },
+      { id: '5', nombre: 'Packaging 757 (blue box + lid)', largoCm: 40, anchoCm: 30, altoCm: 9.86, color: '#10b981', suciedad: 'Polvo' },
+      { id: '6', nombre: 'Packaging 780 (blue box + lid)', largoCm: 60, anchoCm: 40, altoCm: 20, color: '#8b5cf6', suciedad: 'Polvo' },
+      { id: '7', nombre: 'Packaging 787 (blue box + lid)', largoCm: 60, anchoCm: 40, altoCm: 9.86, color: '#a855f7', suciedad: 'Polvo' },
+      { id: '8', nombre: 'Packaging 800 (blue box + lid)', largoCm: 80, anchoCm: 30, altoCm: 20, color: '#d946ef', suciedad: 'Polvo' },
+      { id: '9', nombre: 'Packaging 840 (blue box + lid)', largoCm: 80, anchoCm: 60, altoCm: 20, color: '#ec4899', suciedad: 'Polvo' },
+      { id: '10', nombre: 'Packaging 81 (spacer of plastic)', largoCm: 116, anchoCm: 76, altoCm: 0.4, color: '#f43f5e', suciedad: 'Polvo' },
+      { id: '11', nombre: 'Packaging 82 (spacer of plastic)', largoCm: 76, anchoCm: 56, altoCm: 0.4, color: '#f97316', suciedad: 'Polvo' }
+    ],
+
+
 
     // Energía y Motor
-    motorPrincipalHp: 120,
-    motorAuxiliarHp: 10,
-    customInstalledPowerKw: 96.98,
-    potenciaActivaKw: 82.43,
+    motorPrincipalHp: 15, // Bomba de agua
+    motorAuxiliarHp: 10, // Soplador
+    customInstalledPowerKw: 18, // Calentamiento
+    potenciaActivaKw: 21,
     electricityRate: 2.50,
+    waterTankLiters: 1200,
+    waterChangesPerWeek: 1,
+    waterCostM3: 35.0,
+    waterDragOutPercent: 5,
 
     // Especificaciones Técnicas
-    machineLength: 14.50,
-    machineWidth: 1.75,
-    machineHeight: 1.90,
-    pesoKg: 13000,
-    bocaAlimentacion: '1300 x 300 mm',
-    rotorRpm: 650,
-    particulaFinal: '2–3 cm',
-    ruidoDb: 80,
-    separadorMagnetico: 'Incluido',
-    componentesElectricos: 'Schneider Electric',
-    motorMarca: 'Siemens',
+    machineLength: 7.0,
+    machineWidth: 1.8,
+    machineHeight: 1.75,
+    pesoKg: 1800,
+    bocaAlimentacion: 'Temperatura: 60-80°C',
+    rotorRpm: 200,
+    particulaFinal: 'Presión: 5.0 bar',
+    ruidoDb: 75,
+    separadorMagnetico: 'Eficiencia: 90-95%',
+    componentesElectricos: 'Schneider / Siemens',
+    motorMarca: '15 hp (Bomba) | 10 hp (Soplador)',
 
     // CAPEX
-    precioEquipoUsd: 48600,
+    precioEquipoUsd: 89700,
     iva: 16,
     tipoCambio: 18,
-    porcentajeManiobras: 5,
-    porcentajeMontajeMecanico: 6,
-    porcentajeObraCivil: 5,
-    porcentajeElectricoPrincipal: 8,
-    porcentajeCanalizacionProtecciones: 5,
-    porcentajeExtraccionPolvo: 12,
-    porcentajeSeguridadIndustrial: 3,
-    porcentajeIngenieriaSupervision: 4,
-    porcentajeContingencia: 10,
+    porcentajeManiobras: 2,
+    porcentajeMontajeMecanico: 3,
+    porcentajeObraCivil: 2,
+    porcentajeElectricoPrincipal: 4,
+    porcentajeCanalizacionProtecciones: 3,
+    porcentajeExtraccionPolvo: 0,
+    porcentajeSeguridadIndustrial: 2,
+    porcentajeIngenieriaSupervision: 2,
+    porcentajeContingencia: 5,
 
     // OPEX
-    operadoresPorTurno: 1,
+    operadoresPorTurno: 2,
     sueldoOperadorMensual: 12000,
     supervisoresPorTurno: 0,
     sueldoSupervisorMensual: 20000,
     mantenimientoAnualPorcentaje: 5,
-    cuchillasMensualMxn: 15000,
-    refaccionesMensualMxn: 8000,
-    lubricacionMensualMxn: 2000,
-    limpiezaMensualMxn: 3000,
-    consumiblesMensualMxn: 2500,
+    filtrosMensualMxn: 0,
+    refaccionesMensualMxn: 5000,
+    lubricacionMensualMxn: 1000,
+    limpiezaMensualMxn: 4000,
+    consumiblesMensualMxn: 8000,
     otrosOpexMensualMxn: 0,
 
     // Financiero
-    precioVentaTonMxn: 500,
-    ahorroPorTonMxn: 600,
-    usarModoIngresoVenta: true,
-    usarModoAhorroInterno: false,
+    precioVentaTonMxn: 5,
+    ahorroPorTonMxn: 8,
+    usarModoIngresoVenta: false,
+    usarModoAhorroInterno: true,
     vidaUtilAnios: 10,
     tasaDescuento: 14,
     depreciacionAnual: 10,
     inflacionAnual: 5,
-    incrementoEnergiaAnual: 6,
+    incrementoEnergíaAnual: 6,
 
     // Riesgos y Mantenimiento
-    riesgoPolvo: 'medio',
+    riesgoPolvo: 'bajo',
     riesgoIncendio: 'bajo',
-    riesgoMetal: 'alto',
-    riesgoRuido: 'alto',
+    riesgoMetal: 'bajo',
+    riesgoRuido: 'medio',
     frecuenciaMantenimientoHoras: 250,
-    vidaUtilCuchillasHoras: 800,
+    vidaUtilCuchillasHoras: 2000,
     disponibilidadMecanica: 95,
     factorParo: 5,
-    requiereExtraccionPolvo: true,
+    requiereExtraccionPolvo: false,
     requiereSistemaContraIncendio: false,
     requiereCabinaAcustica: false,
     requiereLOTO: true,
@@ -219,30 +239,45 @@ export default function WM500Simulator() {
     requiereEStop: true,
 
     // Propiedades editables de la Ficha Técnica (Métricas)
-    machineNameDetalle: 'Trituradora Industrial de Madera',
-    aplicacionOperativa: 'Madera, tarimas, clavos, grapas, tornillos',
-    aplicacionDetalle: 'Separación magnética automática',
-    capacidadNominalDetalle: 'Sujeta a OEE y factor de reducción',
-    motorPrincipalDetalle: 'Alta eficiencia clase IE3',
-    motorAuxiliarDetalle: 'Sistemas auxiliares e hidráulicos',
-    dimensionesBandas: 'Entrada: 4,000 mm | Salida: 3,000 mm',
-    dimensionesBandasDetalle: 'Diseño continuo de banda reforzada',
-    bocaAlimentacionDetalle: 'Apertura de seguridad',
-    rotorRpmDetalle: 'Eje balanceado dinámicamente',
-    particulaFinalDetalle: 'Ideal para reciclaje o briquetas',
-    separadorMagneticoDetalle: 'Imán sobrebanda autolimpiable',
-    pesoKgDetalle: 'Anclaje antivibraciones',
-    componentesElectricosDetalle: 'Gabinete de control integrado',
-    ruidoDbDetalle: 'Diseño aislante de vibraciones',
+    machineNameDetalle: 'Lavadora Industrial de Cajas (Agua y Aire)',
+    aplicacionOperativa: 'Lavado, enjuague y secado de cajas plásticas',
+    aplicacionDetalle: 'Eficiencia de Lavado: 90-95% | Secado: 80-90%',
+    capacidadNominalDetalle: 'Sujeta a OEE y nivel de suciedad',
+    motorPrincipalDetalle: 'Motor de Bomba de Agua: 15 hp',
+    motorAuxiliarDetalle: 'Motor Soplador: 10 hp | Banda: 0.5 hp',
+    dimensionesBandas: 'Temperatura de Lavado: 60-80°C',
+    dimensionesBandasDetalle: 'Calentamiento: 18 kW',
+    bocaAlimentacionDetalle: 'Presión de Agua: 5.0 bar',
+    rotorRpmDetalle: 'Inversor: Incluido (SIEMENS)',
+    particulaFinalDetalle: 'Contactores y Relays: SCHNEIDER',
+    separadorMagneticoDetalle: 'Voltaje: 220/440V',
+    pesoKgDetalle: 'Estructura en Acero Inoxidable',
+    componentesElectricosDetalle: 'Contactores SCHNEIDER, Inversor SIEMENS',
+    ruidoDbDetalle: 'Nivel óptimo para piso de producción',
   };
 
   const [inputs, setInputs] = useState(() => {
-    const saved = localStorage.getItem('sim_wm500_inputs');
-    return saved ? JSON.parse(saved) : defaultInputs;
+    const saved = localStorage.getItem('sim_dhl_v2_inputs');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return { 
+          ...defaultInputs, 
+          ...parsed, 
+          cajas: (parsed.cajas && parsed.cajas.length > 0) ? parsed.cajas : defaultInputs.cajas 
+        };
+      } catch(e) {}
+    }
+    return defaultInputs;
   });
 
   useEffect(() => {
-    localStorage.setItem('sim_wm500_inputs', JSON.stringify(inputs));
+    try {
+      const { customProcessImage, ...safeInputs } = inputs;
+      localStorage.setItem('sim_dhl_v2_inputs', JSON.stringify(safeInputs));
+    } catch(e) {
+      console.warn("No se pudo guardar sim_dhl_v2_inputs", e);
+    }
   }, [inputs]);
 
   // Sync project names
@@ -383,13 +418,10 @@ export default function WM500Simulator() {
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [currentScenario, setCurrentScenario] = useState('normal'); // 'conservador' | 'normal' | 'alto'
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   
   const [pdfConfig, setPdfConfig] = useState(() => {
-    const saved = localStorage.getItem('sim_wm500_pdf_config');
-    if (saved) {
-      try { return JSON.parse(saved); } catch(e){}
-    }
-    return {
+    const defaultConfig = {
       resumen: true,
       twin: true,
       tabla: true,
@@ -398,12 +430,23 @@ export default function WM500Simulator() {
       escenarios: true,
       financiero: true,
       riesgos: true,
-      civil: true
+      civil: true,
+      analisis: true,
+      hidrico: true
     };
+    
+    const saved = localStorage.getItem('sim_dhl_v2_pdf_config');
+    if (saved) {
+      try { 
+        const parsed = JSON.parse(saved); 
+        return { ...defaultConfig, ...parsed, analisis: parsed.analisis ?? true };
+      } catch(e){}
+    }
+    return defaultConfig;
   });
 
   useEffect(() => {
-    localStorage.setItem('sim_wm500_pdf_config', JSON.stringify(pdfConfig));
+    localStorage.setItem('sim_dhl_v2_pdf_config', JSON.stringify(pdfConfig));
   }, [pdfConfig]);
 
   const renderPdfToggleButton = (tabId, label) => (
@@ -429,49 +472,73 @@ export default function WM500Simulator() {
   const [twinSnapshot, setTwinSnapshot] = useState(null);
   const [twinSnapshotLateral, setTwinSnapshotLateral] = useState(null);
   const [twinSnapshotSuperior, setTwinSnapshotSuperior] = useState(null);
-  const [twinSnapshotIsometrica, setTwinSnapshotIsometrica] = useState(null);
+  const [twinSnapshotIsométrica, setTwinSnapshotIsométrica] = useState(null);
+
+  // Load from IndexedDB on mount
+  useEffect(() => {
+    async function loadSnapshots() {
+      const s1 = await getModelFromIndexedDB(`sim_${simId}_snapshot_libre`);
+      if (s1 && s1.blob) setTwinSnapshot(s1.blob);
+      
+      const s2 = await getModelFromIndexedDB(`sim_${simId}_snapshot_lateral`);
+      if (s2 && s2.blob) setTwinSnapshotLateral(s2.blob);
+      
+      const s3 = await getModelFromIndexedDB(`sim_${simId}_snapshot_superior`);
+      if (s3 && s3.blob) setTwinSnapshotSuperior(s3.blob);
+      
+      const s4 = await getModelFromIndexedDB(`sim_${simId}_snapshot_isometrica`);
+      if (s4 && s4.blob) setTwinSnapshotIsométrica(s4.blob);
+    }
+    loadSnapshots();
+  }, [simId]);
+
+  // Save to IndexedDB on change
+  useEffect(() => { if (twinSnapshot) saveModelToIndexedDB(`sim_${simId}_snapshot_libre`, twinSnapshot, 'snap', 'img'); else deleteModelFromIndexedDB(`sim_${simId}_snapshot_libre`); }, [twinSnapshot, simId]);
+  useEffect(() => { if (twinSnapshotLateral) saveModelToIndexedDB(`sim_${simId}_snapshot_lateral`, twinSnapshotLateral, 'snap', 'img'); else deleteModelFromIndexedDB(`sim_${simId}_snapshot_lateral`); }, [twinSnapshotLateral, simId]);
+  useEffect(() => { if (twinSnapshotSuperior) saveModelToIndexedDB(`sim_${simId}_snapshot_superior`, twinSnapshotSuperior, 'snap', 'img'); else deleteModelFromIndexedDB(`sim_${simId}_snapshot_superior`); }, [twinSnapshotSuperior, simId]);
+  useEffect(() => { if (twinSnapshotIsométrica) saveModelToIndexedDB(`sim_${simId}_snapshot_isometrica`, twinSnapshotIsométrica, 'snap', 'img'); else deleteModelFromIndexedDB(`sim_${simId}_snapshot_isometrica`); }, [twinSnapshotIsométrica, simId]);
 
   const [isDesignsLibraryOpen, setIsDesignsLibraryOpen] = useState(false);
   const [isTwinEditMode, setIsTwinEditMode] = useState(false);
   const [selectedTwinNodeId, setSelectedTwinNodeId] = useState(null);
   
   const [twinLabelHeightOffset, setTwinLabelHeightOffset] = useState(() => {
-    const saved = localStorage.getItem('sim_wm500_twin_label_height_offset');
+    const saved = localStorage.getItem('sim_dhl_v2_twin_label_height_offset');
     return saved !== null ? Number(saved) : 0.2;
   });
   const [twinLabelsCollapsed, setTwinLabelsCollapsed] = useState(() => {
-    const saved = localStorage.getItem('sim_wm500_twin_labels_collapsed');
+    const saved = localStorage.getItem('sim_dhl_v2_twin_labels_collapsed');
     return saved !== null ? saved === 'true' : false;
   });
   const [twinFloorElevation, setTwinFloorElevation] = useState(() => {
-    const saved = localStorage.getItem('sim_wm500_twin_floor_elevation');
+    const saved = localStorage.getItem('sim_dhl_v2_twin_floor_elevation');
     return saved !== null ? Number(saved) : 0.0;
   });
   const [twinFloorLocked, setTwinFloorLocked] = useState(() => {
-    const saved = localStorage.getItem('sim_wm500_twin_floor_locked');
+    const saved = localStorage.getItem('sim_dhl_v2_twin_floor_locked');
     return saved === 'true';
   });
 
   useEffect(() => {
-    localStorage.setItem('sim_wm500_twin_label_height_offset', String(twinLabelHeightOffset));
+    localStorage.setItem('sim_dhl_v2_twin_label_height_offset', String(twinLabelHeightOffset));
   }, [twinLabelHeightOffset]);
   useEffect(() => {
-    localStorage.setItem('sim_wm500_twin_labels_collapsed', String(twinLabelsCollapsed));
+    localStorage.setItem('sim_dhl_v2_twin_labels_collapsed', String(twinLabelsCollapsed));
   }, [twinLabelsCollapsed]);
   useEffect(() => {
-    localStorage.setItem('sim_wm500_twin_floor_elevation', String(twinFloorElevation));
+    localStorage.setItem('sim_dhl_v2_twin_floor_elevation', String(twinFloorElevation));
   }, [twinFloorElevation]);
   useEffect(() => {
-    localStorage.setItem('sim_wm500_twin_floor_locked', String(twinFloorLocked));
+    localStorage.setItem('sim_dhl_v2_twin_floor_locked', String(twinFloorLocked));
   }, [twinFloorLocked]);
   useEffect(() => {
-    localStorage.setItem('sim_wm500_twin_floor_locked', String(twinFloorLocked));
+    localStorage.setItem('sim_dhl_v2_twin_floor_locked', String(twinFloorLocked));
   }, [twinFloorLocked]);
 
   const twinBlockRef = useRef(null);
   const [isTwinBlockFullscreen, setIsTwinBlockFullscreen] = useState(false);
   const [twinTheme, setTwinTheme] = useState(() => {
-    const saved = localStorage.getItem('sim_wm500_twin_theme');
+    const saved = localStorage.getItem('sim_dhl_v2_twin_theme');
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -483,7 +550,7 @@ export default function WM500Simulator() {
   });
 
   useEffect(() => {
-    localStorage.setItem('sim_wm500_twin_theme', typeof twinTheme === 'object' ? JSON.stringify(twinTheme) : twinTheme);
+    localStorage.setItem('sim_dhl_v2_twin_theme', typeof twinTheme === 'object' ? JSON.stringify(twinTheme) : twinTheme);
   }, [twinTheme]); 
 
   useEffect(() => {
@@ -514,7 +581,7 @@ export default function WM500Simulator() {
   const [uploadProgress, setUploadProgress] = useState(0);
 
   const [twinNodePositions, setTwinNodePositions] = useState(() => {
-    const saved = localStorage.getItem('sim_wm500_twin_node_positions');
+    const saved = localStorage.getItem('sim_dhl_v2_twin_node_positions');
     return saved ? JSON.parse(saved) : {};
   });
 
@@ -552,7 +619,7 @@ export default function WM500Simulator() {
   // Cargar modelo 3D desde IndexedDB al montar
   useEffect(() => {
     async function loadSavedModel() {
-      const savedMeta = localStorage.getItem('sim_wm500_layout_meta');
+      const savedMeta = localStorage.getItem('sim_dhl_v2_layout_meta');
       if (!savedMeta) return;
       
       const savedModel = await getModelFromIndexedDB(`sim_${simId}_active_model`);
@@ -584,7 +651,7 @@ export default function WM500Simulator() {
           .from('project_context_beta')
           .select('value')
           .eq('project_id', activeProject.id)
-          .eq('key', 'sim_wm500_data')
+          .eq('key', 'sim_dhl_v2_data')
           .maybeSingle();
 
         if (error) throw error;
@@ -596,7 +663,7 @@ export default function WM500Simulator() {
 
         // Revisar si hay un autoguardado local más reciente (por F5 accidental)
         const suffix = activeProject?.id ? `${activeProject.id}_` : 'local_';
-        const localAutoSaveStr = localStorage.getItem(`sim_wm500_${suffix}autosave`);
+        const localAutoSaveStr = localStorage.getItem(`sim_dhl_v2_${suffix}autosave`);
         
         if (localAutoSaveStr) {
           try {
@@ -616,7 +683,11 @@ export default function WM500Simulator() {
 
           // Re-hidratar inputs
           if (stateToLoad.inputs) {
-            setInputs(prev => ({ ...prev, ...stateToLoad.inputs }));
+            let migratedInputs = { ...stateToLoad.inputs };
+            if (migratedInputs.technicalSheetName === 'Ficha Técnica de Homologación BWS-250') {
+              migratedInputs.technicalSheetName = 'Ficha Técnica de Máquina de Lavado BWS-250';
+            }
+            setInputs(prev => ({ ...prev, ...migratedInputs }));
           }
 
           // Re-hidratar diseño 3D
@@ -651,8 +722,9 @@ export default function WM500Simulator() {
     if (!inputs.clientName && !inputs.evaluationName) return;
 
     const suffix = activeProject?.id ? `${activeProject.id}_` : 'local_';
+    const { customProcessImage, ...safeInputsForAutoSave } = inputs;
     const autoSaveData = {
-      inputs,
+      inputs: safeInputsForAutoSave,
       twinNodePositions,
       currentDesignId,
       activeTab,
@@ -664,22 +736,76 @@ export default function WM500Simulator() {
       autoSaveData.twinLayout = twinLayout;
     }
 
-    localStorage.setItem(`sim_wm500_${suffix}autosave`, JSON.stringify(autoSaveData));
+    try {
+      localStorage.setItem(`sim_dhl_v2_${suffix}autosave`, JSON.stringify(autoSaveData));
+    } catch (err) {
+      console.warn('No se pudo autoguardar el estado debido al límite de cuota de localStorage.', err);
+    }
   }, [inputs, twinNodePositions, currentDesignId, activeTab, twinLayout, activeProject?.id]);
 
   // Cargar instantáneas del gemelo digital de localStorage y mantenerlas sincronizadas
   useEffect(() => {
-    const syncSnapshot = () => {
+    const syncSnapshot = (e) => {
       const suffix = activeProject?.id ? `${activeProject.id}_` : '';
-      setTwinSnapshot(localStorage.getItem(`sim_wm500_${suffix}twin_snapshot_base64`));
-      setTwinSnapshotLateral(localStorage.getItem(`sim_wm500_${suffix}twin_snapshot_lateral`));
-      setTwinSnapshotSuperior(localStorage.getItem(`sim_wm500_${suffix}twin_snapshot_superior`));
-      setTwinSnapshotIsometrica(localStorage.getItem(`sim_wm500_${suffix}twin_snapshot_isometrica`));
+      const prefix = `sim_dhl_v2_${suffix}`;
+
+      // Auto-Limpieza: Si existen imágenes viejas pesadas (antes de la compresión), purgarlas para liberar la cuota de 5MB.
+      if (!window.__twin_purged) {
+        try {
+          const check = localStorage.getItem(`${prefix}twin_snapshot_base64`);
+          if (check && check.length > 500000) { // Si pesa más de 500KB, es la versión vieja sin comprimir
+            localStorage.removeItem(`${prefix}twin_snapshot_base64`);
+            localStorage.removeItem(`${prefix}twin_snapshot_lateral`);
+            localStorage.removeItem(`${prefix}twin_snapshot_superior`);
+            localStorage.removeItem(`${prefix}twin_snapshot_isometrica`);
+            console.log("Purgado de caché de imágenes antiguas exitoso.");
+          }
+        } catch (err) {}
+        window.__twin_purged = true;
+      }
+
+      // Si el evento tiene newValue (StorageEvent sintético cuando localStorage falla por cuota),
+      // actualizar el estado directamente desde el evento sin releer localStorage
+      if (e && e.key && e.newValue) {
+        if (e.key === `${prefix}twin_snapshot_lateral`) setTwinSnapshotLateral(e.newValue);
+        else if (e.key === `${prefix}twin_snapshot_superior`) setTwinSnapshotSuperior(e.newValue);
+        else if (e.key === `${prefix}twin_snapshot_isometrica`) setTwinSnapshotIsométrica(e.newValue);
+        else if (e.key === `${prefix}twin_snapshot_base64`) setTwinSnapshot(e.newValue);
+        return;
+      }
+
+      // Sincronización normal desde localStorage
+      const base64 = localStorage.getItem(`${prefix}twin_snapshot_base64`);
+      const lat = localStorage.getItem(`${prefix}twin_snapshot_lateral`);
+      const sup = localStorage.getItem(`${prefix}twin_snapshot_superior`);
+      const iso = localStorage.getItem(`${prefix}twin_snapshot_isometrica`);
+      
+      if (base64) setTwinSnapshot(base64);
+      if (lat) setTwinSnapshotLateral(lat);
+      if (sup) setTwinSnapshotSuperior(sup);
+      if (iso) setTwinSnapshotIsométrica(iso);
     };
-    syncSnapshot();
+
+    const handleCustomSnapshot = (e) => {
+      const suffix = activeProject?.id ? `${activeProject.id}_` : '';
+      const prefix = `sim_dhl_v2_${suffix}`;
+      if (e && e.detail && e.detail.key && e.detail.value) {
+        if (e.detail.key === `${prefix}twin_snapshot_lateral`) setTwinSnapshotLateral(e.detail.value);
+        else if (e.detail.key === `${prefix}twin_snapshot_superior`) setTwinSnapshotSuperior(e.detail.value);
+        else if (e.detail.key === `${prefix}twin_snapshot_isometrica`) setTwinSnapshotIsométrica(e.detail.value);
+        else if (e.detail.key === `${prefix}twin_snapshot_base64`) setTwinSnapshot(e.detail.value);
+      }
+    };
+
+    syncSnapshot(null); // carga inicial sin evento
     window.addEventListener('storage', syncSnapshot);
-    return () => window.removeEventListener('storage', syncSnapshot);
-  }, [isReportModalOpen, activeProject?.id]);
+    window.addEventListener('twin_snapshot_captured', handleCustomSnapshot);
+    
+    return () => {
+      window.removeEventListener('storage', syncSnapshot);
+      window.removeEventListener('twin_snapshot_captured', handleCustomSnapshot);
+    };
+  }, [activeProject?.id]);
 
   // --- ESC KEY LISTENER PARA CERRAR EL MODAL ---
   useEffect(() => {
@@ -693,14 +819,20 @@ export default function WM500Simulator() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isReportModalOpen]);
 
+  // --- 1.5 CÁLCULO DINÁMICO DE CAPACIDAD POR CAJA ---
+  const activeBox = (inputs.cajas || []).find(c => c.id === (inputs.activeBoxId || '1')) || (inputs.cajas || [])[0] || { largoCm: 60, nombre: 'Caja Genérica' };
+  const conveyorSpeedCmH = (inputs.conveyorSpeedMH !== undefined ? inputs.conveyorSpeedMH : 160) * 100;
+  const espacioPorCajaCm = activeBox.largoCm + (inputs.boxGapCm !== undefined ? inputs.boxGapCm : 15);
+  const currentNominalCapacity = espacioPorCajaCm > 0 ? Math.floor(conveyorSpeedCmH / espacioPorCajaCm) : 0;
+
   // --- 2. CÁLCULO DE MÉTRICAS AUTOMÁTICAS ---
   const results = useMemo(() => {
     // 1. DIMENSIONES
     const footprintM2 = (inputs.machineLength || 0) * (inputs.machineWidth || 0);
 
-    const nominalCapacity = inputs.nominalCapacity || 4000;
+    const nominalCapacity = currentNominalCapacity;
     const realProductionPerHourKg = nominalCapacity * ((inputs.oee || 85) / 100) * ((inputs.reductionFactor || 90) / 100);
-    const dailyProductionKg = realProductionPerHourKg * (inputs.hoursPerDay || 20);
+    const dailyProductionKg = realProductionPerHourKg * ((inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1));
     const dailyProductionTon = dailyProductionKg / 1000;
     const monthlyProductionTon = dailyProductionTon * (inputs.daysPerMonth || 24);
     const annualProductionTon = monthlyProductionTon * 12;
@@ -716,13 +848,35 @@ export default function WM500Simulator() {
       : (baseMotorsKw + 3.30);
     const averageHourlyConsumptionKw = installedPowerKw * ((inputs.loadFactor || 85) / 100);
     const hourlyElectricityCostMxn = averageHourlyConsumptionKw * (inputs.electricityRate || 2.50);
-    const dailyElectricityCostMxn = hourlyElectricityCostMxn * (inputs.hoursPerDay || 20);
+    const dailyElectricityCostMxn = hourlyElectricityCostMxn * ((inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1));
     const monthlyElectricityCostMxn = dailyElectricityCostMxn * (inputs.daysPerMonth || 24);
     const annualElectricityCostMxn = monthlyElectricityCostMxn * 12;
 
     const productionPerHourTon = realProductionPerHourKg / 1000;
     const kwhPerTon = productionPerHourTon > 0 ? (averageHourlyConsumptionKw / productionPerHourTon) : 0;
     const electricityCostPerTonMxn = kwhPerTon * (inputs.electricityRate || 2.50);
+
+    // 3.5. AGUA E HÍDRICO
+    const totalWorkingDays = inputs.daysPerMonth || 24;
+    const weeksPerMonth = totalWorkingDays / 6; // Aprox 4
+    const waterChangesMonthlyLiters = (inputs.waterTankLiters || 1200) * (inputs.waterChangesPerWeek || 1) * weeksPerMonth;
+    const hoursPerMonth = ((inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1)) * totalWorkingDays;
+    const waterDragOutMonthlyLiters = (inputs.waterTankLiters || 1200) * ((inputs.waterDragOutPercent || 5) / 100) * hoursPerMonth;
+    const totalWaterMonthlyLiters = waterChangesMonthlyLiters + waterDragOutMonthlyLiters;
+    const waterCostMonthlyMxn = (totalWaterMonthlyLiters / 1000) * (inputs.waterCostM3 || 35.0);
+
+    // 3.6 PROYECCIÓN A 5 AÑOS (Y1-Y5)
+    const baseHoursWeek = 48; // Y1
+    const projectionY5 = [1,2,3,4,5].map(year => {
+      const hrsWeek = baseHoursWeek - ((year - 1) * 2);
+      const efTurn = (hrsWeek / 6) * ((inputs.oee || 85) / 100);
+      const tDisp = efTurn * (inputs.shiftsPerDay || 2);
+      const reqDay = inputs.metaProduccionCajasDia || 3000;
+      const reqH = tDisp > 0 ? reqDay / tDisp : 0;
+      const capH = (((inputs.bandaSpeedMeterPerMin || 10) * 100) / (activeBox.largoCm + (inputs.boxGapCm || 15))) * 60;
+      const realCapH = capH * ((inputs.oee || 85) / 100) * ((inputs.reductionFactor || 90) / 100);
+      return { year: 'Y' + year, hrsB: hrsWeek, efT: efTurn, turn: inputs.shiftsPerDay || 2, tDisp, reqH, capH: realCapH, bal: realCapH - reqH, cob: reqH > 0 ? (realCapH / reqH) * 100 : 0 };
+    });
 
     // 4. CAPEX
     const precioEquipoUsd = inputs.precioEquipoUsd || 0;
@@ -755,7 +909,7 @@ export default function WM500Simulator() {
     const mantenimientoAnualMxn = capexInstaladoMxn * ((inputs.mantenimientoAnualPorcentaje || 0) / 100);
     const mantenimientoMensualMxn = mantenimientoAnualMxn / 12;
 
-    const opexMensualMxn = (monthlyElectricityCostMxn || 0) + (manoObraMensualMxn || 0) + (mantenimientoMensualMxn || 0) + (inputs.cuchillasMensualMxn || 0) + (inputs.refaccionesMensualMxn || 0) + (inputs.lubricacionMensualMxn || 0) + (inputs.limpiezaMensualMxn || 0) + (inputs.consumiblesMensualMxn || 0) + (inputs.otrosOpexMensualMxn || 0);
+    const opexMensualMxn = (monthlyElectricityCostMxn || 0) + (waterCostMonthlyMxn || 0) + (manoObraMensualMxn || 0) + (mantenimientoMensualMxn || 0) + (inputs.filtrosMensualMxn || 0) + (inputs.refaccionesMensualMxn || 0) + (inputs.lubricacionMensualMxn || 0) + (inputs.limpiezaMensualMxn || 0) + (inputs.consumiblesMensualMxn || 0) + (inputs.otrosOpexMensualMxn || 0);
     const opexAnualMxn = opexMensualMxn * 12;
     const opexPorTonMxn = monthlyProductionTon > 0 ? (opexMensualMxn / monthlyProductionTon) : 0;
 
@@ -793,6 +947,9 @@ export default function WM500Simulator() {
       installedPowerKw,
       averageHourlyConsumptionKw,
       realProductionPerHourKg,
+      totalWaterMonthlyLiters,
+      waterCostMonthlyMxn,
+      projectionY5,
       productionPerHourTon,
       dailyProductionKg,
       dailyProductionTon,
@@ -821,13 +978,15 @@ export default function WM500Simulator() {
       // FINANCIAL
       ingresoMensual, flujoOperativoMensual, flujoOperativoAnual, paybackMeses, roiAnual, puntoEquilibrioTonMes
     };
-  }, [inputs]);
+  }, [inputs, currentNominalCapacity]);
 
-  // Escenarios
+  // --- 4. ESCENARIOS FINANCIEROS (OEE) ---
   const scenarioResults = useMemo(() => {
+    if (!results) return null;
+    
+    const nominalCapacity = currentNominalCapacity;
     const calcScenario = (params) => {
       const { oee, factorCarga, horasDia, diasMes } = params;
-      const nominalCapacity = inputs.nominalCapacity || 4000;
       const capacidadRealKgH = nominalCapacity * (oee / 100) * ((inputs.reductionFactor || 90) / 100);
       const produccionDiariaKg = capacidadRealKgH * horasDia;
       const produccionDiariaTon = produccionDiariaKg / 1000;
@@ -845,7 +1004,7 @@ export default function WM500Simulator() {
       const capexInstaladoMxn = results.capexInstaladoMxn || 0;
       const mantenimientoMensualMxn = (capexInstaladoMxn * ((inputs.mantenimientoAnualPorcentaje || 0) / 100)) / 12;
 
-      const opexMensualMxn = (costoElectricoMensual || 0) + (manoObraMensual || 0) + (mantenimientoMensualMxn || 0) + (inputs.cuchillasMensualMxn || 0) + (inputs.refaccionesMensualMxn || 0) + (inputs.lubricacionMensualMxn || 0) + (inputs.limpiezaMensualMxn || 0) + (inputs.consumiblesMensualMxn || 0) + (inputs.otrosOpexMensualMxn || 0);
+      const opexMensualMxn = (costoElectricoMensual || 0) + (manoObraMensual || 0) + (mantenimientoMensualMxn || 0) + (inputs.filtrosMensualMxn || 0) + (inputs.refaccionesMensualMxn || 0) + (inputs.lubricacionMensualMxn || 0) + (inputs.limpiezaMensualMxn || 0) + (inputs.consumiblesMensualMxn || 0) + (inputs.otrosOpexMensualMxn || 0);
       const opexPorTon = produccionMensualTon > 0 ? (opexMensualMxn / produccionMensualTon) : 0;
       const coberturaMeta = (inputs.dailyGoalKg || 0) > 0 ? (produccionDiariaKg / inputs.dailyGoalKg) * 100 : 0;
 
@@ -881,9 +1040,9 @@ export default function WM500Simulator() {
     };
 
     return {
-      conservador: calcScenario({ oee: 70, factorCarga: inputs.loadFactor || 85, horasDia: inputs.hoursPerDay || 20, diasMes: inputs.daysPerMonth || 24 }),
-      normal: calcScenario({ oee: 85, factorCarga: inputs.loadFactor || 85, horasDia: inputs.hoursPerDay || 20, diasMes: inputs.daysPerMonth || 24 }),
-      alto: calcScenario({ oee: 95, factorCarga: inputs.loadFactor || 85, horasDia: inputs.hoursPerDay || 20, diasMes: inputs.daysPerMonth || 24 })
+      conservador: calcScenario({ oee: 70, factorCarga: inputs.loadFactor || 85, horasDia: (inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1), diasMes: inputs.daysPerMonth || 24 }),
+      normal: calcScenario({ oee: 85, factorCarga: inputs.loadFactor || 85, horasDia: (inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1), diasMes: inputs.daysPerMonth || 24 }),
+      alto: calcScenario({ oee: 95, factorCarga: inputs.loadFactor || 85, horasDia: (inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1), diasMes: inputs.daysPerMonth || 24 })
     };
   }, [inputs, results.capexInstaladoMxn]);
 
@@ -906,12 +1065,16 @@ export default function WM500Simulator() {
 
   // --- 3. PERSISTENCIA DE DATOS EN SUPABASE ---
   const handleSaveSimulator = async () => {
-    localStorage.setItem('sim_wm500_inputs', JSON.stringify(inputs));
+    try {
+      const { customProcessImage, ...safeInputs } = inputs;
+      localStorage.setItem('sim_dhl_v2_inputs', JSON.stringify(safeInputs));
+    } catch(e) {}
     
     if (activeProject && activeProject.id && activeProject.id !== 'local-fallback-id') {
       try {
+        const { customProcessImage, ...safeInputsForCloud } = inputs;
         const stateToSave = {
-          inputs,
+          inputs: safeInputsForCloud,
           twinLayout: twinLayout?.url?.startsWith('blob:') ? null : twinLayout,
           currentDesignId,
           twinNodePositions,
@@ -919,7 +1082,7 @@ export default function WM500Simulator() {
         };
         const payload = {
           project_id: activeProject.id,
-          key: 'sim_wm500_data',
+          key: 'sim_dhl_v2_data',
           value: JSON.stringify({
             ...stateToSave,
             results
@@ -1029,7 +1192,7 @@ export default function WM500Simulator() {
 
       // Guardar también en IndexedDB localmente para velocidad de carga
       await saveModelToIndexedDB(`sim_${simId}_active_model`, file, file.name, processedResult.type);
-      localStorage.setItem('sim_wm500_layout_meta', JSON.stringify({ name: file.name, type: processedResult.type }));
+      localStorage.setItem('sim_dhl_v2_layout_meta', JSON.stringify({ name: file.name, type: processedResult.type }));
 
       setPendingUpload(null);
       setUploadModelName('');
@@ -1071,7 +1234,7 @@ export default function WM500Simulator() {
           }
         });
         setTwinNodePositions(positions);
-        localStorage.setItem('sim_wm500_twin_node_positions', JSON.stringify(positions));
+        localStorage.setItem('sim_dhl_v2_twin_node_positions', JSON.stringify(positions));
       }
     }
   };
@@ -1083,11 +1246,11 @@ export default function WM500Simulator() {
       setIsAnchored(true);
       setTwinLayout(null);
       setTwinNodePositions({});
-      localStorage.removeItem('sim_wm500_twin_layout');
-      localStorage.removeItem('sim_wm500_twin_node_positions');
-      localStorage.removeItem('sim_wm500_twin_anchor_id');
-      localStorage.removeItem('sim_wm500_layout_meta');
-      deleteModelFromIndexedDB('sim_wm500_active_model');
+      localStorage.removeItem('sim_dhl_v2_twin_layout');
+      localStorage.removeItem('sim_dhl_v2_twin_node_positions');
+      localStorage.removeItem('sim_dhl_v2_twin_anchor_id');
+      localStorage.removeItem('sim_dhl_v2_layout_meta');
+      deleteModelFromIndexedDB('sim_dhl_v2_active_model');
       setCurrentDesignId(null);
       alert("Coordenadas 3D del gemelo reajustadas a los valores de diseño de Solimaq.");
     }, 1000);
@@ -1137,9 +1300,9 @@ export default function WM500Simulator() {
       }
 
       // Guardar también en localStorage la referencia y el diseño específico
-      localStorage.setItem('sim_wm500_twin_anchor_id', designId || '');
-      localStorage.setItem('sim_wm500_twin_layout', JSON.stringify({ ...twinLayout, elevation: twinFloorElevation }));
-      localStorage.setItem('sim_wm500_twin_node_positions', JSON.stringify(twinNodePositions));
+      localStorage.setItem('sim_dhl_v2_twin_anchor_id', designId || '');
+      localStorage.setItem('sim_dhl_v2_twin_layout', JSON.stringify({ ...twinLayout, elevation: twinFloorElevation }));
+      localStorage.setItem('sim_dhl_v2_twin_node_positions', JSON.stringify(twinNodePositions));
       setIsAnchored(true);
       alert("Posiciones de máquinas y diseño 3D anclados y guardados exitosamente para este simulador.");
     } catch (err) {
@@ -1159,10 +1322,21 @@ export default function WM500Simulator() {
           ...updatedData
         }
       };
-      localStorage.setItem('sim_wm500_twin_node_positions', JSON.stringify(next));
+      localStorage.setItem('sim_dhl_v2_twin_node_positions', JSON.stringify(next));
       return next;
     });
     setIsAnchored(false);
+  };
+
+  const handleCustomProcessImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setInputs(prev => ({ ...prev, customProcessImage: event.target.result }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const printReport = async () => {
@@ -1175,10 +1349,8 @@ export default function WM500Simulator() {
     setPdfProgress(10);
     
     const suffix = activeProject?.id ? `${activeProject.id}_` : '';
-    setTwinSnapshot(localStorage.getItem(`sim_wm500_${suffix}twin_snapshot_base64`));
-    setTwinSnapshotLateral(localStorage.getItem(`sim_wm500_${suffix}twin_snapshot_lateral`));
-    setTwinSnapshotSuperior(localStorage.getItem(`sim_wm500_${suffix}twin_snapshot_superior`));
-    setTwinSnapshotIsometrica(localStorage.getItem(`sim_wm500_${suffix}twin_snapshot_isometrica`));
+    // Las capturas del Gemelo Digital ya están sincronizadas en el estado local (twinSnapshotLateral, etc.)
+    // No leemos de localStorage aquí para evitar sobreescribir las capturas en memoria con versiones antiguas o truncadas.
     
     const waitForImages = (el) => {
       const images = el.querySelectorAll('img');
@@ -1254,7 +1426,7 @@ export default function WM500Simulator() {
       ['Tarifa eléctrica', inputs.electricityRate, 'MXN/kWh'],
       ['Densidad del material', inputs.materialDensity, 'kg/m³'],
       ['Peso promedio por carga', inputs.averageLoadWeight, 'kg'],
-      ['Requerimiento diario objetivo', inputs.dailyGoalKg, 'kg/día'],
+      ['Requerimiento diario objetivo', inputs.dailyGoalKg, 'cajas/día'],
       ['Requerimiento mensual objetivo', inputs.monthlyGoalTon, 'ton/mes'],
       ['Humedad del material', inputs.materialHumidity, '%'],
       ['Factor de reducción', inputs.reductionFactor, '%'],
@@ -1262,16 +1434,16 @@ export default function WM500Simulator() {
       ['RESULTADOS DE CAPACIDAD Y ENERGÍA', 'Valor', 'Unidad'],
       ['Potencia instalada total', results.installedPowerKw.toFixed(2), 'kW'],
       ['Consumo promedio por hora', results.averageHourlyConsumptionKw.toFixed(2), 'kW'],
-      ['Producción real por hora', results.realProductionPerHourKg.toFixed(2), 'kg/h'],
-      ['Producción diaria real', (results.dailyProductionKg / 1000).toFixed(2), 'ton/día'],
+      ['Producción real por hora', results.realProductionPerHourKg.toFixed(2), 'cajas/h'],
+      ['Producción diaria real', results.dailyProductionKg.toFixed(0), 'cajas/día'],
       ['Producción semanal real', (results.weeklyProductionKg / 1000).toFixed(2), 'ton/sem'],
-      ['Producción mensual real', (results.monthlyProductionKg / 1000).toFixed(2), 'ton/mes'],
+      ['Producción mensual real', results.monthlyProductionKg.toFixed(0), 'cajas/mes'],
       ['Producción anual real', (results.annualProductionKg / 1000).toFixed(2), 'ton/año'],
       ['Costo eléctrico por hora', results.hourlyElectricityCostMxn.toFixed(2), 'MXN/h'],
       ['Costo eléctrico por día', results.dailyElectricityCostMxn.toFixed(2), 'MXN/día'],
       ['Costo eléctrico mensual', results.monthlyElectricityCostMxn.toFixed(2), 'MXN/mes'],
-      ['kWh por tonelada procesada', results.kwhPerTon.toFixed(2), 'kWh/ton'],
-      ['Costo por tonelada procesada', results.electricityCostPerTonMxn.toFixed(2), 'MXN/ton'],
+      ['kWh por 1000 cajas procesadas', results.kwhPerTon.toFixed(2), 'kWh/kCajas'],
+      ['Costo por 1000 Cajas procesadas', results.electricityCostPerTonMxn.toFixed(2), 'MXN/kCajas'],
       ['Utilización del sistema', (results.systemUtilization * 100).toFixed(1), '%'],
       ['Cobertura del requerimiento', results.requirementCoverage.toFixed(1), '%'],
       ['Reserva operativa', results.operationalReserve.toFixed(1), '%'],
@@ -1286,9 +1458,9 @@ export default function WM500Simulator() {
       ['COMPARATIVA DE ESCENARIOS DE RENDIMIENTO (OEE)'],
       [],
       ['Métrica', 'Conservador (70% OEE)', 'Normal (85% OEE)', 'Alto Rendimiento (95% OEE)'],
-      ['Producción Horaria (kg/h)', (4000 * 0.70 * (inputs.reductionFactor/100)).toFixed(0), (4000 * 0.85 * (inputs.reductionFactor/100)).toFixed(0), (4000 * 0.95 * (inputs.reductionFactor/100)).toFixed(0)],
-      ['Producción Diaria (ton/día)', scenarioResults.conservador.dailyProdTon.toFixed(2), scenarioResults.normal.dailyProdTon.toFixed(2), scenarioResults.alto.dailyProdTon.toFixed(2)],
-      ['Costo Energético por Ton (MXN/ton)', scenarioResults.conservador.costPerTon.toFixed(2), scenarioResults.normal.costPerTon.toFixed(2), scenarioResults.alto.costPerTon.toFixed(2)],
+      ['Producción Horaria (cajas/h)', (currentNominalCapacity * 0.70 * (inputs.reductionFactor/100)).toFixed(0), (currentNominalCapacity * 0.85 * (inputs.reductionFactor/100)).toFixed(0), (currentNominalCapacity * 0.95 * (inputs.reductionFactor/100)).toFixed(0)],
+      ['Producción Diaria (cajas/día)', (scenarioResults.conservador.dailyProdTon * 1000).toFixed(0), (scenarioResults.normal.dailyProdTon * 1000).toFixed(0), (scenarioResults.alto.dailyProdTon * 1000).toFixed(0)],
+      ['Costo Energético por kCajas (MXN/kCajas)', scenarioResults.conservador.costPerTon.toFixed(2), scenarioResults.normal.costPerTon.toFixed(2), scenarioResults.alto.costPerTon.toFixed(2)],
       ['Cobertura de Requerimiento (%)', scenarioResults.conservador.coverage.toFixed(1), scenarioResults.normal.coverage.toFixed(1), scenarioResults.alto.coverage.toFixed(1)],
       ['Utilización del Equipo (%)', (scenarioResults.conservador.utilization * 100).toFixed(1), (scenarioResults.normal.utilization * 100).toFixed(1), (scenarioResults.alto.utilization * 100).toFixed(1)],
     ];
@@ -1316,7 +1488,7 @@ export default function WM500Simulator() {
     } else if (utilPct >= 80 && utilPct <= 95) {
       list.push({
         type: 'warning',
-        text: `Equipo viable operando bajo régimen exigente (Utilización: ${utilPct.toFixed(1)}%). Se sugiere monitorear el desgaste de cuchillas y programar paros periódicos de mantenimiento preventivo.`
+        text: `Equipo viable operando bajo régimen exigente (Utilización: ${utilPct.toFixed(1)}%). Se sugiere monitorear el Filtros y Consumibles y programar paros periódicos de mantenimiento preventivo.`
       });
     } else {
       list.push({
@@ -1352,29 +1524,31 @@ export default function WM500Simulator() {
       return {
         name: m,
         Produccion: parseFloat(prodTon.toFixed(1)),
-        CostoEnergia: parseFloat(energyMxn.toFixed(0)),
+        CostoEnergía: parseFloat(energyMxn.toFixed(0)),
         ConsumoKwh: parseFloat(kwhMonth.toFixed(0)),
         Meta: inputs.monthlyGoalTon || 0
       };
     });
   }, [results, inputs]);
 
-  const hasAnySnapshot = !!(twinSnapshot || twinSnapshotLateral || twinSnapshotSuperior || twinSnapshotIsometrica);
+  const hasAnySnapshot = !!(twinSnapshot || twinSnapshotLateral || twinSnapshotSuperior || twinSnapshotIsométrica);
   
   const snapshotPages = [];
-  if (twinSnapshotIsometrica) snapshotPages.push({ title: 'PERSPECTIVA ISOMÉTRICA', type: 'Isométrica', src: twinSnapshotIsometrica });
+  if (twinSnapshotIsométrica) snapshotPages.push({ title: 'PERSPECTIVA ISOMÉTRICA', type: 'Isométrica', src: twinSnapshotIsométrica });
   if (twinSnapshotSuperior) snapshotPages.push({ title: 'PLANTA ARQUITECTÓNICA', type: 'Superior', src: twinSnapshotSuperior });
   if (twinSnapshotLateral) snapshotPages.push({ title: 'ELEVACIÓN LATERAL', type: 'Lateral', src: twinSnapshotLateral });
   if (snapshotPages.length === 0 && twinSnapshot) snapshotPages.push({ title: 'PERSPECTIVA GENERAL', type: 'Libre', src: twinSnapshot });
-  
+
   let basePagesCount = 0;
-  if (pdfConfig.resumen) basePagesCount++;
-  if (pdfConfig.tabla) basePagesCount += 3;
-  if (pdfConfig.energia && !inputs.hideEnergia) basePagesCount++;
-  if (pdfConfig.escenarios && !inputs.hideEscenarios) basePagesCount++;
-  if (pdfConfig.financiero && !inputs.hideFinanciero) basePagesCount++;
-  if (pdfConfig.civil) basePagesCount++;
-  
+  if (pdfConfig.resumen) basePagesCount += 1;
+  if (pdfConfig.tabla) basePagesCount += 4;
+  if (pdfConfig.analisis) basePagesCount += 1;
+  if (pdfConfig.energia) basePagesCount += 1;
+  if (pdfConfig.escenarios) basePagesCount += 1;
+  if (pdfConfig.financiero) basePagesCount += 1;
+  if (pdfConfig.civil) basePagesCount += 1;
+  if (pdfConfig.hidrico) basePagesCount += 1;
+
   const totalPdfPages = basePagesCount + (pdfConfig.twin ? snapshotPages.length : 0);
   let pdfPageIndex = 0;
 
@@ -1403,7 +1577,7 @@ export default function WM500Simulator() {
   };
 
   const REPORT_STYLES = {
-    th: { padding: '8px 12px', fontSize: 10.5, fontWeight: 900, color: '#008299', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '2px solid #b2f5ea', borderTop: '2px solid #b2f5ea', textAlign: 'left' },
+    th: { padding: '8px 12px', fontSize: 12, fontWeight: 900, color: '#008299', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '2px solid #b2f5ea', borderTop: '2px solid #b2f5ea', textAlign: 'left' },
     td: { padding: '8px 12px', borderBottom: '1px solid #e2e8f0', color: '#334155', fontWeight: 600 }
   };
 
@@ -1419,7 +1593,7 @@ export default function WM500Simulator() {
     if (withoutNum.includes('ESCENARIOS')) return { line1: (num || '6. ') + 'PROYECCIÓN PARAMÉTRICA', line2: withoutNum };
     if (withoutNum.includes('FINANCIER')) return { line1: num + 'ANÁLISIS DE RENTABILIDAD', line2: withoutNum };
     if (withoutNum.includes('OBRA CIVIL') || withoutNum.includes('CONCRETO') || withoutNum.includes('CIMENTACIÓN')) return { line1: num + 'REQUERIMIENTOS ESTRUCTURALES', line2: withoutNum };
-    if (withoutNum.includes('ENERGÍA') || withoutNum.includes('ENERGIA') || withoutNum.includes('CAPACIDAD')) return { line1: num + 'REQUERIMIENTOS OPERATIVOS', line2: withoutNum };
+    if (withoutNum.includes('ENERGÍA') || withoutNum.includes('ENERGÍA') || withoutNum.includes('CAPACIDAD')) return { line1: num + 'REQUERIMIENTOS OPERATIVOS', line2: withoutNum };
     
     return { line1: num ? num + 'FICHA TÉCNICA Y COMPONENTES' : 'FICHA TÉCNICA Y COMPONENTES', line2: withoutNum };
   };
@@ -1465,8 +1639,8 @@ export default function WM500Simulator() {
   };
 
   const renderPageFooter = (pageNum, total) => (
-    <div style={{ borderTop: '1px solid #dbe5ee', paddingTop: 16, display: 'flex', justifyContent: 'space-between', fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1 }}>
-      <span>{inputs.clientName.toUpperCase()} · MÁQUINA: {inputs.machineName?.toUpperCase() || 'WM-500'}</span>
+    <div style={{ width: '100%', borderTop: '1px solid #dbe5ee', paddingTop: 16, display: 'flex', justifyContent: 'space-between', fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1, flexShrink: 0, marginTop: 'auto' }}>
+      <span>{inputs.companyName?.toUpperCase() || 'EMPRESA'} | {inputs.clientName?.toUpperCase() || 'CLIENTE'} | MÁQUINA: {inputs.machineName?.toUpperCase() || 'BWS-250'}</span>
       <span>PÁGINA {pageNum} DE {total}</span>
     </div>
   );
@@ -1606,13 +1780,19 @@ export default function WM500Simulator() {
       </div>
 
       {/* CUERPO DEL SIMULADOR - COLUMNAS */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-8 relative">
         
         {/* PANEL IZQUIERDO: VARIABLES EDITABLES (CONFIGURADOR) */}
-        <div className="lg:col-span-4 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col gap-6">
-          <div className="flex items-center gap-2 border-b border-slate-100 pb-4">
-            <Sliders className="w-5 h-5 text-cyan-600" />
-            <h2 className="text-sm font-black uppercase tracking-wider text-slate-900">Variables Editables</h2>
+        {isSidebarOpen && (
+        <div className="lg:col-span-4 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col gap-6 relative">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+            <div className="flex items-center gap-2">
+              <Sliders className="w-5 h-5 text-cyan-600" />
+              <h2 className="text-sm font-black uppercase tracking-wider text-slate-900">Variables Editables</h2>
+            </div>
+            <button onClick={() => setIsSidebarOpen(false)} className="p-1 hover:bg-slate-100 rounded-md text-slate-400 hover:text-slate-700 transition-colors" title="Ocultar Panel">
+              <Minimize2 className="w-4 h-4" />
+            </button>
           </div>
 
           <div className="overflow-y-auto max-h-[75vh] pr-2 custom-scrollbar">
@@ -1630,7 +1810,7 @@ export default function WM500Simulator() {
                     <span className="text-[10px] font-black text-slate-850 uppercase">4. CAPEX/OPEX</span>
                   </label>
                   <label className="flex items-center gap-2.5 cursor-pointer bg-white p-2 rounded-lg border border-slate-200 hover:border-cyan-300 transition-colors">
-                    <input type="checkbox" checked={!inputs.hideEnergia} onChange={e => setInputs(p => ({...p, hideEnergia: !e.target.checked}))} className="accent-cyan-600 w-3.5 h-3.5" />
+                    <input type="checkbox" checked={!inputs.hideEnergía} onChange={e => setInputs(p => ({...p, hideEnergía: !e.target.checked}))} className="accent-cyan-600 w-3.5 h-3.5" />
                     <span className="text-[10px] font-black text-slate-850 uppercase">5. ENERGÍA</span>
                   </label>
                   <label className="flex items-center gap-2.5 cursor-pointer bg-white p-2 rounded-lg border border-slate-200 hover:border-cyan-300 transition-colors">
@@ -1686,11 +1866,27 @@ export default function WM500Simulator() {
               <div className="p-4 pt-0 space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Capacidad Nom (kg/h)</span>
-                    <input type="number" step="100" value={inputs.nominalCapacity || 0} onChange={e => setInputs(p => ({...p, nominalCapacity: parseFloat(e.target.value) || 0}))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none" />
+                    <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Caja a Simular</span>
+                    <select value={inputs.activeBoxId || '1'} onChange={e => setInputs(p => ({...p, activeBoxId: e.target.value}))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none truncate">
+                      {(inputs.cajas || []).map(c => (
+                        <option key={c.id} value={c.id}>{c.nombre} ({c.largoCm}cm)</option>
+                      ))}
+                    </select>
                   </div>
                   <div>
-                    <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Meta Diaria (kg)</span>
+                    <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Capacidad Auto (cajas/h)</span>
+                    <div className="w-full bg-slate-100 border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-black text-cyan-700 select-none">{new Intl.NumberFormat().format(currentNominalCapacity)} cajas/h</div>
+                  </div>
+                  <div>
+                    <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Vel. Banda (m/h)</span>
+                    <input type="number" step="10" value={inputs.conveyorSpeedMH !== undefined ? inputs.conveyorSpeedMH : 160} onChange={e => setInputs(p => ({...p, conveyorSpeedMH: parseFloat(e.target.value) || 0}))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none" />
+                  </div>
+                  <div>
+                    <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Gap / Espacio (cm)</span>
+                    <input type="number" step="1" value={inputs.boxGapCm !== undefined ? inputs.boxGapCm : 15} onChange={e => setInputs(p => ({...p, boxGapCm: parseFloat(e.target.value) || 0}))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none" />
+                  </div>
+                  <div className="col-span-2">
+                    <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Meta Diaria (cajas)</span>
                     <input type="number" step="100" value={inputs.dailyGoalKg || 0} onChange={e => setInputs(p => ({...p, dailyGoalKg: parseFloat(e.target.value) || 0}))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none" />
                   </div>
                 </div>
@@ -1740,6 +1936,110 @@ export default function WM500Simulator() {
                     <input type="number" step="0.1" value={inputs.machineHeight} onChange={e => setInputs(p => ({...p, machineHeight: parseFloat(e.target.value) || 0}))} className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 text-[10px] font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-center" />
                   </div>
                 </div>
+
+
+                {/* Gestión de Cajas / Contenedores */}
+                <div className="pt-4 border-t border-slate-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest flex items-center gap-1.5"><Box className="w-3.5 h-3.5 text-cyan-600"/> Contenedores (Cajas)</span>
+                    <button 
+                      onClick={() => {
+                        const newId = Date.now().toString();
+                        setInputs(p => ({
+                          ...p, 
+                          cajas: [...(p.cajas || []), { id: newId, nombre: 'Nueva Caja', largoCm: 50, anchoCm: 30, altoCm: 20, color: '#cbd5e1', suciedad: 'Polvo' }]
+                        }));
+                      }}
+                      className="p-1 bg-cyan-50 text-cyan-700 rounded hover:bg-cyan-100 transition-colors"
+                      title="Añadir Caja"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                    {(inputs.cajas || []).map((caja, index) => (
+                      <div key={caja.id} className="bg-white border border-slate-200 rounded-lg p-2 shadow-sm">
+                        <div className="flex items-center justify-between mb-2">
+                          <input 
+                            type="text" 
+                            value={caja.nombre}
+                            onChange={(e) => {
+                              const newCajas = [...inputs.cajas];
+                              newCajas[index].nombre = e.target.value;
+                              setInputs(p => ({ ...p, cajas: newCajas }));
+                            }}
+                            className="text-[10px] font-bold text-slate-800 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-cyan-500 focus:outline-none w-full mr-2"
+                          />
+                          <div className="flex items-center gap-1">
+                            <input 
+                              type="color" 
+                              value={caja.color}
+                              onChange={(e) => {
+                                const newCajas = [...inputs.cajas];
+                                newCajas[index].color = e.target.value;
+                                setInputs(p => ({ ...p, cajas: newCajas }));
+                              }}
+                              className="w-4 h-4 p-0 border-0 rounded cursor-pointer"
+                              title="Color de la caja"
+                            />
+                            <button 
+                              onClick={() => {
+                                setInputs(p => ({ ...p, cajas: p.cajas.filter(c => c.id !== caja.id) }));
+                              }}
+                              className="text-red-400 hover:text-red-600 p-0.5"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-4 gap-1">
+                          <div>
+                            <span className="block text-[7px] text-slate-400 font-bold uppercase">Largo(cm)</span>
+                            <input type="number" step="0.1" value={caja.largoCm} onChange={(e) => {
+                              const newCajas = [...inputs.cajas];
+                              newCajas[index].largoCm = parseFloat(e.target.value) || 0;
+                              setInputs(p => ({ ...p, cajas: newCajas }));
+                            }} className="w-full text-[9px] font-mono text-slate-700 bg-slate-50 border border-slate-200 rounded px-1 py-0.5 text-center focus:outline-none focus:border-cyan-500" />
+                          </div>
+                          <div>
+                            <span className="block text-[7px] text-slate-400 font-bold uppercase">Ancho(cm)</span>
+                            <input type="number" step="0.1" value={caja.anchoCm} onChange={(e) => {
+                              const newCajas = [...inputs.cajas];
+                              newCajas[index].anchoCm = parseFloat(e.target.value) || 0;
+                              setInputs(p => ({ ...p, cajas: newCajas }));
+                            }} className="w-full text-[9px] font-mono text-slate-700 bg-slate-50 border border-slate-200 rounded px-1 py-0.5 text-center focus:outline-none focus:border-cyan-500" />
+                          </div>
+                          <div>
+                            <span className="block text-[7px] text-slate-400 font-bold uppercase">Alto(cm)</span>
+                            <input type="number" step="0.1" value={caja.altoCm} onChange={(e) => {
+                              const newCajas = [...inputs.cajas];
+                              newCajas[index].altoCm = parseFloat(e.target.value) || 0;
+                              setInputs(p => ({ ...p, cajas: newCajas }));
+                            }} className="w-full text-[9px] font-mono text-slate-700 bg-slate-50 border border-slate-200 rounded px-1 py-0.5 text-center focus:outline-none focus:border-cyan-500" />
+                          </div>
+                          <div>
+                            <span className="block text-[7px] text-slate-400 font-bold uppercase">Suciedad</span>
+                            <select value={caja.suciedad} onChange={(e) => {
+                              const newCajas = [...inputs.cajas];
+                              newCajas[index].suciedad = e.target.value;
+                              setInputs(p => ({ ...p, cajas: newCajas }));
+                            }} className="w-full text-[9px] font-mono text-slate-700 bg-slate-50 border border-slate-200 rounded px-1 py-0.5 focus:outline-none focus:border-cyan-500">
+                              <option value="Ligera">Ligera</option>
+                              <option value="Polvo">Polvo</option>
+                              <option value="Aceite">Aceite</option>
+                              <option value="Pesada">Pesada</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {(!inputs.cajas || inputs.cajas.length === 0) && (
+                      <div className="text-center py-4 text-slate-400 text-[10px] font-bold">
+                        No hay cajas registradas
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </details>
 
@@ -1765,6 +2065,31 @@ export default function WM500Simulator() {
                     <span className="text-xs font-black text-cyan-600">{inputs.loadFactor}%</span>
                   </div>
                   <input type="range" min="10" max="100" step="5" value={inputs.loadFactor || 0} onChange={e => setInputs(p => ({...p, loadFactor: parseInt(e.target.value) || 0}))} className="w-full accent-cyan-600" />
+                </div>
+                {/* --- SUB-PANEL HÍDRICO --- */}
+                <div className="mt-6 pt-4 border-t border-slate-200">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Droplet className="w-4 h-4 text-cyan-600" />
+                    <span className="text-[11px] font-black text-slate-800 uppercase tracking-wider">Gestión Hídrica</span>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-slate-600 uppercase">Capacidad Tanque (L)</span>
+                      <input type="number" value={inputs.waterTankLiters || 1200} onChange={e => setInputs(p => ({...p, waterTankLiters: parseFloat(e.target.value) || 0}))} className="w-20 bg-white border border-slate-200 rounded px-2 py-1 text-xs font-bold text-slate-800 text-center focus:border-cyan-500 focus:outline-none" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-slate-600 uppercase">Recambios Semanales</span>
+                      <input type="number" step="0.5" value={inputs.waterChangesPerWeek || 1} onChange={e => setInputs(p => ({...p, waterChangesPerWeek: parseFloat(e.target.value) || 0}))} className="w-20 bg-white border border-slate-200 rounded px-2 py-1 text-xs font-bold text-slate-800 text-center focus:border-cyan-500 focus:outline-none" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-slate-600 uppercase">Arrastre / Evap (%)</span>
+                      <input type="number" step="1" value={inputs.waterDragOutPercent || 5} onChange={e => setInputs(p => ({...p, waterDragOutPercent: parseFloat(e.target.value) || 0}))} className="w-20 bg-white border border-slate-200 rounded px-2 py-1 text-xs font-bold text-slate-800 text-center focus:border-cyan-500 focus:outline-none" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-slate-600 uppercase">Costo Agua (MXN/m³)</span>
+                      <input type="number" step="1" value={inputs.waterCostM3 || 35} onChange={e => setInputs(p => ({...p, waterCostM3: parseFloat(e.target.value) || 0}))} className="w-20 bg-white border border-slate-200 rounded px-2 py-1 text-xs font-bold text-slate-800 text-center focus:border-cyan-500 focus:outline-none" />
+                    </div>
+                  </div>
                 </div>
               </div>
             </details>
@@ -1827,7 +2152,7 @@ export default function WM500Simulator() {
                   { label: 'Supervisores/Turno', key: 'supervisoresPorTurno', isMxn: false },
                   { label: 'Sueldo Sup. (Mes MXN)', key: 'sueldoSupervisorMensual', isMxn: true },
                   { label: 'Mantenimiento Base/Año %', key: 'mantenimientoAnualPorcentaje', isMxn: false, full: true },
-                  { label: 'Cuchillas (MXN)', key: 'cuchillasMensualMxn', isMxn: true },
+                  { label: 'Detergentes (MXN)', key: 'filtrosMensualMxn', isMxn: true },
                   { label: 'Refacciones (MXN)', key: 'refaccionesMensualMxn', isMxn: true },
                   { label: 'Lubricación (MXN)', key: 'lubricacionMensualMxn', isMxn: true },
                   { label: 'Limpieza (MXN)', key: 'limpiezaMensualMxn', isMxn: true },
@@ -1863,7 +2188,7 @@ export default function WM500Simulator() {
                 
                 {inputs.usarModoIngresoVenta && (
                   <div>
-                    <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Precio de Venta (MXN/ton)</span>
+                    <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Precio de Venta (MXN/kCajas)</span>
                     <div className="relative flex items-center">
                       <span className="absolute left-2.5 text-xs font-black text-purple-400">$</span>
                       <input type="number" step="10" value={inputs.precioVentaTonMxn || 0} onChange={e => setInputs(p => ({...p, precioVentaTonMxn: parseFloat(e.target.value) || 0}))} className="w-full bg-white border border-purple-200 rounded-lg pl-6 pr-2 py-1.5 text-xs font-bold text-purple-800 focus:border-purple-500 focus:outline-none" />
@@ -1872,7 +2197,7 @@ export default function WM500Simulator() {
                 )}
                 {inputs.usarModoAhorroInterno && (
                   <div>
-                    <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Ahorro Generado (MXN/ton)</span>
+                    <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Ahorro Generado (MXN/kCajas)</span>
                     <div className="relative flex items-center">
                       <span className="absolute left-2.5 text-xs font-black text-purple-400">$</span>
                       <input type="number" step="10" value={inputs.ahorroPorTonMxn || 0} onChange={e => setInputs(p => ({...p, ahorroPorTonMxn: parseFloat(e.target.value) || 0}))} className="w-full bg-white border border-purple-200 rounded-lg pl-6 pr-2 py-1.5 text-xs font-bold text-purple-800 focus:border-purple-500 focus:outline-none" />
@@ -1916,7 +2241,7 @@ export default function WM500Simulator() {
                 </div>
                 <div className="grid grid-cols-2 gap-2 border-t border-slate-200 pt-2">
                   <div>
-                    <span className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Vida Cuchillas (Hrs)</span>
+                    <span className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Vida Filtros (Hrs)</span>
                     <input type="number" step="50" value={inputs.vidaUtilCuchillasHoras || ''} onChange={e => setInputs(p => ({...p, vidaUtilCuchillasHoras: parseFloat(e.target.value) || 0}))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[10px] font-bold text-slate-800 focus:border-red-500 focus:outline-none" />
                   </div>
                   <div>
@@ -1986,18 +2311,44 @@ export default function WM500Simulator() {
 
           </div>
         </div>
+        )}
+
+        {/* PESTAÑA LATERAL FLOTANTE CUANDO ESTÁ CERRADO */}
+        {!isSidebarOpen && (
+          <button 
+            onClick={() => setIsSidebarOpen(true)}
+            className="absolute left-0 top-10 bg-slate-800 text-white p-3 pr-4 rounded-r-2xl shadow-xl hover:bg-slate-700 transition-all z-50 flex items-center gap-3 border border-l-0 border-slate-600"
+            title="Abrir Variables Editables"
+          >
+            <Sliders className="w-5 h-5" />
+            <span className="text-[11px] font-black uppercase tracking-widest">Configurar</span>
+          </button>
+        )}
 
         {/* PANEL DERECHO: NAVEGACIÓN Y REPORTES INDUSTRIALES */}
-        <div className="lg:col-span-8 flex flex-col gap-6">
+        <div className={`${isSidebarOpen ? 'lg:col-span-8' : 'lg:col-span-12'} flex flex-col gap-6 transition-all duration-300 relative`}>
           
           {/* TABS DE SECCIÓN */}
-          <div className="flex flex-wrap bg-slate-200 p-1.5 rounded-2xl gap-1">
+          <div className={`flex overflow-x-auto bg-slate-200 p-1.5 rounded-2xl gap-1 scrollbar-hide whitespace-nowrap ${!isSidebarOpen ? 'ml-36' : ''}`}>
+            {/* BOTÓN EXTRA PARA OCULTAR (sólo si hay espacio o dentro del tab bar) */}
+            {isSidebarOpen && (
+              <button
+                onClick={() => setIsSidebarOpen(false)}
+                className="px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all tracking-wider text-center bg-slate-800 text-white hover:bg-slate-700 flex-shrink-0 flex items-center gap-2 mr-2"
+                title="Cerrar Panel"
+              >
+                <Minimize2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Cerrar Variables</span>
+              </button>
+            )}
             {[
               { id: 'resumen', label: 'Portada' },
+              { id: 'operacion', label: 'Operación' },
+              { id: 'analisis', label: 'Análisis' },
               { id: 'twin', label: 'Twin 3D' },
               { id: 'tabla', label: 'Métricas' },
               { id: 'capex', label: 'CAPEX/OPEX', hide: inputs.hideCapex },
-              { id: 'energia', label: 'Energía', hide: inputs.hideEnergia },
+              { id: 'energia', label: 'Energía', hide: inputs.hideEnergía },
               { id: 'escenarios', label: 'Escenarios', hide: inputs.hideEscenarios },
               { id: 'financiero', label: 'Financiero', hide: inputs.hideFinanciero },
               { id: 'riesgos', label: 'Riesgos', hide: inputs.hideRiesgos },
@@ -2008,7 +2359,7 @@ export default function WM500Simulator() {
                 <button
                   key={t.id}
                   onClick={() => setActiveTab(t.id)}
-                  className={`px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all tracking-wider flex-1 text-center truncate ${activeTab === t.id ? 'bg-white text-cyan-800 shadow-sm border border-slate-100' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-300'}`}
+                  className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all tracking-wider text-center ${activeTab === t.id ? 'bg-white text-cyan-800 shadow-sm border border-slate-100' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-300'}`}
                   title={numberedLabel}
                 >
                   {numberedLabel}
@@ -2126,20 +2477,14 @@ export default function WM500Simulator() {
                   
                   <div className="mt-4">
                     <span className="text-3xl font-black text-slate-900">{new Intl.NumberFormat().format(results.realProductionPerHourKg.toFixed(0))}</span>
-                    <span className="text-xs font-bold text-slate-400 ml-1">kg/h</span>
+                    <span className="text-xs font-bold text-slate-400 ml-1">cajas/h</span>
                   </div>
                   
                   <div className="flex flex-col gap-1.5 mt-2">
                     <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono">
                       <span>Nominal:</span>
                       <div>
-                        <input 
-                          type="number"
-                          value={inputs.nominalCapacity !== undefined ? inputs.nominalCapacity : 4000}
-                          onChange={(e) => setInputs(prev => ({ ...prev, nominalCapacity: parseInt(e.target.value) || 0 }))}
-                          className="w-16 bg-transparent border-b border-dashed border-slate-400 focus:border-cyan-500 focus:outline-none text-slate-700 px-0.5 group-hover:text-cyan-700 font-black text-right text-sm"
-                          step="100"
-                        /> kg/h
+                        <span className="text-slate-700 font-black text-sm">{new Intl.NumberFormat().format(currentNominalCapacity)}</span> cajas/h
                       </div>
                     </div>
                     <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono">
@@ -2176,8 +2521,8 @@ export default function WM500Simulator() {
                     Producción Diaria
                   </span>
                   <div className="mt-4">
-                    <span className="text-3xl font-black text-slate-900">{(results.dailyProductionKg / 1000).toFixed(1)}</span>
-                    <span className="text-xs font-bold text-slate-400 ml-1">ton/día</span>
+                    <span className="text-3xl font-black text-slate-900">{new Intl.NumberFormat().format(results.realProductionPerHourKg.toFixed(0))}</span>
+                    <span className="text-xs font-bold text-slate-400 ml-1">cajas/día</span>
                   </div>
                   <span className="text-[9px] text-slate-500 font-mono mt-1">Horas operando: {results.hoursPerDay}h</span>
                 </div>
@@ -2195,17 +2540,17 @@ export default function WM500Simulator() {
                   <span className="text-[9px] text-slate-500 font-mono mt-1">Potencia: {results.installedPowerKw.toFixed(1)} kW inst.</span>
                 </div>
 
-                {/* Costo por Tonelada */}
+                {/* Costo por 1000 Cajas */}
                 <div className="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col justify-between shadow-sm">
                   <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                     <DollarSign className="w-3.5 h-3.5 text-cyan-600" />
-                    Costo por Tonelada
+                    Costo por 1000 Cajas
                   </span>
                   <div className="mt-4">
                     <span className="text-3xl font-black text-slate-900">${results.electricityCostPerTonMxn.toFixed(1)}</span>
-                    <span className="text-xs font-bold text-slate-400 ml-1">MXN/ton</span>
+                    <span className="text-xs font-bold text-slate-400 ml-1">MXN/kCajas</span>
                   </div>
-                  <span className="text-[9px] text-slate-500 font-mono mt-1">Eficiencia: {results.kwhPerTon.toFixed(1)} kWh/ton</span>
+                  <span className="text-[9px] text-slate-500 font-mono mt-1">Eficiencia: {results.kwhPerTon.toFixed(1)} kWh/kCajas</span>
                 </div>
 
                 {/* Cobertura */}
@@ -2217,7 +2562,7 @@ export default function WM500Simulator() {
                   <div className="mt-4">
                     <span className="text-3xl font-black text-slate-900">{results.requirementCoverage.toFixed(1)}%</span>
                   </div>
-                  <span className="text-[9px] text-slate-500 font-mono mt-1">Objetivo: {new Intl.NumberFormat().format(inputs.dailyGoalKg)} kg/día</span>
+                  <span className="text-[9px] text-slate-500 font-mono mt-1">Objetivo: {new Intl.NumberFormat().format(inputs.dailyGoalKg)} cajas/día</span>
                 </div>
 
                 {/* Viabilidad/Estado */}
@@ -2273,6 +2618,301 @@ export default function WM500Simulator() {
                 </div>
               </div>
 
+            </div>
+          )}
+
+          {/* TAB 1.5: OPERACIÓN Y FLUJO */}
+          {activeTab === 'operacion' && (
+            <div className="space-y-6">
+              <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
+                  <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                    <Box className="w-5 h-5 text-cyan-600" />
+                    Parámetros Operativos
+                  </h3>
+                  {renderPdfToggleButton('tabla', 'Flujo de Proceso')}
+                </div>
+
+                {/* FLUJO DE PROCESO (UI Version of the PDF section) */}
+                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-8">
+                  {[
+                    { num: '01', title: 'ALIMENTACIÓN', desc: 'Carga continua de cajas plásticas en la banda de entrada para su procesamiento automático.', hex: '#14b8a6' },
+                    { num: '02', title: 'INGRESO AL TÚNEL', desc: 'La banda transportadora conduce las cajas al área de lavado de manera estable y controlada.', hex: '#3b82f6' },
+                    { num: '03', title: 'LAVADO POR ASPERSIÓN', desc: 'Sistema de limpieza con agua caliente a 60-80 °C y presión de 5.0 bar para remover suciedad, polvo, aceites y líquidos.', hex: '#f59e0b' },
+                    { num: '04', title: 'RECIRCULACIÓN DE AGUA', desc: 'El sistema reutiliza hasta el 85% del agua mediante filtración, trampas y recirculación interna.', hex: '#8b5cf6' },
+                    { num: '05', title: 'SECADO', desc: 'Secado por soplado de aire en banda externa de 5 metros con 4 secadores de alta velocidad.', hex: '#10b981' },
+                    { num: '06', title: 'DESCARGA FINAL', desc: 'Salida continua de cajas limpias con eficiencia de lavado de 90-95% y secado de 80-90%.', hex: '#ef4444' }
+                  ].map((step, idx) => (
+                    <div key={idx} className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col relative overflow-hidden">
+                      <div className="absolute top-0 right-0 p-2 opacity-10">
+                        <span className="text-4xl font-black" style={{ color: step.hex }}>{step.num}</span>
+                      </div>
+                      <span className="text-xs font-black mb-2" style={{ color: step.hex }}>{step.title}</span>
+                      <p className="text-[10px] text-slate-500 font-bold leading-relaxed">{step.desc}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* DETALLE DE CAJA ACTIVA */}
+                <div className="bg-[#0f2038] rounded-xl p-6 text-white grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                  <div>
+                    <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest mb-1 block">Perfil de Simulación Actual</span>
+                    <h4 className="text-xl font-black mb-4">{activeBox.nombre}</h4>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center border-b border-white/10 pb-2">
+                        <span className="text-xs text-slate-400 font-bold">Dimensiones (L x A x H)</span>
+                        <span className="text-sm font-black">{activeBox.largoCm} x {activeBox.anchoCm} x {activeBox.altoCm} cm</span>
+                      </div>
+                      <div className="flex justify-between items-center border-b border-white/10 pb-2">
+                        <span className="text-xs text-slate-400 font-bold">Color Identificador</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 rounded-full border border-white/20" style={{ backgroundColor: activeBox.color }} />
+                          <span className="text-sm font-black">{activeBox.color}</span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center pb-2">
+                        <span className="text-xs text-slate-400 font-bold">Capacidad Teórica (por banda)</span>
+                        <span className="text-sm font-black text-cyan-400">{new Intl.NumberFormat().format(currentNominalCapacity)} cajas/h</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Visor simulado de la caja */}
+                  <div className="flex items-center justify-center bg-white/5 rounded-xl border border-white/10 p-8 h-full min-h-[200px]">
+                    <div className="relative flex items-center justify-center w-full h-full perspective-[800px]">
+                      <div className="relative" style={{
+                        width: `${Math.min(activeBox.largoCm * 2, 240)}px`,
+                        height: `${Math.min(activeBox.anchoCm * 2, 160)}px`,
+                        backgroundColor: activeBox.color,
+                        border: '2px solid rgba(255,255,255,0.2)',
+                        boxShadow: `0 20px 40px -10px ${activeBox.color}66, inset 0 0 20px rgba(0,0,0,0.2)`,
+                        borderRadius: '8px',
+                        transform: 'rotateX(20deg) rotateY(-20deg)',
+                        transformStyle: 'preserve-3d'
+                      }}>
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent rounded-lg" />
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white/40 font-black text-xl">{activeBox.largoCm}cm</div>
+                      </div>
+                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-black tracking-widest text-white/50">
+                        REPRESENTACIÓN ESCALADA
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* TABLA COMPLETA DE CONTENEDORES */}
+                <div className="mt-8">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                      <Box className="w-5 h-5 text-cyan-600" />
+                      Modelos de Contenedores Evaluados
+                    </h3>
+                  </div>
+                  <div className="overflow-x-auto bg-white rounded-xl border border-slate-200">
+                    <table className="w-full text-left text-[10px] font-bold text-slate-700 whitespace-nowrap">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-200 uppercase tracking-wider text-slate-500">
+                          <th className="py-3 px-4">Mod</th>
+                          <th className="py-3 px-4">Nombre</th>
+                          <th className="py-3 px-4">Medidas (L x A x H) CM</th>
+                          <th className="py-3 px-4 text-center">Suciedad</th>
+                          <th className="py-3 px-4 text-right">Cap C/H</th>
+                          <th className="py-3 px-4 text-right">Cap/Día</th>
+                          <th className="py-3 px-4 text-right">Req/Día</th>
+                          <th className="py-3 px-4 text-right">Hrs Req.</th>
+                          <th className="py-3 px-4 text-center">Estado</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {inputs.cajas.map((caja, idx) => {
+                          const gapCm = inputs.boxGapCm || 15;
+                          const speedCmMin = (inputs.bandaSpeedMeterPerMin || 10) * 100;
+                          const spaceCm = caja.largoCm + gapCm;
+                          const boxPerMin = speedCmMin / spaceCm;
+                          const capCH = boxPerMin * 60 * ((inputs.oee || 85) / 100) * ((inputs.reductionFactor !== undefined ? inputs.reductionFactor : 90) / 100);
+                          const capDia = capCH * ((inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1));
+                          const reqDia = inputs.metaProduccionCajasDia || 3000;
+                          const hrsReq = reqDia / capCH;
+                          const isViable = hrsReq <= (((inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1)) + 0.5); // Margen de 30 min de tolerancia
+                          
+                          return (
+                            <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                              <td className="py-2.5 px-4">
+                                <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: caja.color }} title={caja.color} />
+                              </td>
+                              <td className="py-2.5 px-4 font-black text-slate-800">{caja.nombre}</td>
+                              <td className="py-2.5 px-4 text-slate-600">{caja.largoCm} x {caja.anchoCm} x {caja.altoCm} cm</td>
+                              <td className="py-2.5 px-4 text-center">
+                                <select 
+                                  className="bg-transparent border-b border-dashed border-slate-300 focus:outline-none focus:border-cyan-500 font-bold text-slate-600 cursor-pointer"
+                                  value={caja.suciedad || 'Media'}
+                                  onChange={(e) => {
+                                    const newCajas = [...inputs.cajas];
+                                    newCajas[idx].suciedad = e.target.value;
+                                    setInputs(p => ({...p, cajas: newCajas}));
+                                  }}
+                                >
+                                  <option value="Baja">Baja</option>
+                                  <option value="Media">Media</option>
+                                  <option value="Alta">Alta</option>
+                                </select>
+                              </td>
+                              <td className="py-2.5 px-4 text-right font-mono text-cyan-700">{new Intl.NumberFormat().format(capCH.toFixed(1))}</td>
+                              <td className="py-2.5 px-4 text-right font-mono">{new Intl.NumberFormat().format(capDia.toFixed(0))}</td>
+                              <td className="py-2.5 px-4 text-right">
+                                <input 
+                                  type="number" 
+                                  value={reqDia}
+                                  onChange={(e) => setInputs(p => ({...p, metaProduccionCajasDia: parseInt(e.target.value)||0}))}
+                                  className="w-16 bg-transparent border-b border-dashed border-slate-300 text-right focus:outline-none focus:border-cyan-500 font-mono text-slate-800 font-bold" 
+                                />
+                              </td>
+                              <td className="py-2.5 px-4 text-right font-mono text-slate-600">{hrsReq.toFixed(1)}h</td>
+                              <td className="py-2.5 px-4 text-center">
+                                <span className={`px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-wider ${isViable ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                  {isViable ? '✓ VIABLE' : '✕ EXCEDE'}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                      <span className="text-[10px] font-black text-slate-700 uppercase flex items-center gap-1.5 mb-1"><Activity className="w-3.5 h-3.5" /> Criterios de Viabilidad</span>
+                      <p className="text-[9px] text-slate-500 leading-relaxed">Las cajas que requieren más horas operativas de las disponibles por día ({(inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1)}h) se marcan como EXCEDE en rojo para indicar sobrecarga en la línea.</p>
+                    </div>
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                      <span className="text-[10px] font-black text-slate-700 uppercase flex items-center gap-1.5 mb-1"><AlertCircle className="w-3.5 h-3.5" /> Ajuste por Suciedad</span>
+                      <p className="text-[9px] text-slate-500 leading-relaxed">El nivel de suciedad (Baja, Media, Alta) impacta directamente en la velocidad requerida de la banda y en el volumen de dosificación química.</p>
+                    </div>
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                      <span className="text-[10px] font-black text-slate-700 uppercase flex items-center gap-1.5 mb-1"><Maximize2 className="w-3.5 h-3.5" /> Espaciamiento Mecánico</span>
+                      <p className="text-[9px] text-slate-500 leading-relaxed">Se calcula una holgura o "gap" mecánico de {inputs.boxGapCm || 15} cm entre cajas para prevenir colisiones y asegurar el secado térmico uniforme de cada unidad.</p>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'analisis' && (
+            <div className="space-y-6">
+              <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
+                  <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5 text-cyan-600" />
+                    Capacidad vs Requerimiento | Análisis de la Línea
+                  </h3>
+                  {renderPdfToggleButton('analisis', 'Análisis de la Línea')}
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* CHART PANEL */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
+                    <h4 className="text-xs font-black text-slate-800 mb-6">Capacidad vs Requerimiento por Modelo</h4>
+                    <div className="h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={[{
+                            name: activeBox.nombre,
+                            CapDia: (((inputs.bandaSpeedMeterPerMin || 10) * 100) / (activeBox.largoCm + (inputs.boxGapCm || 15))) * 60 * ((inputs.oee || 85) / 100) * ((inputs.reductionFactor !== undefined ? inputs.reductionFactor : 90) / 100) * (inputs.hoursPerDay || 20),
+                            ReqDia: inputs.metaProduccionCajasDia || 3000
+                          }]}
+                          margin={{ top: 10, right: 10, left: 0, bottom: 20 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                          <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                          <YAxis tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                          <Tooltip 
+                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                            itemStyle={{ fontSize: '11px', fontWeight: 700 }}
+                            formatter={(value) => new Intl.NumberFormat().format(value.toFixed(0))}
+                          />
+                          <Legend wrapperStyle={{ fontSize: '10px', fontWeight: 700, paddingTop: '20px' }} />
+                          <Bar dataKey="CapDia" name="Cap/Día" fill="#14b8a6" radius={[4, 4, 0, 0]} barSize={60} />
+                          <Bar dataKey="ReqDia" name="Req/Día" fill="#0f172a" radius={[4, 4, 0, 0]} barSize={60} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  {/* TABLE PANEL */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
+                    <h4 className="text-xs font-black text-slate-800 mb-2">Lavado y Secado — Parámetros Y1–Y5</h4>
+                    <span className="text-[10px] font-bold text-slate-500 mb-6 block">Ref: {activeBox.nombre} · Rate base: {new Intl.NumberFormat().format(inputs.metaProduccionCajasDia || 3000)} cajas/día</span>
+                    
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-[10px] font-bold text-slate-700 whitespace-nowrap">
+                        <thead>
+                          <tr className="border-b border-slate-200 uppercase tracking-wider text-slate-500">
+                            <th className="py-2 px-2">AÑO</th>
+                            <th className="py-2 px-2 text-center">HRS B</th>
+                            <th className="py-2 px-2 text-center">EF/T</th>
+                            <th className="py-2 px-2 text-center">TURN</th>
+                            <th className="py-2 px-2 text-center">T.DISP</th>
+                            <th className="py-2 px-2 text-right">REQ/H</th>
+                            <th className="py-2 px-2 text-right">CAP/H</th>
+                            <th className="py-2 px-2 text-right">BAL.</th>
+                            <th className="py-2 px-2 text-right">COB.</th>
+                            <th className="py-2 px-2 text-center">LÍNEAS</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {Array.from({length: 5}).map((_, i) => {
+                            const reqDia = inputs.metaProduccionCajasDia || 3000;
+                            const speedCmMin = (inputs.bandaSpeedMeterPerMin || 10) * 100;
+                            const spaceCm = activeBox.largoCm + (inputs.boxGapCm || 15);
+                            const capH = (speedCmMin / spaceCm) * 60 * ((inputs.oee || 85) / 100) * ((inputs.reductionFactor !== undefined ? inputs.reductionFactor : 90) / 100);
+                            
+                            const hrsB = 48 - (i * 2);
+                            const hrsPerShiftDay = hrsB / 6;
+                            const efT = hrsPerShiftDay * ((inputs.oee || 85) / 100);
+                            const turn = inputs.shiftsPerDay || 2;
+                            const tDisp = efT * turn;
+                            const reqH = reqDia / tDisp;
+                            const bal = capH - reqH;
+                            const cob = (capH / reqH) * 100;
+
+                            return (
+                              <tr key={i} className="hover:bg-white transition-colors">
+                                <td className="py-2.5 px-2 text-cyan-600">Y{i+1}</td>
+                                <td className="py-2.5 px-2 text-center">{hrsB}</td>
+                                <td className="py-2.5 px-2 text-center">{efT.toFixed(2)}</td>
+                                <td className="py-2.5 px-2 text-center">{turn}</td>
+                                <td className="py-2.5 px-2 text-center">{tDisp.toFixed(2)}</td>
+                                <td className="py-2.5 px-2 text-right">{reqH.toFixed(1)}</td>
+                                <td className="py-2.5 px-2 text-right">{capH.toFixed(1)}</td>
+                                <td className={`py-2.5 px-2 text-right ${bal >= 0 ? 'text-green-600' : 'text-red-500'}`}>{bal >= 0 ? '+' : ''}{bal.toFixed(1)}</td>
+                                <td className={`py-2.5 px-2 text-right ${cob >= 100 ? 'text-green-600' : 'text-orange-500'}`}>{cob.toFixed(1)}%</td>
+                                <td className="py-2.5 px-2 text-center text-slate-500 font-normal">1 maq.</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+
+                      {/* --- INYECCIÓN HÍDRICA DIRECTA --- */}
+                      <div style={{ marginTop: '20px', padding: '16px', backgroundColor: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                          <h3 style={{ fontSize: '11px', fontWeight: '900', color: '#0284c7', textTransform: 'uppercase' }}>Resumen Hídrico Operativo</h3>
+                          {renderPdfToggleButton('hidrico', 'Sustentabilidad')}
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#0f172a', fontWeight: '600' }}>
+                          <div><strong>Recambios Mensuales:</strong> {new Intl.NumberFormat().format(((inputs.waterTankLiters || 1200) * (inputs.waterChangesPerWeek || 1) * 4))} L</div>
+                          <div><strong>Pérdida por Arrastre/Evap:</strong> {new Intl.NumberFormat().format((results.totalWaterMonthlyLiters || 0) - ((inputs.waterTankLiters || 1200) * (inputs.waterChangesPerWeek || 1) * 4))} L</div>
+                          <div style={{ color: '#059669' }}><strong>Impacto OPEX:</strong> ${new Intl.NumberFormat().format(results.waterCostMonthlyMxn || 0)} MXN/mes</div>
+                        </div>
+                      </div>
+                      
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -2534,7 +3174,7 @@ export default function WM500Simulator() {
                                 ? 'text-slate-500'
                                 : 'text-gray-400'
                           }>
-                            {twinFloorLocked ? '🔒' : '📐'} Elevación del Piso:
+                            {twinFloorLocked ? 'ðŸ”’' : 'ðŸ“'} Elevación del Piso:
                           </span>
                           <div className="flex items-center gap-2">
                             <span className={`tabular-nums ${
@@ -2592,8 +3232,8 @@ export default function WM500Simulator() {
                           twinTheme === 'blueprint' ? 'text-slate-400' : 'text-gray-500'
                         }`}>
                           {twinFloorLocked 
-                            ? '🔒 Elevación bloqueada. Haz clic en el candado para ajustar de nuevo.' 
-                            : '📐 Desliza para encontrar la altura correcta, luego bloquea con el candado.'}
+                            ? 'ðŸ”’ Elevación bloqueada. Haz clic en el candado para ajustar de nuevo.' 
+                            : 'ðŸ“ Desliza para encontrar la altura correcta, luego bloquea con el candado.'}
                         </p>
                       </div>
                     )}
@@ -2673,7 +3313,7 @@ export default function WM500Simulator() {
                       <p className={`text-[9px] italic ${
                         twinTheme === 'blueprint' ? 'text-slate-400' : 'text-gray-500'
                       }`}>
-                        💡 Clic en nombre → mover en 3D
+                        ðŸ’¡ Clic en nombre â†’ mover en 3D
                       </p>
                     </div>
                   </div>
@@ -2682,7 +3322,7 @@ export default function WM500Simulator() {
                 {/* 3D CAD Twin Viewer Container */}
                 <div className={`relative rounded-2xl overflow-hidden border ${twinTheme === 'toxic' ? 'border-[#2c302e] bg-[#0c0d0e]' : twinTheme === 'blueprint' ? 'border-slate-200 bg-[#edf4f9]' : 'border-slate-200 bg-[#05070f]'}`} style={{ display: is3DView ? 'block' : 'none' }}>
                   <SharedTwinViewer3D 
-                    storagePrefix="sim_wm500_"
+                    storagePrefix={`sim_dhl_v2_${activeProject?.id ? `${activeProject.id}_` : ''}`}
                     height={isTwinBlockFullscreen ? "calc(100vh - 280px)" : "480px"}
                     customNodes={twinNodes}
                     customEdges={twinEdges}
@@ -2712,23 +3352,23 @@ export default function WM500Simulator() {
               <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm overflow-x-auto">
                 <div className="flex items-center justify-between mb-6 border-b border-slate-100 pb-4 min-w-[800px]">
                   <div>
-                    <h3 className="text-xl font-black uppercase tracking-tight text-slate-900">Flujo del Proceso de Trituración</h3>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">WM500 // Línea Industrial para Madera y Tarimas</p>
+                    <h3 className="text-xl font-black uppercase tracking-tight text-slate-900">Flujo del Proceso de Lavado</h3>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">BWS-250 // Línea Industrial para Lavado de Cajas</p>
                   </div>
                   <div className="flex items-center gap-6 bg-slate-50 border border-slate-100 rounded-xl px-4 py-2">
                     <div className="flex flex-col">
                       <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />Capacidad</span>
-                      <span className="text-xs font-black text-slate-800">4,000 kg/h</span>
+                      <span className="text-xs font-black text-slate-800">{new Intl.NumberFormat().format(currentNominalCapacity)} cajas/h</span>
                     </div>
                     <div className="w-px h-6 bg-slate-200" />
                     <div className="flex flex-col">
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Rotor</span>
-                      <span className="text-xs font-black text-slate-800">650 rpm</span>
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Presión</span>
+                      <span className="text-xs font-black text-slate-800">5.0 bar</span>
                     </div>
                     <div className="w-px h-6 bg-slate-200" />
                     <div className="flex flex-col">
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Partícula</span>
-                      <span className="text-xs font-black text-slate-800">2-3 cm</span>
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Temp.</span>
+                      <span className="text-xs font-black text-slate-800">60-80°C</span>
                     </div>
                     <div className="w-px h-6 bg-slate-200" />
                     <div className="flex flex-col">
@@ -2740,12 +3380,12 @@ export default function WM500Simulator() {
 
                 <div className="flex gap-4 min-w-[1000px] relative">
                   {[
-                    { num: '01', step: 'ETAPA A', sub: 'FEED_01', title: 'ALIMENTACIÓN', desc: 'Carga continua de madera o tarimas en la banda de entrada.', footer: 'BANDA: 4.0 m', color: 'teal', hex: '#14b8a6', bg: 'bg-teal-50', text: 'text-teal-600', border: 'border-teal-400' },
+                    { num: '01', step: 'ETAPA A', sub: 'FEED_01', title: 'ALIMENTACIÓN', desc: 'Carga continua de cajas plásticas en la banda de entrada.', footer: 'BANDA: 4.0 m', color: 'teal', hex: '#14b8a6', bg: 'bg-teal-50', text: 'text-teal-600', border: 'border-teal-400' },
                     { num: '02', step: 'ETAPA B', sub: 'INLET_02', title: 'ENTRADA AL ROTOR', desc: 'Los rodillos conducen y dosifican el material hacia la cámara.', footer: 'INGRESO CONTROLADO', color: 'blue', hex: '#3b82f6', bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-400' },
-                    { num: '03', step: 'ETAPA C', sub: 'SHRED_03', title: 'TRITURACIÓN', desc: 'Cuchillas tipo martillo reducen la madera de forma continua.', footer: 'ROTOR: 650 rpm', color: 'amber', hex: '#f59e0b', bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-400' },
+                    { num: '03', step: 'ETAPA C', sub: 'SHRED_03', title: 'TRITURACIÓN', desc: 'Sistema de aspersión de agua a alta presión con filtración.', footer: 'BOMBAS: 30 HP', color: 'amber', hex: '#f59e0b', bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-400' },
                     { num: '04', step: 'ETAPA D', sub: 'MAG_SEP_04', title: 'SEPARACIÓN MAGNÉTICA', desc: 'Retiro de clavos, grapas y tornillos del material triturado.', footer: 'METAL: REMOVIDO', color: 'purple', hex: '#8b5cf6', bg: 'bg-purple-50', text: 'text-purple-600', border: 'border-purple-400' },
                     { num: '05', step: 'ETAPA E', sub: 'OUTFEED_05', title: 'DESCARGA', desc: 'Evacuación continua del material limpio por la banda de salida.', footer: 'BANDA: 3.0 m', color: 'emerald', hex: '#10b981', bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-400' },
-                    { num: '06', step: 'ETAPA F', sub: 'OUTPUT_06', title: 'PRODUCTO FINAL', desc: 'Partículas de madera homogéneas, listas para valorización.', footer: 'SALIDA: 2-3 cm', color: 'rose', hex: '#f43f5e', bg: 'bg-rose-50', text: 'text-rose-600', border: 'border-rose-400' },
+                    { num: '06', step: 'ETAPA F', sub: 'OUTPUT_06', title: 'PRODUCTO FINAL', desc: 'Partículas de madera homogéneas, listas para valorización.', footer: 'SALIDA: SECAS', color: 'rose', hex: '#f43f5e', bg: 'bg-rose-50', text: 'text-rose-600', border: 'border-rose-400' },
                   ].map((f, i) => (
                     <React.Fragment key={i}>
                       <div className={`flex-1 bg-slate-50/50 rounded-xl border border-slate-200 overflow-hidden flex flex-col relative`}>
@@ -2781,7 +3421,7 @@ export default function WM500Simulator() {
                 </div>
                 <div className="flex justify-between items-center mt-4 border-t border-slate-100 pt-3 min-w-[800px]">
                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">SMQ // WM500 PROCESS MAP</span>
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Flujo: Izquierda → Derecha</span>
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Flujo: Izquierda â†’ Derecha</span>
                 </div>
               </div>
 
@@ -2873,14 +3513,9 @@ export default function WM500Simulator() {
                         { 
                           comp: 'Capacidad Nominal', 
                           renderSpec: () => (
-                            <div className="flex items-center gap-1.5 w-full">
-                              <input 
-                                type="number" 
-                                value={inputs.nominalCapacity || 0} 
-                                onChange={e => setInputs(prev => ({ ...prev, nominalCapacity: parseFloat(e.target.value) || 0 }))} 
-                                className="w-full max-w-[120px] bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
-                              />
-                              <span className="text-xs font-bold text-slate-500 shrink-0">kg/h</span>
+                            <div className="flex items-center gap-1.5 w-full justify-end pr-2">
+                              <span className="text-xs font-black text-slate-800">{new Intl.NumberFormat().format(currentNominalCapacity)}</span>
+                              <span className="text-xs font-bold text-slate-500 shrink-0">cajas/h</span>
                             </div>
                           ), 
                           renderDetail: () => (
@@ -3237,10 +3872,10 @@ export default function WM500Simulator() {
                   </div>
                   <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
                     <span className="block text-[9px] font-bold text-slate-400 uppercase">Consumo Específico</span>
-                    <span className="text-xl font-black text-slate-800">{results.kwhPerTon.toFixed(1)} kWh/ton</span>
+                    <span className="text-xl font-black text-slate-800">{results.kwhPerTon.toFixed(1)} kWh/kCajas</span>
                   </div>
                   <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
-                    <span className="block text-[9px] font-bold text-slate-400 uppercase">Costo por Tonelada</span>
+                    <span className="block text-[9px] font-bold text-slate-400 uppercase">Costo por 1000 Cajas</span>
                     <span className="text-xl font-black text-cyan-700">${results.electricityCostPerTonMxn.toFixed(2)} MXN</span>
                   </div>
                   <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
@@ -3284,7 +3919,7 @@ export default function WM500Simulator() {
                   </ResponsiveContainer>
                 </div>
                 <div className="text-center text-xs font-bold text-slate-500 mt-2">
-                  Margen operativo disponible: <span className="text-cyan-600">{new Intl.NumberFormat().format(Math.max(0, results.dailyProductionKg - inputs.dailyGoalKg).toFixed(0))} kg/día</span>
+                  Margen operativo disponible: <span className="text-cyan-600">{new Intl.NumberFormat().format(Math.max(0, results.dailyProductionKg - inputs.dailyGoalKg).toFixed(0))} cajas/día</span>
                 </div>
               </div>
 
@@ -3309,7 +3944,7 @@ export default function WM500Simulator() {
                       <Legend verticalAlign="top" height={36} />
                       <Line yAxisId="left" type="monotone" dataKey="Produccion" stroke="#06b6d4" strokeWidth={3} name="Producción Real (ton)" />
                       <Line yAxisId="left" type="monotone" dataKey="Meta" stroke="#64748b" strokeWidth={2} strokeDasharray="5 5" name="Meta Mensual (ton)" />
-                      <Line yAxisId="right" type="monotone" dataKey="CostoEnergia" stroke="#ef4444" strokeWidth={2} name="Costo Eléctrico (MXN)" />
+                      <Line yAxisId="right" type="monotone" dataKey="CostoEnergía" stroke="#ef4444" strokeWidth={2} name="Costo Eléctrico (MXN)" />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -3327,23 +3962,23 @@ export default function WM500Simulator() {
                     <thead className="bg-slate-50 border-y border-slate-200">
                       <tr>
                         <th className="px-4 py-3 font-black text-slate-800 uppercase tracking-wider text-[10px]">Período Operativo</th>
-                        <th className="px-4 py-3 font-black text-cyan-800 uppercase tracking-wider text-[10px] text-right">Producción (Ton)</th>
+                        <th className="px-4 py-3 font-black text-cyan-800 uppercase tracking-wider text-[10px] text-right">Producción (Cajas)</th>
                         <th className="px-4 py-3 font-black text-indigo-800 uppercase tracking-wider text-[10px] text-right">Consumo (kWh)</th>
-                        <th className="px-4 py-3 font-black text-emerald-800 uppercase tracking-wider text-[10px] text-right">Ratio (kWh/Ton)</th>
+                        <th className="px-4 py-3 font-black text-emerald-800 uppercase tracking-wider text-[10px] text-right">Ratio (kWh/kCajas)</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {[
-                        { period: 'Por Hora', prod: results.productionPerHourTon || 0, cons: results.averageHourlyConsumptionKw || 0 },
-                        { period: 'Por Día', prod: results.dailyProductionTon || 0, cons: (results.averageHourlyConsumptionKw || 0) * (inputs.hoursPerDay || 20) },
-                        { period: 'Por Semana', prod: (results.dailyProductionTon || 0) * 7, cons: (results.averageHourlyConsumptionKw || 0) * (inputs.hoursPerDay || 20) * 7 },
-                        { period: 'Por Mes', prod: results.monthlyProductionTon || 0, cons: (results.averageHourlyConsumptionKw || 0) * (inputs.hoursPerDay || 20) * (inputs.daysPerMonth || 24) }
+                        { period: 'Por Hora', prod: results.realProductionPerHourKg || 0, cons: results.averageHourlyConsumptionKw || 0 },
+                        { period: 'Por Día', prod: results.dailyProductionKg || 0, cons: (results.averageHourlyConsumptionKw || 0) * ((inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1)) },
+                        { period: 'Por Semana', prod: (results.dailyProductionKg || 0) * 7, cons: (results.averageHourlyConsumptionKw || 0) * ((inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1)) * 7 },
+                        { period: 'Por Mes', prod: (results.dailyProductionKg || 0) * (inputs.daysPerMonth || 24), cons: (results.averageHourlyConsumptionKw || 0) * ((inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1)) * (inputs.daysPerMonth || 24) }
                       ].map((row, idx) => (
                         <tr key={idx} className="hover:bg-slate-50 transition-colors">
                           <td className="px-4 py-3 font-bold text-slate-700">{row.period}</td>
-                          <td className="px-4 py-3 font-bold text-cyan-600 text-right">{new Intl.NumberFormat().format((row.prod).toFixed(2))}</td>
+                          <td className="px-4 py-3 font-bold text-cyan-600 text-right">{new Intl.NumberFormat().format(Math.round(row.prod))}</td>
                           <td className="px-4 py-3 font-bold text-indigo-600 text-right">{new Intl.NumberFormat().format((row.cons).toFixed(1))}</td>
-                          <td className="px-4 py-3 font-black text-emerald-600 text-right">{new Intl.NumberFormat().format((row.prod > 0 ? (row.cons / row.prod) : 0).toFixed(2))}</td>
+                          <td className="px-4 py-3 font-black text-emerald-600 text-right">{new Intl.NumberFormat().format((row.prod > 0 ? (row.cons / (row.prod / 1000)) : 0).toFixed(2))}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -3351,8 +3986,64 @@ export default function WM500Simulator() {
                   <div className="mt-4 p-3 bg-indigo-50/50 rounded-xl border border-indigo-100 flex items-start gap-3">
                     <Info className="w-4 h-4 text-indigo-500 mt-0.5 flex-shrink-0" />
                     <p className="text-[11px] text-indigo-800 font-medium leading-relaxed">
-                      El <strong>Consumo Específico (Ratio)</strong> indica la cantidad exacta de kilowatts requeridos para producir una tonelada. Un ratio bajo asegura la alta rentabilidad energética de la línea industrial.
+                      El <strong>Consumo Específico (Ratio)</strong> indica la cantidad exacta de kilowatts requeridos para procesar 1,000 cajas. Un ratio bajo asegura la alta rentabilidad energética de la línea industrial.
                     </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* ANÁLISIS A 5 AÑOS (Y1-Y5) Y AGUA */}
+              <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+                <div className="flex items-center gap-2 border-b border-slate-100 pb-4 mb-4">
+                  <Activity className="w-5 h-5 text-emerald-600" />
+                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">Proyección de Viabilidad a 5 Años (Y1-Y5)</h3>
+                </div>
+                
+                <div className="overflow-x-auto mb-6">
+                  <table className="w-full text-left text-sm whitespace-nowrap">
+                    <thead className="bg-slate-50 border-y border-slate-200">
+                      <tr>
+                        <th className="px-4 py-3 font-black text-slate-800 uppercase tracking-wider text-[10px]">Año</th>
+                        <th className="px-4 py-3 font-black text-slate-800 uppercase tracking-wider text-[10px] text-center">Hrs B</th>
+                        <th className="px-4 py-3 font-black text-slate-800 uppercase tracking-wider text-[10px] text-center">EF/T</th>
+                        <th className="px-4 py-3 font-black text-slate-800 uppercase tracking-wider text-[10px] text-center">Turn</th>
+                        <th className="px-4 py-3 font-black text-indigo-800 uppercase tracking-wider text-[10px] text-center">T.Disp</th>
+                        <th className="px-4 py-3 font-black text-amber-600 uppercase tracking-wider text-[10px] text-right">Req/H</th>
+                        <th className="px-4 py-3 font-black text-emerald-800 uppercase tracking-wider text-[10px] text-right">Cap/H</th>
+                        <th className="px-4 py-3 font-black text-emerald-800 uppercase tracking-wider text-[10px] text-right">Bal.</th>
+                        <th className="px-4 py-3 font-black text-emerald-800 uppercase tracking-wider text-[10px] text-right">Cob.</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {results.projectionY5?.map((row, idx) => (
+                        <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                          <td className="px-4 py-3 font-bold text-sky-600">{row.year}</td>
+                          <td className="px-4 py-3 font-bold text-slate-600 text-center">{row.hrsB}</td>
+                          <td className="px-4 py-3 font-bold text-slate-600 text-center">{row.efT.toFixed(2)}</td>
+                          <td className="px-4 py-3 font-bold text-slate-600 text-center">{row.turn}</td>
+                          <td className="px-4 py-3 font-black text-indigo-600 text-center">{row.tDisp.toFixed(2)}</td>
+                          <td className="px-4 py-3 font-black text-amber-600 text-right">{row.reqH.toFixed(1)}</td>
+                          <td className="px-4 py-3 font-black text-emerald-600 text-right">{row.capH.toFixed(1)}</td>
+                          <td className="px-4 py-3 font-black text-emerald-600 text-right">+{row.bal.toFixed(1)}</td>
+                          <td className="px-4 py-3 font-black text-emerald-600 text-right">{row.cob.toFixed(1)}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-sky-50 border border-sky-100 rounded-xl p-4">
+                    <span className="text-[10px] font-black text-sky-700 uppercase flex items-center gap-1.5 mb-1"><Droplet className="w-3.5 h-3.5" /> Consumo Hídrico Mensual</span>
+                    <div className="text-xl font-black text-sky-900 mt-1">{new Intl.NumberFormat().format(results.totalWaterMonthlyLiters || 0)} L</div>
+                  </div>
+                  <div className="bg-sky-50 border border-sky-100 rounded-xl p-4">
+                    <span className="text-[10px] font-black text-sky-700 uppercase flex items-center gap-1.5 mb-1"><AlertCircle className="w-3.5 h-3.5" /> Recambios + Evaporación</span>
+                    <div className="text-sm font-bold text-sky-800 mt-1">Tanque: {inputs.waterTankLiters}L / {inputs.waterDragOutPercent}% Arrastre</div>
+                  </div>
+                  <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4">
+                    <span className="text-[10px] font-black text-emerald-700 uppercase flex items-center gap-1.5 mb-1"><Activity className="w-3.5 h-3.5" /> Impacto OPEX Hídrico</span>
+                    <div className="text-xl font-black text-emerald-900 mt-1">${new Intl.NumberFormat().format(results.waterCostMonthlyMxn || 0)} MXN</div>
                   </div>
                 </div>
               </div>
@@ -3387,7 +4078,7 @@ export default function WM500Simulator() {
                       <h4 className="text-lg font-black text-slate-800 uppercase mt-0.5">CONSERVADOR</h4>
                       <div className="mt-4 space-y-3 text-xs font-semibold text-slate-600">
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>OEE:</span><span className="text-slate-800 font-bold">70%</span></div>
-                        <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Producción:</span><span className="text-slate-800 font-bold">{(4000 * 0.7 * (inputs.reductionFactor/100)).toFixed(0)} kg/h</span></div>
+                        <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Producción:</span><span className="text-slate-800 font-bold">{(currentNominalCapacity * 0.7 * (inputs.reductionFactor/100)).toFixed(0)} cajas/h</span></div>
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Producción Diaria:</span><span className="text-slate-800 font-bold">{scenarioResults.conservador.dailyProdTon.toFixed(1)} ton</span></div>
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Costo por Ton:</span><span className="text-slate-800 font-bold">${scenarioResults.conservador.costPerTon.toFixed(1)} MXN</span></div>
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Cobertura Meta:</span><span className="text-slate-800 font-bold">{scenarioResults.conservador.coverage.toFixed(1)}%</span></div>
@@ -3409,7 +4100,7 @@ export default function WM500Simulator() {
                       <h4 className="text-lg font-black text-slate-800 uppercase mt-0.5">NORMAL</h4>
                       <div className="mt-4 space-y-3 text-xs font-semibold text-slate-600">
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>OEE:</span><span className="text-slate-800 font-bold">85%</span></div>
-                        <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Producción:</span><span className="text-slate-800 font-bold">{(4000 * 0.85 * (inputs.reductionFactor/100)).toFixed(0)} kg/h</span></div>
+                        <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Producción:</span><span className="text-slate-800 font-bold">{(currentNominalCapacity * 0.85 * (inputs.reductionFactor/100)).toFixed(0)} cajas/h</span></div>
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Producción Diaria:</span><span className="text-slate-800 font-bold">{scenarioResults.normal.dailyProdTon.toFixed(1)} ton</span></div>
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Costo por Ton:</span><span className="text-slate-800 font-bold">${scenarioResults.normal.costPerTon.toFixed(1)} MXN</span></div>
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Cobertura Meta:</span><span className="text-slate-800 font-bold">{scenarioResults.normal.coverage.toFixed(1)}%</span></div>
@@ -3431,7 +4122,7 @@ export default function WM500Simulator() {
                       <h4 className="text-lg font-black text-slate-800 uppercase mt-0.5">ALTO RENDIMIENTO</h4>
                       <div className="mt-4 space-y-3 text-xs font-semibold text-slate-600">
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>OEE:</span><span className="text-slate-800 font-bold">95%</span></div>
-                        <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Producción:</span><span className="text-slate-800 font-bold">{(4000 * 0.95 * (inputs.reductionFactor/100)).toFixed(0)} kg/h</span></div>
+                        <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Producción:</span><span className="text-slate-800 font-bold">{(currentNominalCapacity * 0.95 * (inputs.reductionFactor/100)).toFixed(0)} cajas/h</span></div>
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Producción Diaria:</span><span className="text-slate-800 font-bold">{scenarioResults.alto.dailyProdTon.toFixed(1)} ton</span></div>
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Costo por Ton:</span><span className="text-slate-800 font-bold">${scenarioResults.alto.costPerTon.toFixed(1)} MXN</span></div>
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Cobertura Meta:</span><span className="text-slate-800 font-bold">{scenarioResults.alto.coverage.toFixed(1)}%</span></div>
@@ -3466,12 +4157,12 @@ export default function WM500Simulator() {
                       >
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                         <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} tickLine={false} fontWeight="bold" />
-                        <YAxis yAxisId="left" stroke="#94a3b8" fontSize={10} tickLine={false} label={{ value: 'Producción (ton/día)', angle: -90, position: 'insideLeft', style: { fill: '#94a3b8', fontSize: 10, fontWeight: 'bold' } }} />
-                        <YAxis yAxisId="right" orientation="right" stroke="#94a3b8" fontSize={10} tickLine={false} label={{ value: 'Costo (MXN/ton)', angle: 90, position: 'insideRight', style: { fill: '#94a3b8', fontSize: 10, fontWeight: 'bold' } }} />
-                        <Tooltip cursor={{ fill: '#f8fafc' }} formatter={(value, name) => [name === 'produccion' ? `${value.toFixed(1)} ton` : `$${value.toFixed(1)}`, name === 'produccion' ? 'Producción Diaria' : 'Costo Operativo/Ton']} />
+                        <YAxis yAxisId="left" stroke="#94a3b8" fontSize={10} tickLine={false} label={{ value: 'Producción (cajas/día)', angle: -90, position: 'insideLeft', style: { fill: '#94a3b8', fontSize: 10, fontWeight: 'bold' } }} />
+                        <YAxis yAxisId="right" orientation="right" stroke="#94a3b8" fontSize={10} tickLine={false} label={{ value: 'Costo (MXN/kCajas)', angle: 90, position: 'insideRight', style: { fill: '#94a3b8', fontSize: 10, fontWeight: 'bold' } }} />
+                        <Tooltip cursor={{ fill: '#f8fafc' }} formatter={(value, name) => [name === 'produccion' ? `${value.toFixed(0)} cajas` : `$${value.toFixed(1)}`, name === 'produccion' ? 'Producción Diaria' : 'Costo Operativo/kCajas']} />
                         <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px' }} />
-                        <Bar yAxisId="left" dataKey="produccion" name="Producción Diaria (ton)" fill="#008299" radius={[4, 4, 0, 0]} maxBarSize={50} />
-                        <Bar yAxisId="right" dataKey="costo" name="Costo Operativo (MXN/ton)" fill="#f43f5e" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                        <Bar yAxisId="left" dataKey="produccion" name="Producción Diaria (cajas)" fill="#008299" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                        <Bar yAxisId="right" dataKey="costo" name="Costo Operativo (MXN/kCajas)" fill="#f43f5e" radius={[4, 4, 0, 0]} maxBarSize={50} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -3517,7 +4208,7 @@ export default function WM500Simulator() {
                       ))}
                     </div>
                     <div className="border-t border-slate-100 pt-3 mt-3 flex justify-between text-xs">
-                      <span className="font-bold text-slate-400 uppercase">CAPEX por Ton/h:</span>
+                      <span className="font-bold text-slate-400 uppercase">CAPEX por kCajas/h:</span>
                       <span className="font-black text-slate-800">${new Intl.NumberFormat().format((results.capexInstaladoMxn / (results.realProductionPerHourKg/1000)).toFixed(0))} MXN</span>
                     </div>
                   </div>
@@ -3539,7 +4230,7 @@ export default function WM500Simulator() {
                         { label: 'Energía Eléctrica', val: results.monthlyElectricityCostMxn },
                         { label: 'Mano de Obra', val: results.manoObraMensualMxn },
                         { label: 'Mantenimiento Preventivo', val: results.mantenimientoMensualMxn },
-                        { label: 'Refacciones (Cuchillas, etc)', val: inputs.cuchillasMensualMxn + inputs.refaccionesMensualMxn },
+                        { label: 'Refacciones (Filtros, etc)', val: inputs.filtrosMensualMxn + inputs.refaccionesMensualMxn },
                         { label: 'Lubricación y Consumibles', val: inputs.lubricacionMensualMxn + inputs.limpiezaMensualMxn + inputs.consumiblesMensualMxn },
                       ].map((item, i) => (
                         <div key={i} className="flex justify-between items-center bg-slate-50 p-2 rounded-lg text-xs font-semibold">
@@ -3632,7 +4323,7 @@ export default function WM500Simulator() {
                     <DollarSign className="w-12 h-12 text-slate-300 mb-4" />
                     <h4 className="text-lg font-black text-slate-700 uppercase">Punto de Equilibrio: <span className="text-purple-600">{new Intl.NumberFormat().format(results.puntoEquilibrioTonMes.toFixed(1))} ton/mes</span></h4>
                     <p className="text-xs text-slate-500 max-w-md mt-2 font-medium">
-                      La operación requiere procesar al menos <strong>{new Intl.NumberFormat().format(results.puntoEquilibrioTonMes.toFixed(1))}</strong> toneladas mensuales para cubrir todos los gastos operativos (OPEX). Cualquier producción por encima de este umbral genera utilidad neta.
+                      La operación requiere procesar al menos <strong>{new Intl.NumberFormat().format(results.puntoEquilibrioTonMes.toFixed(1))}</strong> millares de cajas mensuales para cubrir todos los gastos operativos (OPEX). Cualquier producción por encima de este umbral genera utilidad neta.
                     </p>
                   </div>
                 </div>
@@ -3656,10 +4347,10 @@ export default function WM500Simulator() {
                   </div>
                   <div className="space-y-3">
                     {[
-                      { label: 'Exposición a Polvo Fino', val: inputs.riesgoPolvo, icon: '🌪️' },
-                      { label: 'Riesgo de Incendio', val: inputs.riesgoIncendio, icon: '🔥' },
-                      { label: 'Contaminación Metálica', val: inputs.riesgoMetal, icon: '🧲' },
-                      { label: 'Contaminación Acústica', val: inputs.riesgoRuido, icon: '🔊' }
+                      { label: 'Exposición a Polvo Fino', val: inputs.riesgoPolvo, icon: 'ðŸŒªï¸' },
+                      { label: 'Riesgo de Incendio', val: inputs.riesgoIncendio, icon: 'ðŸ”¥' },
+                      { label: 'Contaminación Metálica', val: inputs.riesgoMetal, icon: 'ðŸ§²' },
+                      { label: 'Contaminación Acústica', val: inputs.riesgoRuido, icon: 'ðŸ”Š' }
                     ].map((r, i) => (
                       <div key={i} className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
                         <span className="text-xs font-bold text-slate-600 uppercase flex items-center gap-2">{r.icon} {r.label}</span>
@@ -3680,7 +4371,7 @@ export default function WM500Simulator() {
                   </h3>
                   <div className="grid grid-cols-2 gap-4 mb-6">
                     <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
-                      <span className="block text-[9px] font-bold text-slate-400 uppercase">Cambio Cuchillas</span>
+                      <span className="block text-[9px] font-bold text-slate-400 uppercase">Cambio Filtros</span>
                       <span className="text-lg font-black text-slate-800">{inputs.vidaUtilCuchillasHoras || 800} hrs</span>
                     </div>
                     <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
@@ -3857,11 +4548,11 @@ export default function WM500Simulator() {
                       </div>
                       <div className="flex justify-between items-center text-xs border-b border-slate-50 pb-2">
                         <span className="font-bold text-slate-500 uppercase">Dimensiones del Equipo</span>
-                        <span className="font-extrabold text-slate-850 text-right uppercase">{inputs.machineLength || 14.5}m × {inputs.machineWidth || 1.75}m × {inputs.machineHeight || 1.9}m</span>
+                        <span className="font-extrabold text-slate-850 text-right uppercase">{inputs.machineLength || 14.5}m x {inputs.machineWidth || 1.75}m x {inputs.machineHeight || 1.9}m</span>
                       </div>
                       <div className="flex justify-between items-center text-xs border-b border-slate-50 pb-2">
                         <span className="font-bold text-slate-500 uppercase">Peso de la Trituradora</span>
-                        <span className="font-extrabold text-slate-850 text-right uppercase">{inputs.pesoKg ? new Intl.NumberFormat().format(inputs.pesoKg) : '13,000'} kg</span>
+                        <span className="font-extrabold text-slate-850 text-right uppercase">{inputs.pesoKg && inputs.pesoKg !== 1000 ? new Intl.NumberFormat().format(inputs.pesoKg) : '1,800'} kg</span>
                       </div>
                       <div className="flex justify-between items-center text-xs">
                         <span className="font-bold text-slate-500 uppercase">Área Mínima Libre de Maniobras</span>
@@ -3900,20 +4591,27 @@ export default function WM500Simulator() {
             </button>
             <div className="flex items-center justify-between mb-6 border-b border-slate-100 pb-4">
               <div className="flex items-center gap-3">
-                {!isPreviewMode && <span className="animate-spin text-cyan-600">⌛</span>}
+                {!isPreviewMode && <span className="animate-spin text-cyan-600">⏳</span>}
                 <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">
                   {isPreviewMode ? 'Vista Previa del Reporte' : 'Generando Reporte PDF WM-500...'}
                 </h3>
               </div>
               {isPreviewMode && (
-                <button 
-                  onClick={printReport}
-                  disabled={isGeneratingPdf}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-red-500 hover:bg-red-600 text-white transition-all uppercase tracking-wider shadow-sm"
-                >
-                  <Printer className="w-4 h-4" />
-                  Descargar PDF
-                </button>
+                <div className="flex items-center gap-2">
+                  <label className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all uppercase tracking-wider shadow-sm">
+                    <Upload className="w-4 h-4" />
+                    Subir Diagrama
+                    <input type="file" accept="image/*" className="hidden" onChange={handleCustomProcessImageUpload} />
+                  </label>
+                  <button 
+                    onClick={printReport}
+                    disabled={isGeneratingPdf}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-red-500 hover:bg-red-600 text-white transition-all uppercase tracking-wider shadow-sm"
+                  >
+                    <Printer className="w-4 h-4" />
+                    Descargar PDF
+                  </button>
+                </div>
               )}
             </div>
 
@@ -3927,7 +4625,7 @@ export default function WM500Simulator() {
                   <div style={{ height: 80, background: 'linear-gradient(to right, #008299, #00c2cb)', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 48px' }}>
                     <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(120deg, transparent, transparent 28px, rgba(255,255,255,0.03) 28px, rgba(255,255,255,0.03) 30px)' }} />
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative', zIndex: 2 }}>
-                      <span style={{ color: '#fff', fontWeight: 900, fontSize: 20, letterSpacing: 1, textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{inputs.companyName || 'CENTERS DE MÉXICO'}</span>
+                      <span style={{ color: '#fff', fontWeight: 900, fontSize: 36, letterSpacing: 1, textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{inputs.companyName || 'CENTERS DE MÉXICO'}</span>
                       <span style={{ display: 'inline-block', fontSize: 10, fontWeight: 800, color: '#fff', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 6, padding: '2px 8px', background: 'rgba(255,255,255,0.1)' }}>PANDORA 3.0</span>
                     </div>
                     <div style={{ textAlign: 'right', position: 'relative', zIndex: 2 }}>
@@ -3976,7 +4674,7 @@ export default function WM500Simulator() {
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '6px', fontSize: 11, color: '#475569' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#0f766e', fontWeight: 700 }}>Material Evaluado</span><strong style={{ color: '#0f172a', textTransform: 'uppercase' }}>{inputs.materialType.replace('_', ' ')}</strong></div>
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#0f766e', fontWeight: 700 }}>Régimen Diario</span><strong style={{ color: '#0f172a' }}>{results.hoursPerDay} horas ({inputs.shiftsPerDay} turnos)</strong></div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#0f766e', fontWeight: 700 }}>Meta Objetivo Diaria</span><strong style={{ color: '#0f172a' }}>{new Intl.NumberFormat().format(inputs.dailyGoalKg)} kg/día</strong></div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#0f766e', fontWeight: 700 }}>Meta Objetivo Diaria</span><strong style={{ color: '#0f172a' }}>{new Intl.NumberFormat().format(inputs.dailyGoalKg)} cajas/día</strong></div>
                         </div>
                       </div>
                     </div>
@@ -3985,19 +4683,19 @@ export default function WM500Simulator() {
                       <div style={{ fontSize: 12, fontWeight: 900, color: '#008299', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 4 }}>VISTA PREVIA DE RESULTADOS</div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #cffafe', paddingBottom: 16 }}>
                         <div><div style={{ fontSize: 14, fontWeight: 800, color: '#0f2038' }}>Capacidad Real / Hora</div><div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>Considerando OEE del {inputs.oee}%</div></div>
-                        <div style={{ fontSize: 26, fontWeight: 900, color: '#008299' }}>{results.realProductionPerHourKg.toFixed(0)} kg/h</div>
+                        <div style={{ fontSize: 26, fontWeight: 900, color: '#008299' }}>{results.realProductionPerHourKg.toFixed(0)} cajas/h</div>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #cffafe', paddingBottom: 16 }}>
                         <div><div style={{ fontSize: 14, fontWeight: 800, color: '#0f2038' }}>Producción Diaria</div><div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>Capacidad total por día</div></div>
-                        <div style={{ fontSize: 26, fontWeight: 900, color: '#008299' }}>{(results.dailyProductionKg/1000).toFixed(2)} ton/día</div>
+                        <div style={{ fontSize: 26, fontWeight: 900, color: '#008299' }}>{results.dailyProductionKg.toFixed(0)} cajas/día</div>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #cffafe', paddingBottom: 16 }}>
-                        <div><div style={{ fontSize: 14, fontWeight: 800, color: '#0f2038' }}>Costo de Producción (OPEX)</div><div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>Por tonelada producida</div></div>
+                        <div><div style={{ fontSize: 14, fontWeight: 800, color: '#0f2038' }}>Costo de Producción (OPEX)</div><div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>Por 1,000 cajas procesadas</div></div>
                         <div style={{ fontSize: 26, fontWeight: 900, color: '#008299' }}>{results.opexPorTonMxn.toFixed(1)} MXN</div>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div><div style={{ fontSize: 14, fontWeight: 800, color: '#0f2038' }}>Viabilidad Proyectada</div><div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>Cobertura de meta ({results.requirementCoverage.toFixed(1)}%)</div></div>
-                        <div style={{ fontSize: 22, fontWeight: 900, color: '#008299' }}>{results.viabilityState}</div>
+                        <div><div style={{ fontSize: 22, fontWeight: 900, color: '#0f2038' }}>Viabilidad Proyectada</div><div style={{ fontSize: 14, color: '#64748b', marginTop: 4, fontWeight: 600 }}>Cobertura de meta ({results.requirementCoverage.toFixed(1)}%)</div></div>
+                        <div style={{ fontSize: 26, fontWeight: 900, color: '#008299', textTransform: 'uppercase' }}>{results.viabilityState}</div>
                       </div>
                     </div>
                   </div>
@@ -4010,7 +4708,29 @@ export default function WM500Simulator() {
                 </div>
                 )}
 
-                {/* PÁGINA 2: DATOS TÉCNICOS Y DICTAMEN AI */}
+                {/* PÁGINA 2+: GEMELO DIGITAL 3D */}
+                {pdfConfig.twin && snapshotPages.length > 0 && (() => {
+                  const pageSecNum = ++currentSectionIndex;
+                  return snapshotPages.map((page, index) => (
+                    <div key={index} className="pdf-page bg-white relative flex flex-col" style={S.page}>
+                      <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                        {renderPageHeader(`${pageSecNum}. Vista ${page.type.charAt(0).toUpperCase() + page.type.slice(1)}`, 'Renderizado CAD de alta resolución del equipo en configuración de planta')}
+                      
+                      <div style={{ flex: 1, border: '1px solid #e2e8f0', borderRadius: 16, background: '#edf4f9', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ width: '100%', height: '100%', backgroundImage: `url(${page.src})`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }} />
+                      </div>
+
+                      <div style={{ background: '#f0fdfa', border: '1px solid #ccfbf1', borderRadius: 12, padding: 16, fontSize: 10, lineHeight: 1.5, color: '#334155', fontWeight: 600 }}>
+                        <span style={{ color: '#0f766e', fontWeight: 900, textTransform: 'uppercase', marginRight: 6 }}>Nota de Escala Visual ({page.type}): </span>
+                        Esta proyección tridimensional corresponde a la captura exacta de la Lavadora {inputs.machineName || 'BWS-250'} evaluada bajo la perspectiva {page.type.toLowerCase()}. Las proporciones y el diseño representan el volumen real del equipo industrial proyectado en el software PANDORA 3.0.
+                      </div>
+                        {renderPageFooter(++pdfPageIndex, totalPdfPages)}
+                  </div>
+                    </div>
+                  ));
+                })()}
+
+                {/* PÁGINA SIGUIENTE: DATOS TÉCNICOS Y DICTAMEN AI */}
                 {pdfConfig.tabla && (
                 <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
                   <div style={{ ...S.inner, flex: 1, paddingTop: 30, display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -4034,8 +4754,8 @@ export default function WM500Simulator() {
                             <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(1.65 * (inputs.loadFactor/100)).toFixed(2)} kW</td>
                           </tr>
                           <tr>
-                            <td style={REPORT_STYLES.td}>Trituradora Principal {inputs.machineName || 'WM-500'} (Rotor {inputs.rotorRpm || 650} RPM)</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{inputs.nominalCapacity || 4000} kg/h</td>
+                            <td style={REPORT_STYLES.td}>Lavadora Principal {inputs.machineName || 'BWS-250'} (Rotor {inputs.rotorRpm || 650} RPM)</td>
+                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{new Intl.NumberFormat().format(currentNominalCapacity)} cajas/h</td>
                             <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{((inputs.motorPrincipalHp || 120) * 0.746).toFixed(2)} kW</td>
                             <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(((inputs.motorPrincipalHp || 120) * 0.746) * (inputs.loadFactor/100)).toFixed(2)} kW</td>
                           </tr>
@@ -4073,7 +4793,7 @@ export default function WM500Simulator() {
                         <tbody>
                           {[
                             { name: 'Banda Alimentadora', kw: 1.65 },
-                            { name: 'Trituradora Principal', kw: (inputs.motorPrincipalHp || 120) * 0.746 },
+                            { name: 'Motor Lavado Principal', kw: (inputs.motorPrincipalHp || 15) * 0.746 },
                             { name: 'Motor Hidráulico', kw: (inputs.motorAuxiliarHp || 10) * 0.746 },
                             { name: 'Banda de Descarga', kw: 1.65 },
                           ].map((eq, i) => {
@@ -4103,7 +4823,7 @@ export default function WM500Simulator() {
                       <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 16, padding: '10px 20px', display: 'flex', flexDirection: 'column', gap: 6 }}>
                         {conclusions.map((c, i) => (
                           <div key={i} style={{ fontSize: 10, lineHeight: 1.35, fontWeight: 600, color: '#334155' }}>
-                            <span style={{ color: '#00c2cb', fontWeight: 900, marginRight: 6 }}>▪</span>{c.text}
+                            <span style={{ color: '#00c2cb', fontWeight: 900, marginRight: 6 }}>â–ª</span>{c.text}
                           </div>
                         ))}
                       </div>
@@ -4119,10 +4839,10 @@ export default function WM500Simulator() {
                 {pdfConfig.tabla && (
                 <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
                   <div style={{ ...S.inner, flex: 1, paddingTop: 30, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {renderPageHeader(`${++currentSectionIndex}. ${inputs.technicalSheetName}`, 'Desglose detallado de especificaciones, capacidades y componentes de fabricación')}
+                    {renderPageHeader(`3. ${inputs.technicalSheetName === 'Ficha Técnica de Homologación BWS-250' ? 'Ficha Técnica de Máquina de Lavado BWS-250' : inputs.technicalSheetName}`, 'Desglose detallado de especificaciones, capacidades y componentes de fabricación')}
 
                     <div style={{ width: '100%', flex: 1 }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 9.5 }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
                         <thead>
                           <tr>
                             <th style={{ ...REPORT_STYLES.th, padding: '5px 10px', background: '#edfbfd' }}>Componente / Característica</th>
@@ -4132,21 +4852,21 @@ export default function WM500Simulator() {
                         </thead>
                         <tbody>
                           {[
-                            { comp: 'Modelo del Equipo', spec: inputs.machineName || 'WM-500', detail: inputs.machineNameDetalle !== undefined ? inputs.machineNameDetalle : 'Trituradora Industrial de Madera' },
-                            { comp: 'Aplicación Operativa', spec: inputs.aplicacionOperativa !== undefined ? inputs.aplicacionOperativa : 'Madera, tarimas, clavos, grapas, tornillos', detail: inputs.aplicacionDetalle !== undefined ? inputs.aplicacionDetalle : 'Separación magnética automática' },
-                            { comp: 'Capacidad Nominal', spec: `${inputs.nominalCapacity || 4000} kg/h`, detail: inputs.capacidadNominalDetalle !== undefined ? inputs.capacidadNominalDetalle : 'Sujeta a OEE y factor de reducción' },
-                            { comp: 'Motorización Principal', spec: `${inputs.motorPrincipalHp || 120} hp ${inputs.motorMarca || 'Siemens'}`, detail: inputs.motorPrincipalDetalle !== undefined ? inputs.motorPrincipalDetalle : 'Alta eficiencia clase IE3' },
-                            { comp: 'Motorización Auxiliar', spec: `${inputs.motorAuxiliarHp || 10} hp ${inputs.motorMarca || 'Siemens'}`, detail: inputs.motorAuxiliarDetalle !== undefined ? inputs.motorAuxiliarDetalle : 'Sistemas auxiliares e hidráulicos' },
+                            { comp: 'Modelo del Equipo', spec: inputs.machineName || 'BWS-250', detail: inputs.machineNameDetalle !== undefined ? inputs.machineNameDetalle : 'Lavadora Industrial de Cajas (Agua y Aire)' },
+                            { comp: 'Aplicación Operativa', spec: inputs.aplicacionOperativa !== undefined ? inputs.aplicacionOperativa : 'Lavado, enjuague y secado de cajas plásticas', detail: inputs.aplicacionDetalle !== undefined ? inputs.aplicacionDetalle : 'Eficiencia de Lavado: 90-95% | Secado: 80-90%' },
+                            { comp: 'Capacidad Nominal (Dinámica)', spec: `${new Intl.NumberFormat().format(currentNominalCapacity)} cajas/h`, detail: `Calculada para: ${activeBox.nombre} (${activeBox.largoCm}cm)` },
+                            { comp: 'Motorización Principal (Bomba)', spec: `${inputs.motorPrincipalHp || 15} hp ${inputs.motorMarca || 'Siemens'}`, detail: inputs.motorPrincipalDetalle !== undefined ? inputs.motorPrincipalDetalle : 'Motor de Bomba de Agua: 15 hp' },
+                            { comp: 'Motorización Auxiliar (Soplador)', spec: `${inputs.motorAuxiliarHp || 10} hp ${inputs.motorMarca || 'Siemens'}`, detail: inputs.motorAuxiliarDetalle !== undefined ? inputs.motorAuxiliarDetalle : 'Motor Soplador: 10 hp | Banda: 0.5 hp' },
                             { comp: 'Potencia Instalada Total', spec: `${results.totalHp} hp`, detail: `${results.installedPowerKw.toFixed(2)} kW` },
-                            { comp: 'Dimensiones Bandas', spec: inputs.dimensionesBandas !== undefined ? inputs.dimensionesBandas : 'Entrada: 4,000 mm | Salida: 3,000 mm', detail: inputs.dimensionesBandasDetalle !== undefined ? inputs.dimensionesBandasDetalle : 'Diseño continuo de banda reforzada' },
-                            { comp: 'Boca de Alimentación', spec: inputs.bocaAlimentacion || '1,300 x 300 mm', detail: inputs.bocaAlimentacionDetalle !== undefined ? inputs.bocaAlimentacionDetalle : 'Apertura de seguridad' },
-                            { comp: 'Rotación del Rotor', spec: `${inputs.rotorRpm || 650} rpm`, detail: inputs.rotorRpmDetalle !== undefined ? inputs.rotorRpmDetalle : 'Eje balanceado dinámicamente' },
-                            { comp: 'Tamaño de Partícula Final', spec: inputs.particulaFinal || '2 - 3 cm', detail: inputs.particulaFinalDetalle !== undefined ? inputs.particulaFinalDetalle : 'Ideal para reciclaje o briquetas' },
-                            { comp: 'Separación Metálica', spec: inputs.separadorMagnetico || 'Separador magnético incluido', detail: inputs.separadorMagneticoDetalle !== undefined ? inputs.separadorMagneticoDetalle : 'Imán sobrebanda autolimpiable' },
-                            { comp: 'Dimensiones Físicas', spec: `Largo: ${inputs.machineLength} m | Ancho: ${inputs.machineWidth} m | Alto: ${inputs.machineHeight} m`, detail: `Footprint: ${(inputs.machineLength * inputs.machineWidth).toFixed(2)} m²` },
-                            { comp: 'Peso Total Equipo', spec: `${inputs.pesoKg || 13000} kg`, detail: inputs.pesoKgDetalle !== undefined ? inputs.pesoKgDetalle : 'Anclaje antivibraciones' },
-                            { comp: 'Componentes Eléctricos', spec: inputs.componentesElectricos || 'Schneider Electric', detail: inputs.componentesElectricosDetalle !== undefined ? inputs.componentesElectricosDetalle : 'Gabinete de control integrado' },
-                            { comp: 'Nivel de Ruido', spec: `${inputs.ruidoDb || 80} dB`, detail: inputs.ruidoDbDetalle !== undefined ? inputs.ruidoDbDetalle : 'Diseño aislante de vibraciones' },
+                            { comp: 'Temperaturas de Proceso', spec: inputs.dimensionesBandas !== undefined ? inputs.dimensionesBandas : 'Temperatura de Lavado: 60-80°C', detail: inputs.dimensionesBandasDetalle !== undefined ? inputs.dimensionesBandasDetalle : 'Calentamiento: 18 kW' },
+                            { comp: 'Presión de Aspersión', spec: inputs.bocaAlimentacion || '5.0 bar (Nominal)', detail: inputs.bocaAlimentacionDetalle !== undefined ? inputs.bocaAlimentacionDetalle : 'Presión de Agua: 5.0 bar' },
+                            { comp: 'Control de Tracción', spec: inputs.rotorRpm ? `${inputs.rotorRpm} m/min` : 'Velocidad Variable', detail: inputs.rotorRpmDetalle !== undefined ? inputs.rotorRpmDetalle : 'Inversor: Incluido (SIEMENS)' },
+                            { comp: 'Sistema de Control', spec: inputs.particulaFinal || 'Gabinete NEMA 4 (Estanco)', detail: inputs.particulaFinalDetalle !== undefined ? inputs.particulaFinalDetalle : 'Contactores y Relays: SCHNEIDER' },
+                            { comp: 'Alimentación Eléctrica', spec: inputs.separadorMagnetico || 'Trifásica 60Hz', detail: inputs.separadorMagneticoDetalle !== undefined ? inputs.separadorMagneticoDetalle : 'Voltaje: 220/440V' },
+                            { comp: 'Dimensiones Físicas', spec: `Largo: ${inputs.machineLength || 11.5} m | Ancho: ${inputs.machineWidth || 1.8} m | Alto: ${inputs.machineHeight || 1.75} m`, detail: `Footprint: ${((inputs.machineLength || 11.5) * (inputs.machineWidth || 1.8)).toFixed(2)} m²` },
+                            { comp: 'Peso Total Equipo', spec: `${(!inputs.pesoKg || inputs.pesoKg === 1000) ? 1800 : inputs.pesoKg} kg`, detail: inputs.pesoKgDetalle !== undefined ? inputs.pesoKgDetalle : 'Estructura en Acero Inoxidable' },
+                            { comp: 'Componentes Eléctricos', spec: inputs.componentesElectricos || 'Schneider / Siemens', detail: inputs.componentesElectricosDetalle !== undefined ? inputs.componentesElectricosDetalle : 'Contactores SCHNEIDER, Inversor SIEMENS' },
+                            { comp: 'Nivel de Ruido', spec: `${inputs.ruidoDb || 60} dB`, detail: inputs.ruidoDbDetalle !== undefined ? inputs.ruidoDbDetalle : 'Nivel óptimo para piso de producción' },
                           ].map((t, idx) => (
                             <tr key={idx}>
                               <td style={{ ...REPORT_STYLES.td, padding: '5px 10px' }}>{t.comp}</td>
@@ -4156,9 +4876,8 @@ export default function WM500Simulator() {
                           ))}
                         </tbody>
                       </table>
-                    </div>
-
-                    {renderPageFooter(++pdfPageIndex, totalPdfPages)}
+                      </div>
+                      {renderPageFooter(++pdfPageIndex, totalPdfPages)}
                   </div>
                 </div>
                 )}
@@ -4167,49 +4886,260 @@ export default function WM500Simulator() {
                 {pdfConfig.tabla && (
                 <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
                   <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 20 }}>
-                    {renderPageHeader(`${++currentSectionIndex}. FLUJO DEL PROCESO`, 'Esquema secuencial de la línea de trituración y separación de partículas')}
+                    {renderPageHeader(`${++currentSectionIndex}. FLUJO DEL PROCESO`, 'Esquema secuencial de la línea de lavado, enjuague y secado de cajas plásticas')}
 
-                    <div style={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                      <div style={{ display: 'flex', gap: '16px', justifyContent: 'space-between', width: '100%' }}>
+                    <div style={{ width: '100%', flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                      {inputs.customProcessImage ? (
+                        <div style={{ width: '100%', height: '480px', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                          <img src={inputs.customProcessImage} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="Diagrama de Flujo Personalizado" />
+                        </div>
+                      ) : (
+                      <div style={{ width: '100%', height: '480px', position: 'relative', background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                        {twinSnapshotLateral ? (
+                          <img src={twinSnapshotLateral} style={{ width: '90%', height: '90%', objectFit: 'contain', opacity: 0.85, transform: 'scale(1.05)' }} alt="Lateral" />
+                        ) : (
+                          <span style={{ color: '#94a3b8', fontSize: '14px', fontWeight: 600 }}>Requiere Captura Lateral del Gemelo Digital</span>
+                        )}
+
                         {[
-                          { num: '01', step: 'ETAPA A', sub: 'FEED_01', title: 'ALIMENTACIÓN', desc: 'Carga continua de madera o tarimas en la banda de entrada.', footer: 'BANDA: 4.0 m', hex: '#14b8a6' },
-                          { num: '02', step: 'ETAPA B', sub: 'INLET_02', title: 'ENTRADA ROTOR', desc: 'Los rodillos conducen y dosifican el material hacia la cámara.', footer: 'INGRESO CONTROLADO', hex: '#3b82f6' },
-                          { num: '03', step: 'ETAPA C', sub: 'SHRED_03', title: 'TRITURACIÓN', desc: 'Cuchillas tipo martillo reducen la madera de forma continua.', footer: 'ROTOR: 650 rpm', hex: '#f59e0b' },
-                          { num: '04', step: 'ETAPA D', sub: 'MAG_SEP_04', title: 'SEP. MAGNÉTICA', desc: 'Retiro de clavos, grapas y tornillos del material triturado.', footer: 'METAL: REMOVIDO', hex: '#8b5cf6' },
-                          { num: '05', step: 'ETAPA E', sub: 'OUTFEED_05', title: 'DESCARGA', desc: 'Evacuación continua del material limpio por la banda de salida.', footer: 'BANDA: 3.0 m', hex: '#10b981' },
-                          { num: '06', step: 'ETAPA F', sub: 'OUTPUT_06', title: 'PRODUCTO FINAL', desc: 'Partículas de madera homogéneas, listas para valorización.', footer: 'SALIDA: 2-3 cm', hex: '#f43f5e' },
-                        ].map((f, i) => (
-                          <div key={i} style={{ flex: 1, background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative', minHeight: '300px' }}>
-                            <div style={{ height: '6px', width: '100%', backgroundColor: f.hex }} />
-                            <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', height: '100%' }}>
-                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '20px' }}>
-                                <div style={{ width: '32px', height: '32px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 900, color: 'white', backgroundColor: f.hex }}>
-                                  {f.num}
+                          { num: '01', step: 'ETAPA A', title: 'ALIMENTACIÓN', sub: 'FEED_01', hex: '#10b981', top: '8%', left: '8%', lineHeight: 220 },
+                          { num: '02', step: 'ETAPA B', title: 'INGRESO AL TÚNEL', sub: 'INLET_02', hex: '#3b82f6', top: '8%', left: '22%', lineHeight: 140 },
+                          { num: '03', step: 'ETAPA C', title: 'LAVADO POR ASPERSIÓN', sub: 'WASH_03', hex: '#f59e0b', top: '8%', left: '37%', lineHeight: 135 },
+                          { num: '04', step: 'ETAPA D', title: 'RECIRCULACIÓN DE AGUA', sub: 'RECYCLE_04', hex: '#8b5cf6', top: '80%', left: '44%', lineHeight: 80, isBottom: true },
+                          { num: '05', step: 'ETAPA E', title: 'SECADO 1', sub: 'DRY_05', hex: '#0f766e', top: '8%', left: '55%', lineHeight: 140 },
+                          { num: '06', step: 'ETAPA F', title: 'SECADO 2', sub: 'DRY_06', hex: '#84cc16', top: '8%', left: '68%', lineHeight: 135 },
+                          { num: '07', step: 'ETAPA G', title: 'DESCARGA FINAL', sub: 'OUTPUT_07', hex: '#ef4444', top: '8%', left: '79%', lineHeight: 210 },
+                        ].map((step, i) => (
+                          <div key={i} style={{ position: 'absolute', top: step.top, left: step.left, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            {step.isBottom ? (
+                              <>
+                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: step.hex, marginBottom: '-4px', zIndex: 2 }} />
+                                <div style={{ width: '2px', height: `${step.lineHeight}px`, background: step.hex }} />
+                                <div style={{ background: '#fff', border: `2px solid ${step.hex}`, borderRadius: '8px', padding: '6px 10px', display: 'flex', gap: '8px', alignItems: 'center', zIndex: 2, marginTop: '-2px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', whiteSpace: 'nowrap' }}>
+                                  <div style={{ background: step.hex, color: '#fff', padding: '4px 8px', borderRadius: '6px', fontWeight: 900, fontSize: '14px' }}>{step.num}</div>
+                                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                    <span style={{ fontSize: '8px', color: step.hex, fontWeight: 900, letterSpacing: '0.5px' }}>{step.step}</span>
+                                    <span style={{ fontSize: '10px', color: '#1e293b', fontWeight: 900 }}>{step.title}</span>
+                                    <span style={{ fontSize: '8px', color: '#94a3b8', fontWeight: 700 }}>{step.sub}</span>
+                                  </div>
                                 </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                                  <span style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', color: f.hex }}>{f.step}</span>
-                                  <span style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>{f.sub}</span>
+                              </>
+                            ) : (
+                              <>
+                                <div style={{ background: '#fff', border: `2px solid ${step.hex}`, borderRadius: '8px', padding: '6px 10px', display: 'flex', gap: '8px', alignItems: 'center', zIndex: 2, marginBottom: '-2px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', whiteSpace: 'nowrap' }}>
+                                  <div style={{ background: step.hex, color: '#fff', padding: '4px 8px', borderRadius: '6px', fontWeight: 900, fontSize: '14px' }}>{step.num}</div>
+                                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                    <span style={{ fontSize: '8px', color: step.hex, fontWeight: 900, letterSpacing: '0.5px' }}>{step.step}</span>
+                                    <span style={{ fontSize: '10px', color: '#1e293b', fontWeight: 900 }}>{step.title}</span>
+                                    <span style={{ fontSize: '8px', color: '#94a3b8', fontWeight: 700 }}>{step.sub}</span>
+                                  </div>
                                 </div>
-                              </div>
-                              <h4 style={{ fontSize: '14px', fontWeight: 900, color: '#1e293b', textTransform: 'uppercase', marginBottom: '12px', lineHeight: 1.2 }}>{f.title}</h4>
-                              <p style={{ fontSize: '11.5px', color: '#64748b', fontWeight: 500, lineHeight: 1.5, flex: 1 }}>{f.desc}</p>
-                              
-                              <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <span style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', color: f.hex }}>{f.footer}</span>
-                              </div>
-                            </div>
+                                <div style={{ width: '2px', height: `${step.lineHeight}px`, background: step.hex }} />
+                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: step.hex, marginTop: '-4px', zIndex: 2 }} />
+                              </>
+                            )}
                           </div>
                         ))}
                       </div>
+                      )}
+                      </div>
+                      {renderPageFooter(++pdfPageIndex, totalPdfPages)}
+                  </div>
+                </div>
+                )}
+
+                {/* PÁGINA 4.5: MODELOS DE CONTENEDORES */}
+                {pdfConfig.tabla && (
+                <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
+                  <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                    {renderPageHeader(`${++currentSectionIndex}. MODELOS DE CONTENEDORES EVALUADOS`, 'Especificaciones técnicas, dimensiones de las cajas plásticas consideradas y tiempos de ciclo.')}
+
+                    <div style={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 20 }}>
+                        <thead>
+                          <tr>
+                            <th style={{ ...REPORT_STYLES.th, background: '#f8fafc', padding: '6px', fontSize: '10px' }}>MOD</th>
+                            <th style={{ ...REPORT_STYLES.th, background: '#f8fafc', padding: '6px', fontSize: '10px' }}>NOMBRE</th>
+                            <th style={{ ...REPORT_STYLES.th, background: '#f8fafc', padding: '6px', fontSize: '10px' }}>MEDIDAS (L X A X H) CM</th>
+                            <th style={{ ...REPORT_STYLES.th, background: '#f8fafc', padding: '6px', fontSize: '10px', textAlign: 'center' }}>SUCIEDAD</th>
+                            <th style={{ ...REPORT_STYLES.th, background: '#f8fafc', padding: '6px', fontSize: '10px', textAlign: 'right' }}>CAP C/H</th>
+                            <th style={{ ...REPORT_STYLES.th, background: '#f8fafc', padding: '6px', fontSize: '10px', textAlign: 'right' }}>CAP/DÍA</th>
+                            <th style={{ ...REPORT_STYLES.th, background: '#f8fafc', padding: '6px', fontSize: '10px', textAlign: 'right' }}>REQ/DÍA</th>
+                            <th style={{ ...REPORT_STYLES.th, background: '#f8fafc', padding: '6px', fontSize: '10px', textAlign: 'right' }}>HRS REQ.</th>
+                            <th style={{ ...REPORT_STYLES.th, background: '#f8fafc', padding: '6px', fontSize: '10px', textAlign: 'center' }}>ESTADO</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {inputs.cajas.map((caja, idx) => {
+                            const gapCm = inputs.boxGapCm || 15;
+                            const speedCmMin = (inputs.bandaSpeedMeterPerMin || 10) * 100;
+                            const spaceCm = caja.largoCm + gapCm;
+                            const capCH = (speedCmMin / spaceCm) * 60 * ((inputs.oee || 85) / 100) * ((inputs.reductionFactor !== undefined ? inputs.reductionFactor : 90) / 100);
+                            const capDia = capCH * ((inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1));
+                            const reqDia = inputs.metaProduccionCajasDia || 3000;
+                            const hrsReq = reqDia / capCH;
+                            const isViable = hrsReq <= (((inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1)) + 0.5); // Margen de 30 min de tolerancia
+                            return (
+                              <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                <td style={{ ...REPORT_STYLES.td, padding: '6px', textAlign: 'center' }}>
+                                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: caja.color, margin: '0 auto' }} />
+                                </td>
+                                <td style={{ ...REPORT_STYLES.td, padding: '6px', fontWeight: 'bold' }}>{caja.nombre}</td>
+                                <td style={{ ...REPORT_STYLES.td, padding: '6px' }}>{caja.largoCm} x {caja.anchoCm} x {caja.altoCm} cm</td>
+                                <td style={{ ...REPORT_STYLES.td, padding: '6px', textAlign: 'center' }}>{caja.suciedad || 'Media'}</td>
+                                <td style={{ ...REPORT_STYLES.td, padding: '6px', textAlign: 'right', fontWeight: 'bold', color: '#0e7490' }}>{new Intl.NumberFormat().format(capCH.toFixed(1))}</td>
+                                <td style={{ ...REPORT_STYLES.td, padding: '6px', textAlign: 'right' }}>{new Intl.NumberFormat().format(capDia.toFixed(0))}</td>
+                                <td style={{ ...REPORT_STYLES.td, padding: '6px', textAlign: 'right' }}>{new Intl.NumberFormat().format(reqDia)}</td>
+                                <td style={{ ...REPORT_STYLES.td, padding: '6px', textAlign: 'right', fontWeight: 'bold' }}>{hrsReq.toFixed(1)}h</td>
+                                <td style={{ ...REPORT_STYLES.td, padding: '6px', textAlign: 'center' }}>
+                                  <span style={{ fontSize: '9px', fontWeight: 'bold', padding: '3px 6px', borderRadius: '4px', backgroundColor: isViable ? '#dcfce7' : '#fee2e2', color: isViable ? '#15803d' : '#b91c1c' }}>
+                                    {isViable ? '✓ VIABLE' : '✕ EXCEDE'}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+
+                      <div style={{ display: 'flex', gap: '15px', marginTop: '10px' }}>
+                        <div style={{ flex: 1, padding: '10px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                          <span style={{ display: 'block', fontSize: '9px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>Criterios de Viabilidad</span>
+                          <span style={{ fontSize: '8px', color: '#64748b', lineHeight: '1.4' }}>Las cajas que requieren más horas operativas de las disponibles por día ({(inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1)}h) se marcan como EXCEDE en rojo para indicar sobrecarga en la línea.</span>
+                        </div>
+                        <div style={{ flex: 1, padding: '10px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                          <span style={{ display: 'block', fontSize: '9px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>Ajuste por Suciedad</span>
+                          <span style={{ fontSize: '8px', color: '#64748b', lineHeight: '1.4' }}>El nivel de suciedad impacta directamente en la velocidad requerida de la banda transportadora y en la dosificación química necesaria para limpieza profunda.</span>
+                        </div>
+                        <div style={{ flex: 1, padding: '10px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                          <span style={{ display: 'block', fontSize: '9px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>Espaciamiento Mecánico</span>
+                          <span style={{ fontSize: '8px', color: '#64748b', lineHeight: '1.4' }}>Se calcula una holgura mecánica de {inputs.boxGapCm || 15} cm entre cada caja para prevenir colisiones en banda y asegurar un secado térmico uniforme de cada unidad.</span>
+                        </div>
+                      </div>
+                      {renderPageFooter(++pdfPageIndex, totalPdfPages)}
+                    </div>
+                  </div>
+                </div>
+                )}
+
+                {/* PÁGINA 4.6: ANÁLISIS DE LA LÍNEA */}
+                {pdfConfig.analisis && (
+                <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
+                  <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                    {renderPageHeader(`${++currentSectionIndex}. CAPACIDAD VS REQUERIMIENTO`, 'Contraste gráfico de la capacidad real frente a la demanda por modelo de caja.')}
+
+                    <div style={{ width: '100%', flex: 1, display: 'flex', gap: '20px' }}>
+                      {/* Left: Capacidad vs Requerimiento (Graphic) */}
+                      <div style={{ flex: '1', display: 'flex', flexDirection: 'column', background: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                        <h4 style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e293b', marginBottom: '20px' }}>Capacidad vs Requerimiento por Modelo</h4>
+                        <div style={{ flex: 1, minHeight: '300px' }}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart
+                              data={[{
+                                name: activeBox.nombre,
+                                CapDia: (((inputs.bandaSpeedMeterPerMin || 10) * 100) / (activeBox.largoCm + (inputs.boxGapCm || 15))) * 60 * ((inputs.oee || 85) / 100) * ((inputs.reductionFactor !== undefined ? inputs.reductionFactor : 90) / 100) * (inputs.hoursPerDay || 20),
+                                ReqDia: inputs.metaProduccionCajasDia || 3000
+                              }]}
+                              margin={{ top: 10, right: 10, left: 0, bottom: 20 }}
+                            >
+                              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                              <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                              <YAxis tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                              <Bar dataKey="CapDia" name="Cap/Día" fill="#14b8a6" radius={[4, 4, 0, 0]} barSize={60} />
+                              <Bar dataKey="ReqDia" name="Req/Día" fill="#0f172a" radius={[4, 4, 0, 0]} barSize={60} />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                        <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '16px' }}>
+                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '12px', height: '12px', background: '#14b8a6' }} /> <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#475569' }}>Cap/Día</span></div>
+                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '12px', height: '12px', background: '#0f172a' }} /> <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#475569' }}>Req/Día</span></div>
+                        </div>
+                      </div>
+
+                      {/* Right: Table */}
+                      <div style={{ flex: '1.2', display: 'flex', flexDirection: 'column', background: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                        <h4 style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e293b', marginBottom: '8px' }}>Lavado y Secado — Parámetros Y1-Y5</h4>
+                        <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 'bold', marginBottom: '24px' }}>Ref: {activeBox.nombre} · Rate base: {new Intl.NumberFormat().format(inputs.metaProduccionCajasDia || 3000)} cajas/día</span>
+                        
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                          <thead>
+                            <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                              <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'left' }}>AÑO</th>
+                              <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'center' }}>HRS B</th>
+                              <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'center' }}>EF/T</th>
+                              <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'center' }}>TURN</th>
+                              <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'center' }}>T.DISP</th>
+                              <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'right' }}>REQ/H</th>
+                              <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'right' }}>CAP/H</th>
+                              <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'right' }}>BAL.</th>
+                              <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'right' }}>COB.</th>
+                              <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'center' }}>LÍNEAS</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {Array.from({length: 5}).map((_, i) => {
+                              const reqDia = inputs.metaProduccionCajasDia || 3000;
+                              const speedCmMin = (inputs.bandaSpeedMeterPerMin || 10) * 100;
+                              const spaceCm = activeBox.largoCm + (inputs.boxGapCm || 15);
+                              const capH = (speedCmMin / spaceCm) * 60 * ((inputs.oee || 85) / 100) * ((inputs.reductionFactor !== undefined ? inputs.reductionFactor : 90) / 100);
+                              
+                              const hrsB = 48 - (i * 2);
+                              const hrsPerShiftDay = hrsB / 6;
+                              const efT = hrsPerShiftDay * ((inputs.oee || 85) / 100);
+                              const turn = inputs.shiftsPerDay || 2;
+                              const tDisp = efT * turn;
+                              const reqH = reqDia / tDisp;
+                              const bal = capH - reqH;
+                              const cob = (capH / reqH) * 100;
+
+                              return (
+                                <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                  <td style={{ padding: '12px 4px', fontSize: '10px', fontWeight: 'bold', color: '#0284c7' }}>Y{i+1}</td>
+                                  <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'center' }}>{hrsB}</td>
+                                  <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'center' }}>{efT.toFixed(2)}</td>
+                                  <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'center' }}>{turn}</td>
+                                  <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'center' }}>{tDisp.toFixed(2)}</td>
+                                  <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'right' }}>{reqH.toFixed(1)}</td>
+                                  <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'right' }}>{capH.toFixed(1)}</td>
+                                  <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'right', fontWeight: 'bold', color: bal >= 0 ? '#16a34a' : '#ef4444' }}>{bal >= 0 ? '+' : ''}{bal.toFixed(1)}</td>
+                                  <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'right', fontWeight: 'bold', color: cob >= 100 ? '#16a34a' : '#f97316' }}>{cob.toFixed(1)}%</td>
+                                  <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'center', color: '#64748b' }}>1 maq.</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
 
-                    {renderPageFooter(++pdfPageIndex, totalPdfPages)}
+                    {/* --- ANÁLISIS HÍDRICO (REPORTE) --- */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginTop: 'auto' }}>
+                      <div style={{ background: '#f0f9ff', border: '1px solid #e0f2fe', borderRadius: '16px', padding: '16px' }}>
+                        <span style={{ fontSize: '10px', fontWeight: 900, color: '#0369a1', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                          <Droplet size={14} /> Consumo Hídrico Mensual
+                        </span>
+                        <div style={{ fontSize: '20px', fontWeight: 900, color: '#0c4a6e', marginTop: '4px' }}>{new Intl.NumberFormat().format(results.totalWaterMonthlyLiters || 0)} L</div>
+                      </div>
+                      <div style={{ background: '#f0f9ff', border: '1px solid #e0f2fe', borderRadius: '16px', padding: '16px' }}>
+                        <span style={{ fontSize: '10px', fontWeight: 900, color: '#0369a1', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                          <AlertCircle size={14} /> Recambios + Evaporación
+                        </span>
+                        <div style={{ fontSize: '14px', fontWeight: 700, color: '#075985', marginTop: '4px' }}>Tanque: {inputs.waterTankLiters}L / {inputs.waterDragOutPercent}% Arrastre</div>
+                      </div>
+                      <div style={{ background: '#ecfdf5', border: '1px solid #d1fae5', borderRadius: '16px', padding: '16px' }}>
+                        <span style={{ fontSize: '10px', fontWeight: 900, color: '#047857', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                          <Activity size={14} /> Impacto OPEX Hídrico
+                        </span>
+                        <div style={{ fontSize: '20px', fontWeight: 900, color: '#064e3b', marginTop: '4px' }}>${new Intl.NumberFormat().format(results.waterCostMonthlyMxn || 0)} MXN</div>
+                      </div>
+                      {renderPageFooter(++pdfPageIndex, totalPdfPages)}
+                    </div>
                   </div>
                 </div>
                 )}
 
                 {/* PÁGINA 5: ENERGÍA Y CAPACIDAD */}
-                {pdfConfig.energia && !inputs.hideEnergia && (
+                {pdfConfig.energia && (
                 <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
                   <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 20 }}>
                     {renderPageHeader(`${++currentSectionIndex}. ${inputs.energySectionTitle || 'Energía & Capacidad'}`, 'Desglose energético operativo y comparativa de producción real vs consumo en kWh')}
@@ -4222,8 +5152,8 @@ export default function WM500Simulator() {
                           { title: 'Potencia Instalada Total', val: `${(inputs.customInstalledPowerKw !== undefined ? inputs.customInstalledPowerKw : results.installedPowerKw).toFixed(2)} kW`, sub: `${results.totalHp} hp equivalentes` },
                           { title: 'Consumo Promedio Hora', val: `${results.averageHourlyConsumptionKw.toFixed(2)} kWh`, sub: `Factor de Carga: ${inputs.loadFactor}%` },
                           { title: 'Costo Eléctrico Hora', val: `$${results.hourlyElectricityCostMxn.toFixed(2)} MXN`, sub: `Tarifa: $${inputs.electricityRate}/kWh` },
-                          { title: 'Consumo Específico', val: `${results.kwhPerTon.toFixed(1)} kWh/ton`, sub: 'Relación energía-producción' },
-                          { title: 'Costo por Tonelada', val: `$${results.electricityCostPerTonMxn.toFixed(2)} MXN`, sub: 'Costo operativo directo' },
+                          { title: 'Consumo Específico', val: `${results.kwhPerTon.toFixed(1)} kWh/kCajas`, sub: 'Relación energía-producción' },
+                          { title: 'Costo por 1000 Cajas', val: `$${results.electricityCostPerTonMxn.toFixed(2)} MXN`, sub: 'Costo operativo directo' },
                           { title: 'Costo Eléctrico Mensual', val: `$${new Intl.NumberFormat().format(results.monthlyElectricityCostMxn.toFixed(0))} MXN`, sub: 'Proyección mensual base' },
                         ].map((k, i) => (
                           <div key={i} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 16 }}>
@@ -4258,7 +5188,7 @@ export default function WM500Simulator() {
                             </ResponsiveContainer>
                           </div>
                           <div style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, color: '#64748b', marginTop: 8 }}>
-                            Margen operativo disponible: <span style={{ color: '#008299' }}>{new Intl.NumberFormat().format(Math.max(0, results.dailyProductionKg - inputs.dailyGoalKg).toFixed(0))} kg/día</span>
+                            Margen operativo disponible: <span style={{ color: '#008299' }}>{new Intl.NumberFormat().format(Math.max(0, results.dailyProductionKg - inputs.dailyGoalKg).toFixed(0))} cajas/día</span>
                           </div>
                         </div>
 
@@ -4269,23 +5199,23 @@ export default function WM500Simulator() {
                               <thead>
                                 <tr>
                                   <th style={{ ...REPORT_STYLES.th, background: '#f8fafc', textAlign: 'left' }}>Período</th>
-                                  <th style={{ ...REPORT_STYLES.th, background: '#ecfeff', textAlign: 'right', color: '#0e7490' }}>Producción (Ton)</th>
+                                  <th style={{ ...REPORT_STYLES.th, background: '#ecfeff', textAlign: 'right', color: '#0e7490' }}>Producción (Cajas)</th>
                                   <th style={{ ...REPORT_STYLES.th, background: '#eef2ff', textAlign: 'right', color: '#4338ca' }}>Consumo (kWh)</th>
-                                  <th style={{ ...REPORT_STYLES.th, background: '#ecfdf5', textAlign: 'right', color: '#047857' }}>Ratio (kWh/Ton)</th>
+                                  <th style={{ ...REPORT_STYLES.th, background: '#ecfdf5', textAlign: 'right', color: '#047857' }}>Ratio (kWh/kCajas)</th>
                                 </tr>
                               </thead>
                               <tbody>
                                 {[
-                                  { period: 'Por Hora', prod: results.productionPerHourTon || 0, cons: results.averageHourlyConsumptionKw || 0 },
-                                  { period: 'Por Día', prod: results.dailyProductionTon || 0, cons: (results.averageHourlyConsumptionKw || 0) * (inputs.hoursPerDay || 20) },
-                                  { period: 'Por Semana', prod: (results.dailyProductionTon || 0) * 7, cons: (results.averageHourlyConsumptionKw || 0) * (inputs.hoursPerDay || 20) * 7 },
-                                  { period: 'Por Mes', prod: results.monthlyProductionTon || 0, cons: (results.averageHourlyConsumptionKw || 0) * (inputs.hoursPerDay || 20) * (inputs.daysPerMonth || 24) }
+                                  { period: 'Por Hora', prod: results.realProductionPerHourKg || 0, cons: results.averageHourlyConsumptionKw || 0 },
+                                  { period: 'Por Día', prod: results.dailyProductionKg || 0, cons: (results.averageHourlyConsumptionKw || 0) * ((inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1)) },
+                                  { period: 'Por Semana', prod: (results.dailyProductionKg || 0) * 7, cons: (results.averageHourlyConsumptionKw || 0) * ((inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1)) * 7 },
+                                  { period: 'Por Mes', prod: (results.dailyProductionKg || 0) * (inputs.daysPerMonth || 24), cons: (results.averageHourlyConsumptionKw || 0) * ((inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1)) * (inputs.daysPerMonth || 24) }
                                 ].map((row, idx) => (
                                   <tr key={idx}>
                                     <td style={{ ...REPORT_STYLES.td, fontWeight: 'bold' }}>{row.period}</td>
-                                    <td style={{ ...REPORT_STYLES.td, textAlign: 'right', fontWeight: 'bold', color: '#0891b2' }}>{new Intl.NumberFormat().format((row.prod).toFixed(2))}</td>
+                                    <td style={{ ...REPORT_STYLES.td, textAlign: 'right', fontWeight: 'bold', color: '#0891b2' }}>{new Intl.NumberFormat().format(Math.round(row.prod))}</td>
                                     <td style={{ ...REPORT_STYLES.td, textAlign: 'right', fontWeight: 'bold', color: '#4f46e5' }}>{new Intl.NumberFormat().format((row.cons).toFixed(1))}</td>
-                                    <td style={{ ...REPORT_STYLES.td, textAlign: 'right', fontWeight: 'bold', color: '#059669' }}>{new Intl.NumberFormat().format((row.prod > 0 ? (row.cons / row.prod) : 0).toFixed(2))}</td>
+                                    <td style={{ ...REPORT_STYLES.td, textAlign: 'right', fontWeight: 'bold', color: '#059669' }}>{new Intl.NumberFormat().format((row.prod > 0 ? (row.cons / (row.prod / 1000)) : 0).toFixed(2))}</td>
                                   </tr>
                                 ))}
                               </tbody>
@@ -4293,60 +5223,166 @@ export default function WM500Simulator() {
                           </div>
                         </div>
                       </div>
+                      {renderPageFooter(++pdfPageIndex, totalPdfPages)}
                     </div>
-
-                    {renderPageFooter(++pdfPageIndex, totalPdfPages)}
                   </div>
                 </div>
                 )}
 
+
                 {/* PÁGINA 5: ESCENARIOS OPERATIVOS */}
-                {pdfConfig.escenarios && !inputs.hideEscenarios && (
+                {pdfConfig.escenarios && (
                 <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
-                  <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                  <div style={{ ...S.inner, flex: 1, paddingTop: 20, display: 'flex', flexDirection: 'column', gap: 15 }}>
                     {renderPageHeader(`${++currentSectionIndex}. Simulación de Escenarios`, 'Comparativa de rendimiento bajo diferentes métricas de eficiencia (OEE)')}
 
-                    <div style={{ width: '100%', flex: 1 }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11.5 }}>
+                    <div style={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
                         <thead>
                           <tr>
-                            <th style={{ ...REPORT_STYLES.th, background: '#edfbfd' }}>Métrica de Evaluación</th>
-                            <th style={{ ...REPORT_STYLES.th, background: '#edfbfd', textAlign: 'center' }}>Conservador (70% OEE)</th>
-                            <th style={{ ...REPORT_STYLES.th, background: '#edfbfd', textAlign: 'center' }}>Normal (85% OEE)</th>
-                            <th style={{ ...REPORT_STYLES.th, background: '#edfbfd', textAlign: 'center', color: '#0d9488' }}>Alto Rendimiento (95% OEE)</th>
+                            <th style={{ backgroundColor: '#159b9a', padding: '8px 12px', color: 'white', textAlign: 'left', width: '31%', borderRight: '1px solid rgba(255,255,255,0.2)', fontSize: '11.5px' }}>MÉTRICA DE EVALUACIÓN</th>
+                            <th style={{ backgroundColor: '#059ca0', padding: '8px', color: 'white', textAlign: 'center', width: '23%', borderRight: '1px solid rgba(255,255,255,0.2)' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><Shield size={16} /> <div style={{ textAlign: 'left', lineHeight: '1.2' }}><span style={{fontWeight: 'bold', fontSize: '11.5px'}}>CONSERVADOR</span><br/><span style={{fontSize:'9.5px', fontWeight:'normal'}}>(70% OEE)</span></div></div>
+                            </th>
+                            <th style={{ backgroundColor: '#1b71b8', padding: '8px', color: 'white', textAlign: 'center', width: '23%', borderRight: '1px solid rgba(255,255,255,0.2)' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><TrendingUp size={16} /> <div style={{ textAlign: 'left', lineHeight: '1.2' }}><span style={{fontWeight: 'bold', fontSize: '11.5px'}}>NORMAL</span><br/><span style={{fontSize:'9.5px', fontWeight:'normal'}}>(85% OEE)</span></div></div>
+                            </th>
+                            <th style={{ backgroundColor: '#3bb565', padding: '8px', color: 'white', textAlign: 'center', width: '23%' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><Trophy size={16} /> <div style={{ textAlign: 'left', lineHeight: '1.2' }}><span style={{fontWeight: 'bold', fontSize: '11.5px'}}>ALTO RENDIMIENTO</span><br/><span style={{fontSize:'9.5px', fontWeight:'normal'}}>(95% OEE)</span></div></div>
+                            </th>
                           </tr>
                         </thead>
                         <tbody>
                           <tr>
-                            <td style={REPORT_STYLES.td}>Producción Diaria Proyectada</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{scenarioResults.conservador.dailyProdTon.toFixed(2)} ton/día</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{scenarioResults.normal.dailyProdTon.toFixed(2)} ton/día</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0f766e', fontWeight: 800 }}>{scenarioResults.alto.dailyProdTon.toFixed(2)} ton/día</td>
+                            <td style={{ padding: '8px 12px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', backgroundColor: '#fff' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <Package size={18} color="#159b9a" />
+                                <div>
+                                  <div style={{ fontWeight: 'bold', fontSize: '11.5px', color: '#334155' }}>Producción Diaria Proyectada</div>
+                                  <div style={{ fontSize: '9.5px', color: '#64748b' }}>(cajas/día)</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
+                              <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#059ca0' }}>{new Intl.NumberFormat().format((scenarioResults.conservador.dailyProdTon * 1000).toFixed(0))}</div>
+                              <div style={{ fontSize: '9.5px', color: '#64748b' }}>cajas/día</div>
+                            </td>
+                            <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
+                              <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1b71b8' }}>{new Intl.NumberFormat().format((scenarioResults.normal.dailyProdTon * 1000).toFixed(0))}</div>
+                              <div style={{ fontSize: '9.5px', color: '#64748b' }}>cajas/día</div>
+                            </td>
+                            <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
+                              <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#3bb565' }}>{new Intl.NumberFormat().format((scenarioResults.alto.dailyProdTon * 1000).toFixed(0))}</div>
+                              <div style={{ fontSize: '9.5px', color: '#64748b' }}>cajas/día</div>
+                            </td>
                           </tr>
                           <tr>
-                            <td style={REPORT_STYLES.td}>Costo Operativo (Eléctrico) por Tonelada</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>${scenarioResults.conservador.costPerTon.toFixed(2)} MXN</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>${scenarioResults.normal.costPerTon.toFixed(2)} MXN</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0f766e', fontWeight: 800 }}>${scenarioResults.alto.costPerTon.toFixed(2)} MXN</td>
+                            <td style={{ padding: '8px 12px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', backgroundColor: '#fff' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <Zap size={18} color="#159b9a" />
+                                <div>
+                                  <div style={{ fontWeight: 'bold', fontSize: '11.5px', color: '#334155' }}>Costo Operativo (Eléctrico)</div>
+                                  <div style={{ fontSize: '9.5px', color: '#64748b' }}>por Tonelada</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
+                              <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#059ca0' }}>${new Intl.NumberFormat().format(scenarioResults.conservador.costPerTon.toFixed(2))}</div>
+                              <div style={{ fontSize: '9.5px', color: '#64748b' }}>MXN</div>
+                            </td>
+                            <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
+                              <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1b71b8' }}>${new Intl.NumberFormat().format(scenarioResults.normal.costPerTon.toFixed(2))}</div>
+                              <div style={{ fontSize: '9.5px', color: '#64748b' }}>MXN</div>
+                            </td>
+                            <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
+                              <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#3bb565' }}>${new Intl.NumberFormat().format(scenarioResults.alto.costPerTon.toFixed(2))}</div>
+                              <div style={{ fontSize: '9.5px', color: '#64748b' }}>MXN</div>
+                            </td>
                           </tr>
                           <tr>
-                            <td style={REPORT_STYLES.td}>Cobertura de la Meta Diaria Objetivo</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{scenarioResults.conservador.coverage.toFixed(1)}%</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{scenarioResults.normal.coverage.toFixed(1)}%</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0f766e', fontWeight: 800 }}>{scenarioResults.alto.coverage.toFixed(1)}%</td>
+                            <td style={{ padding: '8px 12px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', backgroundColor: '#fff' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <Target size={18} color="#159b9a" />
+                                <div>
+                                  <div style={{ fontWeight: 'bold', fontSize: '11.5px', color: '#334155' }}>Cobertura de la Meta</div>
+                                  <div style={{ fontSize: '9.5px', color: '#64748b' }}>Diaria Objetivo</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
+                              <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#059ca0' }}>{scenarioResults.conservador.coverage.toFixed(1)}%</div>
+                            </td>
+                            <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
+                              <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1b71b8' }}>{scenarioResults.normal.coverage.toFixed(1)}%</div>
+                            </td>
+                            <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
+                              <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#3bb565' }}>{scenarioResults.alto.coverage.toFixed(1)}%</div>
+                            </td>
                           </tr>
                           <tr>
-                            <td style={REPORT_STYLES.td}>Utilización de la Capacidad de Planta</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{(scenarioResults.conservador.utilization * 100).toFixed(1)}%</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{(scenarioResults.normal.utilization * 100).toFixed(1)}%</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0f766e', fontWeight: 800 }}>{(scenarioResults.alto.utilization * 100).toFixed(1)}%</td>
+                            <td style={{ padding: '8px 12px', borderRight: '1px solid #e2e8f0', backgroundColor: '#fff' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <Gauge size={18} color="#159b9a" />
+                                <div>
+                                  <div style={{ fontWeight: 'bold', fontSize: '11.5px', color: '#334155' }}>Utilización de la Capacidad</div>
+                                  <div style={{ fontSize: '9.5px', color: '#64748b' }}>de Planta</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td style={{ padding: '8px', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
+                              <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#059ca0' }}>{(scenarioResults.conservador.utilization * 100).toFixed(1)}%</div>
+                            </td>
+                            <td style={{ padding: '8px', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
+                              <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1b71b8' }}>{(scenarioResults.normal.utilization * 100).toFixed(1)}%</div>
+                            </td>
+                            <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#fff' }}>
+                              <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#3bb565' }}>{(scenarioResults.alto.utilization * 100).toFixed(1)}%</div>
+                            </td>
                           </tr>
                         </tbody>
                       </table>
-                    </div>
 
-                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 12, fontSize: 11.5, color: '#475569', lineHeight: 1.4 }}>
-                      <strong>Nota del Analista:</strong> Las proyecciones mostradas asumen un flujo constante de material de alimentación y no consideran variaciones drásticas en la humedad o densidad del sustrato.
+                      <div style={{ padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#fff', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                        <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+                          <h4 style={{ fontSize: '11.5px', fontWeight: '900', color: '#1e293b', textTransform: 'uppercase' }}>PRODUCCIÓN DIARIA Y COSTO OPERATIVO POR ESCENARIO</h4>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginBottom: '5px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ width: '16px', height: '8px', backgroundColor: '#059ca0', borderRadius: '2px' }}/>
+                            <span style={{fontSize: '9.5px', color: '#334155', fontWeight: 'bold'}}>Producción Diaria (cajas/día)</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', border: '2px solid #1b71b8', position: 'relative' }}>
+                              <div style={{ position: 'absolute', top: '50%', left: '-8px', right: '-8px', height: '2px', backgroundColor: '#1b71b8', transform: 'translateY(-50%)', zIndex: -1 }} />
+                            </div>
+                            <span style={{fontSize: '9.5px', color: '#334155', fontWeight: 'bold'}}>Costo Operativo Eléctrico (MXN por tonelada)</span>
+                          </div>
+                        </div>
+                        <div style={{ width: '100%', flex: 1, minHeight: '160px' }}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <ComposedChart 
+                              data={[
+                                { name: 'Conservador\n(70% OEE)', prod: scenarioResults.conservador.dailyProdTon * 1000, costo: scenarioResults.conservador.costPerTon },
+                                { name: 'Normal\n(85% OEE)', prod: scenarioResults.normal.dailyProdTon * 1000, costo: scenarioResults.normal.costPerTon },
+                                { name: 'Alto Rendimiento\n(95% OEE)', prod: scenarioResults.alto.dailyProdTon * 1000, costo: scenarioResults.alto.costPerTon }
+                              ]} 
+                              margin={{ top: 20, right: 10, bottom: 0, left: 10 }}
+                            >
+                              <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" vertical={false} />
+                              <XAxis dataKey="name" tick={{ fontSize: 10.5, fill: '#1e293b', fontWeight: 'bold' }} axisLine={false} tickLine={false} dy={10} />
+                              <YAxis yAxisId="left" tick={{ fontSize: 10.5, fill: '#059ca0', fontWeight: 'bold' }} axisLine={false} tickLine={false} dx={-5} />
+                              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10.5, fill: '#1b71b8', fontWeight: 'bold' }} axisLine={false} tickLine={false} dx={5} />
+                              <Tooltip cursor={{fill: '#f8fafc'}} />
+                              <Bar yAxisId="left" dataKey="prod" fill="#059ca0" barSize={60} radius={[4,4,0,0]} label={{ position: 'top', fill: '#059ca0', fontSize: 11.5, fontWeight: 'bold', formatter: (v) => new Intl.NumberFormat().format(v.toFixed(0)) }} />
+                              <Line yAxisId="right" type="monotone" dataKey="costo" stroke="#1b71b8" strokeWidth={2} dot={{ r: 4, stroke: '#1b71b8', strokeWidth: 2, fill: '#fff' }} label={{ position: 'bottom', fill: '#1b71b8', fontSize: 11.5, fontWeight: 'bold', formatter: (v) => '$' + v.toFixed(2) }} />
+                            </ComposedChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+
+                      <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: 12, fontSize: 11.5, color: '#64748b', lineHeight: 1.4 }}>
+                        <strong style={{color:'#334155'}}>Nota del Analista:</strong> Las proyecciones mostradas asumen un flujo constante de material de alimentación y no consideran variaciones drásticas en la humedad o densidad del sustrato.
+                      </div>
                     </div>
 
                     <div style={{ flex: 1 }} />
@@ -4355,111 +5391,327 @@ export default function WM500Simulator() {
                 </div>
                 )}
 
-                {/* PÁGINA 7: DICTAMEN FINANCIERO */}
-                {pdfConfig.financiero && !inputs.hideFinanciero && (
-                <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
+                {/* PÁGINA: ANÁLISIS HÍDRICO Y SUSTENTABILIDAD */}
+                {pdfConfig.hidrico && (() => {
+                  const speedCmMin = (inputs.bandaSpeedMeterPerMin || 10) * 100;
+                  const spaceCm = activeBox.largoCm + (inputs.boxGapCm || 15);
+                  const baseCapH = ((speedCmMin / spaceCm) * 60) * ((inputs.oee || 85) / 100) * ((inputs.reductionFactor !== undefined ? inputs.reductionFactor : 90) / 100);
+                  const hrsDay = inputs.hoursPerDay || 20;
+                  const realWaterPerHr = (results.totalWaterMonthlyLiters || 0) / 24 / hrsDay;
+                  
+                  return (
+                    <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
                       <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 20 }}>
-                        {renderPageHeader(`${++currentSectionIndex}. Proyección Financiera`, 'Análisis Ejecutivo de Viabilidad Económica (CAPEX/OPEX)')}
-                        
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                          
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                            <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 12, background: '#f8fafc' }}>
-                              <div style={{ fontSize: 10, fontWeight: 900, color: '#0ea5e9', textTransform: 'uppercase', marginBottom: 4 }}>Estructura CAPEX (Inversión Inicial)</div>
-                              <div style={{ fontSize: 24, fontWeight: 900, color: '#0f2038', marginBottom: 4 }}>${new Intl.NumberFormat().format(results.capexInstaladoMxn.toFixed(0))} MXN</div>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 10, color: '#475569', fontWeight: 600 }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Equipo Base</span><span>${new Intl.NumberFormat().format((results.precioEquipoUsd * (inputs.tipoCambio || 1)).toFixed(0))}</span></div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Montaje y Maniobras</span><span>${new Intl.NumberFormat().format(((results.maniobrasUsd + results.montajeMecanicoUsd) * (inputs.tipoCambio || 1)).toFixed(0))}</span></div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Instalación Eléctrica</span><span>${new Intl.NumberFormat().format(((results.electricoPrincipalUsd + results.canalizacionProteccionesUsd) * (inputs.tipoCambio || 1)).toFixed(0))}</span></div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Sistemas de Seguridad</span><span>${new Intl.NumberFormat().format(((results.extraccionPolvoUsd + results.seguridadIndustrialUsd) * (inputs.tipoCambio || 1)).toFixed(0))}</span></div>
-                              </div>
-                            </div>
-
-                            <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 12, background: '#f8fafc' }}>
-                              <div style={{ fontSize: 10, fontWeight: 900, color: '#e11d48', textTransform: 'uppercase', marginBottom: 4 }}>Estructura OPEX (Gasto Mensual)</div>
-                              <div style={{ fontSize: 24, fontWeight: 900, color: '#0f2038', marginBottom: 4 }}>${new Intl.NumberFormat().format(results.opexMensualMxn.toFixed(0))} MXN</div>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 10, color: '#475569', fontWeight: 600 }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Energía Eléctrica</span><span>${new Intl.NumberFormat().format(results.monthlyElectricityCostMxn.toFixed(0))}</span></div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Mano de Obra</span><span>${new Intl.NumberFormat().format(results.manoObraMensualMxn.toFixed(0))}</span></div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Mantenimiento Preventivo</span><span>${new Intl.NumberFormat().format(results.mantenimientoMensualMxn.toFixed(0))}</span></div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Refacciones / Consumibles</span><span>${new Intl.NumberFormat().format((inputs.cuchillasMensualMxn + inputs.refaccionesMensualMxn + inputs.lubricacionMensualMxn).toFixed(0))}</span></div>
-                              </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #e2e8f0', paddingBottom: '16px' }}>
+                          <div style={{ display: 'flex', gap: '16px' }}>
+                            <div style={{ width: '8px', height: '60px', background: '#06b6d4', borderRadius: '4px' }} />
+                            <div>
+                              <div style={{ fontSize: '26px', fontWeight: 900, color: '#1e293b', lineHeight: 1.1, letterSpacing: '-0.5px' }}>CONSUMO HÍDRICO</div>
+                              <div style={{ fontSize: '26px', fontWeight: 900, color: '#06b6d4', lineHeight: 1.1, letterSpacing: '-0.5px' }}>Y SUSTENTABILIDAD</div>
                             </div>
                           </div>
-
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                            <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 12, background: '#f8fafc' }}>
-                              <div style={{ fontSize: 10, fontWeight: 900, color: '#7c3aed', textTransform: 'uppercase', marginBottom: 4 }}>Viabilidad y Retorno de Inversión</div>
-                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                                <div>
-                                  <div style={{ fontSize: 10, color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Flujo Operativo Mensual</div>
-                                  <div style={{ fontSize: 16, fontWeight: 900, color: '#0f2038' }}>${new Intl.NumberFormat().format(results.flujoOperativoMensual.toFixed(0))}</div>
-                                </div>
-                                <div>
-                                  <div style={{ fontSize: 10, color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Estado de Viabilidad</div>
-                                  <div style={{ fontSize: 14, fontWeight: 900, color: '#7c3aed' }}>{results.estadoFinanciero}</div>
-                                </div>
-                                <div>
-                                  <div style={{ fontSize: 10, color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Retorno de Inversión (ROI)</div>
-                                  <div style={{ fontSize: 16, fontWeight: 900, color: '#0f2038' }}>{results.roiAnual.toFixed(1)}% Anual</div>
-                                </div>
-                                <div>
-                                  <div style={{ fontSize: 10, color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Período Payback</div>
-                                  <div style={{ fontSize: 16, fontWeight: 900, color: '#0f2038' }}>{results.paybackMeses === Infinity ? 'N/A' : `${results.paybackMeses.toFixed(1)} Meses`}</div>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 12, background: '#f8fafc' }}>
-                              <div style={{ fontSize: 10, fontWeight: 900, color: '#ea580c', textTransform: 'uppercase', marginBottom: 4 }}>Matriz de Riesgo y Operación</div>
-                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, fontSize: 10, color: '#475569', fontWeight: 600 }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid #e2e8f0' }}><span>Exposición a Polvo:</span> <span style={{ textTransform: 'uppercase', fontWeight: 800 }}>{inputs.riesgoPolvo}</span></div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid #e2e8f0' }}><span>Riesgo de Incendio:</span> <span style={{ textTransform: 'uppercase', fontWeight: 800 }}>{inputs.riesgoIncendio}</span></div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}><span>Riesgo Metálico:</span> <span style={{ textTransform: 'uppercase', fontWeight: 800 }}>{inputs.riesgoMetal}</span></div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}><span>Contaminación Acústica:</span> <span style={{ textTransform: 'uppercase', fontWeight: 800 }}>{inputs.riesgoRuido}</span></div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        {/* GRÁFICO OPEX INYECTADO */}
-                        <div style={{ marginTop: 12, border: '1px solid #e2e8f0', borderRadius: 12, padding: '12px 16px', background: '#fff', display: 'flex', alignItems: 'center', gap: 20 }}>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 10, fontWeight: 900, color: '#0f2038', textTransform: 'uppercase', marginBottom: 4 }}>Distribución de Costo Operativo (OPEX)</div>
-                            <div style={{ fontSize: 10, color: '#64748b', lineHeight: 1.4 }}>El gráfico circular detalla la proporción de gastos operativos mensuales. La optimización de la matriz energética y los mantenimientos preventivos son la clave para maximizar el flujo operativo y acelerar el retorno de inversión.</div>
-                          </div>
-                          <div style={{ width: 300, height: 140 }}>
-                            <ResponsiveContainer width="100%" height="100%">
-                              <PieChart>
-                                <Pie
-                                  data={[
-                                    { name: 'Energía', value: results.monthlyElectricityCostMxn, fill: '#0ea5e9' },
-                                    { name: 'Mano de Obra', value: results.manoObraMensualMxn, fill: '#8b5cf6' },
-                                    { name: 'Mantenimiento', value: results.mantenimientoMensualMxn, fill: '#f59e0b' },
-                                    { name: 'Consumibles', value: inputs.cuchillasMensualMxn + inputs.refaccionesMensualMxn + inputs.lubricacionMensualMxn, fill: '#10b981' }
-                                  ].filter(d => d.value > 0)}
-                                  cx="50%" cy="50%" innerRadius={40} outerRadius={65} paddingAngle={2} dataKey="value"
-                                >
-                                  {[{fill: '#0ea5e9'}, {fill: '#8b5cf6'}, {fill: '#f59e0b'}, {fill: '#10b981'}].map((e,i) => <Cell key={i} fill={e.fill} />)}
-                                </Pie>
-                                <Tooltip formatter={(value) => "$" + new Intl.NumberFormat().format(value.toFixed(0))} />
-                                <Legend layout="vertical" verticalAlign="middle" align="right" wrapperStyle={{ fontSize: 10 }} iconType="circle" iconSize={6} />
-                              </PieChart>
-                            </ResponsiveContainer>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: '10px', fontWeight: 800, color: '#0ea5e9', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '4px' }}>{inputs.clientName || 'FORVIA'} - {activeBox.nombre}</div>
+                            <div style={{ fontSize: '12px', fontWeight: 900, color: '#0f172a', textTransform: 'uppercase', marginBottom: '6px' }}>ING. {inputs.userName || 'ADONAI RODRÍGUEZ'} | {inputs.userPosition || 'EMILIANO MACHUCA'}</div>
+                            <div style={{ fontSize: '10px', color: '#64748b' }}>Análisis del balance hídrico, tasa de recirculación de agua y huella ecológica.</div>
                           </div>
                         </div>
 
+                        {/* TOP ROW: 4 CARDS */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+                          <div style={{ border: '1px solid #e2e8f0', borderRadius: '16px', padding: '16px', background: '#fff', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)' }}>
+                            <div style={{ fontSize: '22px', fontWeight: 900, color: '#0891b2', marginBottom: '4px' }}>{new Intl.NumberFormat().format(Math.round(baseCapH * 3.5))} L/h</div>
+                            <div style={{ fontSize: '11px', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>Caudal de Lavado Interno</div>
+                            <div style={{ fontSize: '9px', color: '#64748b' }}>Volumen interno recirculado</div>
+                          </div>
+                          <div style={{ border: '1px solid #e2e8f0', borderRadius: '16px', padding: '16px', background: '#fff', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)' }}>
+                            <div style={{ fontSize: '22px', fontWeight: 900, color: '#0891b2', marginBottom: '4px' }}>{new Intl.NumberFormat().format(Math.round(realWaterPerHr))} L/h</div>
+                            <div style={{ fontSize: '11px', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>Reposición Real de Agua</div>
+                            <div style={{ fontSize: '9px', color: '#64748b' }}>Consumo real de red de agua limpia</div>
+                          </div>
+                          <div style={{ border: '1px solid #e2e8f0', borderRadius: '16px', padding: '16px', background: '#fff', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)' }}>
+                            <div style={{ fontSize: '22px', fontWeight: 900, color: '#0891b2', marginBottom: '4px', display: 'flex', alignItems: 'flex-start' }}>{((Math.round(realWaterPerHr) * hrsDay) / 1000).toFixed(2)} m<span style={{ fontSize: '12px' }}>³</span></div>
+                            <div style={{ fontSize: '11px', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>Consumo Diario Y1 ({hrsDay.toFixed(1)}h)</div>
+                            <div style={{ fontSize: '9px', color: '#64748b' }}>Equivalente a {new Intl.NumberFormat().format(Math.round(realWaterPerHr) * hrsDay)} Litros</div>
+                          </div>
+                          <div style={{ border: '1px solid #e2e8f0', borderRadius: '16px', padding: '16px', background: '#fff', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)' }}>
+                            <div style={{ fontSize: '22px', fontWeight: 900, color: '#0891b2', marginBottom: '4px', display: 'flex', alignItems: 'flex-start' }}>{(((Math.round(realWaterPerHr) * hrsDay) / 1000) * (inputs.daysPerWeek || 6)).toFixed(1)} m<span style={{ fontSize: '12px' }}>³</span></div>
+                            <div style={{ fontSize: '11px', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>Consumo Semanal</div>
+                            <div style={{ fontSize: '9px', color: '#64748b' }}>Basado en {inputs.daysPerWeek || 6} días laborables</div>
+                          </div>
+                        </div>
 
+                        {/* BOTTOM ROW: 2 CARDS */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', flex: 1 }}>
+                          {/* Configuración y Eficiencia Hídrica */}
+                          <div style={{ border: '1px solid #e2e8f0', borderRadius: '16px', padding: '24px', background: '#fff', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ fontSize: '14px', fontWeight: 900, color: '#0f2038', marginBottom: '24px' }}>Configuración y Eficiencia Hídrica</div>
+                            
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
+                                <div>
+                                  <div style={{ fontSize: '11px', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>Tasa de Recirculación de Agua</div>
+                                  <div style={{ fontSize: '9px', color: '#64748b' }}>Ahorro neto de agua limpia por recirculación y filtrado</div>
+                                </div>
+                                <div style={{ fontSize: '16px', fontWeight: 900, color: '#0891b2' }}>85.0%</div>
+                              </div>
+                              
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
+                                <div>
+                                  <div style={{ fontSize: '11px', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>Capacidad Nominal del Tanque</div>
+                                  <div style={{ fontSize: '9px', color: '#64748b' }}>Capacidad del tanque de lavado principal</div>
+                                </div>
+                                <div style={{ fontSize: '16px', fontWeight: 900, color: '#0891b2' }}>{new Intl.NumberFormat().format(inputs.waterTankLiters || 1200)} Litros</div>
+                              </div>
+                              
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
+                                <div>
+                                  <div style={{ fontSize: '11px', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>Frecuencia de Cambio de Agua</div>
+                                  <div style={{ fontSize: '9px', color: '#64748b' }}>Frecuencia de purga e higienización total</div>
+                                </div>
+                                <div style={{ fontSize: '16px', fontWeight: 900, color: '#0891b2' }}>Cada {Math.round(6 / (inputs.waterChangesPerWeek || 1))} días</div>
+                              </div>
+                              
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div>
+                                  <div style={{ fontSize: '11px', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>Modelo de Referencia Activo</div>
+                                  <div style={{ fontSize: '9px', color: '#64748b' }}>Modelo de caja base para el análisis unitario</div>
+                                </div>
+                                <div style={{ fontSize: '16px', fontWeight: 900, color: '#0891b2', textTransform: 'uppercase' }}>{activeBox.nombre}</div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Análisis de Huella Hídrica */}
+                          <div style={{ border: '1px solid #e2e8f0', borderRadius: '16px', padding: '24px', background: '#fff', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ fontSize: '14px', fontWeight: 900, color: '#0f2038', marginBottom: '24px' }}>Análisis de Huella Hídrica por Contenedor</div>
+                            
+                            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                              <div>
+                                <div style={{ fontSize: '12px', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>Consumo Específico por Caja</div>
+                                <div style={{ fontSize: '9px', color: '#64748b' }}>Basado en {new Intl.NumberFormat().format(Math.round(baseCapH))} cajas/h de capacidad real</div>
+                              </div>
+                              <div style={{ fontSize: '24px', fontWeight: 900, color: '#0891b2' }}>{(realWaterPerHr / Math.round(baseCapH)).toFixed(2)} L / caja</div>
+                            </div>
+
+                            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '20px' }}>
+                              <div style={{ fontSize: '11px', fontWeight: 800, color: '#1e293b', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <Target size={12} color="#0891b2" /> Evaluación de Impacto Ambiental (ESG)
+                              </div>
+                              <div style={{ fontSize: '10px', color: '#475569', lineHeight: 1.6, textAlign: 'justify' }}>
+                                El sistema de recirculación del simulador Wash & Dry reduce en un <strong style={{ color: '#0f172a' }}>85%</strong> la demanda de agua de reposición respecto a sistemas tradicionales de lavado una vez-pasados (once-through). Esto representa una disminución crítica de la huella hídrica y minimiza la generación de efluentes, facilitando el cumplimiento de normativas de sustentabilidad y optimizando el costo operativo por caja.
+                              </div>
+                            </div>
+                          </div>
+                          {renderPageFooter(++pdfPageIndex, totalPdfPages)}
+                  </div>
+                  </div>
+                  </div>
+                  );
+                })()}
+
+                {/* PÁGINA 7: DICTAMEN FINANCIERO (VERSIÓN SIN RENTABILIDAD) */}
+                {pdfConfig.financiero && (
+                  <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
+                    <div style={{ ...S.inner, flex: 1, paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {renderPageHeader(`${++currentSectionIndex}. Análisis Financiero de Inversión`, 'Resumen Ejecutivo de CAPEX y Gasto Operativo Mensual')}
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                        {/* CAPEX Card */}
+                        <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', background: '#fff' }}>
+                          <div style={{ background: '#1d70b8', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Building2 size={20} color="#fff" />
+                            <div style={{ fontSize: '11px', fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Estructura CAPEX (Inversión Inicial)</div>
+                          </div>
+                          <div style={{ padding: '10px 14px' }}>
+                            <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, marginBottom: '2px' }}>Inversión Total Estimada</div>
+                            <div style={{ fontSize: '22px', fontWeight: 900, color: '#0f2038', marginBottom: '8px' }}>${new Intl.NumberFormat().format(results.capexInstaladoMxn.toFixed(0))} MXN</div>
+                            
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '11px', color: '#334155', fontWeight: 600 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#e0f2fe', padding: '6px', borderRadius: '6px', display: 'flex' }}><Factory size={14} color="#0284c7" /></div> Equipo Base</div>
+                                <span style={{ fontWeight: 800, color: '#0284c7' }}>${new Intl.NumberFormat().format((results.precioEquipoUsd * (inputs.tipoCambio || 1)).toFixed(0))}</span>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#e0f2fe', padding: '6px', borderRadius: '6px', display: 'flex' }}><Wrench size={14} color="#0284c7" /></div> Montaje y Maniobras</div>
+                                <span style={{ fontWeight: 800, color: '#0284c7' }}>${new Intl.NumberFormat().format(((results.maniobrasUsd + results.montajeMecanicoUsd) * (inputs.tipoCambio || 1)).toFixed(0))}</span>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#e0f2fe', padding: '6px', borderRadius: '6px', display: 'flex' }}><Zap size={14} color="#0284c7" /></div> Instalación Eléctrica</div>
+                                <span style={{ fontWeight: 800, color: '#0284c7' }}>${new Intl.NumberFormat().format(((results.electricoPrincipalUsd + results.canalizacionProteccionesUsd) * (inputs.tipoCambio || 1)).toFixed(0))}</span>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#e0f2fe', padding: '6px', borderRadius: '6px', display: 'flex' }}><Droplet size={14} color="#0284c7" /></div> Sistemas Hídricos / Drenaje</div>
+                                <span style={{ fontWeight: 800, color: '#0284c7' }}>${new Intl.NumberFormat().format(((results.extraccionPolvoUsd + results.seguridadIndustrialUsd) * (inputs.tipoCambio || 1)).toFixed(0))}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div style={{ background: '#f8fafc', padding: '10px 14px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '11px', fontWeight: 800, color: '#1d70b8' }}>INVERSIÓN INICIAL TOTAL</span>
+                            <span style={{ background: '#1d70b8', color: '#fff', fontSize: '12px', fontWeight: 900, padding: '4px 12px', borderRadius: '16px' }}>${new Intl.NumberFormat().format(results.capexInstaladoMxn.toFixed(0))} MXN</span>
+                          </div>
+                        </div>
+
+                        {/* OPEX Card */}
+                        <div style={{ border: '1px solid #fecdd3', borderRadius: '8px', overflow: 'hidden', background: '#fff' }}>
+                          <div style={{ background: '#e11d48', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Settings size={20} color="#fff" />
+                            <div style={{ fontSize: '11px', fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Estructura OPEX (Gasto Mensual)</div>
+                          </div>
+                          <div style={{ padding: '10px 14px' }}>
+                            <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, marginBottom: '2px' }}>Gasto Operativo Mensual Estimado</div>
+                            <div style={{ fontSize: '22px', fontWeight: 900, color: '#0f2038', marginBottom: '8px' }}>${new Intl.NumberFormat().format(results.opexMensualMxn.toFixed(0))} MXN</div>
+                            
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '11px', color: '#334155', fontWeight: 600 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#ffe4e6', padding: '6px', borderRadius: '6px', display: 'flex' }}><Zap size={14} color="#e11d48" /></div> Energía Eléctrica</div>
+                                <span style={{ fontWeight: 800, color: '#e11d48' }}>${new Intl.NumberFormat().format(results.monthlyElectricityCostMxn.toFixed(0))}</span>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#ffe4e6', padding: '6px', borderRadius: '6px', display: 'flex' }}><Droplet size={14} color="#e11d48" /></div> Impacto Hídrico (Agua)</div>
+                                <span style={{ fontWeight: 800, color: '#e11d48' }}>${new Intl.NumberFormat().format(results.waterCostMonthlyMxn || 0)}</span>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#ffe4e6', padding: '6px', borderRadius: '6px', display: 'flex' }}><Users size={14} color="#e11d48" /></div> Mano de Obra</div>
+                                <span style={{ fontWeight: 800, color: '#e11d48' }}>${new Intl.NumberFormat().format(results.manoObraMensualMxn.toFixed(0))}</span>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#ffe4e6', padding: '6px', borderRadius: '6px', display: 'flex' }}><Shield size={14} color="#e11d48" /></div> Mantenimiento Preventivo</div>
+                                <span style={{ fontWeight: 800, color: '#e11d48' }}>${new Intl.NumberFormat().format(results.mantenimientoMensualMxn.toFixed(0))}</span>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#ffe4e6', padding: '6px', borderRadius: '6px', display: 'flex' }}><Wrench size={14} color="#e11d48" /></div> Refacciones / Consumibles</div>
+                                <span style={{ fontWeight: 800, color: '#e11d48' }}>${new Intl.NumberFormat().format((inputs.filtrosMensualMxn + inputs.refaccionesMensualMxn + inputs.lubricacionMensualMxn).toFixed(0))}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div style={{ background: '#fff1f2', padding: '10px 14px', borderTop: '1px solid #fecdd3', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '11px', fontWeight: 800, color: '#e11d48' }}>GASTO OPERATIVO MENSUAL TOTAL</span>
+                            <span style={{ background: '#e11d48', color: '#fff', fontSize: '12px', fontWeight: 900, padding: '4px 12px', borderRadius: '16px' }}>${new Intl.NumberFormat().format(results.opexMensualMxn.toFixed(0))} MXN</span>
+                          </div>
+                        </div>
                       </div>
 
-                      {renderPageFooter(++pdfPageIndex, totalPdfPages)}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: 10, marginTop: '0px' }}>
+                        <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px', background: '#f8fafc', display: 'flex', flexDirection: 'column' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                            <div style={{ background: '#ea580c', borderRadius: '50%', padding: '4px', display: 'flex' }}><Shield size={14} color="#fff" /></div>
+                            <div>
+                              <div style={{ fontSize: '11px', fontWeight: 900, color: '#ea580c', textTransform: 'uppercase' }}>Matriz de Riesgo y Operación</div>
+                              <div style={{ fontSize: '9px', color: '#64748b' }}>Evaluación cualitativa de los principales riesgos operativos</div>
+                            </div>
+                          </div>
+                          
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '10px', color: '#334155', fontWeight: 600 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', border: '1px solid #f1f5f9', padding: '6px', borderRadius: '6px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><FlaskConical size={12} color="#ea580c" /> Manejo de Químicos</div>
+                                <span style={{ background: '#dcfce7', color: '#166534', padding: '2px 6px', borderRadius: '4px', fontSize: '9px', fontWeight: 800 }}>{inputs.riesgoPolvo || 'BAJO'}</span>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', border: '1px solid #f1f5f9', padding: '6px', borderRadius: '6px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Zap size={12} color="#ea580c" /> Riesgo Eléctrico</div>
+                                <span style={{ background: '#dcfce7', color: '#166534', padding: '2px 6px', borderRadius: '4px', fontSize: '9px', fontWeight: 800 }}>{inputs.riesgoMetal || 'BAJO'}</span>
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', border: '1px solid #f1f5f9', padding: '6px', borderRadius: '6px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Droplet size={12} color="#ea580c" /> Drenaje y Fugas</div>
+                                <span style={{ background: '#dcfce7', color: '#166534', padding: '2px 6px', borderRadius: '4px', fontSize: '9px', fontWeight: 800 }}>{inputs.riesgoIncendio || 'BAJO'}</span>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', border: '1px solid #f1f5f9', padding: '6px', borderRadius: '6px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Volume2 size={12} color="#ea580c" /> Contam. Acústica</div>
+                                <span style={{ background: '#fef08a', color: '#854d0e', padding: '2px 6px', borderRadius: '4px', fontSize: '9px', fontWeight: 800 }}>{inputs.riesgoRuido || 'MEDIO'}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div style={{ marginTop: 'auto', background: '#fff', border: '1px solid #f1f5f9', padding: '4px', borderRadius: '6px', display: 'flex', gap: '8px' }}>
+                            <div style={{ background: '#ea580c', width: '16px', height: '16px', borderRadius: '50%', color: '#fff', fontSize: '10px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>i</div>
+                            <div style={{ fontSize: '9px', color: '#64748b', lineHeight: 1.2 }}><strong style={{ color: '#ea580c' }}>Nota:</strong> Los niveles de riesgo se evaluaron considerando controles y protocolos.</div>
+                          </div>
+                        </div>
+
+                        <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px', background: '#f8fafc', display: 'flex', flexDirection: 'column' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                            <div style={{ background: '#7c3aed', borderRadius: '50%', padding: '4px', display: 'flex' }}><PieChartLucide size={14} color="#fff" /></div>
+                            <div>
+                              <div style={{ fontSize: '11px', fontWeight: 900, color: '#6d28d9', textTransform: 'uppercase' }}>Distribución OPEX</div>
+                              <div style={{ fontSize: '9px', color: '#64748b' }}>Proporción de gastos operativos mensuales</div>
+                            </div>
+                          </div>
+                          
+                          <div style={{ display: 'flex', gap: '8px', flex: 1 }}>
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                              <div style={{ fontSize: '9px', color: '#475569', lineHeight: 1.2 }}>El gráfico circular muestra la distribución porcentual de los componentes del gasto operativo (OPEX).</div>
+                              <div style={{ background: '#f5f3ff', border: '1px solid #ede9fe', padding: '6px', borderRadius: '6px', marginTop: '6px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}><Star size={10} color="#7c3aed" fill="#7c3aed" /> <span style={{ fontSize: '10px', fontWeight: 800, color: '#6d28d9' }}>Recomendación:</span></div>
+                                <div style={{ fontSize: '9px', color: '#5b21b6', lineHeight: 1.2 }}>Optimizar consumo de energía y agua maximiza el rendimiento.</div>
+                              </div>
+                            </div>
+                            <div style={{ width: 95, height: 95, position: 'relative', marginTop: '-10px' }}>
+                              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: 10 }}>
+                                <span style={{ fontSize: '8px', fontWeight: 800, color: '#334155' }}>TOTAL</span>
+                                <span style={{ fontSize: '10px', fontWeight: 900, color: '#0f172a' }}>${new Intl.NumberFormat().format(results.opexMensualMxn.toFixed(0))}</span>
+                                <span style={{ fontSize: '8px', fontWeight: 800, color: '#334155' }}>MXN</span>
+                              </div>
+                              <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                  <Pie
+                                    data={[
+                                      { name: 'Energía Eléctrica', value: results.monthlyElectricityCostMxn, fill: '#1d4ed8' },
+                                      { name: 'Mano de Obra', value: results.manoObraMensualMxn, fill: '#8b5cf6' },
+                                      { name: 'Impacto Hídrico (Agua)', value: results.waterCostMonthlyMxn || 0, fill: '#0ea5e9' },
+                                      { name: 'Mantenimiento Preventivo', value: results.mantenimientoMensualMxn, fill: '#ea580c' },
+                                      { name: 'Refacciones / Consumibles', value: inputs.filtrosMensualMxn + inputs.refaccionesMensualMxn + inputs.lubricacionMensualMxn, fill: '#65a30d' }
+                                    ].filter(d => d.value > 0)}
+                                    cx="50%" cy="50%" innerRadius={25} outerRadius={42} paddingAngle={2} dataKey="value"
+                                    labelLine={false}
+                                    label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+                                      const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+                                      const x = cx + radius * Math.cos(-midAngle * Math.PI / 180);
+                                      const y = cy + radius * Math.sin(-midAngle * Math.PI / 180);
+                                      return percent > 0.05 ? <text x={x} y={y} fill="white" fontSize="7" fontWeight="bold" textAnchor="middle" dominantBaseline="central">{`${(percent * 100).toFixed(0)}%`}</text> : null;
+                                    }}
+                                  >
+                                    {[{fill: '#1d4ed8'}, {fill: '#8b5cf6'}, {fill: '#0ea5e9'}, {fill: '#ea580c'}, {fill: '#65a30d'}].map((e,i) => <Cell key={i} fill={e.fill} />)}
+                                  </Pie>
+                                </PieChart>
+                              </ResponsiveContainer>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', justifyContent: 'center' }}>
+                              {[
+                                { name: 'Energía Eléctrica', value: results.monthlyElectricityCostMxn, fill: '#1d4ed8' },
+                                { name: 'Mano de Obra', value: results.manoObraMensualMxn, fill: '#8b5cf6' },
+                                { name: 'Impacto Hídrico', value: results.waterCostMonthlyMxn || 0, fill: '#0ea5e9' },
+                                { name: 'Mantenimiento', value: results.mantenimientoMensualMxn, fill: '#ea580c' },
+                                { name: 'Refacciones', value: inputs.filtrosMensualMxn + inputs.refaccionesMensualMxn + inputs.lubricacionMensualMxn, fill: '#65a30d' }
+                              ].filter(d => d.value > 0).map((d, i, arr) => {
+                                const total = arr.reduce((sum, item) => sum + item.value, 0);
+                                const pct = ((d.value / total) * 100).toFixed(1);
+                                return (
+                                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '4px' }}>
+                                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: d.fill, marginTop: '3px', flexShrink: 0 }} />
+                                    <div>
+                                      <div style={{ fontSize: '8px', fontWeight: 700, color: '#334155', lineHeight: 1.1 }}>{d.name}</div>
+                                      <div style={{ fontSize: '7px', color: '#64748b' }}>({pct}%)</div>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                        {renderPageFooter(++pdfPageIndex, totalPdfPages)}
                     </div>
+                  </div>
+                  </div>
                 )}
 
                 {/* PÁGINA: REQUERIMIENTOS DE OBRA CIVIL Y PISO */}
                 {pdfConfig.civil && (
                   <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
                     <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 20 }}>
-                      {renderPageHeader(`${++currentSectionIndex}. Obra Civil y Cimentación`, 'Dictamen y Especificaciones Estructurales de Piso y Bodega')}
+                      {renderPageHeader('Obra Civil y Cimentación', 'Dictamen y Especificaciones Estructurales de Piso y Bodega')}
                       
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                         
@@ -4507,40 +5759,17 @@ export default function WM500Simulator() {
                       <div style={{ border: '1px solid #cbd5e1', borderRadius: 12, padding: 12, background: '#f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
                           <div style={{ fontSize: 9, fontWeight: 900, color: '#475569', textTransform: 'uppercase' }}>Dimensiones de Planta y Peso del Equipo</div>
-                          <div style={{ fontSize: 13, fontWeight: 900, color: '#1e293b', marginTop: 2 }}>{inputs.machineLength || 14.5}m Largo × {inputs.machineWidth || 1.75}m Ancho × {inputs.machineHeight || 1.9}m Alto | Peso: {inputs.pesoKg ? new Intl.NumberFormat().format(inputs.pesoKg) : '13,000'} kg</div>
+                          <div style={{ fontSize: 13, fontWeight: 900, color: '#1e293b', marginTop: 2 }}>{inputs.machineLength || 14.5}m Largo x {inputs.machineWidth || 1.75}m Ancho x {inputs.machineHeight || 1.9}m Alto | Peso: {inputs.pesoKg && inputs.pesoKg !== 1000 ? new Intl.NumberFormat().format(inputs.pesoKg) : '1,800'} kg</div>
                         </div>
                         <div style={{ fontSize: 10, color: '#475569', fontWeight: 600 }}>
                           Estándar de Obra Civil de PANDORA v3.0
                         </div>
                       </div>
-
+                      
                       {renderPageFooter(++pdfPageIndex, totalPdfPages)}
                     </div>
                   </div>
                 )}
-
-                {/* PÁGINA 8+: GEMELO DIGITAL 3D */}
-                {pdfConfig.twin && snapshotPages.map((page, index) => {
-                  const pageSecNum = ++currentSectionIndex;
-                  return (
-                    <div key={index} className="pdf-page bg-white relative flex flex-col" style={S.page}>
-                      <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 20 }}>
-                        {renderPageHeader(`${pageSecNum}. Vista ${page.type.charAt(0).toUpperCase() + page.type.slice(1)}`, 'Renderizado CAD de alta resolución del equipo en configuración de planta')}
-                        
-                        <div style={{ flex: 1, border: '1px solid #e2e8f0', borderRadius: 16, background: '#edf4f9', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <img src={page.src} alt={page.type} style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center' }} />
-                        </div>
-
-                        <div style={{ background: '#f0fdfa', border: '1px solid #ccfbf1', borderRadius: 12, padding: 16, fontSize: 10, lineHeight: 1.5, color: '#334155', fontWeight: 600 }}>
-                          <span style={{ color: '#0f766e', fontWeight: 900, textTransform: 'uppercase', marginRight: 6 }}>Nota de Escala Visual ({page.type}): </span>
-                          Esta proyección tridimensional corresponde a la captura exacta de la Trituradora {inputs.machineName || 'WM-500'} evaluada bajo la perspectiva {page.type.toLowerCase()}. Las proporciones y el diseño representan el volumen real del equipo industrial proyectado en el software PANDORA 3.0.
-                        </div>
-                        
-                        {renderPageFooter(++pdfPageIndex, totalPdfPages)}
-                      </div>
-                    </div>
-                  );
-                })}
 
               </div>
             </div>
@@ -4653,3 +5882,4 @@ export default function WM500Simulator() {
     </div>
   );
 }
+

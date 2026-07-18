@@ -18,6 +18,14 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, Cell } from 'recharts';
+import TabPortada from './alpha/simulators/TabPortada';
+import TabTwin3D from './alpha/simulators/TabTwin3D';
+import TabMetricas from './alpha/simulators/TabMetricas';
+import { useFinancialEngine } from './alpha/simulators/useFinancialEngine';
+import DHLTabCapex from './alpha/simulators/DHLTabCapex';
+import DHLTabOpex from './alpha/simulators/DHLTabOpex';
+import DHLTabMantenimiento from './alpha/simulators/DHLTabMantenimiento';
+import DHLTabObraCivil from './alpha/simulators/DHLTabObraCivil';
 
 // Helper to generate letters (A, B, C...)
 function nextLetter(index) {
@@ -155,6 +163,10 @@ export default function RiderSimulatorPage() {
   // Estados de notificación de guardado
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+
+  // Motor Financiero Inyectado
+  const { finInputs, setFinInputs, finResults } = useFinancialEngine(simulatorId);
+  const [activeFinTab, setActiveFinTab] = useState('capex');
 
   const [productImageBase64, setProductImageBase64] = useState(() => {
     return localStorage.getItem(`sim_${simulatorId}_product_image_base64`) || '';
@@ -5038,6 +5050,51 @@ ${userMsg}
                 ))}
               </div>
             )}
+
+            {/* SECCIÓN FINANCIERA (Inyectada) */}
+            <div className="mt-8 border-t border-white/10 pt-8">
+              <h2 className="text-xl font-black text-white mb-6 uppercase tracking-widest flex items-center gap-3">
+                <span className="w-8 h-8 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center">
+                  <Calculator className="w-4 h-4" />
+                </span>
+                Viabilidad Financiera e Industrial
+              </h2>
+              
+              {/* TABS FINANCIEROS */}
+              <div className="flex flex-wrap bg-slate-900/50 backdrop-blur-md p-1.5 rounded-2xl gap-1 border border-white/5 mb-6 w-fit">
+                {[
+                  { id: 'capex', label: '1. CAPEX' },
+                  { id: 'opex', label: '2. OPEX' },
+                  { id: 'mantenimiento', label: '3. Riesgos y Mto.' },
+                  { id: 'obracivil', label: '4. Obra Civil' }
+                ].map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => setActiveFinTab(t.id)}
+                    className={`px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300
+                      ${activeFinTab === t.id 
+                        ? 'bg-blue-500 text-white shadow-[0_0_15px_rgba(59,130,246,0.3)]' 
+                        : 'text-gray-400 hover:text-white hover:bg-white/5'
+                      }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+
+              {activeFinTab === 'capex' && (
+                <DHLTabCapex inputs={finInputs} setInputs={setFinInputs} results={finResults} />
+              )}
+              {activeFinTab === 'opex' && (
+                <DHLTabOpex inputs={finInputs} setInputs={setFinInputs} results={finResults} />
+              )}
+              {activeFinTab === 'mantenimiento' && (
+                <DHLTabMantenimiento inputs={finInputs} setInputs={setFinInputs} />
+              )}
+              {activeFinTab === 'obracivil' && (
+                <DHLTabObraCivil inputs={finInputs} setInputs={setFinInputs} />
+              )}
+            </div>
 
           </div>
         </div>
