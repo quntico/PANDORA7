@@ -23,7 +23,7 @@ function HomePage() {
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-cyan-500/10 blur-[100px] rounded-full pointer-events-none" />
           
           <div className="max-w-5xl mx-auto space-y-8 px-6 relative z-10">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-950/30 border border-cyan-500/30 text-cyan-400 text-sm font-medium animate-in fade-in slide-in-from-top-4 duration-700">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-950/30 border border-cyan-500/30 text-cyan-400 text-sm font-medium transition-opacity duration-300">
               <Sparkles className="w-4 h-4" />
               <span>Potenciado por Inteligencia Artificial</span>
             </div>
@@ -38,7 +38,7 @@ function HomePage() {
             </p>
             
             {/* Chat Input Box Feature */}
-            <div className="py-10 animate-in slide-in-from-bottom-8 duration-1000">
+            <div className="py-10">
               <ChatInputBox />
             </div>
 

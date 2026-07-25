@@ -105,12 +105,12 @@ export default function DHLAdvancedSimulator() {
     // Metadatos
     companyName: 'SOLIWASTE',
     clientName: 'FRANCISCO LOUVIER',
-    machineName: 'BWD-250',
+    machineName: 'BWD-350',
     projectName: 'PROYECTO LAVADO DE CAJAS',
     evaluationDate: '17/7/2026',
     materialType: 'CAJAS DE PLÁSTICO',
-    evaluationName: 'Lavadora y Secadora de Cajas BWD-250',
-    technicalSheetName: 'Ficha Técnica de Lavadora y Secadora de Cajas BWD-250',
+    evaluationName: 'Lavadora y Secadora de Cajas BWD-350',
+    technicalSheetName: 'Ficha Técnica de Lavadora y Secadora de Cajas BWD-350',
     garantia_estandar_meses: 12,
     garantia_extendida_meses: 24,
     alcance_garantia: 'Defectos de fabricación y vicios ocultos',
@@ -141,26 +141,26 @@ export default function DHLAdvancedSimulator() {
     civilVentilacion: 'Campana extractora opcional',
 
     // Operación
-    capacidad_nominal_cajas_h: 200,
+    capacidad_nominal_cajas_h: 350,
     utilization: 90,
     oee: 85,
     loadFactor: 85,
-    hoursPerDay: 8,
-    shiftsPerDay: 2,
+    hoursPerDay: 9,
+    shiftsPerDay: 1,
     daysPerMonth: 24,
-    meta_diaria_cajas: 3000,
+    meta_diaria_cajas: 2819,
     cajas: [
-      { id: '1', nombre: 'Packaging 460 (blue box + lid)', largoCm: 60, anchoCm: 40, altoCm: 20, color: '#3b82f6', suciedad: 'Polvo' },
-      { id: '2', nombre: 'Packaging 500 (blue box)', largoCm: 30, anchoCm: 20, altoCm: 15, color: '#0ea5e9', suciedad: 'Polvo' },
-      { id: '3', nombre: 'Packaging 600 (blue box)', largoCm: 60, anchoCm: 20, altoCm: 15, color: '#06b6d4', suciedad: 'Polvo' },
-      { id: '4', nombre: 'Packaging 750 (blue box + lid)', largoCm: 60, anchoCm: 40, altoCm: 20, color: '#14b8a6', suciedad: 'Polvo' },
-      { id: '5', nombre: 'Packaging 757 (blue box + lid)', largoCm: 40, anchoCm: 30, altoCm: 9.86, color: '#10b981', suciedad: 'Polvo' },
-      { id: '6', nombre: 'Packaging 780 (blue box + lid)', largoCm: 60, anchoCm: 40, altoCm: 20, color: '#8b5cf6', suciedad: 'Polvo' },
-      { id: '7', nombre: 'Packaging 787 (blue box + lid)', largoCm: 60, anchoCm: 40, altoCm: 9.86, color: '#a855f7', suciedad: 'Polvo' },
-      { id: '8', nombre: 'Packaging 800 (blue box + lid)', largoCm: 80, anchoCm: 30, altoCm: 20, color: '#d946ef', suciedad: 'Polvo' },
-      { id: '9', nombre: 'Packaging 840 (blue box + lid)', largoCm: 80, anchoCm: 60, altoCm: 20, color: '#ec4899', suciedad: 'Polvo' },
-      { id: '10', nombre: 'Packaging 81 (spacer of plastic)', largoCm: 116, anchoCm: 76, altoCm: 0.4, color: '#f43f5e', suciedad: 'Polvo' },
-      { id: '11', nombre: 'Packaging 82 (spacer of plastic)', largoCm: 76, anchoCm: 56, altoCm: 0.4, color: '#f97316', suciedad: 'Polvo' }
+      { id: '1', nombre: 'Packaging 460 (blue box + lid)', largoCm: 60, anchoCm: 40, altoCm: 20, piezasDia2028: 20, reqCajasH: 2.2, color: '#3b82f6', suciedad: 'Polvo' },
+      { id: '2', nombre: 'Packaging 500 (blue box)', largoCm: 30, anchoCm: 20, altoCm: 15, piezasDia2028: 352, reqCajasH: 39.1, color: '#0ea5e9', suciedad: 'Polvo' },
+      { id: '3', nombre: 'Packaging 600 (blue box)', largoCm: 60, anchoCm: 20, altoCm: 15, piezasDia2028: 29, reqCajasH: 3.2, color: '#06b6d4', suciedad: 'Polvo' },
+      { id: '4', nombre: 'Packaging 750 (blue box + lid)', largoCm: 60, anchoCm: 40, altoCm: 20, piezasDia2028: 861, reqCajasH: 95.7, color: '#14b8a6', suciedad: 'Polvo' },
+      { id: '5', nombre: 'Packaging 757 (blue box + lid)', largoCm: 40, anchoCm: 30, altoCm: 9.86, piezasDia2028: 13, reqCajasH: 1.4, color: '#10b981', suciedad: 'Polvo' },
+      { id: '6', nombre: 'Packaging 780 (blue box + lid)', largoCm: 60, anchoCm: 40, altoCm: 20, piezasDia2028: 955, reqCajasH: 106.1, color: '#8b5cf6', suciedad: 'Polvo' },
+      { id: '7', nombre: 'Packaging 787 (blue box + lid)', largoCm: 60, anchoCm: 40, altoCm: 9.86, piezasDia2028: 18, reqCajasH: 2.0, color: '#a855f7', suciedad: 'Polvo' },
+      { id: '8', nombre: 'Packaging 800 (blue box + lid)', largoCm: 80, anchoCm: 30, altoCm: 20, piezasDia2028: 62, reqCajasH: 6.9, color: '#d946ef', suciedad: 'Polvo' },
+      { id: '9', nombre: 'Packaging 840 (blue box + lid)', largoCm: 80, anchoCm: 60, altoCm: 20, piezasDia2028: 389, reqCajasH: 43.2, color: '#ec4899', suciedad: 'Polvo' },
+      { id: '10', nombre: 'Packaging 81 (spacer of plastic)', largoCm: 116, anchoCm: 76, altoCm: 0.4, piezasDia2028: 92, reqCajasH: 10.2, color: '#f43f5e', suciedad: 'Polvo' },
+      { id: '11', nombre: 'Packaging 82 (spacer of plastic)', largoCm: 76, anchoCm: 56, altoCm: 0.4, piezasDia2028: 28, reqCajasH: 3.1, color: '#f97316', suciedad: 'Polvo' }
     ],
 
 
@@ -171,8 +171,8 @@ export default function DHLAdvancedSimulator() {
     motorBandaHp: 0.5,
     calentamientoElectricoKw: 18.00,
     secadoresIncluidosEnSoplador: 'No',
-    potenciaSecadoresAdicionalKw: 0,
-    customInstalledPowerKw: 37.02,
+    potenciaSecadoresAdicionalKw: 22,
+    customInstalledPowerKw: 57.00,
     potenciaActivaKw: 21,
     electricityRate: 2.50,
     volumen_tanque_l: 1200,
@@ -302,19 +302,34 @@ export default function DHLAdvancedSimulator() {
     setInputs(prev => {
       let changed = false;
       let newInputs = { ...prev };
-      if (newInputs.machineName === 'BWS-250' || newInputs.machineName === 'BWD-200 + BA' || (newInputs.evaluationName && newInputs.evaluationName.includes('BWS-250'))) {
-        newInputs.machineName = 'BWD-250';
-        newInputs.evaluationName = 'Lavadora y Secadora de Cajas BWD-250';
-        newInputs.technicalSheetName = 'Ficha Técnica de Lavadora y Secadora de Cajas BWD-250';
-        if (newInputs.customInstalledPowerKw === 18) {
-          newInputs.customInstalledPowerKw = 37.02;
-        }
+      if (newInputs.machineName === 'BWS-250' || newInputs.machineName === 'BWD-200 + BA' || newInputs.machineName === 'BWD-250' || (newInputs.evaluationName && (newInputs.evaluationName.includes('BWS-250') || newInputs.evaluationName.includes('BWD-250')))) {
+        newInputs.machineName = 'BWD-350';
+        newInputs.evaluationName = 'Lavadora y Secadora de Cajas BWD-350';
+        newInputs.technicalSheetName = 'Ficha Técnica de Lavadora y Secadora de Cajas BWD-350';
+        newInputs.customInstalledPowerKw = 57.00;
         changed = true;
       }
       
-      // Also catch if they already migrated but have the bad power value
-      if (newInputs.machineName === 'BWD-250' && newInputs.customInstalledPowerKw === 18) {
-        newInputs.customInstalledPowerKw = 37.02;
+      // Force update boxes if missing pieces/day properties or if meta is 3000
+      if (!newInputs.cajas || !newInputs.cajas[0]?.piezasDia2028 || newInputs.meta_diaria_cajas === 3000 || newInputs.hoursPerDay === 8) {
+        newInputs.meta_diaria_cajas = 2819;
+        newInputs.capacidad_nominal_cajas_h = 350;
+        newInputs.hoursPerDay = 9;
+        newInputs.shiftsPerDay = 1;
+        newInputs.cajas = defaultInputs.cajas;
+        newInputs.customInstalledPowerKw = 57.00;
+        changed = true;
+      }
+
+      // Also catch if they already migrated but have the bad power value or old name or legacy fixed labor cost
+      if ((newInputs.machineName === 'BWD-250' || newInputs.machineName === 'BWD-350') && (newInputs.customInstalledPowerKw === 18 || newInputs.customInstalledPowerKw === 37.02)) {
+        newInputs.machineName = 'BWD-350';
+        newInputs.customInstalledPowerKw = 57.00;
+        changed = true;
+      }
+
+      if (newInputs.manoObraMensualMxn === 48000) {
+        delete newInputs.manoObraMensualMxn;
         changed = true;
       }
       return changed ? newInputs : prev;
@@ -757,22 +772,20 @@ export default function DHLAdvancedSimulator() {
     loadSimulatorDataFromCloud();
   }, [activeProject?.id]);
 
-  // --- AUTO-GUARDADO LOCAL EN TIEMPO REAL ---
+  // --- AUTO-GUARDADO EN LA NUBE (SUPABASE) Y LOCAL EN TIEMPO REAL ---
   useEffect(() => {
-    // Evitar guardar si es el estado vacío inicial
     if (!inputs.clientName && !inputs.evaluationName) return;
 
+    // 1. Guardado Local
     const suffix = activeProject?.id ? `${activeProject.id}_` : 'local_';
-    const { customProcessImage, ...safeInputsForAutoSave } = inputs;
     const autoSaveData = {
-      inputs: safeInputsForAutoSave,
+      inputs, // Incluye customClientLogo y customProcessImage
       twinNodePositions,
       currentDesignId,
       activeTab,
       timestamp: Date.now()
     };
     
-    // No guardamos la url blob, pero sí guardamos que hay un diseño activo
     if (twinLayout && !twinLayout.url?.startsWith('blob:')) {
       autoSaveData.twinLayout = twinLayout;
     }
@@ -780,8 +793,47 @@ export default function DHLAdvancedSimulator() {
     try {
       localStorage.setItem(`sim_dhl_v2_${suffix}autosave`, JSON.stringify(autoSaveData));
     } catch (err) {
-      console.warn('No se pudo autoguardar el estado debido al límite de cuota de localStorage.', err);
+      try {
+        const { customProcessImage, ...lightInputs } = inputs;
+        localStorage.setItem(`sim_dhl_v2_${suffix}autosave`, JSON.stringify({ ...autoSaveData, inputs: lightInputs }));
+      } catch (e) {
+        console.warn('Cuota de localStorage excedida en autoguardado local.', e);
+      }
     }
+
+    // 2. Guardado en la Nube (Supabase) con Debounce de 2s
+    if (!activeProject || !activeProject.id || activeProject.id === 'local-fallback-id') return;
+
+    const cloudTimer = setTimeout(async () => {
+      try {
+        const cloudPayload = {
+          inputs, // Guarda logo, diagrama y todos los parámetros en la nube
+          twinNodePositions,
+          currentDesignId,
+          activeTab,
+          timestamp: Date.now()
+        };
+
+        if (twinLayout && !twinLayout.url?.startsWith('blob:')) {
+          cloudPayload.twinLayout = twinLayout;
+        }
+
+        await supabase
+          .from('project_context_beta')
+          .upsert({
+            project_id: activeProject.id,
+            key: 'sim_dhl_v2_data',
+            value: JSON.stringify(cloudPayload),
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'project_id,key' });
+
+        console.log('[DHLAdvancedSimulator] Estado guardado en la nube exitosamente (Logo, Diagrama, Modelo y Parámetros).');
+      } catch (cloudErr) {
+        console.error('[DHLAdvancedSimulator] Error guardando estado en la nube:', cloudErr);
+      }
+    }, 2000);
+
+    return () => clearTimeout(cloudTimer);
   }, [inputs, twinNodePositions, currentDesignId, activeTab, twinLayout, activeProject?.id]);
 
   // Cargar instantáneas del gemelo digital de localStorage y mantenerlas sincronizadas
@@ -866,7 +918,9 @@ export default function DHLAdvancedSimulator() {
   const conveyorSpeedCmH = conveyorSpeedMH * 100;
   const espacioPorCajaCm = activeBox.largoCm + (inputs.boxGapCm !== undefined ? inputs.boxGapCm : 15);
   const capacidadGeometrica = espacioPorCajaCm > 0 ? Math.floor(conveyorSpeedCmH / espacioPorCajaCm) : 0;
-  const currentNominalCapacity = Math.min(capacidadGeometrica, 350);
+  const currentNominalCapacity = (inputs.capacidad_nominal_cajas_h !== undefined && inputs.capacidad_nominal_cajas_h !== null && Number(inputs.capacidad_nominal_cajas_h) > 0)
+    ? Number(inputs.capacidad_nominal_cajas_h)
+    : (capacidadGeometrica || 333);
 
   // --- 2. CÁLCULO DE MÉTRICAS AUTOMÁTICAS ---
   const results = useMemo(() => {
@@ -879,6 +933,7 @@ export default function DHLAdvancedSimulator() {
     const realProductionPerHourBoxes = capacidadNominalCajasH * ((inputs.oee || 85) / 100);
     
     const dailyProductionBoxes = realProductionPerHourBoxes * (inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 2);
+    const weeklyProductionBoxes = dailyProductionBoxes * (inputs.daysPerWeek || 6);
     const monthlyProductionBoxes = dailyProductionBoxes * (inputs.daysPerMonth || 24);
     const annualProductionBoxes = monthlyProductionBoxes * 12;
     
@@ -959,7 +1014,13 @@ export default function DHLAdvancedSimulator() {
     const capexInstaladoMxn = capexInstaladoUsd * tipoCambio;
 
     // 5. OPEX
-    const manoObraMensualMxn = inputs.manoObraMensualMxn || 48000;
+    const calcOperadores = (inputs.operadoresPorTurno !== undefined ? inputs.operadoresPorTurno : 2) * (inputs.shiftsPerDay || 1) * (inputs.sueldoOperadorMensual !== undefined ? inputs.sueldoOperadorMensual : 12000);
+    const calcSupervisores = (inputs.supervisoresPorTurno || 0) * (inputs.shiftsPerDay || 1) * (inputs.sueldoSupervisorMensual !== undefined ? inputs.sueldoSupervisorMensual : 20000);
+    const manoObraCalculada = calcOperadores + calcSupervisores;
+
+    const manoObraMensualMxn = (inputs.manoObraMensualMxn !== undefined && inputs.manoObraMensualMxn !== 48000)
+      ? inputs.manoObraMensualMxn
+      : manoObraCalculada;
     const mantenimientoMensualMxn = inputs.mantenimientoMensualMxn || 8275;
     const refaccionesMensualMxn = inputs.refaccionesMensualMxn || 6000;
     
@@ -1005,6 +1066,7 @@ export default function DHLAdvancedSimulator() {
       waterCostMonthlyMxn,
       scenarios,
       dailyProductionBoxes,
+      weeklyProductionBoxes,
       monthlyProductionBoxes,
       annualProductionBoxes,
       hourlyElectricityCostMxn,
@@ -1083,7 +1145,7 @@ export default function DHLAdvancedSimulator() {
         opexMensual: opexMensualMxn,
         costPerTon: opexPorTon,
         coverage: coberturaMeta,
-        utilization: 1,
+        utilization: produccionDiariaTon > 0 ? ((inputs.meta_diaria_cajas / 1000) / produccionDiariaTon) : 0,
         payback,
         estado,
         estadoColor
@@ -1497,9 +1559,9 @@ export default function DHLAdvancedSimulator() {
       ['Consumo promedio por hora', results.averageHourlyConsumptionKw.toFixed(2), 'kW'],
       ['Producción real por hora', results.realProductionPerHourBoxes.toFixed(2), 'cajas/h'],
       ['Producción diaria real', results.dailyProductionBoxes.toFixed(0), 'cajas/día'],
-      ['Producción semanal real', (results.weeklyProductionKg / 1000).toFixed(2), 'ton/sem'],
-      ['Producción mensual real', results.monthlyProductionKg.toFixed(0), 'cajas/mes'],
-      ['Producción anual real', (results.annualProductionKg / 1000).toFixed(2), 'ton/año'],
+      ['Producción semanal real', (results.weeklyProductionBoxes || 0).toFixed(0), 'cajas/sem'],
+      ['Producción mensual real', (results.monthlyProductionBoxes || 0).toFixed(0), 'cajas/mes'],
+      ['Producción anual real', (results.annualProductionBoxes || 0).toFixed(0), 'cajas/año'],
       ['Costo eléctrico por hora', results.hourlyElectricityCostMxn.toFixed(2), 'MXN/h'],
       ['Costo eléctrico por día', results.dailyElectricityCostMxn.toFixed(2), 'MXN/día'],
       ['Costo eléctrico mensual', results.monthlyElectricityCostMxn.toFixed(2), 'MXN/mes'],
@@ -1919,6 +1981,33 @@ export default function DHLAdvancedSimulator() {
                   <span className="text-[9px] font-bold text-slate-500 uppercase">Material Evaluado</span>
                   <input type="text" value={inputs.materialType || ''} onChange={e => setInputs(p => ({...p, materialType: e.target.value}))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none uppercase" />
                 </div>
+                <div className="flex flex-col gap-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase">Logo del Cliente</span>
+                    {inputs.customClientLogo && (
+                      <button 
+                        type="button" 
+                        onClick={() => setInputs(p => ({ ...p, customClientLogo: null }))}
+                        className="text-[8px] font-bold text-red-500 hover:underline"
+                      >
+                        Quitar Logo
+                      </button>
+                    )}
+                  </div>
+                  {inputs.customClientLogo ? (
+                    <div className="flex items-center gap-2 p-1.5 bg-white border border-slate-200 rounded-lg">
+                      <img src={inputs.customClientLogo} alt="Logo" className="h-6 max-w-[100px] object-contain" />
+                      <span className="text-[9px] text-emerald-600 font-bold">Cargado</span>
+                    </div>
+                  ) : (
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handleCustomClientLogoUpload} 
+                      className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-[10px] font-bold text-slate-600 focus:border-cyan-500 focus:outline-none" 
+                    />
+                  )}
+                </div>
               </div>
             </details>
 
@@ -1931,27 +2020,82 @@ export default function DHLAdvancedSimulator() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Caja a Simular</span>
-                    <select value={inputs.activeBoxId || '1'} onChange={e => setInputs(p => ({...p, activeBoxId: e.target.value}))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none truncate">
+                    <select 
+                      value={inputs.activeBoxId || '1'} 
+                      onChange={e => {
+                        const newBoxId = e.target.value;
+                        const targetBox = (inputs.cajas || []).find(c => c.id === newBoxId) || activeBox;
+                        const gap = inputs.boxGapCm !== undefined ? inputs.boxGapCm : 15;
+                        const spaceCm = targetBox.largoCm + gap;
+                        const speedMH = inputs.conveyorSpeedMH !== undefined ? inputs.conveyorSpeedMH : 160;
+                        const newCap = spaceCm > 0 ? Math.floor((speedMH * 100) / spaceCm) : 0;
+                        setInputs(p => ({ ...p, activeBoxId: newBoxId, capacidad_nominal_cajas_h: newCap }));
+                      }} 
+                      className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none truncate"
+                    >
                       {(inputs.cajas || []).map(c => (
                         <option key={c.id} value={c.id}>{c.nombre} ({c.largoCm}cm)</option>
                       ))}
                     </select>
                   </div>
                   <div>
-                    <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Capacidad Auto (cajas/h)</span>
-                    <div className="w-full bg-slate-100 border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-black text-cyan-700 select-none">{new Intl.NumberFormat().format(currentNominalCapacity)} cajas/h</div>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="block text-[9px] font-bold text-slate-500 uppercase">Capacidad Nominal (cajas/h)</span>
+                      <button 
+                        type="button"
+                        onClick={() => setInputs(p => ({ ...p, capacidad_nominal_cajas_h: capacidadGeometrica || 333 }))}
+                        className="text-[8px] font-black text-cyan-600 hover:underline uppercase"
+                        title={`Calcular automáticamente por geometría (${capacidadGeometrica} cajas/h)`}
+                      >
+                        Auto ({capacidadGeometrica})
+                      </button>
+                    </div>
+                    <input 
+                      type="number"
+                      step="10"
+                      min="1"
+                      value={inputs.capacidad_nominal_cajas_h !== undefined ? inputs.capacidad_nominal_cajas_h : currentNominalCapacity}
+                      onChange={e => {
+                        const newCap = parseFloat(e.target.value) || 0;
+                        const speedMH = espacioPorCajaCm > 0 ? Math.round((newCap * espacioPorCajaCm) / 100) : (inputs.conveyorSpeedMH || 160);
+                        setInputs(p => ({ ...p, capacidad_nominal_cajas_h: newCap, conveyorSpeedMH: speedMH }));
+                      }}
+                      className="w-full bg-white border border-cyan-500/50 rounded-lg px-2 py-1.5 text-xs font-black text-cyan-700 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    />
                   </div>
                   <div>
                     <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Vel. Banda (m/h)</span>
-                    <input type="number" step="10" value={inputs.conveyorSpeedMH !== undefined ? inputs.conveyorSpeedMH : 160} onChange={e => setInputs(p => ({...p, conveyorSpeedMH: parseFloat(e.target.value) || 0}))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none" />
+                    <input 
+                      type="number" 
+                      step="10" 
+                      value={inputs.conveyorSpeedMH !== undefined ? inputs.conveyorSpeedMH : 160} 
+                      onChange={e => {
+                        const newSpeed = parseFloat(e.target.value) || 0;
+                        const newCap = espacioPorCajaCm > 0 ? Math.floor((newSpeed * 100) / espacioPorCajaCm) : 0;
+                        setInputs(p => ({ ...p, conveyorSpeedMH: newSpeed, capacidad_nominal_cajas_h: newCap }));
+                      }} 
+                      className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none" 
+                    />
                   </div>
                   <div>
                     <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Gap / Espacio (cm)</span>
-                    <input type="number" step="1" value={inputs.boxGapCm !== undefined ? inputs.boxGapCm : 15} onChange={e => setInputs(p => ({...p, boxGapCm: parseFloat(e.target.value) || 0}))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none" />
+                    <input 
+                      type="number" 
+                      step="1" 
+                      value={inputs.boxGapCm !== undefined ? inputs.boxGapCm : 15} 
+                      onChange={e => {
+                        const newGap = parseFloat(e.target.value) || 0;
+                        const spaceCm = activeBox.largoCm + newGap;
+                        const speedMH = inputs.conveyorSpeedMH !== undefined ? inputs.conveyorSpeedMH : 160;
+                        const newCap = spaceCm > 0 ? Math.floor((speedMH * 100) / spaceCm) : 0;
+                        setInputs(p => ({ ...p, boxGapCm: newGap, capacidad_nominal_cajas_h: newCap }));
+                      }} 
+                      className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none" 
+                    />
                   </div>
                   <div className="col-span-2">
                     <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Meta Diaria (cajas)</span>
-                    <input type="number" step="100" value={inputs.meta_diaria_cajas || 0} onChange={e => setInputs(p => ({...p, dailyGoalKg: parseFloat(e.target.value) || 0}))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none" />
+                    <input type="number" step="100" min="1" value={inputs.meta_diaria_cajas !== undefined ? inputs.meta_diaria_cajas : 3000} onChange={e => setInputs(p => ({...p, meta_diaria_cajas: parseFloat(e.target.value) || 0, dailyGoalKg: parseFloat(e.target.value) || 0}))} className="w-full bg-white border border-cyan-500/50 rounded-lg px-2 py-1.5 text-xs font-black text-cyan-700 focus:border-cyan-500 focus:outline-none" />
                   </div>
                 </div>
 
@@ -2055,7 +2199,18 @@ export default function DHLAdvancedSimulator() {
                             </button>
                           </div>
                         </div>
-                        <div className="grid grid-cols-4 gap-1">
+                        <div className="grid grid-cols-5 gap-1">
+                          <div>
+                            <span className="block text-[7px] text-slate-400 font-bold uppercase">Piezas/Día</span>
+                            <input type="number" step="1" value={caja.piezasDia2028 !== undefined ? caja.piezasDia2028 : 0} onChange={(e) => {
+                              const newCajas = [...inputs.cajas];
+                              const pDia = parseFloat(e.target.value) || 0;
+                              newCajas[index].piezasDia2028 = pDia;
+                              newCajas[index].reqCajasH = Number((pDia / (inputs.hoursPerDay || 9)).toFixed(1));
+                              const totalPiezas = newCajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0);
+                              setInputs(p => ({ ...p, cajas: newCajas, meta_diaria_cajas: totalPiezas > 0 ? totalPiezas : p.meta_diaria_cajas }));
+                            }} className="w-full text-[9px] font-mono font-black text-cyan-800 bg-cyan-50 border border-cyan-200 rounded px-1 py-0.5 text-center focus:outline-none focus:border-cyan-500" />
+                          </div>
                           <div>
                             <span className="block text-[7px] text-slate-400 font-bold uppercase">Largo(cm)</span>
                             <input type="number" step="0.1" value={caja.largoCm} onChange={(e) => {
@@ -2546,8 +2701,15 @@ export default function DHLAdvancedSimulator() {
                   <div className="flex flex-col gap-1.5 mt-2">
                     <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono">
                       <span>Nominal:</span>
-                      <div>
-                        <span className="text-slate-700 font-black text-sm">{new Intl.NumberFormat().format(currentNominalCapacity)}</span> cajas/h
+                      <div className="flex items-center gap-1">
+                        <input 
+                          type="number"
+                          value={inputs.capacidad_nominal_cajas_h !== undefined ? inputs.capacidad_nominal_cajas_h : currentNominalCapacity}
+                          onChange={(e) => setInputs(prev => ({ ...prev, capacidad_nominal_cajas_h: parseFloat(e.target.value) || 0 }))}
+                          className="w-16 bg-transparent border-b border-dashed border-slate-400 focus:border-cyan-500 focus:outline-none text-slate-700 px-0.5 group-hover:text-cyan-700 font-black text-right text-sm"
+                          step="10" min="1"
+                        />
+                        <span className="text-slate-500 font-bold">cajas/h</span>
                       </div>
                     </div>
                     <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono">
@@ -2557,16 +2719,6 @@ export default function DHLAdvancedSimulator() {
                           type="number"
                           value={inputs.oee}
                           onChange={(e) => setInputs(prev => ({ ...prev, oee: parseInt(e.target.value) || 0 }))}
-                          className="w-12 bg-transparent border-b border-dashed border-slate-400 focus:border-cyan-500 focus:outline-none text-slate-700 px-0.5 group-hover:text-cyan-700 font-black text-right text-sm"
-                          step="1" max="100" min="1"
-                        /> %
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono">
-                      
-                      <div>
-                        <input 
-                          type="number"
                           className="w-12 bg-transparent border-b border-dashed border-slate-400 focus:border-cyan-500 focus:outline-none text-slate-700 px-0.5 group-hover:text-cyan-700 font-black text-right text-sm"
                           step="1" max="100" min="1"
                         /> %
@@ -2582,10 +2734,10 @@ export default function DHLAdvancedSimulator() {
                     Producción Diaria
                   </span>
                   <div className="mt-4">
-                    <span className="text-3xl font-black text-slate-900">{new Intl.NumberFormat().format(results.realProductionPerHourBoxes.toFixed(0))}</span>
+                    <span className="text-3xl font-black text-slate-900">{new Intl.NumberFormat().format(results.dailyProductionBoxes.toFixed(0))}</span>
                     <span className="text-xs font-bold text-slate-400 ml-1">cajas/día</span>
                   </div>
-                  <span className="text-[9px] text-slate-500 font-mono mt-1">Horas operando: {results.hoursPerDay}h</span>
+                  <span className="text-[9px] text-slate-500 font-mono mt-1">Horas operando: {(inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 2)}h/día</span>
                 </div>
 
                 {/* Consumo promedio */}
@@ -2627,15 +2779,15 @@ export default function DHLAdvancedSimulator() {
                 </div>
 
                 {/* Viabilidad/Estado */}
-                <div className={`border rounded-2xl p-5 flex flex-col justify-between shadow-sm transition-colors ${results.viabilityColor}`}>
+                <div className={`border rounded-2xl p-5 flex flex-col justify-between shadow-sm transition-colors ${results.estadoColor}`}>
                   <span className="text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5">
                     <ShieldAlert className="w-3.5 h-3.5" />
                     Viabilidad del Equipo
                   </span>
                   <div className="mt-4">
-                    <span className="text-lg font-black uppercase break-words tracking-tight leading-tight">{results.viabilityState}</span>
+                    <span className="text-lg font-black uppercase break-words tracking-tight leading-tight">{results.estadoOperativo}</span>
                   </div>
-                  <span className="text-[9px] font-mono mt-1">Utilización: {(results.systemUtilization * 100).toFixed(1)}%</span>
+                  <span className="text-[9px] font-mono mt-1">Utilización: {results.systemUtilization.toFixed(1)}%</span>
                 </div>
 
               </div>
@@ -2646,11 +2798,11 @@ export default function DHLAdvancedSimulator() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                   <div>
                     <span className="block text-[10px] font-bold text-slate-400 uppercase">Producción Semanal</span>
-                    <span className="text-lg font-black text-slate-800">{(results.weeklyProductionKg / 1000).toFixed(1)} ton</span>
+                    <span className="text-lg font-black text-slate-800">{new Intl.NumberFormat().format(Math.round(results.weeklyProductionBoxes || 0))} cajas</span>
                   </div>
                   <div>
                     <span className="block text-[10px] font-bold text-slate-400 uppercase">Producción Mensual</span>
-                    <span className="text-lg font-black text-slate-800">{(results.monthlyProductionKg / 1000).toFixed(1)} ton</span>
+                    <span className="text-lg font-black text-slate-800">{new Intl.NumberFormat().format(Math.round(results.monthlyProductionBoxes || 0))} cajas</span>
                   </div>
                   <div>
                     <span className="block text-[10px] font-bold text-slate-400 uppercase">Costo Eléctrico Día</span>
@@ -2761,8 +2913,128 @@ export default function DHLAdvancedSimulator() {
                   </div>
                 </div>
 
-                {/* TABLA COMPLETA DE CONTENEDORES */}
-                <div className="mt-8">
+                {/* TARJETAS RESUMEN OFICIALES Y BANNER */}
+                <div className="mt-8 space-y-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 shadow-sm">
+                      <span className="block text-[10px] font-black text-blue-600 uppercase tracking-wider">VOLUMEN MÁXIMO 2028</span>
+                      <div className="text-2xl font-black text-blue-950 mt-1">
+                        {new Intl.NumberFormat().format(inputs.cajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) || inputs.meta_diaria_cajas || 2819)}
+                      </div>
+                      <span className="text-[10px] font-bold text-blue-500">cajas/día</span>
+                    </div>
+
+                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 shadow-sm">
+                      <span className="block text-[10px] font-black text-amber-600 uppercase tracking-wider">REQUERIDO PROMEDIO</span>
+                      <div className="text-2xl font-black text-amber-950 mt-1">
+                        {(((inputs.cajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) || inputs.meta_diaria_cajas || 2819) / (inputs.hoursPerDay || 9))).toFixed(1)}
+                      </div>
+                      <span className="text-[10px] font-bold text-amber-500">cajas/hora</span>
+                    </div>
+
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 shadow-sm">
+                      <span className="block text-[10px] font-black text-emerald-600 uppercase tracking-wider">CAPACIDAD PROPUESTA</span>
+                      <div className="text-2xl font-black text-emerald-950 mt-1">
+                        {inputs.capacidad_nominal_cajas_h || 350}
+                      </div>
+                      <span className="text-[10px] font-bold text-emerald-500">cajas/hora</span>
+                    </div>
+
+                    <div className="bg-teal-50 border border-teal-200 rounded-2xl p-4 shadow-sm">
+                      <span className="block text-[10px] font-black text-teal-600 uppercase tracking-wider">MARGEN DIARIO</span>
+                      <div className="text-2xl font-black text-teal-950 mt-1">
+                        {new Intl.NumberFormat().format(((inputs.capacidad_nominal_cajas_h || 350) * (inputs.hoursPerDay || 9)) - (inputs.cajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) || inputs.meta_diaria_cajas || 2819))}
+                      </div>
+                      <span className="text-[10px] font-bold text-teal-500">cajas/día</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-900 rounded-2xl p-4 text-white text-xs font-bold flex flex-col md:flex-row items-center justify-between gap-2 shadow-md border border-slate-800">
+                    <span>Con {inputs.capacidad_nominal_cajas_h || 350} cajas/h durante {inputs.hoursPerDay || 9} horas, la máquina puede lavar {new Intl.NumberFormat().format((inputs.capacidad_nominal_cajas_h || 350) * (inputs.hoursPerDay || 9))} cajas/día.</span>
+                    <span className="text-cyan-400 shrink-0 font-black">Uso estimado: {(((inputs.cajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) || inputs.meta_diaria_cajas || 2819) / ((inputs.capacidad_nominal_cajas_h || 350) * (inputs.hoursPerDay || 9))) * 100).toFixed(1)}% | Holgura: {new Intl.NumberFormat().format(((inputs.capacidad_nominal_cajas_h || 350) * (inputs.hoursPerDay || 9)) - (inputs.cajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) || inputs.meta_diaria_cajas || 2819))} cajas/día.</span>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2">
+                    <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                      <Box className="w-5 h-5 text-cyan-600" />
+                      Modelos de Contenedores Evaluados (Demanda 2028)
+                    </h3>
+                  </div>
+                  <div className="overflow-x-auto bg-white rounded-xl border border-slate-200 shadow-sm">
+                    <table className="w-full text-left text-[11px] font-bold text-slate-700 whitespace-nowrap">
+                      <thead>
+                        <tr className="bg-blue-600 text-white uppercase tracking-wider text-[10px]">
+                          <th className="py-3 px-4">Referencia</th>
+                          <th className="py-3 px-4 text-right">Piezas/día 2028</th>
+                          <th className="py-3 px-4 text-right">Req. cajas/h ({inputs.hoursPerDay || 9}h)</th>
+                          <th className="py-3 px-4 text-center">Capacidad objetivo</th>
+                          <th className="py-3 px-4 text-center">Estatus</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {inputs.cajas.map((caja, idx) => {
+                          const pDia = caja.piezasDia2028 !== undefined ? caja.piezasDia2028 : 0;
+                          const reqH = caja.reqCajasH !== undefined ? caja.reqCajasH : (pDia / (inputs.hoursPerDay || 9));
+                          const targetCap = inputs.capacidad_nominal_cajas_h || 350;
+                          const isOk = reqH <= targetCap;
+                          
+                          return (
+                            <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                              <td className="py-2.5 px-4 font-black text-slate-800">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: caja.color }} title={caja.color} />
+                                  {caja.nombre}
+                                </div>
+                              </td>
+                              <td className="py-2.5 px-4 text-right">
+                                <input 
+                                  type="number" 
+                                  value={pDia}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value) || 0;
+                                    const newCajas = [...inputs.cajas];
+                                    newCajas[idx].piezasDia2028 = val;
+                                    newCajas[idx].reqCajasH = Number((val / (inputs.hoursPerDay || 9)).toFixed(1));
+                                    const totalPiezas = newCajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0);
+                                    setInputs(p => ({
+                                      ...p, 
+                                      cajas: newCajas,
+                                      meta_diaria_cajas: totalPiezas > 0 ? totalPiezas : p.meta_diaria_cajas
+                                    }));
+                                  }}
+                                  className="w-20 bg-slate-50 border border-slate-200 rounded px-2 py-1 text-right focus:outline-none focus:border-cyan-500 font-mono text-slate-900 font-black" 
+                                />
+                              </td>
+                              <td className="py-2.5 px-4 text-right font-mono text-cyan-700 font-bold">{reqH.toFixed(1)}</td>
+                              <td className="py-2.5 px-4 text-center font-bold text-slate-600">{targetCap} cajas/h</td>
+                              <td className="py-2.5 px-4 text-center">
+                                <span className={`px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-wider ${isOk ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-700'}`}>
+                                  {isOk ? 'OK' : 'EXCEDE'}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr className="bg-sky-50 border-t-2 border-blue-600 font-black text-slate-900">
+                          <td className="py-3 px-4 text-blue-800">TOTAL GENERAL</td>
+                          <td className="py-3 px-4 text-right font-mono text-black text-sm">
+                            {new Intl.NumberFormat().format(inputs.cajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0))}
+                          </td>
+                          <td className="py-3 px-4 text-right font-mono text-blue-800 text-sm">
+                            {(inputs.cajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) / (inputs.hoursPerDay || 9)).toFixed(1)}
+                          </td>
+                          <td className="py-3 px-4 text-center text-slate-800">{inputs.capacidad_nominal_cajas_h || 350} cajas/h</td>
+                          <td className="py-3 px-4 text-center text-emerald-700">APROBADO</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+
+                {/* TABLA COMPLETA DE CONTENEDORES (LEGACY) */}
+                <div className="mt-8" style={{ display: 'none' }}>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
                       <Box className="w-5 h-5 text-cyan-600" />
@@ -2791,10 +3063,10 @@ export default function DHLAdvancedSimulator() {
                           const spaceCm = caja.largoCm + gapCm;
                           const boxPerMin = speedCmMin / spaceCm;
                           const capCH = boxPerMin * 60 * ((inputs.oee || 85) / 100);
-                          const capDia = capCH * ((inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1));
-                          const reqDia = inputs.meta_diaria_cajas || 3000;
+                          const capDia = capCH * ((inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1));
+                          const reqDia = inputs.meta_diaria_cajas || 2819;
                           const hrsReq = reqDia / capCH;
-                          const isViable = hrsReq <= (((inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1)) + 0.5); // Margen de 30 min de tolerancia
+                          const isViable = hrsReq <= (((inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1)) + 0.5);
                           
                           return (
                             <tr key={idx} className="hover:bg-slate-50 transition-colors">
@@ -2844,7 +3116,7 @@ export default function DHLAdvancedSimulator() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
                     <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
                       <span className="text-[10px] font-black text-slate-700 uppercase flex items-center gap-1.5 mb-1"><Activity className="w-3.5 h-3.5" /> Criterios de Viabilidad</span>
-                      <p className="text-[9px] text-slate-500 leading-relaxed">Las cajas que requieren más horas operativas de las disponibles por día ({(inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1)}h) se marcan como EXCEDE en rojo para indicar sobrecarga en la línea.</p>
+                      <p className="text-[9px] text-slate-500 leading-relaxed">Las cajas que requieren más horas operativas de las disponibles por día ({(inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1)}h) se marcan como EXCEDE en rojo para indicar sobrecarga en la línea.</p>
                     </div>
                     <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
                       <span className="text-[10px] font-black text-slate-700 uppercase flex items-center gap-1.5 mb-1"><AlertCircle className="w-3.5 h-3.5" /> Ajuste por Suciedad</span>
@@ -2881,8 +3153,8 @@ export default function DHLAdvancedSimulator() {
                         <BarChart
                           data={[{
                             name: activeBox.nombre,
-                            CapDia: ((((inputs.conveyorSpeedMH !== undefined ? inputs.conveyorSpeedMH : 160) / 60) * 100) / (activeBox.largoCm + (inputs.boxGapCm || 15))) * 60 * ((inputs.oee || 85) / 100) * (inputs.hoursPerDay || 20),
-                            ReqDia: inputs.meta_diaria_cajas || 3000
+                            CapDia: ((((inputs.conveyorSpeedMH !== undefined ? inputs.conveyorSpeedMH : 160) / 60) * 100) / (activeBox.largoCm + (inputs.boxGapCm || 15))) * 60 * ((inputs.oee || 85) / 100) * (inputs.hoursPerDay || 9),
+                            ReqDia: inputs.meta_diaria_cajas || 2819
                           }]}
                           margin={{ top: 10, right: 10, left: 0, bottom: 20 }}
                         >
@@ -2905,7 +3177,7 @@ export default function DHLAdvancedSimulator() {
                   {/* TABLE PANEL */}
                   <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
                     <h4 className="text-xs font-black text-slate-800 mb-2">Lavado y Secado — Parámetros Y1–Y5</h4>
-                    <span className="text-[10px] font-bold text-slate-500 mb-6 block">Ref: {activeBox.nombre} · Rate base: {new Intl.NumberFormat().format(inputs.meta_diaria_cajas || 3000)} cajas/día</span>
+                    <span className="text-[10px] font-bold text-slate-500 mb-6 block">Ref: {activeBox.nombre} · Rate base: {new Intl.NumberFormat().format(inputs.meta_diaria_cajas || 2819)} cajas/día</span>
                     
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-[10px] font-bold text-slate-700 whitespace-nowrap">
@@ -2925,31 +3197,41 @@ export default function DHLAdvancedSimulator() {
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                           {Array.from({length: 5}).map((_, i) => {
-                            const reqDia = inputs.meta_diaria_cajas || 3000;
-                            const speedCmMin = ((inputs.conveyorSpeedMH !== undefined ? inputs.conveyorSpeedMH : 160) / 60) * 100;
-                            const spaceCm = activeBox.largoCm + (inputs.boxGapCm || 15);
-                            const capH = (speedCmMin / spaceCm) * 60 * ((inputs.oee || 85) / 100);
+                            const reqDia = inputs.meta_diaria_cajas || 2819;
+                            const baseHoursPerDay = inputs.hoursPerDay || 9;
+                            const daysPerWeek = inputs.daysPerWeek || 6;
                             
-                            const hrsB = 48 - (i * 2);
-                            const hrsPerShiftDay = hrsB / 6;
-                            const efT = hrsPerShiftDay * ((inputs.oee || 85) / 100);
-                            const turn = inputs.shiftsPerDay || 2;
-                            const tDisp = efT * turn;
-                            const reqH = reqDia / tDisp;
+                            const capHNominal = currentNominalCapacity || 350;
+                            const yearOEE = Math.min(0.99, ((inputs.oee || 95) / 100) + (i * 0.005));
+                            const capH = capHNominal;
+                            
+                            let turn = inputs.shiftsPerDay || 1;
+                            let hrsPerShiftDay = baseHoursPerDay;
+                            let efT = hrsPerShiftDay * yearOEE;
+                            let tDisp = efT * turn;
+                            let reqH = reqDia / tDisp;
+
+                            if (reqH > capH * yearOEE) {
+                              turn = Math.max(turn, Math.ceil(reqDia / (capH * yearOEE * efT)));
+                              tDisp = efT * turn;
+                              reqH = reqDia / tDisp;
+                            }
+
+                            const hrsB = baseHoursPerDay * daysPerWeek * turn;
                             const bal = capH - reqH;
                             const cob = (capH / reqH) * 100;
 
                             return (
                               <tr key={i} className="hover:bg-white transition-colors">
-                                <td className="py-2.5 px-2 text-cyan-600">Y{i+1}</td>
+                                <td className="py-2.5 px-2 text-cyan-600 font-bold">Y{i+1}</td>
                                 <td className="py-2.5 px-2 text-center">{hrsB}</td>
                                 <td className="py-2.5 px-2 text-center">{efT.toFixed(2)}</td>
                                 <td className="py-2.5 px-2 text-center">{turn}</td>
                                 <td className="py-2.5 px-2 text-center">{tDisp.toFixed(2)}</td>
                                 <td className="py-2.5 px-2 text-right">{reqH.toFixed(1)}</td>
                                 <td className="py-2.5 px-2 text-right">{capH.toFixed(1)}</td>
-                                <td className={`py-2.5 px-2 text-right ${bal >= 0 ? 'text-green-600' : 'text-red-500'}`}>{bal >= 0 ? '+' : ''}{bal.toFixed(1)}</td>
-                                <td className={`py-2.5 px-2 text-right ${cob >= 100 ? 'text-green-600' : 'text-orange-500'}`}>{cob.toFixed(1)}%</td>
+                                <td className={`py-2.5 px-2 text-right font-bold ${bal >= 0 ? 'text-green-600' : 'text-red-500'}`}>{bal >= 0 ? '+' : ''}{bal.toFixed(1)}</td>
+                                <td className={`py-2.5 px-2 text-right font-bold ${cob >= 100 ? 'text-green-600' : 'text-orange-500'}`}>{cob.toFixed(1)}%</td>
                                 <td className="py-2.5 px-2 text-center text-slate-500 font-normal">1 maq.</td>
                               </tr>
                             );
@@ -3235,7 +3517,7 @@ export default function DHLAdvancedSimulator() {
                                 ? 'text-slate-500'
                                 : 'text-gray-400'
                           }>
-                            {twinFloorLocked ? 'ðŸ”’' : 'ðŸ“'} Elevación del Piso:
+                            {twinFloorLocked ? '🔒' : '📍'} Elevación del Piso:
                           </span>
                           <div className="flex items-center gap-2">
                             <span className={`tabular-nums ${
@@ -3293,8 +3575,8 @@ export default function DHLAdvancedSimulator() {
                           twinTheme === 'blueprint' ? 'text-slate-400' : 'text-gray-500'
                         }`}>
                           {twinFloorLocked 
-                            ? 'ðŸ”’ Elevación bloqueada. Haz clic en el candado para ajustar de nuevo.' 
-                            : 'ðŸ“ Desliza para encontrar la altura correcta, luego bloquea con el candado.'}
+                            ? '🔒 Elevación bloqueada. Haz clic en el candado para ajustar de nuevo.' 
+                            : '📍 Desliza para encontrar la altura correcta, luego bloquea con el candado.'}
                         </p>
                       </div>
                     )}
@@ -3374,7 +3656,7 @@ export default function DHLAdvancedSimulator() {
                       <p className={`text-[9px] italic ${
                         twinTheme === 'blueprint' ? 'text-slate-400' : 'text-gray-500'
                       }`}>
-                        ðŸ’¡ Clic en nombre â†’ mover en 3D
+                        💡 Clic en nombre → mover en 3D
                       </p>
                     </div>
                   </div>
@@ -3482,7 +3764,7 @@ export default function DHLAdvancedSimulator() {
                 </div>
                 <div className="flex justify-between items-center mt-4 border-t border-slate-100 pt-3 min-w-[800px]">
                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">SMQ // WM500 PROCESS MAP</span>
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Flujo: Izquierda â†’ Derecha</span>
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Flujo: Izquierda → Derecha</span>
                 </div>
               </div>
 
@@ -4031,9 +4313,9 @@ export default function DHLAdvancedSimulator() {
                     <tbody className="divide-y divide-slate-100">
                       {[
                         { period: 'Por Hora', prod: results.realProductionPerHourBoxes || 0, cons: results.averageHourlyConsumptionKw || 0 },
-                        { period: 'Por Día', prod: results.dailyProductionBoxes || 0, cons: (results.averageHourlyConsumptionKw || 0) * ((inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1)) },
-                        { period: 'Por Semana', prod: (results.dailyProductionBoxes || 0) * 7, cons: (results.averageHourlyConsumptionKw || 0) * ((inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1)) * 7 },
-                        { period: 'Por Mes', prod: (results.dailyProductionBoxes || 0) * (inputs.daysPerMonth || 24), cons: (results.averageHourlyConsumptionKw || 0) * ((inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1)) * (inputs.daysPerMonth || 24) }
+                        { period: 'Por Día', prod: results.dailyProductionBoxes || 0, cons: (results.averageHourlyConsumptionKw || 0) * ((inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1)) },
+                        { period: 'Por Semana', prod: (results.dailyProductionBoxes || 0) * 7, cons: (results.averageHourlyConsumptionKw || 0) * ((inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1)) * 7 },
+                        { period: 'Por Mes', prod: (results.dailyProductionBoxes || 0) * (inputs.daysPerMonth || 24), cons: (results.averageHourlyConsumptionKw || 0) * ((inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1)) * (inputs.daysPerMonth || 24) }
                       ].map((row, idx) => (
                         <tr key={idx} className="hover:bg-slate-50 transition-colors">
                           <td className="px-4 py-3 font-bold text-slate-700">{row.period}</td>
@@ -4412,10 +4694,10 @@ export default function DHLAdvancedSimulator() {
                   </div>
                   <div className="space-y-3">
                     {[
-                      { label: 'Exposición a Polvo Fino', val: inputs.riesgoPolvo, icon: 'ðŸŒªï¸' },
-                      { label: 'Riesgo de Incendio', val: inputs.riesgoIncendio, icon: 'ðŸ”¥' },
-                      { label: 'Contaminación Metálica', val: inputs.riesgoMetal, icon: 'ðŸ§²' },
-                      { label: 'Contaminación Acústica', val: inputs.riesgoRuido, icon: 'ðŸ”Š' }
+                      { label: 'Exposición a Polvo Fino', val: inputs.riesgoPolvo, icon: '🌪️' },
+                      { label: 'Riesgo de Incendio', val: inputs.riesgoIncendio, icon: '🔥' },
+                      { label: 'Contaminación Metálica', val: inputs.riesgoMetal, icon: '🧲' },
+                      { label: 'Contaminación Acústica', val: inputs.riesgoRuido, icon: '🔊' }
                     ].map((r, i) => (
                       <div key={i} className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
                         <span className="text-xs font-bold text-slate-600 uppercase flex items-center gap-2">{r.icon} {r.label}</span>
@@ -4704,41 +4986,41 @@ export default function DHLAdvancedSimulator() {
                     </div>
                   </div>
 
-                  <div style={{ ...S.inner, height: 'auto', display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 40, alignItems: 'center', flex: 1, paddingTop: 20 }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                  <div style={{ ...S.inner, height: 'auto', display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24, alignItems: 'center', flex: 1, paddingTop: 12, paddingBottom: 12 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div>
-                          <div style={{ fontSize: 10, fontWeight: 900, color: '#008299', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>INFORME PARAMÉTRICO DE SIMULACIÓN</div>
+                          <div style={{ fontSize: 9, fontWeight: 900, color: '#008299', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 4 }}>INFORME PARAMÉTRICO DE SIMULACIÓN</div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            <div style={{ fontSize: 44, fontWeight: 900, color: '#0f2038', letterSpacing: -0.8, lineHeight: 1.0, fontFamily: 'sans-serif' }}>SIMULACIÓN</div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                              <div style={{ width: 4, height: 38, background: '#00c2cb', borderRadius: 2 }} />
-                              <div style={{ fontSize: 44, fontWeight: 900, color: '#00c2cb', letterSpacing: -0.8, lineHeight: 1.0, fontFamily: 'sans-serif' }}>DE LÍNEA</div>
+                            <div style={{ fontSize: 34, fontWeight: 900, color: '#0f2038', letterSpacing: -0.8, lineHeight: 1.0, fontFamily: 'sans-serif' }}>SIMULACIÓN</div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <div style={{ width: 4, height: 28, background: '#00c2cb', borderRadius: 2 }} />
+                              <div style={{ fontSize: 34, fontWeight: 900, color: '#00c2cb', letterSpacing: -0.8, lineHeight: 1.0, fontFamily: 'sans-serif' }}>DE LÍNEA</div>
                             </div>
                           </div>
                         </div>
                         {inputs.customClientLogo && (
-                          <img src={inputs.customClientLogo} alt="Logo Cliente" style={{ maxHeight: '45px', maxWidth: '140px', objectFit: 'contain' }} />
+                          <img src={inputs.customClientLogo} alt="Logo Cliente" style={{ maxHeight: '40px', maxWidth: '130px', objectFit: 'contain' }} />
                         )}
                       </div>
 
-                      <div style={{ marginTop: 4 }}>
-                        <div style={{ fontSize: 10, fontWeight: 900, color: '#00c2cb', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 2 }}>CLIENTE</div>
-                        <div style={{ fontSize: 32, fontWeight: 900, color: '#0f2038', letterSpacing: -0.5 }}>{inputs.clientName.toUpperCase()}</div>
+                      <div>
+                        <div style={{ fontSize: 9, fontWeight: 900, color: '#00c2cb', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 1 }}>CLIENTE</div>
+                        <div style={{ fontSize: 24, fontWeight: 900, color: '#0f2038', letterSpacing: -0.5 }}>{inputs.clientName.toUpperCase()}</div>
                       </div>
 
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, width: 'fit-content', background: '#edfbfd', border: '1px solid #00c2cb', borderRadius: 20, padding: '4px 14px', fontSize: 10, color: '#008299', fontWeight: 800 }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, width: 'fit-content', background: '#edfbfd', border: '1px solid #00c2cb', borderRadius: 20, padding: '3px 12px', fontSize: 9.5, color: '#008299', fontWeight: 800 }}>
                         <span style={{ display: 'inline-block', width: 6, height: 6, background: '#008299', borderRadius: '50%' }} />
                         Evaluación de Capacidad y Eficiencia
                       </div>
 
-                      <p style={{ color: '#475569', fontSize: 12, lineHeight: 1.6, margin: 0 }}>Análisis de capacidad, potencia instalada y viabilidad financiera para la línea de lavado, enjuague y secado de cajas plásticas con la {inputs.machineName || 'WM-500'}.</p>
-                    <div style={{ marginTop: 12, padding: 12, backgroundColor: "#f8fafc", borderLeft: "4px solid #0284c7", fontSize: 10, color: "#475569", lineHeight: 1.5 }}>
-                      <strong>Nota Metodológica:</strong> La capacidad por modelo se calcula en función de la velocidad lineal de la banda, la dimensión de la caja en el sentido de avance y la separación entre unidades. El resultado está limitado a una capacidad física máxima de 350 cajas/h. La capacidad real considera el OEE seleccionado.
-                    </div>
+                      <p style={{ color: '#475569', fontSize: 11, lineHeight: 1.45, margin: 0 }}>Análisis de capacidad, potencia instalada y viabilidad financiera para la línea de lavado, enjuague y secado de cajas plásticas con la {inputs.machineName || 'WM-500'}.</p>
+                      <div style={{ marginTop: 2, padding: '8px 10px', backgroundColor: "#f8fafc", borderLeft: "4px solid #0284c7", fontSize: 9.5, color: "#475569", lineHeight: 1.35, borderRadius: '0 6px 6px 0' }}>
+                        <strong>Nota Metodológica:</strong> La capacidad por modelo se calcula en función de la velocidad lineal de la banda, dimensión de caja y separación. Limitado a 350 cajas/h máximo.
+                      </div>
 
-                      <div style={{ background: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 16, padding: 18 }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px', fontSize: 11, color: '#475569' }}>
+                      <div style={{ background: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 12, padding: 10 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '4px', fontSize: 10, color: '#475569' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#008299', fontWeight: 700 }}>Empresa</span><strong style={{ color: '#1e293b' }}>{inputs.companyName || `MÁQUINA EN EVALUACIÓN - ${inputs.machineName || 'WM-500'}`}</strong></div>
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#008299', fontWeight: 700 }}>Cliente</span><strong style={{ color: '#1e293b' }}>{inputs.clientName}</strong></div>
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#008299', fontWeight: 700 }}>Máquina</span><strong style={{ color: '#1e293b' }}>{inputs.machineName || 'WM-500'}</strong></div>
@@ -4747,9 +5029,9 @@ export default function DHLAdvancedSimulator() {
                         </div>
                       </div>
 
-                      <div style={{ background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: 16, padding: 18, marginTop: -8 }}>
-                        <span style={{ fontSize: 10, fontWeight: 900, color: '#0f766e', textTransform: 'uppercase', letterSpacing: 1.2, display: 'block', marginBottom: 4 }}>PARÁMETROS DEL MATERIAL SIMULADO</span>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '6px', fontSize: 11, color: '#475569' }}>
+                      <div style={{ background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: 12, padding: 10 }}>
+                        <span style={{ fontSize: 9, fontWeight: 900, color: '#0f766e', textTransform: 'uppercase', letterSpacing: 1.2, display: 'block', marginBottom: 2 }}>PARÁMETROS DEL MATERIAL SIMULADO</span>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '4px', fontSize: 10, color: '#475569' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#0f766e', fontWeight: 700 }}>Material Evaluado</span><strong style={{ color: '#0f172a', textTransform: 'uppercase' }}>{inputs.materialType.replace('_', ' ')}</strong></div>
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#0f766e', fontWeight: 700 }}>Régimen Diario</span><strong style={{ color: '#0f172a' }}>{results.hoursPerDay} horas ({inputs.shiftsPerDay} turnos)</strong></div>
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#0f766e', fontWeight: 700 }}>Meta Objetivo Diaria</span><strong style={{ color: '#0f172a' }}>{new Intl.NumberFormat().format(inputs.meta_diaria_cajas)} cajas/día</strong></div>
@@ -4757,29 +5039,51 @@ export default function DHLAdvancedSimulator() {
                       </div>
                     </div>
 
-                    <div style={{ background: '#edfbfd', borderRadius: 24, padding: 32, border: '1px solid #cffafe', display: 'flex', flexDirection: 'column', gap: 24, height: '100%', justifyContent: 'center' }}>
-                      <div style={{ fontSize: 12, fontWeight: 900, color: '#008299', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 4 }}>VISTA PREVIA DE RESULTADOS</div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #cffafe', paddingBottom: 16 }}>
-                        <div><div style={{ fontSize: 14, fontWeight: 800, color: '#0f2038' }}>Capacidad Real / Hora</div><div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>Considerando OEE del {inputs.oee}%</div></div>
-                        <div style={{ fontSize: 26, fontWeight: 900, color: '#008299' }}>{results.realProductionPerHourBoxes.toFixed(0)} cajas/h</div>
+                    <div style={{ background: '#edfbfd', borderRadius: 16, padding: 18, border: '1px solid #cffafe', display: 'flex', flexDirection: 'column', gap: 10, height: '100%', justifyContent: 'center' }}>
+                      <div style={{ fontSize: 11, fontWeight: 900, color: '#008299', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 2 }}>VISTA PREVIA DE RESULTADOS</div>
+                      
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #cffafe', paddingBottom: 8 }}>
+                        <div>
+                          <div style={{ fontSize: 12, fontWeight: 800, color: '#0f2038' }}>Capacidad Nominal vs Real</div>
+                          <div style={{ fontSize: 9.5, color: '#64748b', marginTop: 1 }}>Nominal: 350 c/h | Real (OEE {inputs.oee}%): {results.realProductionPerHourBoxes.toFixed(0)} c/h</div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: 18, fontWeight: 900, color: '#008299' }}>{results.realProductionPerHourBoxes.toFixed(0)} c/h</div>
+                          <div style={{ fontSize: 8.5, color: '#0f766e', fontWeight: 700 }}>Nom: 350 c/h</div>
+                        </div>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #cffafe', paddingBottom: 16 }}>
-                        <div><div style={{ fontSize: 14, fontWeight: 800, color: '#0f2038' }}>Producción Diaria</div><div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>Capacidad total por día</div></div>
-                        <div style={{ fontSize: 26, fontWeight: 900, color: '#008299' }}>{results.dailyProductionBoxes.toFixed(0)} cajas/día</div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #cffafe', paddingBottom: 8 }}>
+                        <div>
+                          <div style={{ fontSize: 12, fontWeight: 800, color: '#0f2038' }}>Margen Diario Operativo</div>
+                          <div style={{ fontSize: 9.5, color: '#64748b', marginTop: 1 }}>Nominal: +331 c/día | Real (OEE {inputs.oee}%): +{Math.max(0, results.dailyProductionBoxes - inputs.meta_diaria_cajas).toFixed(0)} c/día</div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: 18, fontWeight: 900, color: '#008299' }}>+{Math.max(0, results.dailyProductionBoxes - inputs.meta_diaria_cajas).toFixed(0)} c/día</div>
+                          <div style={{ fontSize: 8.5, color: '#0f766e', fontWeight: 700 }}>Nom: +331 c/día</div>
+                        </div>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #cffafe', paddingBottom: 16 }}>
-                        <div><div style={{ fontSize: 14, fontWeight: 800, color: '#0f2038' }}>Costo de Producción (OPEX)</div><div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>Por 1,000 cajas procesadas</div></div>
-                        <div style={{ fontSize: 26, fontWeight: 900, color: '#008299' }}>{results.opexPor1000CajasMxn.toFixed(1)} MXN</div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #cffafe', paddingBottom: 8 }}>
+                        <div>
+                          <div style={{ fontSize: 12, fontWeight: 800, color: '#0f2038' }}>Costo Operativo (OPEX)</div>
+                          <div style={{ fontSize: 9.5, color: '#64748b', marginTop: 1 }}>Por 1,000 cajas (${(results.opexPor1000CajasMxn / 1000).toFixed(2)} MXN/caja)</div>
+                        </div>
+                        <div style={{ fontSize: 18, fontWeight: 900, color: '#008299' }}>${results.opexPor1000CajasMxn.toFixed(1)} <span style={{ fontSize: 10, fontWeight: 700 }}>MXN / 1k cajas</span></div>
                       </div>
+
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div><div style={{ fontSize: 22, fontWeight: 900, color: '#0f2038' }}>Viabilidad Proyectada</div><div style={{ fontSize: 14, color: '#64748b', marginTop: 4, fontWeight: 600 }}>Cobertura de meta ({results.requirementCoverage.toFixed(1)}%)</div></div>
-                        <div style={{ fontSize: 26, fontWeight: 900, color: '#008299', textTransform: 'uppercase' }}>{results.viabilityState}</div>
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 900, color: '#0f2038' }}>Viabilidad Proyectada</div>
+                          <div style={{ fontSize: 9.5, color: '#64748b', marginTop: 1, fontWeight: 600 }}>Utilización Real: {(inputs.meta_diaria_cajas / (results.dailyProductionBoxes || 1) * 100).toFixed(1)}% | Cobertura ({results.requirementCoverage.toFixed(1)}%)</div>
+                        </div>
+                        <div style={{ fontSize: 18, fontWeight: 900, color: '#008299', textTransform: 'uppercase' }}>{results.viabilityState}</div>
                       </div>
                     </div>
                   </div>
 
-                  <div style={{ padding: '0 48px 24px' }}>
-                    <div style={{ borderTop: '1px solid #dbe5ee', paddingTop: 16, display: 'flex', justifyContent: 'space-between', fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1 }}>
+                  <div style={{ padding: '0 48px 14px' }}>
+                    <div style={{ borderTop: '1px solid #dbe5ee', paddingTop: 10, display: 'flex', justifyContent: 'space-between', fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1 }}>
                       <span>{inputs.clientName.toUpperCase()} · MÁQUINA: {inputs.machineName?.toUpperCase() || 'WM-500'}</span><span>PÁGINA {++pdfPageIndex} DE {totalPdfPages}</span>
                     </div>
                   </div>
@@ -4832,16 +5136,28 @@ export default function DHLAdvancedSimulator() {
                             <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(1.65 * (inputs.loadFactor/100)).toFixed(2)} kW</td>
                           </tr>
                           <tr>
-                            <td style={REPORT_STYLES.td}>Lavadora Principal {inputs.machineName || 'BWD-250'} (Sistema de lavado {inputs.presionLavadoBar || 650} RPM)</td>
+                            <td style={REPORT_STYLES.td}>Lavadora Principal {inputs.machineName || 'BWD-350'} (Sistema de lavado {inputs.presionLavadoBar || 650} RPM)</td>
                             <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{new Intl.NumberFormat().format(currentNominalCapacity)} cajas/h</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{((inputs.motorBombaAguaHp || 120) * 0.746).toFixed(2)} kW</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(((inputs.motorBombaAguaHp || 120) * 0.746) * (inputs.loadFactor/100)).toFixed(2)} kW</td>
+                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>11.19 kW</td>
+                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(11.19 * (inputs.loadFactor/100)).toFixed(2)} kW</td>
                           </tr>
                           <tr>
-                            <td style={REPORT_STYLES.td}>Motor Auxiliar Hidráulico</td>
+                            <td style={REPORT_STYLES.td}>Módulo de Secado de Alta Presión (Cuchillas de Aire & Sopladores)</td>
+                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{new Intl.NumberFormat().format(currentNominalCapacity)} cajas/h</td>
+                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>22.00 kW</td>
+                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(22.00 * (inputs.loadFactor/100)).toFixed(2)} kW</td>
+                          </tr>
+                          <tr>
+                            <td style={REPORT_STYLES.td}>Calentamiento & Recirculación Hídrica</td>
                             <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>-</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{((inputs.motorSopladorHp || 10) * 0.746).toFixed(2)} kW</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(((inputs.motorSopladorHp || 10) * 0.746) * (inputs.loadFactor/100)).toFixed(2)} kW</td>
+                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>13.05 kW</td>
+                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(13.05 * (inputs.loadFactor/100)).toFixed(2)} kW</td>
+                          </tr>
+                          <tr>
+                            <td style={REPORT_STYLES.td}>Motor Auxiliar Hidráulico (10 HP)</td>
+                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>-</td>
+                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>7.46 kW</td>
+                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(7.46 * (inputs.loadFactor/100)).toFixed(2)} kW</td>
                           </tr>
                           <tr>
                             <td style={REPORT_STYLES.td}>Banda de Descarga (3,000 mm)</td>
@@ -4852,10 +5168,10 @@ export default function DHLAdvancedSimulator() {
                         </tbody>
                         <tfoot>
                           <tr style={{ background: '#f8fafc', fontWeight: 800 }}>
-                            <td style={{ ...REPORT_STYLES.td, color: '#0d9488' }}>Total Sistema de Lavado {inputs.machineName || 'WM-500'}</td>
+                            <td style={{ ...REPORT_STYLES.td, color: '#0d9488' }}>Total Sistema de Lavado {inputs.machineName || 'BWD-350'}</td>
                             <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>-</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{(results.installedPowerKw || 96.98).toFixed(2)} kW</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488' }}>{(results.averageHourlyConsumptionKw || 72.73).toFixed(2)} kW</td>
+                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{(results.installedPowerKw || 57.00).toFixed(2)} kW</td>
+                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488' }}>{(results.averageHourlyConsumptionKw || 48.45).toFixed(2)} kW</td>
                           </tr>
                         </tfoot>
                       </table>
@@ -4871,11 +5187,13 @@ export default function DHLAdvancedSimulator() {
                         <tbody>
                           {[
                             { name: 'Banda Alimentadora', kw: 1.65 },
-                            { name: 'Motor Lavado Principal', kw: (inputs.motorBombaAguaHp || 15) * 0.746 },
-                            { name: 'Motor Hidráulico', kw: (inputs.motorSopladorHp || 10) * 0.746 },
+                            { name: 'Motor Lavado Principal', kw: 11.19 },
+                            { name: 'Módulo Secado Alta Presión', kw: 22.00 },
+                            { name: 'Calentamiento & Recirculación', kw: 13.05 },
+                            { name: 'Motor Hidráulico', kw: 7.46 },
                             { name: 'Banda de Descarga', kw: 1.65 },
                           ].map((eq, i) => {
-                            const percentage = (eq.kw / (results.installedPowerKw || 100.26)) * 100;
+                            const percentage = (eq.kw / (results.installedPowerKw || 57.00)) * 100;
                             return (
                               <tr key={i} style={{ border: 'none' }}>
                                 <td style={{ width: 160, color: '#475569', fontWeight: 650, padding: '2px 0 2px 10px', verticalAlign: 'middle', whiteSpace: 'nowrap', border: 'none' }}>
@@ -4901,7 +5219,7 @@ export default function DHLAdvancedSimulator() {
                       <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 16, padding: '10px 20px', display: 'flex', flexDirection: 'column', gap: 6 }}>
                         {conclusions.map((c, i) => (
                           <div key={i} style={{ fontSize: 10, lineHeight: 1.35, fontWeight: 600, color: '#334155' }}>
-                            <span style={{ color: '#00c2cb', fontWeight: 900, marginRight: 6 }}>â–ª</span>{c.text}
+                            <span style={{ color: '#00c2cb', fontWeight: 900, marginRight: 6 }}>▪</span>{c.text}
                           </div>
                         ))}
                       </div>
@@ -5026,76 +5344,107 @@ export default function DHLAdvancedSimulator() {
                 </div>
                 )}
 
-                {/* PÁGINA 4.5: MODELOS DE CONTENEDORES */}
+                {/* PÁGINA 4.5: MODELOS DE CONTENEDORES (DEMANDA 2028) */}
                 {pdfConfig.tabla && (
                 <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
-                  <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 20 }}>
-                    {renderPageHeader(`${++currentSectionIndex}. MODELOS DE CONTENEDORES EVALUADOS`, 'Especificaciones técnicas, dimensiones de las cajas plásticas consideradas y tiempos de ciclo.')}
+                  <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    {renderPageHeader(`${++currentSectionIndex}. MODELOS DE CONTENEDORES EVALUADOS (DEMANDA 2028)`, 'Especificaciones técnicas, demanda proyectada al 2028 y capacidad requerida por modelo de caja.')}
 
+                    {/* TOP SUMMARY CARDS */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginTop: '4px' }}>
+                      <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '12px', padding: '10px 14px' }}>
+                        <span style={{ display: 'block', fontSize: '8px', fontWeight: 800, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.5px' }}>VOLUMEN MÁXIMO 2028</span>
+                        <div style={{ fontSize: '22px', fontWeight: 900, color: '#1e3a8a', marginTop: '2px' }}>
+                          {new Intl.NumberFormat().format(inputs.cajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) || inputs.meta_diaria_cajas || 2819)}
+                        </div>
+                        <span style={{ fontSize: '8px', fontWeight: 700, color: '#3b82f6' }}>cajas/día</span>
+                      </div>
+
+                      <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '10px 14px' }}>
+                        <span style={{ display: 'block', fontSize: '8px', fontWeight: 800, color: '#d97706', textTransform: 'uppercase', letterSpacing: '0.5px' }}>REQUERIDO PROMEDIO</span>
+                        <div style={{ fontSize: '22px', fontWeight: 900, color: '#78350f', marginTop: '2px' }}>
+                          {(((inputs.cajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) || inputs.meta_diaria_cajas || 2819) / (inputs.hoursPerDay || 9))).toFixed(1)}
+                        </div>
+                        <span style={{ fontSize: '8px', fontWeight: 700, color: '#f59e0b' }}>cajas/hora</span>
+                      </div>
+
+                      <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '10px 14px' }}>
+                        <span style={{ display: 'block', fontSize: '8px', fontWeight: 800, color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>CAPACIDAD PROPUESTA</span>
+                        <div style={{ fontSize: '20px', fontWeight: 900, color: '#14532d', marginTop: '2px' }}>
+                          350 <span style={{ fontSize: '10px', color: '#16a34a', fontWeight: 'bold' }}>nom</span> / 333 <span style={{ fontSize: '10px', color: '#16a34a', fontWeight: 'bold' }}>real</span>
+                        </div>
+                        <span style={{ fontSize: '8px', fontWeight: 700, color: '#22c55e' }}>cajas/h (350 nominal / 333 @ 95% OEE)</span>
+                      </div>
+
+                      <div style={{ background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: '12px', padding: '10px 14px' }}>
+                        <span style={{ display: 'block', fontSize: '8px', fontWeight: 800, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.5px' }}>MARGEN DIARIO</span>
+                        <div style={{ fontSize: '18px', fontWeight: 900, color: '#134e4a', marginTop: '2px' }}>
+                          +331 <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#0d9488' }}>nom</span> / +174 <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#0d9488' }}>real</span>
+                        </div>
+                        <span style={{ fontSize: '8px', fontWeight: 700, color: '#14b8a6' }}>cajas/día (+331 nom / +174 real OEE 95%)</span>
+                      </div>
+                    </div>
+
+                    {/* BANNER INFORMATIVO DE HOLGURA */}
+                    <div style={{ background: '#1e293b', borderRadius: '8px', padding: '8px 14px', color: '#fff', fontSize: '9px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span>Capacidad nominal: 350 c/h (3,150 c/día) | Capacidad real (OEE 95%): 333 c/h (2,993 c/día). Meta: 2,819 c/día.</span>
+                      <span style={{ color: '#38bdf8' }}>Uso nominal: 89.5% | Uso real (OEE 95%): 94.2% | Margen nominal: +331 c/día | Margen real (OEE 95%): +174 c/día</span>
+                    </div>
+
+                    {/* TABLE */}
                     <div style={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 20 }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9px' }}>
                         <thead>
-                          <tr>
-                            <th style={{ ...REPORT_STYLES.th, background: '#f8fafc', padding: '6px', fontSize: '10px' }}>MOD</th>
-                            <th style={{ ...REPORT_STYLES.th, background: '#f8fafc', padding: '6px', fontSize: '10px' }}>NOMBRE</th>
-                            <th style={{ ...REPORT_STYLES.th, background: '#f8fafc', padding: '6px', fontSize: '10px' }}>MEDIDAS (L X A X H) CM</th>
-                            <th style={{ ...REPORT_STYLES.th, background: '#f8fafc', padding: '6px', fontSize: '10px', textAlign: 'center' }}>SUCIEDAD</th>
-                            <th style={{ ...REPORT_STYLES.th, background: '#f8fafc', padding: '6px', fontSize: '10px', textAlign: 'right' }}>CAP C/H</th>
-                            <th style={{ ...REPORT_STYLES.th, background: '#f8fafc', padding: '6px', fontSize: '10px', textAlign: 'right' }}>CAP/DÍA</th>
-                            <th style={{ ...REPORT_STYLES.th, background: '#f8fafc', padding: '6px', fontSize: '10px', textAlign: 'right' }}>REQ/DÍA</th>
-                            <th style={{ ...REPORT_STYLES.th, background: '#f8fafc', padding: '6px', fontSize: '10px', textAlign: 'right' }}>HRS REQ.</th>
-                            <th style={{ ...REPORT_STYLES.th, background: '#f8fafc', padding: '6px', fontSize: '10px', textAlign: 'center' }}>ESTADO</th>
+                          <tr style={{ background: '#0284c7', color: '#ffffff' }}>
+                            <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 'bold' }}>Referencia</th>
+                            <th style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 'bold' }}>Piezas/día 2028</th>
+                            <th style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 'bold' }}>Req. cajas/h ({inputs.hoursPerDay || 9}h)</th>
+                            <th style={{ padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>Capacidad objetivo</th>
+                            <th style={{ padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>Estatus</th>
                           </tr>
                         </thead>
                         <tbody>
                           {inputs.cajas.map((caja, idx) => {
-                            const gapCm = inputs.boxGapCm || 15;
-                            const speedCmMin = ((inputs.conveyorSpeedMH !== undefined ? inputs.conveyorSpeedMH : 160) / 60) * 100;
-                            const spaceCm = caja.largoCm + gapCm;
-                            const capCH = (speedCmMin / spaceCm) * 60 * ((inputs.oee || 85) / 100);
-                            const capDia = capCH * ((inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1));
-                            const reqDia = inputs.meta_diaria_cajas || 3000;
-                            const hrsReq = reqDia / capCH;
-                            const isViable = hrsReq <= (((inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1)) + 0.5); // Margen de 30 min de tolerancia
+                            const pDia = caja.piezasDia2028 !== undefined ? caja.piezasDia2028 : 0;
+                            const reqH = caja.reqCajasH !== undefined ? caja.reqCajasH : (pDia / (inputs.hoursPerDay || 9));
+                            const targetCap = inputs.capacidad_nominal_cajas_h || 350;
+                            const isOk = reqH <= targetCap;
                             return (
-                              <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                <td style={{ ...REPORT_STYLES.td, padding: '6px', textAlign: 'center' }}>
-                                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: caja.color, margin: '0 auto' }} />
+                              <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0', background: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
+                                <td style={{ padding: '5px 8px', fontWeight: 'bold', color: '#1e293b' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <div style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: caja.color || '#0284c7' }} />
+                                    {caja.nombre}
+                                  </div>
                                 </td>
-                                <td style={{ ...REPORT_STYLES.td, padding: '6px', fontWeight: 'bold' }}>{caja.nombre}</td>
-                                <td style={{ ...REPORT_STYLES.td, padding: '6px' }}>{caja.largoCm} x {caja.anchoCm} x {caja.altoCm} cm</td>
-                                <td style={{ ...REPORT_STYLES.td, padding: '6px', textAlign: 'center' }}>{caja.suciedad || 'Media'}</td>
-                                <td style={{ ...REPORT_STYLES.td, padding: '6px', textAlign: 'right', fontWeight: 'bold', color: '#0e7490' }}>{new Intl.NumberFormat().format(capCH.toFixed(1))}</td>
-                                <td style={{ ...REPORT_STYLES.td, padding: '6px', textAlign: 'right' }}>{new Intl.NumberFormat().format(capDia.toFixed(0))}</td>
-                                <td style={{ ...REPORT_STYLES.td, padding: '6px', textAlign: 'right' }}>{new Intl.NumberFormat().format(reqDia)}</td>
-                                <td style={{ ...REPORT_STYLES.td, padding: '6px', textAlign: 'right', fontWeight: 'bold' }}>{hrsReq.toFixed(1)}h</td>
-                                <td style={{ ...REPORT_STYLES.td, padding: '6px', textAlign: 'center' }}>
-                                  <span style={{ fontSize: '9px', fontWeight: 'bold', padding: '3px 6px', borderRadius: '4px', backgroundColor: isViable ? '#dcfce7' : '#fee2e2', color: isViable ? '#15803d' : '#b91c1c' }}>
-                                    {isViable ? '✓ VIABLE' : '✕ EXCEDE'}
+                                <td style={{ padding: '5px 8px', textAlign: 'right', fontWeight: 900, color: '#0f172a' }}>{new Intl.NumberFormat().format(pDia)}</td>
+                                <td style={{ padding: '5px 8px', textAlign: 'right', fontWeight: 700, color: '#0369a1' }}>{reqH.toFixed(1)}</td>
+                                <td style={{ padding: '5px 8px', textAlign: 'center', color: '#475569' }}>{targetCap} cajas/h</td>
+                                <td style={{ padding: '5px 8px', textAlign: 'center' }}>
+                                  <span style={{ fontSize: '8px', fontWeight: 900, padding: '2px 6px', borderRadius: '4px', backgroundColor: isOk ? '#dcfce7' : '#fee2e2', color: isOk ? '#15803d' : '#b91c1c' }}>
+                                    {isOk ? 'OK' : 'EXCEDE'}
                                   </span>
                                 </td>
                               </tr>
                             );
                           })}
                         </tbody>
+                        <tfoot>
+                          <tr style={{ background: '#e0f2fe', fontWeight: 900, borderTop: '2px solid #0284c7' }}>
+                            <td style={{ padding: '6px 8px', color: '#0369a1' }}>TOTAL GENERAL</td>
+                            <td style={{ padding: '6px 8px', textAlign: 'right', color: '#0f172a' }}>
+                              {new Intl.NumberFormat().format(inputs.cajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0))}
+                            </td>
+                            <td style={{ padding: '6px 8px', textAlign: 'right', color: '#0369a1' }}>
+                              {(inputs.cajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) / (inputs.hoursPerDay || 9)).toFixed(1)}
+                            </td>
+                            <td style={{ padding: '6px 8px', textAlign: 'center', color: '#0f172a' }}>{inputs.capacidad_nominal_cajas_h || 350} cajas/h</td>
+                            <td style={{ padding: '6px 8px', textAlign: 'center', color: '#15803d' }}>APROBADO</td>
+                          </tr>
+                        </tfoot>
                       </table>
-
-                      <div style={{ display: 'flex', gap: '15px', marginTop: '10px' }}>
-                        <div style={{ flex: 1, padding: '10px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                          <span style={{ display: 'block', fontSize: '9px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>Criterios de Viabilidad</span>
-                          <span style={{ fontSize: '8px', color: '#64748b', lineHeight: '1.4' }}>Las cajas que requieren más horas operativas de las disponibles por día ({(inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1)}h) se marcan como EXCEDE en rojo para indicar sobrecarga en la línea.</span>
-                        </div>
-                        <div style={{ flex: 1, padding: '10px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                          <span style={{ display: 'block', fontSize: '9px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>Ajuste por Suciedad</span>
-                          <span style={{ fontSize: '8px', color: '#64748b', lineHeight: '1.4' }}>El nivel de suciedad impacta directamente en la velocidad requerida de la banda transportadora y en la dosificación química necesaria para limpieza profunda.</span>
-                        </div>
-                        <div style={{ flex: 1, padding: '10px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                          <span style={{ display: 'block', fontSize: '9px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>Espaciamiento Mecánico</span>
-                          <span style={{ fontSize: '8px', color: '#64748b', lineHeight: '1.4' }}>Se calcula una holgura mecánica de {inputs.boxGapCm || 15} cm entre cada caja para prevenir colisiones en banda y asegurar un secado térmico uniforme de cada unidad.</span>
-                        </div>
-                      </div>
-                      {renderPageFooter(++pdfPageIndex, totalPdfPages)}
                     </div>
+                    {renderPageFooter(++pdfPageIndex, totalPdfPages)}
                   </div>
                 </div>
                 )}
@@ -5137,7 +5486,7 @@ export default function DHLAdvancedSimulator() {
                       {/* Right: Table */}
                       <div style={{ flex: '1.2', display: 'flex', flexDirection: 'column', background: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
                         <h4 style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e293b', marginBottom: '8px' }}>Lavado y Secado — Parámetros Y1-Y5</h4>
-                        <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 'bold', marginBottom: '24px' }}>Ref: {activeBox.nombre} · Rate base: {new Intl.NumberFormat().format(inputs.meta_diaria_cajas || 3000)} cajas/día</span>
+                        <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 'bold', marginBottom: '24px' }}>Ref: {activeBox.nombre} · Rate base: {new Intl.NumberFormat().format(inputs.meta_diaria_cajas || 2819)} cajas/día</span>
                         
                         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                           <thead>
@@ -5156,17 +5505,27 @@ export default function DHLAdvancedSimulator() {
                           </thead>
                           <tbody>
                             {Array.from({length: 5}).map((_, i) => {
-                              const reqDia = inputs.meta_diaria_cajas || 3000;
-                              const speedCmMin = ((inputs.conveyorSpeedMH !== undefined ? inputs.conveyorSpeedMH : 160) / 60) * 100;
-                              const spaceCm = activeBox.largoCm + (inputs.boxGapCm || 15);
-                              const capH = (speedCmMin / spaceCm) * 60 * ((inputs.oee || 85) / 100);
+                              const reqDia = inputs.meta_diaria_cajas || 2819;
+                              const baseHoursPerDay = inputs.hoursPerDay || 9;
+                              const daysPerWeek = inputs.daysPerWeek || 6;
                               
-                              const hrsB = 48 - (i * 2);
-                              const hrsPerShiftDay = hrsB / 6;
-                              const efT = hrsPerShiftDay * ((inputs.oee || 85) / 100);
-                              const turn = inputs.shiftsPerDay || 2;
-                              const tDisp = efT * turn;
-                              const reqH = reqDia / tDisp;
+                              const capHNominal = currentNominalCapacity || 350;
+                              const yearOEE = Math.min(0.99, ((inputs.oee || 95) / 100) + (i * 0.005));
+                              const capH = capHNominal;
+                              
+                              let turn = inputs.shiftsPerDay || 1;
+                              let hrsPerShiftDay = baseHoursPerDay;
+                              let efT = hrsPerShiftDay * yearOEE;
+                              let tDisp = efT * turn;
+                              let reqH = reqDia / tDisp;
+
+                              if (reqH > capH * yearOEE) {
+                                turn = Math.max(turn, Math.ceil(reqDia / (capH * yearOEE * efT)));
+                                tDisp = efT * turn;
+                                reqH = reqDia / tDisp;
+                              }
+
+                              const hrsB = baseHoursPerDay * daysPerWeek * turn;
                               const bal = capH - reqH;
                               const cob = (capH / reqH) * 100;
 
@@ -5471,10 +5830,9 @@ export default function DHLAdvancedSimulator() {
 
                 {/* PÁGINA: ANÁLISIS HÍDRICO Y SUSTENTABILIDAD */}
                 {pdfConfig.hidrico && (() => {
-                  const speedCmMin = ((inputs.conveyorSpeedMH !== undefined ? inputs.conveyorSpeedMH : 160) / 60) * 100;
-                  const spaceCm = activeBox.largoCm + (inputs.boxGapCm || 15);
-                  const baseCapH = ((speedCmMin / spaceCm) * 60) * ((inputs.oee || 85) / 100);
-                  const hrsDay = inputs.hoursPerDay || 20;
+                  const baseCapH = inputs.capacidad_nominal_cajas_h || 350;
+                  const realCapH = baseCapH * ((inputs.oee || 95) / 100);
+                  const hrsDay = inputs.hoursPerDay || 9;
                   const realWaterPerHr = (results.totalWaterMonthlyLiters || 0) / 24 / hrsDay;
                   
                   return (
@@ -5488,9 +5846,12 @@ export default function DHLAdvancedSimulator() {
                               <div style={{ fontSize: '26px', fontWeight: 900, color: '#06b6d4', lineHeight: 1.1, letterSpacing: '-0.5px' }}>Y SUSTENTABILIDAD</div>
                             </div>
                           </div>
-                          <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: '10px', fontWeight: 800, color: '#0ea5e9', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '4px' }}>{inputs.clientName || 'FORVIA'} - {activeBox.nombre}</div>
-                            <div style={{ fontSize: '12px', fontWeight: 900, color: '#0f172a', textTransform: 'uppercase', marginBottom: '6px' }}>ING. {inputs.userName || 'ADONAI RODRÍGUEZ'} | {inputs.userPosition || 'EMILIANO MACHUCA'}</div>
+                          <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                            {inputs.customClientLogo ? (
+                              <img src={inputs.customClientLogo} alt="Logo Cliente" style={{ maxHeight: '38px', maxWidth: '160px', objectFit: 'contain' }} />
+                            ) : (
+                              <div style={{ fontSize: '10px', fontWeight: 800, color: '#0ea5e9', letterSpacing: '1px', textTransform: 'uppercase' }}>{inputs.clientName || 'PANDORA'} - {activeBox.nombre}</div>
+                            )}
                             <div style={{ fontSize: '10px', color: '#64748b' }}>Análisis del balance hídrico, tasa de recirculación de agua y huella ecológica.</div>
                           </div>
                         </div>
@@ -5498,7 +5859,7 @@ export default function DHLAdvancedSimulator() {
                         {/* TOP ROW: 4 CARDS */}
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
                           <div style={{ border: '1px solid #e2e8f0', borderRadius: '16px', padding: '16px', background: '#fff', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)' }}>
-                            <div style={{ fontSize: '22px', fontWeight: 900, color: '#0891b2', marginBottom: '4px' }}>{new Intl.NumberFormat().format(Math.round(baseCapH * 3.5))} L/h</div>
+                            <div style={{ fontSize: '22px', fontWeight: 900, color: '#0891b2', marginBottom: '4px' }}>{new Intl.NumberFormat().format(Math.round(realCapH * 3.5))} L/h</div>
                             <div style={{ fontSize: '11px', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>Caudal de Lavado Interno</div>
                             <div style={{ fontSize: '9px', color: '#64748b' }}>Volumen interno recirculado</div>
                           </div>
@@ -5567,9 +5928,9 @@ export default function DHLAdvancedSimulator() {
                             <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                               <div>
                                 <div style={{ fontSize: '12px', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>Consumo Específico por Caja</div>
-                                <div style={{ fontSize: '9px', color: '#64748b' }}>Basado en {new Intl.NumberFormat().format(Math.round(baseCapH))} cajas/h de capacidad real</div>
+                                <div style={{ fontSize: '9px', color: '#64748b' }}>Basado en {Math.round(realCapH)} cajas/h real (350 cajas/h nominal)</div>
                               </div>
-                              <div style={{ fontSize: '24px', fontWeight: 900, color: '#0891b2' }}>{(realWaterPerHr / Math.round(baseCapH)).toFixed(2)} L / caja</div>
+                              <div style={{ fontSize: '24px', fontWeight: 900, color: '#0891b2' }}>{(realWaterPerHr / Math.round(realCapH)).toFixed(2)} L / caja</div>
                             </div>
 
                             <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '20px' }}>
@@ -5673,8 +6034,12 @@ export default function DHLAdvancedSimulator() {
                                 <span style={{ fontWeight: 800, color: '#e11d48' }}>${new Intl.NumberFormat().format((inputs.filtrosMensualMxn + inputs.refaccionesMensualMxn + inputs.lubricacionMensualMxn).toFixed(0))}</span>
                               </div>
                               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><div style={{ background: "#ffe4e6", padding: "6px", borderRadius: "6px", display: "flex" }}><FlaskConical size={14} color="#e11d48" /></div> Químicos y Supervisión</div>
+                                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><div style={{ background: "#ffe4e6", padding: "6px", borderRadius: "6px", display: "flex" }}><FlaskConical size={14} color="#e11d48" /></div> Químicos Tratamiento</div>
                                 <span style={{ fontWeight: 800, color: "#e11d48" }}>${new Intl.NumberFormat().format(7000.20)}</span>
+                              </div>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><div style={{ background: "#ffe4e6", padding: "6px", borderRadius: "6px", display: "flex" }}><Sliders size={14} color="#e11d48" /></div> Consumibles, Disposición & Otros</div>
+                                <span style={{ fontWeight: 800, color: "#e11d48" }}>${new Intl.NumberFormat().format(((inputs.supervisionMensualMxn || 0) + (inputs.consumiblesMensualMxn || 0) + (inputs.tratamientoEfluentesMensualMxn || 0) + (inputs.disposicionResiduosMensualMxn || 0) + (inputs.otrosOpexMensualMxn || 0) || 6999.60).toFixed(0))}</span>
                               </div>
                             </div>
                           </div>

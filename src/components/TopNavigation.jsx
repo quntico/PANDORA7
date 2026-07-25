@@ -11,10 +11,10 @@ function TopNavigation() {
   const { logo } = useLogoManager();
 
   const tabs = [
-    { name: 'Evaluación', path: '/alpha' },
-    { name: 'Simuladores', path: '/alpha/simulators' },
-    { name: 'Análisis', path: '/alpha/analysis' },
-    { name: 'AVATAR', path: '/alpha/avatar' },
+    { name: 'Evaluación', path: '/' },
+    { name: 'Simuladores', path: '/simulators' },
+    { name: 'Análisis', path: '/analysis' },
+    { name: 'AVATAR', path: '/avatar' },
   ];
 
   return (

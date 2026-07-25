@@ -99,6 +99,14 @@ function SimulatorsPage() {
         icon: 'Activity',
         color: '#eab308',
         isSystem: true
+      },
+      {
+        id: 'panal-cama',
+        name: 'PAÑAL CAMA',
+        description: 'Simulador financiero y operativo para producción de protector absorbente / pañal de cama 60 x 90 cm en máquina MAP-1050.',
+        icon: 'Activity',
+        color: '#12b9c5',
+        isSystem: true
       }
     ];
 
@@ -106,7 +114,7 @@ function SimulatorsPage() {
       if (!s || !s.id) return false;
       const lowerId = s.id.toLowerCase();
       // Solo filtrar por IDs de sistema, no por nombre, para que los clones legítimos con el mismo nombre no sean borrados
-      if (['rider', 'grupo-gusi', 'iase', 'lma-500', 'smq-automatic', 'carrier', 'forvia', 'wm-500', 'molex', 'dhl'].includes(lowerId)) return false;
+      if (['rider', 'grupo-gusi', 'iase', 'lma-500', 'smq-automatic', 'carrier', 'forvia', 'wm-500', 'molex', 'dhl', 'panal-cama'].includes(lowerId)) return false;
       return true;
     }) : [];
 
@@ -124,9 +132,44 @@ function SimulatorsPage() {
     return merged;
   });
 
-  // Guardar en localStorage cada vez que cambia el listado
+  // Guardar en localStorage cada vez que cambia el listado (con protección de cuota)
   useEffect(() => {
-    localStorage.setItem('pandora_simulators', JSON.stringify(simulators));
+    try {
+      const cleanList = (simulators || []).map(s => ({
+        id: s.id,
+        name: s.name,
+        description: s.description,
+        icon: s.icon,
+        color: s.color,
+        isSystem: s.isSystem,
+        type: s.type
+      }));
+      localStorage.setItem('pandora_simulators', JSON.stringify(cleanList));
+    } catch (e) {
+      console.warn('QuotaExceededError al guardar pandora_simulators:', e);
+      try {
+        const toRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && (key.includes('snapshot') || key.includes('base64') || key.includes('twin_snapshot'))) {
+            toRemove.push(key);
+          }
+        }
+        toRemove.forEach(k => localStorage.removeItem(k));
+        const cleanList = (simulators || []).map(s => ({
+          id: s.id,
+          name: s.name,
+          description: s.description,
+          icon: s.icon,
+          color: s.color,
+          isSystem: s.isSystem,
+          type: s.type
+        }));
+        localStorage.setItem('pandora_simulators', JSON.stringify(cleanList));
+      } catch (err) {
+        console.error('No se pudo guardar la lista de simuladores tras la limpieza:', err);
+      }
+    }
   }, [simulators]);
 
   // Asegurar que DHL siempre se restaure si no aparece en el Hub

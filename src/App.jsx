@@ -26,6 +26,7 @@ import WM500SimulatorStable from '@/pages/alpha/simulators/WM500SimulatorStable'
 import MolexSimulator from '@/pages/alpha/simulators/MolexSimulator';
 import DHLSimulator from '@/pages/alpha/simulators/DHLSimulator';
 import DHLAdvancedSimulator from '@/pages/alpha/simulators/DHLAdvancedSimulator';
+import PanalCamaSimulator from '@/pages/alpha/simulators/PanalCamaSimulator';
 import VerifyPage from '@/pages/VerifyPage';
 import AvatarPage from '@/pages/AvatarPage';
 
@@ -131,6 +132,8 @@ function SimulatorPageWrapper() {
     return <WM500Simulator key={id} />;
   } else if (normType.includes('molex')) {
     return <MolexSimulator key={id} />;
+  } else if (normType.includes('panal-cama') || normType.includes('panal')) {
+    return <PanalCamaSimulator key={id} />;
   } else if (normType.includes('dhl')) {
     return <DHLAdvancedSimulator key={id} />;
   } else {
@@ -146,9 +149,32 @@ function AppContent() {
 
   return (
     <Routes>
-      {/* Pandora Beta System - AHORA COMO MODO DE INICIO POR DEFECTO */}
-      <Route path='/' element={<BetaLayout />}>
-        <Route index element={<BetaDashboard />} />
+      {/* Pandora Main System (Soporta / y /alpha/*) */}
+      <Route path='/' element={<MainLayout />}>
+        <Route index element={<HomePage />} />
+        <Route path='analysis-input' element={<InputPage />} />
+        <Route path='simulators'>
+          <Route index element={<SimulatorsPage />} />
+          <Route path='builder' element={<DynamicSimulatorBuilder />} />
+          <Route path='lma-500' element={<LMA500Simulator />} />
+          <Route path='smq-automatic' element={<SMQSimulator />} />
+          <Route path='carrier' element={<CarrierSimulator />} />
+          <Route path='forvia' element={<ForviaSimulator />} />
+          <Route path='wm-500' element={<WM500Simulator />} />
+          <Route path='wm-500-stable' element={<WM500SimulatorStable />} />
+          <Route path='molex' element={<MolexSimulator />} />
+          <Route path='dhl' element={<DHLAdvancedSimulator />} />
+          <Route path='panal-cama' element={<PanalCamaSimulator />} />
+          <Route path=':id' element={<SimulatorPageWrapper />} />
+        </Route>
+        <Route path='analysis' element={<AnalysisPage />} />
+        <Route path='avatar' element={<AvatarPage />} />
+        <Route path='results' element={<Navigate to="/avatar" replace />} />
+        <Route path='dashboard' element={<DashboardPage />} />
+        <Route path='settings' element={<SettingsPage />} />
+        <Route path='chat' element={<ChatPage />} />
+        <Route path='flow-designer' element={<FlowDesignerPage />} />
+        <Route path='admin-cotizador' element={<AdminCotizadorPage />} />
       </Route>
 
       <Route path='/alpha' element={<MainLayout />}>
@@ -165,6 +191,7 @@ function AppContent() {
           <Route path='wm-500-stable' element={<WM500SimulatorStable />} />
           <Route path='molex' element={<MolexSimulator />} />
           <Route path='dhl' element={<DHLAdvancedSimulator />} />
+          <Route path='panal-cama' element={<PanalCamaSimulator />} />
           <Route path=':id' element={<SimulatorPageWrapper />} />
         </Route>
         <Route path='analysis' element={<AnalysisPage />} />
@@ -177,13 +204,15 @@ function AppContent() {
         <Route path='admin-cotizador' element={<AdminCotizadorPage />} />
       </Route>
 
-      <Route path='/app/avatar' element={<Navigate to="/alpha/avatar" replace />} />
+      {/* Pandora Beta System */}
+      <Route path='/beta' element={<BetaLayout />}>
+        <Route index element={<BetaDashboard />} />
+      </Route>
+
+      <Route path='/app/avatar' element={<Navigate to="/avatar" replace />} />
 
       {/* Validación PANDORA */}
       <Route path='/verify' element={<VerifyPage />} />
-
-      {/* Redirección de seguridad para compatibilidad */}
-      <Route path='/beta' element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

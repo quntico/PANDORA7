@@ -22,23 +22,14 @@ export function useLogoManager() {
   };
 
   useEffect(() => {
-    // Initial load: Try Supabase first, then local cache
+    // Initial load: Use local cache / storage to prevent unnecessary network overhead
     const loadLogo = async () => {
-      // 1. Check local size
       const storedSize = getFromStorage(LOGO_SIZE_KEY);
       if (storedSize) setLogoSize(parseInt(storedSize, 10));
 
-      // 2. Build Public URL
-      const { data } = supabase.storage.from(BUCKET_NAME).getPublicUrl(LOGO_FILE_PATH);
-      if (data && data.publicUrl) {
-        // Check if it actually exists (hacky check usually not needed if we trust it exists, 
-        // bu we can just set it. If it 404s, user sees fallback 'P')
-        // To avoid caching issues with same URL, append timestamp
-        setLogo(`${data.publicUrl}?t=${new Date().getTime()}`);
-      } else {
-        // Fallback to local
-        const storedLogo = getFromStorage(LOGO_STORAGE_KEY);
-        if (storedLogo) setLogo(storedLogo);
+      const storedLogo = getFromStorage(LOGO_STORAGE_KEY);
+      if (storedLogo) {
+        setLogo(storedLogo);
       }
     };
 
@@ -47,12 +38,14 @@ export function useLogoManager() {
     // Listen for changes
     const handleStorageChange = (e) => {
       if (e.key === LOGO_SIZE_KEY && e.newValue) setLogoSize(parseInt(e.newValue, 10));
+      if (e.key === LOGO_STORAGE_KEY) setLogo(e.newValue);
     };
 
     const handleLocalChange = () => {
       const storedSize = getFromStorage(LOGO_SIZE_KEY);
       if (storedSize) setLogoSize(parseInt(storedSize, 10));
-      // Logo URL update logic is handled by uploadLogo mostly
+      const storedLogo = getFromStorage(LOGO_STORAGE_KEY);
+      if (storedLogo) setLogo(storedLogo);
     };
 
     window.addEventListener('storage', handleStorageChange);

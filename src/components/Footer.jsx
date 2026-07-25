@@ -58,9 +58,9 @@ function Footer() {
             © 2026 PANDORA. Todos los derechos reservados.
           </p>
           <div className="flex items-center gap-2 text-xs text-gray-600">
-             <span>v1.0.0</span>
-             <span>•</span>
-             <span>Modo Seguro</span>
+            <span>v1.0.0</span>
+            <span>•</span>
+            <span>Modo Seguro</span>
           </div>
         </div>
       </div>

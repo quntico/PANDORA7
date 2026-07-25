@@ -32,6 +32,7 @@ function BetaChat() {
   const { projectId, projectData, saveProjectToSupabase } = useProject();
   const { activeProject, memory, messages: betaMessages } = useBeta();
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
   const fileInputRef = useRef(null);
 
   // ── Archivos de la Bóveda: se cargan desde Supabase cuando cambia el proyecto
@@ -68,7 +69,12 @@ function BetaChat() {
   };
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
   };
 
   useEffect(() => {
@@ -468,7 +474,7 @@ function BetaChat() {
         <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" />
 
         {/* Mensajes */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar px-6 md:px-12 lg:px-24 py-12 space-y-12 pb-32">
+        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto custom-scrollbar px-6 md:px-12 lg:px-24 py-12 space-y-12 pb-32">
           {messages.length === 0 && !isTyping ? (
             <div className="h-full flex flex-col items-center justify-center pt-20">
                <div className="text-center space-y-8">

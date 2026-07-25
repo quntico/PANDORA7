@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Database, Layout, Layers, Terminal, Bookmark, FileText, 
   History, CheckSquare, GitBranch, Settings, Plus, 
@@ -17,12 +17,39 @@ function BetaSidebar() {
   } = useBeta();
   const { t } = useTranslation();
 
-  const [customLogo, setCustomLogo] = useState(null);
+  const [customLogo, setCustomLogo] = useState(() => {
+    return localStorage.getItem('pandora_beta_custom_logo') || localStorage.getItem('pandora_custom_logo') || null;
+  });
+
+  useEffect(() => {
+    const updateLogo = () => {
+      const saved = localStorage.getItem('pandora_beta_custom_logo') || localStorage.getItem('pandora_custom_logo');
+      if (saved) setCustomLogo(saved);
+    };
+    window.addEventListener('storage', updateLogo);
+    window.addEventListener('pandora_logo_update', updateLogo);
+    return () => {
+      window.removeEventListener('storage', updateLogo);
+      window.removeEventListener('pandora_logo_update', updateLogo);
+    };
+  }, []);
 
   const handleLogoUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setCustomLogo(URL.createObjectURL(file));
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = event.target.result;
+        setCustomLogo(base64);
+        try {
+          localStorage.setItem('pandora_beta_custom_logo', base64);
+          localStorage.setItem('pandora_custom_logo', base64);
+          window.dispatchEvent(new Event('pandora_logo_update'));
+        } catch (err) {
+          console.warn('Quota error saving custom logo', err);
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -57,29 +84,11 @@ function BetaSidebar() {
     <aside className="w-[280px] h-full bg-[#050505] border-r border-[#151515] flex flex-col z-30 shadow-[4px_0_24px_rgba(0,0,0,0.5)]">
       {/* Beta Logo Section */}
       <div 
-        className="p-6 border-b border-[#151515] bg-gradient-to-b from-[#0A0A0A] to-transparent cursor-pointer group hover:bg-[#111] transition-colors"
+        className="px-6 pt-9 pb-6 border-b border-[#151515] bg-gradient-to-b from-[#0A0A0A] to-transparent cursor-pointer group hover:bg-[#111] transition-colors"
         onClick={() => setViewMode('sandbox')}
         title={t('sidebar.logo_title')}
       >
         <div className="flex items-center gap-3 mb-1">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-neon-purple to-neon-blue flex items-center justify-center shadow-glow-sm relative overflow-hidden group/logo">
-            {customLogo ? (
-              <img src={customLogo} alt="Logo" className="w-full h-full object-cover" />
-            ) : (
-              <img src="/cube-logo.png" alt="Pandora Logo" className="w-full h-full object-cover" />
-            )}
-            <input 
-              type="file" 
-              accept="image/*"
-              className="absolute inset-0 opacity-0 cursor-pointer z-10" 
-              title="Cambiar Logo"
-              onClick={(e) => e.stopPropagation()}
-              onChange={handleLogoUpload}
-            />
-            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/logo:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-              <Plus className="w-4 h-4 text-white" />
-            </div>
-          </div>
           <div className="flex flex-col">
             <span 
               className="text-lg font-bold tracking-tight text-white leading-none outline-none group-hover:text-neon-cyan transition-colors"

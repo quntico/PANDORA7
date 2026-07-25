@@ -43,18 +43,32 @@ function BetaHeader() {
     }
   };
 
+  const [customLogo, setCustomLogo] = useState(() => {
+    return localStorage.getItem('pandora_beta_custom_logo') || localStorage.getItem('pandora_custom_logo') || null;
+  });
+
+  useEffect(() => {
+    const updateLogo = () => {
+      const saved = localStorage.getItem('pandora_beta_custom_logo') || localStorage.getItem('pandora_custom_logo');
+      if (saved) setCustomLogo(saved);
+    };
+    window.addEventListener('storage', updateLogo);
+    window.addEventListener('pandora_logo_update', updateLogo);
+    return () => {
+      window.removeEventListener('storage', updateLogo);
+      window.removeEventListener('pandora_logo_update', updateLogo);
+    };
+  }, []);
+
   const handleExit = () => {
     setAppMode('normal');
-    navigate('/alpha');
+    navigate('/');
   };
 
   return (
-    <header className="h-[72px] bg-[#050505] border-b border-[#151515] flex items-center justify-between px-8 z-40 shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
+    <header className="h-[92px] pt-[20px] pb-3 shrink-0 bg-[#050505] border-b border-[#151515] flex items-center justify-between px-8 z-40 shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
       <div className="flex items-center gap-8">
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-2xl bg-[#0A0A0A] border border-[#1A1A1A] flex items-center justify-center shadow-inner group">
-            <Activity className="w-5 h-5 text-neon-cyan group-hover:scale-110 transition-transform" />
-          </div>
           <div className="flex flex-col">
             {isEditingName ? (
               <input

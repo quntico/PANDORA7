@@ -14,11 +14,8 @@ function Header() {
   const location = useLocation();
   const { toast } = useToast();
 
-  // Collapse state — persiste en localStorage
-  const [navCollapsed, setNavCollapsed] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('pandora_nav_collapsed') || 'false'); }
-    catch { return false; }
-  });
+  // Collapse state — visible por defecto al abrir la página
+  const [navCollapsed, setNavCollapsed] = useState(false);
   
   const [simMenuOpen, setSimMenuOpen] = useState(false);
 
@@ -98,11 +95,11 @@ function Header() {
   };
 
   const navItems = [
-    { name: 'Evaluación', path: '/alpha' },
-    { name: 'Simuladores', path: '/alpha/simulators' },
-    { name: 'Análisis', path: '/alpha/analysis' },
-    { name: 'AVATAR', path: '/alpha/avatar' },
-    { name: 'Flow Designer', path: '/alpha/flow-designer' },
+    { name: 'Evaluación', path: '/' },
+    { name: 'Simuladores', path: '/simulators' },
+    { name: 'Análisis', path: '/analysis' },
+    { name: 'AVATAR', path: '/avatar' },
+    { name: 'Flow Designer', path: '/flow-designer' },
   ];
 
   return (
@@ -110,24 +107,8 @@ function Header() {
       <div className="max-w-[1800px] mx-auto px-4 md:px-6 py-3">
         <nav className="flex items-center justify-between">
 
-          {/* Logo + PANDORA + VER — siempre visibles */}
+          {/* PANDORA + VER — siempre visibles */}
           <Link to="/" className="flex items-center gap-4 group">
-            {logo ? (
-              <div style={{ width: `${logoSize}px`, height: '48px' }} className="relative flex-shrink-0">
-                <img
-                  src={logo}
-                  alt="PANDORA Logo"
-                  style={{ width: `${logoSize}px`, height: `${logoSize}px`, maxWidth: 'none' }}
-                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 object-contain rounded-xl transition-all group-hover:scale-105 group-hover:shadow-glow-sm"
-                />
-              </div>
-            ) : null}
-
-            <div style={{ display: logo ? 'none' : 'flex' }}
-              className="w-12 h-12 rounded-xl bg-gradient-to-br from-neon-cyan via-neon-blue to-neon-purple flex items-center justify-center shadow-glow-md group-hover:shadow-glow-lg group-hover:scale-105 transition-all">
-              <span className="text-2xl font-bold text-white">P</span>
-            </div>
-
             <span className="text-2xl font-bold text-[#00F0FF] tracking-tight drop-shadow-[0_0_10px_rgba(0,240,255,0.5)]">
               PANDORA
             </span>
@@ -295,10 +276,10 @@ function Header() {
             {/* Cotizador, Panel, Mode, Settings, User — ocultos si colapsado */}
             {!navCollapsed && (
               <>
-                <Link to="/alpha/admin-cotizador"
+                <Link to="/admin-cotizador"
                   className={cn(
                     "flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium transition-all border",
-                    location.pathname === '/alpha/admin-cotizador'
+                    location.pathname === '/admin-cotizador' || location.pathname === '/alpha/admin-cotizador'
                       ? "bg-neon-purple/10 border-neon-purple/30 text-neon-purple shadow-glow-sm"
                       : "bg-glass-light border-glass-border text-gray-300 hover:text-white hover:border-neon-purple/20 hover:bg-glass-hover"
                   )}>
@@ -306,10 +287,10 @@ function Header() {
                   <span className="hidden lg:inline">Cotizador</span>
                 </Link>
 
-                <Link to="/alpha/dashboard"
+                <Link to="/dashboard"
                   className={cn(
                     "flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium transition-all border",
-                    location.pathname === '/alpha/dashboard'
+                    location.pathname === '/dashboard' || location.pathname === '/alpha/dashboard'
                       ? "bg-neon-cyan/10 border-neon-cyan/30 text-neon-cyan shadow-glow-sm"
                       : "bg-glass-light border-glass-border text-gray-300 hover:text-white hover:border-neon-cyan/20 hover:bg-glass-hover"
                   )}>
@@ -321,7 +302,7 @@ function Header() {
 
             {/* Beta System — siempre visible */}
             <button
-              onClick={() => { setAppMode('beta'); navigate('/'); }}
+              onClick={() => { setAppMode('beta'); navigate('/beta'); }}
               className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-bold transition-all border border-neon-purple/50 bg-neon-purple/10 text-neon-purple hover:bg-neon-purple/20 hover:shadow-glow-sm"
             >
               <span className="relative flex h-2 w-2">
@@ -343,7 +324,7 @@ function Header() {
                   </button>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Link to="/alpha/settings"
+                  <Link to="/settings"
                     className="p-2 rounded-xl bg-glass-light border border-glass-border text-gray-400 hover:text-neon-cyan hover:border-neon-cyan/30 hover:bg-glass-hover transition-all"
                     title="Configuración">
                     <Settings className="w-4 h-4" />
