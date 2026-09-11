@@ -3204,81 +3204,81 @@ export default function DHLAdvancedSimulator() {
                   <div className="overflow-x-auto bg-white rounded-xl border border-slate-200 shadow-sm">
                     <table className="w-full text-[10px] whitespace-nowrap border-collapse font-sans bg-white shadow-sm font-medium">
                       <thead>
-                        <tr className="bg-[#5ea52d] text-white font-bold text-center border-b border-[#4d8a24] text-[11px]">
-                          <th rowSpan={2} className="py-2 px-2 border-r border-[#4d8a24]">ID</th>
-                          <th rowSpan={2} className="py-2 px-3 border-r border-[#4d8a24] text-left">Nombre Objeto</th>
-                          <th rowSpan={2} className="py-2 px-2 border-r border-[#4d8a24]">Material</th>
-                          <th colSpan={3} className="py-1 px-2 border-r border-[#4d8a24] border-b border-[#4d8a24]">Dimensiones (Cm)</th>
-                          <th colSpan={3} className="py-1 px-2 border-r border-[#4d8a24] border-b border-[#4d8a24]">Cantidad por</th>
-                          <th rowSpan={2} className="py-2 px-2 border-r border-[#4d8a24] whitespace-normal w-12 text-[10px] leading-tight">Peso<br />Kg</th>
-                          <th rowSpan={2} className="py-2 px-2 border-r border-[#4d8a24] whitespace-normal w-16 text-[10px] leading-tight">Grado de.<br />Suciedad</th>
-                          <th rowSpan={2} className="py-2 px-2 border-r border-[#4d8a24] whitespace-normal w-16 text-[10px] leading-tight">Charolas por<br />pallet</th>
+                        <tr className="bg-cyan-700 text-white font-bold text-center border-b border-cyan-800 text-[11px]">
+                          <th rowSpan={2} className="py-2 px-2 border-r border-cyan-800">ID</th>
+                          <th rowSpan={2} className="py-2 px-3 border-r border-cyan-800 text-left">Nombre Objeto</th>
+                          <th rowSpan={2} className="py-2 px-2 border-r border-cyan-800">Material</th>
+                          <th colSpan={3} className="py-1 px-2 border-r border-cyan-800 border-b border-cyan-800">Dimensiones (Cm)</th>
+                          <th colSpan={3} className="py-1 px-2 border-r border-cyan-800 border-b border-cyan-800">Cantidad por</th>
+                          <th rowSpan={2} className="py-2 px-2 border-r border-cyan-800 whitespace-normal w-12 text-[10px] leading-tight">Peso<br />Kg</th>
+                          <th rowSpan={2} className="py-2 px-2 border-r border-cyan-800 whitespace-normal w-16 text-[10px] leading-tight">Grado de.<br />Suciedad</th>
+                          <th rowSpan={2} className="py-2 px-2 border-r border-cyan-800 whitespace-normal w-16 text-[10px] leading-tight">Charolas por<br />pallet</th>
                           <th rowSpan={2} className="py-2 px-2 text-[10px]">Acciones</th>
                         </tr>
-                        <tr className="bg-[#5ea52d] text-white font-bold text-center text-[10px]">
-                          <th className="py-1 px-2 border-r border-[#4d8a24] font-medium">Largo</th>
-                          <th className="py-1 px-2 border-r border-[#4d8a24] font-medium">Ancho</th>
-                          <th className="py-1 px-2 border-r border-[#4d8a24] font-medium">Alto</th>
-                          <th className="py-1 px-2 border-r border-[#4d8a24] font-medium">Hora</th>
-                          <th className="py-1 px-2 border-r border-[#4d8a24] font-medium">Día</th>
-                          <th className="py-1 px-2 border-r border-[#4d8a24] font-medium">Semana</th>
+                        <tr className="bg-cyan-600 text-white font-bold text-center text-[10px]">
+                          <th className="py-1 px-2 border-r border-cyan-700 font-medium">Largo</th>
+                          <th className="py-1 px-2 border-r border-cyan-700 font-medium">Ancho</th>
+                          <th className="py-1 px-2 border-r border-cyan-700 font-medium">Alto</th>
+                          <th className="py-1 px-2 border-r border-cyan-700 font-medium">Hora</th>
+                          <th className="py-1 px-2 border-r border-cyan-700 font-medium">Día</th>
+                          <th className="py-1 px-2 border-r border-cyan-700 font-medium">Semana</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-[#c5e1a5]">
+                      <tbody className="divide-y divide-slate-200">
                         {inputs.cajas.map((caja, idx) => {
                           const pDia = caja.piezasDia2028 !== undefined ? caja.piezasDia2028 : 0;
                           const reqH = caja.reqCajasH !== undefined ? caja.reqCajasH : (pDia / (inputs.hoursPerDay || 9));
                           const pSemana = pDia * (inputs.diasPorSemana || 6);
 
                           return (
-                            <tr key={idx} className={`transition-colors ${idx % 2 === 0 ? 'bg-[#ffffff]' : 'bg-[#e8f5e9]'} ${caja.includeInPdf === false ? 'opacity-40 grayscale' : 'hover:bg-[#dcedc8]'}`}>
-                              <td className="py-1.5 px-2 text-center text-slate-800 font-medium border-r border-[#c5e1a5]">
+                            <tr key={idx} className={`transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'} ${caja.includeInPdf === false ? 'opacity-40 grayscale' : 'hover:bg-cyan-50'}`}>
+                              <td className="py-1.5 px-2 text-center text-slate-800 font-medium border-r border-slate-200">
                                 <div className="flex items-center justify-center gap-1.5">
-                                  <input type="checkbox" checked={caja.includeInPdf !== false} onChange={(e) => { const n = [...inputs.cajas]; n[idx].includeInPdf = e.target.checked; setInputs(p => ({ ...p, cajas: n })); }} className="w-3.5 h-3.5 rounded outline-none border-gray-300 text-[#5ea52d] focus:ring-[#5ea52d] cursor-pointer" title="Incluir / Omitir de simulación" />
-                                  <span>{idx + 1}</span>
+                                  <input type="checkbox" checked={caja.includeInPdf !== false} onChange={(e) => { const n = [...inputs.cajas]; n[idx].includeInPdf = e.target.checked; setInputs(p => ({ ...p, cajas: n })); }} className="w-3.5 h-3.5 rounded outline-none border-gray-300 text-cyan-600 focus:ring-cyan-500 cursor-pointer" title="Incluir / Omitir de simulación" />
+                                  <span className="text-cyan-800 font-black">{idx + 1}</span>
                                 </div>
                               </td>
-                              <td className="py-1.5 px-3 border-r border-[#c5e1a5]">
+                              <td className="py-1.5 px-3 border-r border-slate-200">
                                 <div className="flex items-center gap-2">
                                   <div className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: caja.color }} title={caja.color} />
-                                  <input type="text" value={caja.nombre} onChange={(e) => { const n = [...inputs.cajas]; n[idx].nombre = e.target.value; setInputs(p => ({ ...p, cajas: n })); }} className="bg-transparent outline-none focus:border-b focus:border-[#2e7d32] text-slate-800 font-medium w-full min-w-[140px]" />
+                                  <input type="text" value={caja.nombre} onChange={(e) => { const n = [...inputs.cajas]; n[idx].nombre = e.target.value; setInputs(p => ({ ...p, cajas: n })); }} className="bg-transparent outline-none focus:border-b focus:border-cyan-600 text-slate-800 font-bold w-full min-w-[140px]" />
                                 </div>
                               </td>
-                              <td className="py-1.5 px-2 border-r border-[#c5e1a5] text-center">
-                                <select value={caja.tipo || 'Caja'} onChange={(e) => { const n = [...inputs.cajas]; n[idx].tipo = e.target.value; setInputs(p => ({ ...p, cajas: n })); }} className="bg-transparent text-slate-700 font-medium px-1 outline-none focus:ring-0 cursor-pointer">
+                              <td className="py-1.5 px-2 border-r border-slate-200 text-center">
+                                <select value={caja.tipo || 'Caja'} onChange={(e) => { const n = [...inputs.cajas]; n[idx].tipo = e.target.value; setInputs(p => ({ ...p, cajas: n })); }} className="bg-transparent text-slate-700 font-bold px-1 outline-none focus:ring-0 cursor-pointer">
                                   <option value="Caja">Plástico (Caja)</option>
                                   <option value="Dunnage">Plástico (Dunnage)</option>
                                 </select>
                               </td>
-                              <td className="py-1.5 px-2 border-r border-[#c5e1a5] text-center">
-                                <input type="number" step="0.1" value={caja.largoCm || 0} onChange={(e) => { const n = [...inputs.cajas]; n[idx].largoCm = parseFloat(e.target.value) || 0; setInputs(p => ({ ...p, cajas: n })); }} className="w-10 bg-transparent text-center text-slate-800 font-medium focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#5ea52d] rounded" />
+                              <td className="py-1.5 px-2 border-r border-slate-200 text-center">
+                                <input type="number" step="0.1" value={caja.largoCm || 0} onChange={(e) => { const n = [...inputs.cajas]; n[idx].largoCm = parseFloat(e.target.value) || 0; setInputs(p => ({ ...p, cajas: n })); }} className="w-10 bg-white border border-slate-200 text-center text-slate-800 font-bold focus:bg-white focus:outline-none focus:ring-1 focus:ring-cyan-500 rounded" />
                               </td>
-                              <td className="py-1.5 px-2 border-r border-[#c5e1a5] text-center">
-                                <input type="number" step="0.1" value={caja.anchoCm || 0} onChange={(e) => { const n = [...inputs.cajas]; n[idx].anchoCm = parseFloat(e.target.value) || 0; setInputs(p => ({ ...p, cajas: n })); }} className="w-10 bg-transparent text-center text-slate-800 font-medium focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#5ea52d] rounded" />
+                              <td className="py-1.5 px-2 border-r border-slate-200 text-center">
+                                <input type="number" step="0.1" value={caja.anchoCm || 0} onChange={(e) => { const n = [...inputs.cajas]; n[idx].anchoCm = parseFloat(e.target.value) || 0; setInputs(p => ({ ...p, cajas: n })); }} className="w-10 bg-white border border-slate-200 text-center text-slate-800 font-bold focus:bg-white focus:outline-none focus:ring-1 focus:ring-cyan-500 rounded" />
                               </td>
-                              <td className="py-1.5 px-2 border-r border-[#c5e1a5] text-center">
-                                <input type="number" step="0.1" value={caja.altoCm || 0} onChange={(e) => { const n = [...inputs.cajas]; n[idx].altoCm = parseFloat(e.target.value) || 0; setInputs(p => ({ ...p, cajas: n })); }} className="w-10 bg-transparent text-center text-slate-800 font-medium focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#5ea52d] rounded" />
+                              <td className="py-1.5 px-2 border-r border-slate-200 text-center">
+                                <input type="number" step="0.1" value={caja.altoCm || 0} onChange={(e) => { const n = [...inputs.cajas]; n[idx].altoCm = parseFloat(e.target.value) || 0; setInputs(p => ({ ...p, cajas: n })); }} className="w-10 bg-white border border-slate-200 text-center text-slate-800 font-bold focus:bg-white focus:outline-none focus:ring-1 focus:ring-cyan-500 rounded" />
                               </td>
-                              <td className="py-1.5 px-2 border-r border-[#c5e1a5] text-center text-slate-800 font-medium">{reqH.toFixed(1)}</td>
-                              <td className="py-1.5 px-2 border-r border-[#c5e1a5] text-center">
-                                <input type="number" value={pDia} onChange={(e) => { const val = parseFloat(e.target.value) || 0; const n = [...inputs.cajas]; n[idx].piezasDia2028 = val; n[idx].reqCajasH = Number((val / (inputs.hoursPerDay || 9)).toFixed(1)); const pt = n.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0); setInputs(p => ({ ...p, cajas: n, meta_diaria_cajas: pt > 0 ? pt : p.meta_diaria_cajas })); }} className="w-14 bg-transparent text-center text-slate-800 font-medium focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#5ea52d] rounded" />
+                              <td className="py-1.5 px-2 border-r border-slate-200 text-center text-cyan-800 font-bold bg-slate-50/50">{reqH.toFixed(1)}</td>
+                              <td className="py-1.5 px-2 border-r border-slate-200 text-center">
+                                <input type="number" value={pDia} onChange={(e) => { const val = parseFloat(e.target.value) || 0; const n = [...inputs.cajas]; n[idx].piezasDia2028 = val; n[idx].reqCajasH = Number((val / (inputs.hoursPerDay || 9)).toFixed(1)); const pt = n.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0); setInputs(p => ({ ...p, cajas: n, meta_diaria_cajas: pt > 0 ? pt : p.meta_diaria_cajas })); }} className="w-14 bg-white border border-slate-200 text-center text-slate-800 font-bold focus:bg-white focus:outline-none focus:ring-1 focus:ring-cyan-500 rounded" />
                               </td>
-                              <td className="py-1.5 px-2 border-r border-[#c5e1a5] text-center text-slate-800 font-medium">{new Intl.NumberFormat().format(pSemana.toFixed(0))}</td>
-                              <td className="py-1.5 px-2 border-r border-[#c5e1a5] text-center">
-                                <input type="number" step="0.1" value={caja.pesoKg !== undefined ? caja.pesoKg : 2.5} onChange={(e) => { const n = [...inputs.cajas]; n[idx].pesoKg = parseFloat(e.target.value) || 0; setInputs(p => ({ ...p, cajas: n })); }} className="w-10 bg-transparent text-center text-slate-800 font-medium focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#5ea52d] rounded" />
+                              <td className="py-1.5 px-2 border-r border-slate-200 text-center text-slate-600 font-bold bg-slate-50/50">{new Intl.NumberFormat().format(pSemana.toFixed(0))}</td>
+                              <td className="py-1.5 px-2 border-r border-slate-200 text-center">
+                                <input type="number" step="0.1" value={caja.pesoKg !== undefined ? caja.pesoKg : 2.5} onChange={(e) => { const n = [...inputs.cajas]; n[idx].pesoKg = parseFloat(e.target.value) || 0; setInputs(p => ({ ...p, cajas: n })); }} className="w-10 bg-white border border-slate-200 text-center text-slate-800 font-bold focus:bg-white focus:outline-none focus:ring-1 focus:ring-cyan-500 rounded" />
                               </td>
-                              <td className="py-1.5 px-1 border-r border-[#c5e1a5] text-center font-black">
-                                <select value={caja.suciedad || 'Medium'} onChange={(e) => { const n = [...inputs.cajas]; n[idx].suciedad = e.target.value; setInputs(p => ({ ...p, cajas: n })); }} className="bg-transparent outline-none focus:ring-0 cursor-pointer w-full text-center appearance-auto">
+                              <td className="py-1.5 px-1 border-r border-slate-200 text-center font-black">
+                                <select value={caja.suciedad || 'Medium'} onChange={(e) => { const n = [...inputs.cajas]; n[idx].suciedad = e.target.value; setInputs(p => ({ ...p, cajas: n })); }} className="bg-transparent outline-none focus:ring-0 cursor-pointer w-full text-center appearance-auto text-slate-700">
                                   <option value="Alta">Alta</option>
                                   <option value="Medium">Medium</option>
                                   <option value="Polvo">Low</option>
                                 </select>
                               </td>
-                              <td className="py-1.5 px-2 text-center border-r border-[#c5e1a5]">
-                                <input type="number" value={caja.cajasPorPallet !== undefined ? caja.cajasPorPallet : 48} onChange={(e) => { const n = [...inputs.cajas]; n[idx].cajasPorPallet = parseFloat(e.target.value) || 0; setInputs(p => ({ ...p, cajas: n })); }} className="w-10 bg-transparent inline-block text-center text-slate-800 font-medium focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#5ea52d] rounded" /> <span className="text-[9px] text-slate-500 whitespace-nowrap ml-1 font-medium">C. Por Pallet</span>
+                              <td className="py-1.5 px-2 text-center border-r border-slate-200">
+                                <input type="number" value={caja.cajasPorPallet !== undefined ? caja.cajasPorPallet : 48} onChange={(e) => { const n = [...inputs.cajas]; n[idx].cajasPorPallet = parseFloat(e.target.value) || 0; setInputs(p => ({ ...p, cajas: n })); }} className="w-10 bg-white border border-slate-200 inline-block text-center text-slate-800 font-bold focus:bg-white focus:outline-none focus:ring-1 focus:ring-cyan-500 rounded" /> <span className="text-[9px] text-slate-400 whitespace-nowrap ml-1 font-bold">C/Pallet</span>
                               </td>
                               <td className="py-1.5 px-2 text-center">
-                                <button onClick={() => { if (window.confirm('¿Eliminar este modelo de contenedor?')) { const n = inputs.cajas.filter((_, i) => i !== idx); setInputs(p => ({ ...p, cajas: n })); } }} className="text-[#a5d6a7] hover:text-red-500 transition-colors inline-block pt-1" title="Borrar modelo">
+                                <button onClick={() => { if (window.confirm('¿Eliminar este modelo de contenedor?')) { const n = inputs.cajas.filter((_, i) => i !== idx); setInputs(p => ({ ...p, cajas: n })); } }} className="text-slate-300 hover:text-red-500 transition-colors inline-block pt-1" title="Borrar modelo">
                                   <Trash2 className="w-4 h-4" />
                                 </button>
                               </td>
@@ -3287,12 +3287,12 @@ export default function DHLAdvancedSimulator() {
                         })}
                       </tbody>
                       <tfoot>
-                        <tr className="bg-[#4d8a24] text-white font-bold text-[11px]">
+                        <tr className="bg-sky-50 text-sky-900 border-t-2 border-cyan-600 font-black text-[11px]">
                           <td colSpan={7} className="py-2.5 px-4 text-right uppercase">TOTAL GENERAL</td>
-                          <td className="py-2.5 px-2 text-center font-mono text-[12px]">
+                          <td className="py-2.5 px-2 text-center font-mono text-[13px] text-cyan-800">
                             {new Intl.NumberFormat().format(inputs.cajas.filter(c => c.includeInPdf !== false).reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0))}
                           </td>
-                          <td className="py-2.5 px-2 text-center font-mono text-[12px]">
+                          <td className="py-2.5 px-2 text-center font-mono text-[13px] text-slate-700">
                             {new Intl.NumberFormat().format(inputs.cajas.filter(c => c.includeInPdf !== false).reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) * (inputs.diasPorSemana || 6))}
                           </td>
                           <td colSpan={4} className="py-2.5 px-2"></td>
