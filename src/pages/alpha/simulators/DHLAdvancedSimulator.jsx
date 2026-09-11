@@ -3209,8 +3209,9 @@ export default function DHLAdvancedSimulator() {
                           <th className="py-3 px-4">Referencia</th>
                           <th className="py-3 px-4 text-right">Piezas/día 2028</th>
                           <th className="py-3 px-4 text-right">Req. cajas/h ({inputs.hoursPerDay || 9}h)</th>
-                          <th className="py-3 px-4 text-center">Capacidad objetivo</th>
-                          <th className="py-3 px-4 text-center">Estatus</th>
+                          <th className="py-3 px-4 text-center">Objetivo</th>
+                          <th className="py-3 px-4 text-center">Status</th>
+                          <th className="py-3 px-4 text-center"></th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
@@ -3221,9 +3222,20 @@ export default function DHLAdvancedSimulator() {
                           const isOk = reqH <= targetCap;
 
                           return (
-                            <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                            <tr key={idx} className={`hover:bg-slate-50 transition-colors ${caja.includeInPdf === false ? 'opacity-50 grayscale' : ''}`}>
                               <td className="py-2.5 px-4 font-black text-slate-800">
                                 <div className="flex items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={caja.includeInPdf !== false}
+                                    onChange={(e) => {
+                                      const newCajas = [...inputs.cajas];
+                                      newCajas[idx].includeInPdf = e.target.checked;
+                                      setInputs(p => ({ ...p, cajas: newCajas }));
+                                    }}
+                                    className="w-3.5 h-3.5 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500 cursor-pointer shrink-0"
+                                    title="Incluir modelo en el reporte PDF y en los cálculos paramétricos"
+                                  />
                                   <div className="w-3 h-3 rounded-full shadow-sm shrink-0" style={{ backgroundColor: caja.color }} title={caja.color} />
                                   <input
                                     type="text"
@@ -3271,9 +3283,23 @@ export default function DHLAdvancedSimulator() {
                               <td className="py-2.5 px-4 text-right font-mono text-cyan-700 font-bold">{reqH.toFixed(1)}</td>
                               <td className="py-2.5 px-4 text-center font-bold text-slate-600">{targetCap} cajas/h</td>
                               <td className="py-2.5 px-4 text-center">
-                                <span className={`px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-wider ${isOk ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-700'}`}>
+                                <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider ${isOk ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-700'}`}>
                                   {isOk ? 'OK' : 'EXCEDE'}
                                 </span>
+                              </td>
+                              <td className="py-2.5 px-4 text-center">
+                                <button
+                                  onClick={() => {
+                                    if (window.confirm('¿Eliminar este contenedor por completo?')) {
+                                      const newCajas = inputs.cajas.filter((_, i) => i !== idx);
+                                      setInputs(p => ({ ...p, cajas: newCajas }));
+                                    }
+                                  }}
+                                  className="text-slate-400 hover:text-red-500 transition-colors"
+                                  title="Borrar modelo"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
                               </td>
                             </tr>
                           );
@@ -3283,16 +3309,36 @@ export default function DHLAdvancedSimulator() {
                         <tr className="bg-sky-50 border-t-2 border-blue-600 font-black text-slate-900">
                           <td className="py-3 px-4 text-blue-800">TOTAL GENERAL</td>
                           <td className="py-3 px-4 text-right font-mono text-black text-sm">
-                            {new Intl.NumberFormat().format(inputs.cajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0))}
+                            {new Intl.NumberFormat().format(inputs.cajas.filter(c => c.includeInPdf !== false).reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0))}
                           </td>
                           <td className="py-3 px-4 text-right font-mono text-blue-800 text-sm">
-                            {(inputs.cajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) / (inputs.hoursPerDay || 9)).toFixed(1)}
+                            {(inputs.cajas.filter(c => c.includeInPdf !== false).reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) / (inputs.hoursPerDay || 9)).toFixed(1)}
                           </td>
                           <td className="py-3 px-4 text-center text-slate-800">{inputs.capacidad_nominal_cajas_h || 350} cajas/h</td>
                           <td className="py-3 px-4 text-center text-emerald-700">APROBADO</td>
+                          <td className="py-3 px-4"></td>
                         </tr>
                       </tfoot>
                     </table>
+                    <div className="p-3 border-t border-slate-200 bg-slate-100 flex justify-end">
+                      <button
+                        onClick={() => {
+                          const newId = Date.now().toString();
+                          const newCaja = {
+                            id: newId, nombre: `Envase Custom ${inputs.cajas.length + 1}`, tipo: 'Caja',
+                            largoCm: 60, anchoCm: 40, altoCm: 20,
+                            piezasDia2028: 100,
+                            color: '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0'),
+                            includeInPdf: true
+                          };
+                          setInputs(p => ({ ...p, cajas: [...(p.cajas || []), newCaja] }));
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 text-slate-700 text-[10px] font-bold rounded shadow-sm hover:bg-slate-100 hover:text-cyan-700 transition-all uppercase tracking-wider"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        Añadir Nuevo
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -6087,7 +6133,7 @@ export default function DHLAdvancedSimulator() {
                         <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '12px', padding: '10px 14px' }}>
                           <span style={{ display: 'block', fontSize: '8px', fontWeight: 800, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.5px' }}>VOLUMEN MÁXIMO 2028</span>
                           <div style={{ fontSize: '22px', fontWeight: 900, color: '#1e3a8a', marginTop: '2px' }}>
-                            {new Intl.NumberFormat().format(inputs.cajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) || inputs.meta_diaria_cajas || 2819)}
+                            {new Intl.NumberFormat().format(inputs.cajas.filter(c => c.includeInPdf !== false).reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) || inputs.meta_diaria_cajas || 2819)}
                           </div>
                           <span style={{ fontSize: '8px', fontWeight: 700, color: '#3b82f6' }}>cajas/día</span>
                         </div>
@@ -6095,7 +6141,7 @@ export default function DHLAdvancedSimulator() {
                         <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '10px 14px' }}>
                           <span style={{ display: 'block', fontSize: '8px', fontWeight: 800, color: '#d97706', textTransform: 'uppercase', letterSpacing: '0.5px' }}>REQUERIDO PROMEDIO</span>
                           <div style={{ fontSize: '22px', fontWeight: 900, color: '#78350f', marginTop: '2px' }}>
-                            {(((inputs.cajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) || inputs.meta_diaria_cajas || 2819) / (inputs.hoursPerDay || 9))).toFixed(1)}
+                            {(((inputs.cajas.filter(c => c.includeInPdf !== false).reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) || inputs.meta_diaria_cajas || 2819) / (inputs.hoursPerDay || 9))).toFixed(1)}
                           </div>
                           <span style={{ fontSize: '8px', fontWeight: 700, color: '#f59e0b' }}>cajas/hora</span>
                         </div>
@@ -6137,7 +6183,7 @@ export default function DHLAdvancedSimulator() {
                             </tr>
                           </thead>
                           <tbody>
-                            {inputs.cajas.map((caja, idx) => {
+                            {inputs.cajas.filter(c => c.includeInPdf !== false).map((caja, idx) => {
                               const pDia = caja.piezasDia2028 !== undefined ? caja.piezasDia2028 : 0;
                               const reqH = caja.reqCajasH !== undefined ? caja.reqCajasH : (pDia / (inputs.hoursPerDay || 9));
                               const targetCap = inputs.capacidad_nominal_cajas_h || 350;
@@ -6167,10 +6213,10 @@ export default function DHLAdvancedSimulator() {
                             <tr style={{ background: '#e0f2fe', fontWeight: 900, borderTop: '2px solid #0284c7' }}>
                               <td colSpan="2" style={{ padding: '6px 8px', color: '#0369a1' }}>{tf('TOTAL GENERAL')}</td>
                               <td style={{ padding: '6px 8px', textAlign: 'right', color: '#0f172a' }}>
-                                {new Intl.NumberFormat().format(inputs.cajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0))}
+                                {new Intl.NumberFormat().format(inputs.cajas.filter(c => c.includeInPdf !== false).reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0))}
                               </td>
                               <td style={{ padding: '6px 8px', textAlign: 'right', color: '#0369a1' }}>
-                                {(inputs.cajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) / (inputs.hoursPerDay || 9)).toFixed(1)}
+                                {(inputs.cajas.filter(c => c.includeInPdf !== false).reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) / (inputs.hoursPerDay || 9)).toFixed(1)}
                               </td>
                               <td style={{ padding: '6px 8px', textAlign: 'center', color: '#0f172a' }}>{inputs.capacidad_nominal_cajas_h || 350} cajas/h</td>
                               <td style={{ padding: '6px 8px', textAlign: 'center', color: '#15803d' }}>{tf('APROBADO')}</td>
