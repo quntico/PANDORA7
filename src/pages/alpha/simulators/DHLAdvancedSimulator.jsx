@@ -5391,12 +5391,12 @@ export default function DHLAdvancedSimulator() {
                             </div>
                             <div style={{ flex: 1 }}>
                               <div style={{ fontSize: 11.5, fontWeight: 900, color: '#0f2038' }}>{tf('Margen Diario Operativo')}</div>
-                              <div style={{ fontSize: 9.5, color: '#64748b', marginTop: 3 }}>Nominal: +331 c/día <br /> Real (OEE {inputs.oee}%): +{Math.max(0, results.dailyProductionBoxes - inputs.meta_diaria_cajas).toFixed(0)} c/día</div>
+                              <div style={{ fontSize: 9.5, color: '#64748b', marginTop: 3 }}>Nominal: {((inputs.capacidad_nominal_cajas_h * (inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1)) - inputs.meta_diaria_cajas) > 0 ? '+' : ''}{((inputs.capacidad_nominal_cajas_h * (inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1)) - inputs.meta_diaria_cajas).toFixed(0)} c/día <br /> Real (OEE {inputs.oee}%): {(results.dailyProductionBoxes - inputs.meta_diaria_cajas) > 0 ? '+' : ''}{(results.dailyProductionBoxes - inputs.meta_diaria_cajas).toFixed(0)} c/día</div>
                             </div>
                             <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' }}>
-                              <span style={{ fontSize: 26, fontWeight: 900, color: '#008299', lineHeight: 1 }}>+{Math.max(0, results.dailyProductionBoxes - inputs.meta_diaria_cajas).toFixed(0)}</span>
-                              <span style={{ fontSize: 12, fontWeight: 900, color: '#008299' }}>{tf('c/día')}</span>
-                              <span style={{ fontSize: 9, color: '#0f766e', fontWeight: 800, marginTop: 4 }}>Nom: +331 {tf('c/día')}</span>
+                              <span style={{ fontSize: 26, fontWeight: 900, color: (results.dailyProductionBoxes - inputs.meta_diaria_cajas) < 0 ? '#ef4444' : '#008299', lineHeight: 1 }}>{(results.dailyProductionBoxes - inputs.meta_diaria_cajas) > 0 ? '+' : ''}{(results.dailyProductionBoxes - inputs.meta_diaria_cajas).toFixed(0)}</span>
+                              <span style={{ fontSize: 12, fontWeight: 900, color: (results.dailyProductionBoxes - inputs.meta_diaria_cajas) < 0 ? '#ef4444' : '#008299' }}>{tf('c/día')}</span>
+                              <span style={{ fontSize: 9, color: (results.dailyProductionBoxes - inputs.meta_diaria_cajas) < 0 ? '#ef4444' : '#0f766e', fontWeight: 800, marginTop: 4 }}>Nom: {((inputs.capacidad_nominal_cajas_h * (inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1)) - inputs.meta_diaria_cajas) > 0 ? '+' : ''}{((inputs.capacidad_nominal_cajas_h * (inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1)) - inputs.meta_diaria_cajas).toFixed(0)} {tf('c/día')}</span>
                             </div>
                           </div>
 
