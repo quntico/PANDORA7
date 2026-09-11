@@ -5951,48 +5951,36 @@ export default function DHLAdvancedSimulator() {
                           </thead>
                           <tbody>
                             <tr>
-                              <td style={REPORT_STYLES.td}>{tf('Banda Alimentadora (4,000 mm)')}</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>-</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>1.65 kW</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(1.65 * (inputs.loadFactor / 100)).toFixed(2)} kW</td>
-                            </tr>
-                            <tr>
-                              <td style={REPORT_STYLES.td}>Lavadora Principal {inputs.machineName || 'BWD-350'} ({tf('Sistema de lavado')} {inputs.presionLavadoBar || 650} RPM)</td>
+                              <td style={REPORT_STYLES.td}>{tf('Motor Bomba de Agua (Lavado Principal 7.5 HP)')}</td>
                               <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{new Intl.NumberFormat().format(currentNominalCapacity)} {tf('cajas/h')}</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>11.19 kW</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(11.19 * (inputs.loadFactor / 100)).toFixed(2)} kW</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>5.59 kW</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(5.59 * (inputs.loadFactor / 100)).toFixed(2)} kW</td>
                             </tr>
                             <tr>
-                              <td style={REPORT_STYLES.td}>{tf('Módulo de Secado de Alta Presión (Cuchillas de Aire & Sopladores)')}</td>
+                              <td style={REPORT_STYLES.td}>{tf('Motor Banda Transportadora (1/2 HP)')}</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>-</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>0.37 kW</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(0.37 * (inputs.loadFactor / 100)).toFixed(2)} kW</td>
+                            </tr>
+                            <tr>
+                              <td style={REPORT_STYLES.td}>{tf('Módulo de Secado (Motor 2.2 kW)')}</td>
                               <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{new Intl.NumberFormat().format(currentNominalCapacity)} {tf('cajas/h')}</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>22.00 kW</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(22.00 * (inputs.loadFactor / 100)).toFixed(2)} kW</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>2.20 kW</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(2.20 * (inputs.loadFactor / 100)).toFixed(2)} kW</td>
                             </tr>
                             <tr>
-                              <td style={REPORT_STYLES.td}>{tf('Calentamiento & Recirculación Hídrica')}</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>-</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>13.05 kW</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(13.05 * (inputs.loadFactor / 100)).toFixed(2)} kW</td>
-                            </tr>
-                            <tr>
-                              <td style={REPORT_STYLES.td}>{tf('Motor Auxiliar Hidráulico (10 HP)')}</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>-</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>7.46 kW</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(7.46 * (inputs.loadFactor / 100)).toFixed(2)} kW</td>
-                            </tr>
-                            <tr>
-                              <td style={REPORT_STYLES.td}>{tf('Banda de Descarga (3,000 mm)')}</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>-</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>1.65 kW</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(1.65 * (inputs.loadFactor / 100)).toFixed(2)} kW</td>
+                              <td style={REPORT_STYLES.td}>{tf('Sistema Calentamiento Hídrico (Resistencias)')}</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>60-80°C</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>15.00 kW</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(15.00 * (inputs.loadFactor / 100)).toFixed(2)} kW</td>
                             </tr>
                           </tbody>
                           <tfoot>
                             <tr style={{ background: '#f8fafc', fontWeight: 800 }}>
-                              <td style={{ ...REPORT_STYLES.td, color: '#0d9488' }}>{tf('Total Sistema de Lavado')} {inputs.machineName || 'BWD-350'}</td>
+                              <td style={{ ...REPORT_STYLES.td, color: '#0d9488' }}>{tf('Total Sistema de Lavado PLD-120')}</td>
                               <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>-</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{(results.installedPowerKw || 57.00).toFixed(2)} kW</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488' }}>{(results.averageHourlyConsumptionKw || 48.45).toFixed(2)} kW</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{(results.installedPowerKw || 23.16).toFixed(2)} kW</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488' }}>{(results.averageHourlyConsumptionKw || 19.68).toFixed(2)} kW</td>
                             </tr>
                           </tfoot>
                         </table>
@@ -6007,14 +5995,12 @@ export default function DHLAdvancedSimulator() {
                         <table style={{ width: '100%', borderCollapse: 'collapse', border: 'none', fontSize: 10, lineHeight: '1.2' }}>
                           <tbody>
                             {[
-                              { name: 'Banda Alimentadora', kw: 1.65 },
-                              { name: 'Motor Lavado Principal', kw: 11.19 },
-                              { name: 'Módulo Secado Alta Presión', kw: 22.00 },
-                              { name: 'Calentamiento & Recirculación', kw: 13.05 },
-                              { name: 'Motor Hidráulico', kw: 7.46 },
-                              { name: 'Banda de Descarga', kw: 1.65 },
+                              { name: 'Bomba Principal (7.5 HP)', kw: 5.59 },
+                              { name: 'Banda Transp. (0.5 HP)', kw: 0.37 },
+                              { name: 'Módulo Secado (2.2 kW)', kw: 2.20 },
+                              { name: 'Calentamiento (15 kW)', kw: 15.00 }
                             ].map((eq, i) => {
-                              const percentage = (eq.kw / (results.installedPowerKw || 57.00)) * 100;
+                              const percentage = (eq.kw / (results.installedPowerKw || 23.16)) * 100;
                               return (
                                 <tr key={i} style={{ border: 'none' }}>
                                   <td style={{ width: 160, color: '#475569', fontWeight: 650, padding: '2px 0 2px 10px', verticalAlign: 'middle', whiteSpace: 'nowrap', border: 'none' }}>
