@@ -481,10 +481,13 @@ export default function DHLAdvancedSimulator() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
+        const hasOldBoxes = parsed.cajas && parsed.cajas.some(c => c.nombre && c.nombre.includes('Packaging'));
+
         return {
           ...defaultInputs,
           ...parsed,
-          cajas: (parsed.cajas && parsed.cajas.length > 0) ? parsed.cajas : defaultInputs.cajas
+          meta_diaria_cajas: hasOldBoxes ? defaultInputs.meta_diaria_cajas : (parsed.meta_diaria_cajas || defaultInputs.meta_diaria_cajas),
+          cajas: hasOldBoxes ? defaultInputs.cajas : ((parsed.cajas && parsed.cajas.length > 0) ? parsed.cajas : defaultInputs.cajas)
         };
       } catch (e) { }
     }
