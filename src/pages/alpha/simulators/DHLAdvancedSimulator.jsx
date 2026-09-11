@@ -783,7 +783,7 @@ export default function DHLAdvancedSimulator() {
   const [twinSnapshotLateral, setTwinSnapshotLateral] = useState(null);
   const [twinSnapshotSuperior, setTwinSnapshotSuperior] = useState(null);
   const [twinSnapshotIsométrica, setTwinSnapshotIsométrica] = useState(null);
-  const [isToolboxOpen, setIsToolboxOpen] = useState(true);
+  const [isToolboxOpen, setIsToolboxOpen] = useState(false);
 
   // Load from IndexedDB on mount
   useEffect(() => {
