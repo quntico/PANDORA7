@@ -355,19 +355,15 @@ export default function DHLAdvancedSimulator() {
     hoursPerDay: 9,
     shiftsPerDay: 1,
     daysPerMonth: 24,
-    meta_diaria_cajas: 2819,
+    meta_diaria_cajas: 2128,
     cajas: [
-      { id: '1', nombre: 'Packaging 460 (blue box + lid)', largoCm: 60, anchoCm: 40, altoCm: 20, piezasDia2028: 20, reqCajasH: 2.2, color: '#3b82f6', suciedad: 'Polvo' },
-      { id: '2', nombre: 'Packaging 500 (blue box)', largoCm: 30, anchoCm: 20, altoCm: 15, piezasDia2028: 352, reqCajasH: 39.1, color: '#0ea5e9', suciedad: 'Polvo' },
-      { id: '3', nombre: 'Packaging 600 (blue box)', largoCm: 60, anchoCm: 20, altoCm: 15, piezasDia2028: 29, reqCajasH: 3.2, color: '#06b6d4', suciedad: 'Polvo' },
-      { id: '4', nombre: 'Packaging 750 (blue box + lid)', largoCm: 60, anchoCm: 40, altoCm: 20, piezasDia2028: 861, reqCajasH: 95.7, color: '#14b8a6', suciedad: 'Polvo' },
-      { id: '5', nombre: 'Packaging 757 (blue box + lid)', largoCm: 40, anchoCm: 30, altoCm: 9.86, piezasDia2028: 13, reqCajasH: 1.4, color: '#10b981', suciedad: 'Polvo' },
-      { id: '6', nombre: 'Packaging 780 (blue box + lid)', largoCm: 60, anchoCm: 40, altoCm: 20, piezasDia2028: 955, reqCajasH: 106.1, color: '#8b5cf6', suciedad: 'Polvo' },
-      { id: '7', nombre: 'Packaging 787 (blue box + lid)', largoCm: 60, anchoCm: 40, altoCm: 9.86, piezasDia2028: 18, reqCajasH: 2.0, color: '#a855f7', suciedad: 'Polvo' },
-      { id: '8', nombre: 'Packaging 800 (blue box + lid)', largoCm: 80, anchoCm: 30, altoCm: 20, piezasDia2028: 62, reqCajasH: 6.9, color: '#d946ef', suciedad: 'Polvo' },
-      { id: '9', nombre: 'Packaging 840 (blue box + lid)', largoCm: 80, anchoCm: 60, altoCm: 20, piezasDia2028: 389, reqCajasH: 43.2, color: '#ec4899', suciedad: 'Polvo' },
-      { id: '10', nombre: 'Packaging 81 (spacer of plastic)', largoCm: 116, anchoCm: 76, altoCm: 0.4, piezasDia2028: 92, reqCajasH: 10.2, color: '#f43f5e', suciedad: 'Polvo' },
-      { id: '11', nombre: 'Packaging 82 (spacer of plastic)', largoCm: 76, anchoCm: 56, altoCm: 0.4, piezasDia2028: 28, reqCajasH: 3.1, color: '#f97316', suciedad: 'Polvo' }
+      { id: '1', nombre: 'Charola CLIENTE Ford i3 Retornable', tipo: 'Caja', largoCm: 61, anchoCm: 38, altoCm: 10, piezasDia2028: 320, reqCajasH: 35.5, pesoKg: 2.70, suciedad: 'Alta', cajasPorPallet: 48, color: '#16a34a' },
+      { id: '2', nombre: 'Charola WIP Tubos i3', tipo: 'Caja', largoCm: 60, anchoCm: 50, altoCm: 9, piezasDia2028: 134, reqCajasH: 14.8, pesoKg: 2.50, suciedad: 'Medium', cajasPorPallet: 40, color: '#22c55e' },
+      { id: '3', nombre: 'Charola WIP leva LPG', tipo: 'Caja', largoCm: 60, anchoCm: 39, altoCm: 5, piezasDia2028: 133, reqCajasH: 14.7, pesoKg: 1.40, suciedad: 'Medium', cajasPorPallet: 48, color: '#4ade80' },
+      { id: '4', nombre: 'Charola WIP Leva i3 LPG', tipo: 'Caja', largoCm: 60, anchoCm: 49, altoCm: 5, piezasDia2028: 133, reqCajasH: 14.7, pesoKg: 1.30, suciedad: 'Medium', cajasPorPallet: 48, color: '#86efac' },
+      { id: '5', nombre: 'Charola WIP y CLIENTE Módulos VW', tipo: 'Caja', largoCm: 123, anchoCm: 58, altoCm: 16, piezasDia2028: 250, reqCajasH: 27.7, pesoKg: 7.00, suciedad: 'Medium', cajasPorPallet: 10, color: '#bbf7d0' },
+      { id: '6', nombre: 'Charola PT STELLANTIS Cliente Retornable CS', tipo: 'Caja', largoCm: 75, anchoCm: 40, altoCm: 10, piezasDia2028: 960, reqCajasH: 106.6, pesoKg: 2.70, suciedad: 'Medium', cajasPorPallet: 72, color: '#3b82f6' },
+      { id: '7', nombre: 'Charola PT STELLANTIS Cliente Retornable PS', tipo: 'Caja', largoCm: 61, anchoCm: 38, altoCm: 8.5, piezasDia2028: 198, reqCajasH: 22.0, pesoKg: 1.90, suciedad: 'Medium', cajasPorPallet: 54, color: '#60a5fa' }
     ],
 
 
