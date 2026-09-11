@@ -1,0 +1,153 @@
+  const results = useMemo(() => {
+    // 1. DIMENSIONES
+    const footprintM2 = (inputs.machineLength || 0) * (inputs.machineWidth || 0);
+
+    const nominalCapacity = currentNominalCapacity;
+    const realProductionPerHourKg = nominalCapacity * ((inputs.oee || 85) / 100) * ((inputs.reductionFactor || 90) / 100);
+    const dailyProductionKg = realProductionPerHourKg * ((inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1));
+    const dailyProductionTon = dailyProductionKg / 1000;
+    const monthlyProductionTon = dailyProductionTon * (inputs.daysPerMonth || 24);
+    const annualProductionTon = monthlyProductionTon * 12;
+    const requirementCoverage = (inputs.dailyGoalKg || 0) > 0 ? (dailyProductionKg / inputs.dailyGoalKg) * 100 : 0;
+    const systemUtilization = dailyProductionKg > 0 ? ((inputs.dailyGoalKg || 0) / dailyProductionKg) : 0;
+    const operationalReserve = Math.max(0, 100 - (systemUtilization * 100));
+    const machinesRequired = dailyProductionKg > 0 ? Math.ceil((inputs.dailyGoalKg || 0) / dailyProductionKg) : 1;
+
+    // 3. ENERGÍA
+    const baseMotorsKw = ((inputs.motorPrincipalHp || 120) + (inputs.motorAuxiliarHp || 10)) * 0.746;
+    const installedPowerKw = (inputs.customInstalledPowerKw !== undefined && inputs.customInstalledPowerKw !== 96.98)
+      ? inputs.customInstalledPowerKw
+      : (baseMotorsKw + 3.30);
+    const averageHourlyConsumptionKw = installedPowerKw * ((inputs.loadFactor || 85) / 100);
+    const hourlyElectricityCostMxn = averageHourlyConsumptionKw * (inputs.electricityRate || 2.50);
+    const dailyElectricityCostMxn = hourlyElectricityCostMxn * ((inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1));
+    const monthlyElectricityCostMxn = dailyElectricityCostMxn * (inputs.daysPerMonth || 24);
+    const annualElectricityCostMxn = monthlyElectricityCostMxn * 12;
+
+    const productionPerHourTon = realProductionPerHourKg / 1000;
+    const kwhPerTon = productionPerHourTon > 0 ? (averageHourlyConsumptionKw / productionPerHourTon) : 0;
+    const electricityCostPerTonMxn = kwhPerTon * (inputs.electricityRate || 2.50);
+
+    // 3.5. AGUA E HÍDRICO
+    const totalWorkingDays = inputs.daysPerMonth || 24;
+    const weeksPerMonth = totalWorkingDays / 6; // Aprox 4
+    const waterChangesMonthlyLiters = (inputs.waterTankLiters || 1200) * (inputs.waterChangesPerWeek || 1) * weeksPerMonth;
+    const hoursPerMonth = ((inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1)) * totalWorkingDays;
+    const waterDragOutMonthlyLiters = (inputs.waterTankLiters || 1200) * ((inputs.waterDragOutPercent || 5) / 100) * hoursPerMonth;
+    const totalWaterMonthlyLiters = waterChangesMonthlyLiters + waterDragOutMonthlyLiters;
+    const waterCostMonthlyMxn = (totalWaterMonthlyLiters / 1000) * (inputs.waterCostM3 || 35.0);
+
+    // 3.6 PROYECCIÓN A 5 AÑOS (Y1-Y5)
+    const baseHoursWeek = 48; // Y1
+    const projectionY5 = [1,2,3,4,5].map(year => {
+      const hrsWeek = baseHoursWeek - ((year - 1) * 2);
+      const efTurn = (hrsWeek / 6) * ((inputs.oee || 85) / 100);
+      const tDisp = efTurn * (inputs.shiftsPerDay || 2);
+      const reqDay = inputs.metaProduccionCajasDia || 3000;
+      const reqH = tDisp > 0 ? reqDay / tDisp : 0;
+      const capH = (((inputs.bandaSpeedMeterPerMin || 10) * 100) / (activeBox.largoCm + (inputs.boxGapCm || 15))) * 60;
+      const realCapH = capH * ((inputs.oee || 85) / 100) * ((inputs.reductionFactor || 90) / 100);
+      return { year: 'Y' + year, hrsB: hrsWeek, efT: efTurn, turn: inputs.shiftsPerDay || 2, tDisp, reqH, capH: realCapH, bal: realCapH - reqH, cob: reqH > 0 ? (realCapH / reqH) * 100 : 0 };
+    });
+
+    // 4. CAPEX
+    const precioEquipoUsd = inputs.precioEquipoUsd || 0;
+    const ivaUsd = precioEquipoUsd * ((inputs.iva || 0) / 100);
+    
+    // Auto-detector inteligente: Si el valor es > 100, se asume que el usuario ingresó dólares absolutos en lugar de un porcentaje.
+    const getCapexValue = (val, base) => (val > 100 || val < -100) ? val : base * (val / 100);
+
+    const maniobrasUsd = getCapexValue(inputs.porcentajeManiobras || 0, precioEquipoUsd);
+    const montajeMecanicoUsd = getCapexValue(inputs.porcentajeMontajeMecanico || 0, precioEquipoUsd);
+    const obraCivilUsd = getCapexValue(inputs.porcentajeObraCivil || 0, precioEquipoUsd);
+    const electricoPrincipalUsd = getCapexValue(inputs.porcentajeElectricoPrincipal || 0, precioEquipoUsd);
+    const canalizacionProteccionesUsd = getCapexValue(inputs.porcentajeCanalizacionProtecciones || 0, precioEquipoUsd);
+    const extraccionPolvoUsd = getCapexValue(inputs.porcentajeExtraccionPolvo || 0, precioEquipoUsd);
+    const seguridadIndustrialUsd = getCapexValue(inputs.porcentajeSeguridadIndustrial || 0, precioEquipoUsd);
+    const ingenieriaSupervisionUsd = getCapexValue(inputs.porcentajeIngenieriaSupervision || 0, precioEquipoUsd);
+    const contingenciaUsd = getCapexValue(inputs.porcentajeContingencia || 0, precioEquipoUsd);
+
+    const capexInstaladoUsd = precioEquipoUsd + maniobrasUsd + montajeMecanicoUsd + obraCivilUsd + electricoPrincipalUsd + canalizacionProteccionesUsd + extraccionPolvoUsd + seguridadIndustrialUsd + ingenieriaSupervisionUsd + contingenciaUsd;
+    const capexFiscalUsd = capexInstaladoUsd + ivaUsd;
+    const capexInstaladoMxn = capexInstaladoUsd * (inputs.tipoCambio || 1);
+    
+    const capexPorTonHoraUsd = productionPerHourTon > 0 ? (capexInstaladoUsd / productionPerHourTon) : 0;
+    const capexPorKwUsd = installedPowerKw > 0 ? (capexInstaladoUsd / installedPowerKw) : 0;
+    const capexPorM2Usd = footprintM2 > 0 ? (capexInstaladoUsd / footprintM2) : 0;
+    const capexPorTonAnualUsd = annualProductionTon > 0 ? (capexInstaladoUsd / annualProductionTon) : 0;
+
+    // 5. OPEX
+    const manoObraMensualMxn = ((inputs.operadoresPorTurno || 0) * (inputs.shiftsPerDay || 2) * (inputs.sueldoOperadorMensual || 0)) + ((inputs.supervisoresPorTurno || 0) * (inputs.shiftsPerDay || 2) * (inputs.sueldoSupervisorMensual || 0));
+    const mantenimientoAnualMxn = capexInstaladoMxn * ((inputs.mantenimientoAnualPorcentaje || 0) / 100);
+    const mantenimientoMensualMxn = mantenimientoAnualMxn / 12;
+
+    const opexMensualMxn = (monthlyElectricityCostMxn || 0) + (waterCostMonthlyMxn || 0) + (manoObraMensualMxn || 0) + (mantenimientoMensualMxn || 0) + (inputs.filtrosMensualMxn || 0) + (inputs.refaccionesMensualMxn || 0) + (inputs.lubricacionMensualMxn || 0) + (inputs.limpiezaMensualMxn || 0) + (inputs.consumiblesMensualMxn || 0) + (inputs.otrosOpexMensualMxn || 0);
+    const opexAnualMxn = opexMensualMxn * 12;
+    const opexPorTonMxn = monthlyProductionTon > 0 ? (opexMensualMxn / monthlyProductionTon) : 0;
+
+    // 6. VIABILIDAD FINANCIERA
+    let ingresoMensual = 0;
+    if (inputs.usarModoIngresoVenta) ingresoMensual = monthlyProductionTon * (inputs.precioVentaTonMxn || 0);
+    else if (inputs.usarModoAhorroInterno) ingresoMensual = monthlyProductionTon * (inputs.ahorroPorTonMxn || 0);
+
+    const flujoOperativoMensual = ingresoMensual - opexMensualMxn;
+    const flujoOperativoAnual = flujoOperativoMensual * 12;
+    const paybackMeses = flujoOperativoMensual > 0 ? (capexInstaladoMxn / flujoOperativoMensual) : Infinity;
+    const roiAnual = capexInstaladoMxn > 0 ? (flujoOperativoAnual / capexInstaladoMxn) * 100 : 0;
+    const puntoEquilibrioTonMes = inputs.usarModoIngresoVenta && (inputs.precioVentaTonMxn || 0) > 0 ? (opexMensualMxn / inputs.precioVentaTonMxn) : 
+                                  (inputs.usarModoAhorroInterno && (inputs.ahorroPorTonMxn || 0) > 0 ? (opexMensualMxn / inputs.ahorroPorTonMxn) : 0);
+
+    // ESTADO OPERATIVO
+    let estadoOperativo = "NO VIABLE";
+    let estadoColor = "text-red-700 bg-red-50 border-red-200";
+    if (requirementCoverage >= 110 && paybackMeses <= 24) {
+      estadoOperativo = "VIABLE";
+      estadoColor = "text-emerald-600 bg-emerald-50 border-emerald-200";
+    } else if (requirementCoverage >= 90 && paybackMeses <= 36) {
+      estadoOperativo = "REVISAR";
+      estadoColor = "text-amber-600 bg-amber-50 border-amber-200";
+    }
+
+    let estadoFinanciero = "NO VIABLE";
+    if (flujoOperativoMensual > 0) {
+      if (paybackMeses <= 24) estadoFinanciero = "VIABLE";
+      else if (paybackMeses <= 36) estadoFinanciero = "REVISAR";
+    }
+
+    return {
+      footprintM2,
+      installedPowerKw,
+      averageHourlyConsumptionKw,
+      realProductionPerHourKg,
+      totalWaterMonthlyLiters,
+      waterCostMonthlyMxn,
+      projectionY5,
+      productionPerHourTon,
+      dailyProductionKg,
+      dailyProductionTon,
+      monthlyProductionTon,
+      annualProductionTon,
+      hourlyElectricityCostMxn,
+      dailyElectricityCostMxn,
+      monthlyElectricityCostMxn,
+      annualElectricityCostMxn,
+      kwhPerTon,
+      electricityCostPerTonMxn,
+      systemUtilization,
+      requirementCoverage,
+      operationalReserve,
+      machinesRequired,
+      estadoOperativo,
+      estadoColor,
+      estadoFinanciero,
+      totalHp: (inputs.motorPrincipalHp || 120) + (inputs.motorAuxiliarHp || 10),
+      // CAPEX
+      precioEquipoUsd, ivaUsd, maniobrasUsd, montajeMecanicoUsd, obraCivilUsd, electricoPrincipalUsd, canalizacionProteccionesUsd, extraccionPolvoUsd, seguridadIndustrialUsd, ingenieriaSupervisionUsd, contingenciaUsd,
+      capexInstaladoUsd, capexFiscalUsd, capexInstaladoMxn,
+      capexPorTonHoraUsd, capexPorKwUsd, capexPorM2Usd, capexPorTonAnualUsd,
+      // OPEX
+      manoObraMensualMxn, mantenimientoMensualMxn, opexMensualMxn, opexAnualMxn, opexPorTonMxn,
+      // FINANCIAL
+      ingresoMensual, flujoOperativoMensual, flujoOperativoAnual, paybackMeses, roiAnual, puntoEquilibrioTonMes
+    };
+  }, [inputs, currentNominalCapacity]);

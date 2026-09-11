@@ -7,7 +7,8 @@ const EVENT_KEY = 'pandora_logo_update';
 const BUCKET_NAME = 'assets'; // Nombre del Bucket en Supabase
 const LOGO_FILE_PATH = 'public/logo.png'; // Ruta fija para sobrescribir el logo
 
-export function useLogoManager() {
+export function useLogoManager(simulatorId = null) {
+  const simStorageKey = simulatorId ? `sim_${simulatorId}_logo` : null;
   const [logo, setLogo] = useState(null);
   const [logoSize, setLogoSize] = useState(48); // Default 48px
 
@@ -22,14 +23,17 @@ export function useLogoManager() {
   };
 
   useEffect(() => {
-    // Initial load: Use local cache / storage to prevent unnecessary network overhead
+    // Initial load: Priority order: 1. Simulator specific logo 2. Global custom logo
     const loadLogo = async () => {
       const storedSize = getFromStorage(LOGO_SIZE_KEY);
       if (storedSize) setLogoSize(parseInt(storedSize, 10));
 
-      const storedLogo = getFromStorage(LOGO_STORAGE_KEY);
-      if (storedLogo) {
-        setLogo(storedLogo);
+      const simLogo = simStorageKey ? getFromStorage(simStorageKey) : null;
+      const globalLogo = getFromStorage(LOGO_STORAGE_KEY);
+      const activeLogo = simLogo || globalLogo;
+      
+      if (activeLogo) {
+        setLogo(activeLogo);
       }
     };
 
@@ -38,14 +42,20 @@ export function useLogoManager() {
     // Listen for changes
     const handleStorageChange = (e) => {
       if (e.key === LOGO_SIZE_KEY && e.newValue) setLogoSize(parseInt(e.newValue, 10));
-      if (e.key === LOGO_STORAGE_KEY) setLogo(e.newValue);
+      if (e.key === LOGO_STORAGE_KEY || (simStorageKey && e.key === simStorageKey)) {
+        const simLogo = simStorageKey ? getFromStorage(simStorageKey) : null;
+        const globalLogo = getFromStorage(LOGO_STORAGE_KEY);
+        setLogo(simLogo || globalLogo || null);
+      }
     };
 
-    const handleLocalChange = () => {
+    const handleLocalChange = (e) => {
       const storedSize = getFromStorage(LOGO_SIZE_KEY);
       if (storedSize) setLogoSize(parseInt(storedSize, 10));
-      const storedLogo = getFromStorage(LOGO_STORAGE_KEY);
-      if (storedLogo) setLogo(storedLogo);
+      
+      const simLogo = simStorageKey ? getFromStorage(simStorageKey) : null;
+      const globalLogo = getFromStorage(LOGO_STORAGE_KEY);
+      setLogo(e?.detail?.base64 || simLogo || globalLogo || null);
     };
 
     window.addEventListener('storage', handleStorageChange);
@@ -55,7 +65,7 @@ export function useLogoManager() {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener(EVENT_KEY, handleLocalChange);
     };
-  }, []);
+  }, [simStorageKey]);
 
   const updateLogoSize = (newSize) => {
     try {
@@ -74,34 +84,40 @@ export function useLogoManager() {
         return;
       }
 
-      console.log(`[LogoManager] Uploading file to Supabase: ${file.name}`);
+      console.log(`[LogoManager] Processing logo file: ${file.name}`);
 
       try {
-        // 1. Upload to Supabase (Overwrite)
-        const { data, error } = await supabase.storage
-          .from(BUCKET_NAME)
-          .upload(LOGO_FILE_PATH, file, {
-            cacheControl: '3600',
-            upsert: true
-          });
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+          const base64 = event.target.result;
+          
+          // Save locally in localStorage for instant rendering & persistent reports
+          if (simStorageKey) {
+            localStorage.setItem(simStorageKey, base64);
+          }
+          localStorage.setItem(LOGO_STORAGE_KEY, base64);
+          setLogo(base64);
 
-        if (error) throw error;
+          // Dispatch sync event
+          window.dispatchEvent(new CustomEvent(EVENT_KEY, { detail: { base64, simulatorId } }));
 
-        // 2. Get Public URL
-        const { data: urlData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(LOGO_FILE_PATH);
-        const publicUrl = `${urlData.publicUrl}?t=${new Date().getTime()}`; // Bust cache
+          // Upload to Supabase as background persistence
+          try {
+            const filePath = simulatorId ? `public/logos/${simulatorId}.png` : LOGO_FILE_PATH;
+            await supabase.storage
+              .from(BUCKET_NAME)
+              .upload(filePath, file, { cacheControl: '3600', upsert: true });
+          } catch (spErr) {
+            console.warn('[LogoManager] Supabase storage upload notice:', spErr);
+          }
 
-        // 3. Update State
-        setLogo(publicUrl);
-
-        // 4. (Opzional) Cache locally as base64 for offline? No, better relying on URL.
-        // But we might want to trigger event for headers
-        window.dispatchEvent(new Event(EVENT_KEY));
-
-        resolve(publicUrl);
+          resolve(base64);
+        };
+        reader.onerror = (err) => reject(err);
+        reader.readAsDataURL(file);
 
       } catch (err) {
-        console.error('[LogoManager] Error uploading to Supabase:', err);
+        console.error('[LogoManager] Error uploading logo:', err);
         reject(err);
       }
     });
@@ -109,15 +125,14 @@ export function useLogoManager() {
 
   const resetLogo = async () => {
     try {
-      // Delete from Supabase
-      const { error } = await supabase.storage.from(BUCKET_NAME).remove([LOGO_FILE_PATH]);
-      if (error) console.error("Error removing from Supabase", error);
-
+      if (simStorageKey) {
+        localStorage.removeItem(simStorageKey);
+      }
       localStorage.removeItem(LOGO_STORAGE_KEY);
       localStorage.removeItem(LOGO_SIZE_KEY);
       setLogo(null);
       setLogoSize(48);
-      window.dispatchEvent(new Event(EVENT_KEY));
+      window.dispatchEvent(new CustomEvent(EVENT_KEY, { detail: { base64: null, simulatorId } }));
     } catch (error) {
       console.error('[LogoManager] Error resetting logo:', error);
     }

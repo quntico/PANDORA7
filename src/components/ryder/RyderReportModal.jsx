@@ -54,12 +54,17 @@ export default function RyderReportModal({ reportData, printWindow, clearPrintWi
             <h2 style={{ fontSize: 26, fontWeight: 950, margin: 0, color: '#11b5c9', textTransform: 'uppercase', lineHeight: 1.0, marginTop: 4, letterSpacing: -0.5 }}>{line2}</h2>
           </div>
         </div>
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: 9, fontWeight: 800, color: '#11b5c9', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2, lineHeight: 1 }}>
-            {meta.simulador} · {meta.maquina}
+        <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 14 }}>
+          {meta.customLogo && (
+            <img src={meta.customLogo} alt="Logo Corporativo" style={{ height: 42, maxWidth: 160, objectFit: 'contain' }} />
+          )}
+          <div>
+            <div style={{ fontSize: 9, fontWeight: 800, color: '#11b5c9', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2, lineHeight: 1 }}>
+              {meta.simulador} · {meta.maquina}
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#122033', marginTop: 4 }}>{meta.cliente}</div>
+            <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>{subtitleDesc}</div>
           </div>
-          <div style={{ fontSize: 11, fontWeight: 800, color: '#122033', marginTop: 4 }}>{meta.cliente}</div>
-          <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>{subtitleDesc}</div>
         </div>
       </div>
     </div>
@@ -227,9 +232,12 @@ export default function RyderReportModal({ reportData, printWindow, clearPrintWi
             <div style={{ height: 88, background: 'linear-gradient(90deg,#0b8ea0 0%,#11b5c9 55%,#6dd5e3 100%)', position: 'relative', overflow: 'hidden' }}>
               {/* Subtle diagonal stripe overlay */}
               <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(120deg, transparent, transparent 28px, rgba(255,255,255,0.04) 28px, rgba(255,255,255,0.04) 30px)' }} />
-              <div style={{ position: 'absolute', top: 24, left: 42, color: '#fff', fontWeight: 800, fontSize: 20, letterSpacing: 3, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 12 }}>
-                {meta.simulador}
-                <span style={{ display: 'inline-block', height: 24, lineHeight: '24px', fontSize: 10, fontWeight: 700, letterSpacing: 1.5, background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.35)', borderRadius: 4, padding: '0 10px', verticalAlign: 'middle', position: 'relative', top: '4px' }}>
+              <div style={{ position: 'absolute', top: 18, left: 42, color: '#fff', fontWeight: 800, fontSize: 20, letterSpacing: 3, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 14 }}>
+                {meta.customLogo ? (
+                  <img src={meta.customLogo} alt="Logo" style={{ height: 50, maxWidth: 190, objectFit: 'contain', background: '#ffffff', padding: '4px 10px', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }} />
+                ) : null}
+                <span>{meta.simulador}</span>
+                <span style={{ display: 'inline-block', height: 24, lineHeight: '24px', fontSize: 10, fontWeight: 700, letterSpacing: 1.5, background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.35)', borderRadius: 4, padding: '0 10px', verticalAlign: 'middle' }}>
                   PANDORA 3.0 · {meta.version}
                 </span>
               </div>

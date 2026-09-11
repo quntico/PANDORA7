@@ -3485,7 +3485,7 @@ export default function MolexSimulator() {
                 <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(120deg, transparent, transparent 28px, rgba(255,255,255,0.03) 28px, rgba(255,255,255,0.03) 30px)' }} />
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative', zIndex: 2 }}>
                   <span style={{ color: '#fff', fontWeight: 900, fontSize: 20, letterSpacing: 1, textTransform: 'uppercase', fontFamily: 'sans-serif' }}>
-                    CENTERS DE MÉXICO
+                    {inputs.companyName?.toUpperCase() || 'CENTERS DE MÉXICO'}
                   </span>
                   <span style={{ display: 'inline-block', fontSize: 9, fontWeight: 800, color: '#fff', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 6, padding: '2px 8px', background: 'rgba(255,255,255,0.1)' }}>
                     PANDORA 3.0
@@ -3493,7 +3493,7 @@ export default function MolexSimulator() {
                 </div>
                 <div style={{ textAlign: 'right', position: 'relative', zIndex: 2 }}>
                   <div style={{ color: '#fff', fontSize: 13, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    SIMULADOR DE RECUPERACIÓN DE COBRE
+                    {inputs.projectName?.toUpperCase() || 'SIMULADOR DE RECUPERACIÓN DE COBRE'}
                   </div>
                   <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 9, fontWeight: 700, marginTop: 3 }}>
                     CLIENTE: {inputs.clientName?.toUpperCase() || 'PEDRO PEREZ'} &nbsp;|&nbsp; MÁQUINA: {inputs.machineName?.toUpperCase() || 'MOLEX RECUPERACIÓN'} &nbsp;|&nbsp; FECHA: {inputs.evaluationDate || new Date().toLocaleDateString("es-MX")}

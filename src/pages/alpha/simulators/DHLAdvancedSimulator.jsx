@@ -1,17 +1,17 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { 
-  ArrowLeft, Zap, DollarSign, Activity, Settings, 
-  AlertCircle, ShieldAlert, Cpu, Layers, Wrench, 
-  Clock, BarChart3, FileSpreadsheet, Percent, 
-  TrendingUp, RotateCcw, Printer, Info, Eye, X, Download, 
+import {
+  ArrowLeft, Zap, DollarSign, Activity, Settings,
+  AlertCircle, ShieldAlert, Cpu, Layers, Wrench,
+  Clock, BarChart3, FileSpreadsheet, Percent,
+  TrendingUp, RotateCcw, Printer, Info, Eye, X, Download,
   Upload, Check, Sliders, Play, Pause, Save, Scale, ArrowRight, Loader2,
   FolderOpen, Link2, Plus, Maximize2, Minimize2, Lock, Unlock, MousePointer, Edit2,
   Ruler, Grid, Trash2, Box, Droplet, Shield, Target, Trophy, Package, Gauge,
   Building2, Factory, Users, FlaskConical, Volume2, Star, PieChart as PieChartLucide
 } from 'lucide-react';
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend, ResponsiveContainer, Cell, AreaChart, Area, LineChart, Line, PieChart, Pie, ComposedChart
 } from 'recharts';
 import jsPDF from 'jspdf';
@@ -99,6 +99,213 @@ export default function DHLAdvancedSimulator() {
   const { activeProject, updateProjectName } = useBeta();
   const reportRef = useRef(null);
   let currentSectionIndex = 1;
+  const [pdfLang, setPdfLang] = useState('es');
+
+  const tf = (str) => {
+    const dict = {
+      'es': {
+        'MODELOS DE CONTENEDORES EVALUADOS (DEMANDA 2028)': 'MODELOS DE CONTENEDORES EVALUADOS (DEMANDA 2028)',
+        'Referencia': 'Referencia',
+        'Tipo': 'Tipo',
+        'Piezas/día 2028': 'Piezas/día 2028',
+        'Req. cajas/h': 'Req. cajas/h',
+        'Capacidad objetivo': 'Capacidad objetivo',
+        'Estatus': 'Estatus',
+        'TOTAL GENERAL': 'TOTAL GENERAL',
+        'APROBADO': 'APROBADO',
+        'EXCEDE': 'EXCEDE'
+      },
+      'en': {
+        'MODELOS DE CONTENEDORES EVALUADOS (DEMANDA 2028)': 'EVALUATED CONTAINER MODELS (2028 DEMAND)',
+        'Referencia': 'Reference',
+        'Tipo': 'Type',
+        'Piezas/día 2028': 'Pieces/day 2028',
+        'Req. cajas/h': 'Req. boxes/h',
+        'Capacidad objetivo': 'Target capacity',
+        'Estatus': 'Status',
+        'TOTAL GENERAL': 'GRAND TOTAL',
+        'APROBADO': 'APPROVED',
+        'EXCEDE': 'EXCEEDS',
+        'CONFIGURACIÓN DEL SISTEMA': 'SYSTEM CONFIGURATION',
+        'GEMELO DIGITAL 3D': '3D DIGITAL TWIN',
+        'PROYECCIÓN PARAMÉTRICA': 'PARAMETRIC PROJECTION',
+        'ANÁLISIS DE RENTABILIDAD': 'PROFITABILITY ANALYSIS',
+        'REQUERIMIENTOS ESTRUCTURALES': 'STRUCTURAL REQUIREMENTS',
+        'REQUERIMIENTOS OPERATIVOS': 'OPERATIVE REQUIREMENTS',
+        'FICHA TÉCNICA Y COMPONENTES': 'TECHNICAL SHEET & COMPONENTS',
+        'CLIENTE': 'CLIENT',
+        'MÁQUINA': 'MACHINE',
+        'PÁGINA': 'PAGE',
+        'DE': 'OF',
+        'Componente / Característica': 'Component / Characteristic',
+        'Especificación Original': 'Original Specification',
+        'Detalle Técnico': 'Technical Detail',
+        'Modelo del Equipo': 'Equipment Model',
+        'Lavadora Industrial de Cajas (Agua y Aire)': 'Industrial Box Washer (Water and Air)',
+        'Aplicación Operativa': 'Operative Application',
+        'Lavado, enjuague y secado de cajas plásticas': 'Washing, rinsing and drying of plastic boxes',
+        'Eficiencia de Lavado: 90-95% | Secado: 80-90%': 'Washing Efficiency: 90-95% | Drying: 80-90%',
+        'Capacidad Nominal (Dinámica)': 'Nominal Capacity (Dynamic)',
+        'Motorización Principal (Bomba)': 'Main Motorization (Pump)',
+        'Motor de Bomba de Agua: 15 hp': 'Water Pump Motor: 15 hp',
+        'Motorización Auxiliar (Soplador)': 'Auxiliary Motorization (Blower)',
+        'Motor Soplador: 10 hp | Banda: 0.5 hp': 'Blower Motor: 10 hp | Conveyor: 0.5 hp',
+        'Potencia Instalada Total': 'Total Installed Power',
+        'Temperaturas de Proceso': 'Process Temperatures',
+        'Temperatura de Lavado: 60-80°C': 'Washing Temp: 60-80°C',
+        'Presión de Aspersión': 'Spray Pressure',
+        'Presión de Agua: 5.0 bar': 'Water Pressure: 5.0 bar',
+        'Control de Tracción': 'Traction Control',
+        'Velocidad Variable': 'Variable Speed',
+        'Inversor: Incluido (SIEMENS)': 'Inverter: Included (SIEMENS)',
+        'Sistema de Control': 'Control System',
+        'Gabinete NEMA 4 (Estanco)': 'NEMA 4 Cabinet (Watertight)',
+        'Alimentación Eléctrica': 'Electrical Power Supply',
+        'Trifásica 60Hz': '3-Phase 60Hz',
+        'Voltaje: 220/440V': 'Voltage: 220/440V',
+        'Dimensiones Físicas': 'Physical Dimensions',
+        'Peso Total Equipo': 'Total Equipment Weight',
+        'Estructura en Acero Inoxidable': 'Stainless Steel Structure',
+        'Componentes Eléctricos': 'Electrical Components',
+        'Contactores SCHNEIDER, Inversor SIEMENS': 'SCHNEIDER Contactors, SIEMENS Inverter',
+        'Nivel de Ruido': 'Noise Level',
+        'Nivel óptimo para piso de producción': 'Optimal level for production floor',
+        'FLUJO DEL PROCESO': 'PROCESS FLOW',
+        'ESPECIFICACIONES TÉCNICAS': 'TECHNICAL SPECIFICATIONS',
+        'Desglose detallado de especificaciones, capacidades y componentes de fabricación': 'Detailed breakdown of specifications, capacities and manufacturing components',
+        'INFORME PARAMÉTRICO DE SIMULACIÓN': 'PARAMETRIC SIMULATION REPORT',
+        'SIMULACIÓN': 'SIMULATION',
+        'DE LÍNEA': 'OF LINE',
+        'Evaluación de Capacidad y Eficiencia': 'Capacity and Efficiency Evaluation',
+        'Empresa': 'Company',
+        'Cliente': 'Client',
+        'Máquina': 'Machine',
+        'Proyecto': 'Project',
+        'Fecha': 'Date',
+        'PARÁMETROS DEL MATERIAL SIMULADO': 'SIMULATED MATERIAL PARAMETERS',
+        'Material Evaluado': 'Evaluated Material',
+        'Régimen Diario': 'Daily Regime',
+        'Meta Objetivo Diaria': 'Daily Target Goal',
+        'VISTA PREVIA DE RESULTADOS': 'RESULTS PREVIEW',
+        'Capacidad Nominal vs Real': 'Nominal vs Real Capacity',
+        'Margen Diario Operativo': 'Operational Daily Margin',
+        'Costo Operativo (OPEX)': 'Operating Cost (OPEX)',
+        'Viabilidad Proyectada': 'Projected Viability',
+        'Nominal': 'Nominal',
+        'Real': 'Real',
+        'cajas/día': 'boxes/day',
+        'cajas/h': 'boxes/h',
+        'horas': 'hours',
+        'turnos': 'shifts',
+        'Por 1,000 cajas': 'Per 1,000 boxes',
+        'Utilización Real': 'Real Utilization',
+        'Cobertura': 'Coverage',
+        'c/h': 'b/h',
+        'c/día': 'b/day',
+        'Sistema de lavado': 'Washing system',
+        'Equipo': 'Equipment',
+        'Capacidad': 'Capacity',
+        'kW Instalados': 'Installed kW',
+        'Carga Activa': 'Active Load',
+        'Banda Alimentadora (4,000 mm)': 'Feeding Conveyor (4,000 mm)',
+        'Módulo de Secado de Alta Presión (Cuchillas de Aire & Sopladores)': 'High Pressure Drying Module (Air Knives & Blowers)',
+        'Calentamiento & Recirculación Hídrica': 'Heating & Water Recirculation',
+        'Motor Auxiliar Hidráulico (10 HP)': 'Hydraulic Auxiliary Motor (10 HP)',
+        'Banda de Descarga (3,000 mm)': 'Discharge Conveyor (3,000 mm)',
+        'Banda Alimentadora': 'Feeding Conveyor',
+        'Motor Lavado Principal': 'Main Wash Motor',
+        'Módulo Secado Alta Presión': 'High Pressure Drying Module',
+        'Calentamiento & Recirculación': 'Heating & Recirculation',
+        'Motor Hidráulico': 'Hydraulic Motor',
+        'Banda de Descarga': 'Discharge Conveyor',
+        'Total Sistema de Lavado': 'Total Wash System',
+        'Nota del Ingeniero:': 'Engineer\'s Note:',
+        'Los componentes han sido calibrados mecánicamente para un voltaje nominal adaptado a los requerimientos eléctricos del sitio, con una carga activa basada en un OEE del': 'Components have been mechanically calibrated for a nominal voltage adapted to site electrical requirements, with an active load based on an OEE of',
+        'DISTRIBUCIÓN DE POTENCIA INSTALADA POR EQUIPO (kW)': 'INSTALLED POWER DISTRIBUTION BY EQUIPMENT (kW)',
+        'DICTAMEN TÉCNICO AUTOMÁTICO': 'AUTOMATIC TECHNICAL DICTUM',
+        'Equipo viable con excelente reserva operativa disponible': 'Viable equipment with excellent operational reserve available',
+        'El equipo trabajará holgadamente sin riesgos de fatiga térmica o saturación.': 'The equipment will operate smoothly without risk of thermal fatigue or saturation.',
+        'Equipo viable operando bajo régimen exigente': 'Viable equipment operating under demanding regime',
+        'Utilización': 'Utilization',
+        'Se sugiere monitorear el Filtros y Consumibles y programar paros periódicos de mantenimiento preventivo.': 'It is suggested to monitor Filters and Consumables and schedule regular preventive maintenance stops.',
+        'Riesgo elevado de saturación técnica. La utilización proyectada es de': 'High risk of technical saturation. The projected utilization is',
+        'operando al límite de su capacidad real. Cualquier imprevisto detendrá el flujo productivo.': 'operating at the limit of its real capacity. Any unforeseen event will halt the production flow.',
+        'Se recomienda encarecidamente añadir una segunda máquina lavadora y secadora WM-500 en paralelo, o bien ampliar el turno diario actual para lograr el requerimiento diario objetivo.': 'It is strongly recommended to add a second WM-500 washer and dryer in parallel, or to expand the current daily shift to achieve the daily target requirement.',
+        'La cobertura actual es del': 'The current coverage is',
+        'cumpliendo satisfactoriamente el requerimiento objetivo sin necesidad de unidades adicionales.': 'satisfactorily meeting the target requirement without the need for additional units.',
+        'CLIENTE': 'CLIENT',
+        'FECHA': 'DATE',
+        'MÁQUINA': 'MACHINE',
+        'lavadora INDUSTRIAL': 'INDUSTRIAL washer',
+        'Análisis de capacidad, potencia instalada y viabilidad financiera para la línea de lavado, enjuague y secado de cajas plásticas con la': 'Capacity analysis, installed power and financial viability for the plastic crate washing, rinsing and drying line with the',
+        'Nota Metodológica:': 'Methodological Note:',
+        'La capacidad por modelo se calcula en función de la velocidad lineal de la banda, dimensión de caja y separación. Limitado a 350 cajas/h máximo.': 'Model capacity is calculated based on linear belt speed, crate size, and separation. Capped at 350 crates/h max.',
+        'VISTA LIBRE': 'FREE VIEW',
+        'VISTA ISOMÉTRICA': 'ISOMETRIC VIEW',
+        'VISTA LATERAL': 'LATERAL VIEW',
+        'VISTA SUPERIOR': 'TOP VIEW',
+        'Libre': 'Free',
+        'Isométrica': 'Isometric',
+        'Lateral': 'Lateral',
+        'Superior': 'Top',
+        'Renderizado CAD de alta resolución del equipo en configuración de planta': 'High-resolution CAD rendering of the equipment in plant configuration',
+        'Nota de Escala Visual': 'Visual Scale Note',
+        'Esta proyección tridimensional corresponde a la captura exacta de la Lavadora': 'This 3D projection corresponds to the exact capture of the Washer',
+        'evaluada bajo la perspectiva': 'evaluated under the perspective',
+        'Las proporciones y el diseño representan el volumen real del equipo industrial proyectado en el software PANDORA 3.0.': 'The proportions and design represent the real volume of the industrial equipment projected in the PANDORA 3.0 software.',
+        'Listado físico nominal con potencias individuales calculadas al factor de carga': 'Nominal physical list with individual powers calculated at the load factor',
+        'CONFIGURACIÓN DEL SISTEMA': 'SYSTEM CONFIGURATION',
+        'GEMELO DIGITAL 3D': '3D DIGITAL TWIN',
+        'PROYECCIÓN PARAMÉTRICA': 'PARAMETRIC PROJECTION',
+        'ANÁLISIS DE RENTABILIDAD': 'PROFITABILITY ANALYSIS',
+        'REQUERIMIENTOS ESTRUCTURALES': 'STRUCTURAL REQUIREMENTS',
+        'REQUERIMIENTOS OPERATIVOS': 'OPERATIONAL REQUIREMENTS',
+        'FICHA TÉCNICA Y COMPONENTES': 'TECHNICAL SHEET & COMPONENTS',
+        'INFORME EJECUTIVO': 'EXECUTIVE REPORT',
+        'Análisis Financiero de Inversión': 'Financial Investment Analysis',
+        'Resumen Ejecutivo de CAPEX y Gasto Operativo Mensual': 'CAPEX Executive Summary and Monthly Operational Expense',
+        'Estructura CAPEX (Inversión Inicial)': 'CAPEX Structure (Initial Investment)',
+        'Inversión Total Estimada': 'Total Estimated Investment',
+        'Equipo Base': 'Base Equipment',
+        'Montaje y Maniobras': 'Assembly & Maneuvers',
+        'Instalación Eléctrica': 'Electrical Installation',
+        'Sistemas Hídricos / Drenaje': 'Water Systems / Drainage',
+        'Obra Civil e Ingeniería': 'Civil Engineering & Layout',
+        'Contingencia y Otros': 'Contingency & Others',
+        '* Las partidas de Obra Civil, Ingeniería y Contingencia son estimaciones sujetas a evaluación en sitio y diseño de layout final.': 'Civil work, engineering, and contingency items are estimates subject to on-site evaluation and final layout design.',
+        'INVERSIÓN INICIAL TOTAL': 'TOTAL INITIAL INVESTMENT',
+        'Estructura OPEX (Gasto Mensual)': 'OPEX Structure (Monthly Expense)',
+        'Gasto Operativo Mensual Estimado': 'Estimated Monthly Operational Expense',
+        'Energía Eléctrica': 'Electrical Energy',
+        'Impacto Hídrico (Agua)': 'Water Impact',
+        'Mano de Obra': 'Labor Force',
+        'Mantenimiento Preventivo': 'Preventive Maintenance',
+        'Refacciones / Consumibles': 'Spare Parts / Consumables',
+        'Químicos Tratamiento': 'Treatment Chemicals',
+        'Consumibles, Disposición & Otros': 'Consumables, Disposal & Others',
+        'GASTO OPERATIVO MENSUAL TOTAL': 'TOTAL MONTHLY OPERATIONAL EXPENSE',
+        'Matriz de Riesgo y Operación': 'Risk and Operation Matrix',
+        'Evaluación cualitativa de los principales riesgos operativos': 'Qualitative evaluation of main operational risks',
+        'Distribución OPEX': 'OPEX Distribution',
+        'Proporción de gastos operativos mensuales': 'Proportion of monthly operational expenses'
+      }
+    };
+
+    // Si el idioma seleccionado es "en", devolver formato Bilingüe estilizado
+    if (pdfLang === 'en') {
+      const translation = dict['en']?.[str];
+      if (translation && translation !== str) {
+        return (
+          <span key={str} className="bilingual-wrapper">
+            <span style={{ color: 'inherit' }}>{str}</span>
+            <span style={{ margin: '0 4px', color: 'inherit', opacity: 0.35 }}>|</span>
+            <span style={{ color: 'inherit', opacity: 0.75 }}>{translation}</span>
+          </span>
+        );
+      }
+    }
+    return str;
+  };
 
   // --- 1. ESTADO DE ENTRADAS ---
   const defaultInputs = {
@@ -278,21 +485,70 @@ export default function DHLAdvancedSimulator() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        return { 
-          ...defaultInputs, 
-          ...parsed, 
-          cajas: (parsed.cajas && parsed.cajas.length > 0) ? parsed.cajas : defaultInputs.cajas 
+        return {
+          ...defaultInputs,
+          ...parsed,
+          cajas: (parsed.cajas && parsed.cajas.length > 0) ? parsed.cajas : defaultInputs.cajas
         };
-      } catch(e) {}
+      } catch (e) { }
     }
     return defaultInputs;
   });
+
+  const defaultProcessFlags = [
+    { num: '01', step: 'ETAPA A', title: 'ALIMENTACIÓN', sub: 'FEED_01', hex: '#10b981', top: '8%', left: '8%', lineHeight: 220 },
+    { num: '02', step: 'ETAPA B', title: 'INGRESO AL TÚNEL', sub: 'INLET_02', hex: '#3b82f6', top: '8%', left: '22%', lineHeight: 140 },
+    { num: '03', step: 'ETAPA C', title: 'LAVADO POR ASPERSIÓN', sub: 'WASH_03', hex: '#f59e0b', top: '8%', left: '37%', lineHeight: 135 },
+    { num: '04', step: 'ETAPA D', title: 'RECIRCULACIÓN DE AGUA', sub: 'RECYCLE_04', hex: '#8b5cf6', top: '80%', left: '44%', lineHeight: 80, isBottom: true },
+    { num: '05', step: 'ETAPA E', title: 'SECADO 1', sub: 'DRY_05', hex: '#0f766e', top: '8%', left: '55%', lineHeight: 140 },
+    { num: '06', step: 'ETAPA F', title: 'SECADO 2', sub: 'DRY_06', hex: '#84cc16', top: '8%', left: '68%', lineHeight: 135 },
+    { num: '07', step: 'ETAPA G', title: 'DESCARGA FINAL', sub: 'OUTPUT_07', hex: '#ef4444', top: '8%', left: '79%', lineHeight: 210 },
+  ];
+
+  const [processFlags, setProcessFlags] = useState(() => {
+    try {
+      const saved = localStorage.getItem('sim_dhl_v2_process_flags');
+      return saved ? JSON.parse(saved) : defaultProcessFlags;
+    } catch (e) { return defaultProcessFlags; }
+  });
+
+  const [draggedFlagIndex, setDraggedFlagIndex] = useState(null);
+
+  const [processArrows, setProcessArrows] = useState(() => {
+    try {
+      const saved = localStorage.getItem('sim_dhl_v2_process_arrows');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) { return []; }
+  });
+
+  const [toolboxPos, setToolboxPos] = useState(() => {
+    try {
+      const saved = localStorage.getItem('sim_dhl_v2_toolbox_pos');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.top === 96) parsed.top = 160;
+        return parsed;
+      }
+      return { top: 160, right: 32 };
+    } catch (e) { return { top: 160, right: 32 }; }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('sim_dhl_v2_toolbox_pos', JSON.stringify(toolboxPos));
+  }, [toolboxPos]);
+
+  useEffect(() => {
+    localStorage.setItem('sim_dhl_v2_process_arrows', JSON.stringify(processArrows));
+  }, [processArrows]);
+  useEffect(() => {
+    localStorage.setItem('sim_dhl_v2_process_flags', JSON.stringify(processFlags));
+  }, [processFlags]);
 
   useEffect(() => {
     try {
       const { customProcessImage, ...safeInputs } = inputs;
       localStorage.setItem('sim_dhl_v2_inputs', JSON.stringify(safeInputs));
-    } catch(e) {
+    } catch (e) {
       console.warn("No se pudo guardar sim_dhl_v2_inputs", e);
     }
   }, [inputs]);
@@ -309,7 +565,7 @@ export default function DHLAdvancedSimulator() {
         newInputs.customInstalledPowerKw = 57.00;
         changed = true;
       }
-      
+
       // Force update boxes if missing pieces/day properties or if meta is 3000
       if (!newInputs.cajas || !newInputs.cajas[0]?.piezasDia2028 || newInputs.meta_diaria_cajas === 3000 || newInputs.hoursPerDay === 8) {
         newInputs.meta_diaria_cajas = 2819;
@@ -475,7 +731,7 @@ export default function DHLAdvancedSimulator() {
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [currentScenario, setCurrentScenario] = useState('normal'); // 'conservador' | 'normal' | 'alto'
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  
+
   const [pdfConfig, setPdfConfig] = useState(() => {
     const defaultConfig = {
       resumen: true,
@@ -490,13 +746,13 @@ export default function DHLAdvancedSimulator() {
       analisis: true,
       hidrico: true
     };
-    
+
     const saved = localStorage.getItem('sim_dhl_v2_pdf_config');
     if (saved) {
-      try { 
-        const parsed = JSON.parse(saved); 
+      try {
+        const parsed = JSON.parse(saved);
         return { ...defaultConfig, ...parsed, analisis: parsed.analisis ?? true };
-      } catch(e){}
+      } catch (e) { }
     }
     return defaultConfig;
   });
@@ -506,13 +762,12 @@ export default function DHLAdvancedSimulator() {
   }, [pdfConfig]);
 
   const renderPdfToggleButton = (tabId, label) => (
-    <button 
-      onClick={() => setPdfConfig(p => ({...p, [tabId]: !p[tabId]}))}
-      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider transition-all border ${
-        pdfConfig[tabId] 
-          ? 'bg-purple-100 border-purple-200 text-purple-700' 
-          : 'bg-slate-200 border-slate-300 text-slate-500'
-      }`}
+    <button
+      onClick={() => setPdfConfig(p => ({ ...p, [tabId]: !p[tabId] }))}
+      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider transition-all border ${pdfConfig[tabId]
+        ? 'bg-purple-100 border-purple-200 text-purple-700'
+        : 'bg-slate-200 border-slate-300 text-slate-500'
+        }`}
       title={`Activar/desactivar visualización de ${label} en el Informe PDF`}
     >
       <div className={`w-2 h-2 rounded-full ${pdfConfig[tabId] ? 'bg-purple-600 animate-pulse' : 'bg-slate-400'}`} />
@@ -529,19 +784,20 @@ export default function DHLAdvancedSimulator() {
   const [twinSnapshotLateral, setTwinSnapshotLateral] = useState(null);
   const [twinSnapshotSuperior, setTwinSnapshotSuperior] = useState(null);
   const [twinSnapshotIsométrica, setTwinSnapshotIsométrica] = useState(null);
+  const [isToolboxOpen, setIsToolboxOpen] = useState(true);
 
   // Load from IndexedDB on mount
   useEffect(() => {
     async function loadSnapshots() {
       const s1 = await getModelFromIndexedDB(`sim_${simId}_snapshot_libre`);
       if (s1 && s1.blob) setTwinSnapshot(s1.blob);
-      
+
       const s2 = await getModelFromIndexedDB(`sim_${simId}_snapshot_lateral`);
       if (s2 && s2.blob) setTwinSnapshotLateral(s2.blob);
-      
+
       const s3 = await getModelFromIndexedDB(`sim_${simId}_snapshot_superior`);
       if (s3 && s3.blob) setTwinSnapshotSuperior(s3.blob);
-      
+
       const s4 = await getModelFromIndexedDB(`sim_${simId}_snapshot_isometrica`);
       if (s4 && s4.blob) setTwinSnapshotIsométrica(s4.blob);
     }
@@ -557,7 +813,7 @@ export default function DHLAdvancedSimulator() {
   const [isDesignsLibraryOpen, setIsDesignsLibraryOpen] = useState(false);
   const [isTwinEditMode, setIsTwinEditMode] = useState(false);
   const [selectedTwinNodeId, setSelectedTwinNodeId] = useState(null);
-  
+
   const [twinLabelHeightOffset, setTwinLabelHeightOffset] = useState(() => {
     const saved = localStorage.getItem('sim_dhl_v2_twin_label_height_offset');
     return saved !== null ? Number(saved) : 0.2;
@@ -607,7 +863,7 @@ export default function DHLAdvancedSimulator() {
 
   useEffect(() => {
     localStorage.setItem('sim_dhl_v2_twin_theme', typeof twinTheme === 'object' ? JSON.stringify(twinTheme) : twinTheme);
-  }, [twinTheme]); 
+  }, [twinTheme]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -631,7 +887,7 @@ export default function DHLAdvancedSimulator() {
   const [isAnchoring, setIsAnchoring] = useState(false);
 
   const { loadDesign: fetchDesignFromDb, saveDesign: saveDesignToDb } = useFlowDesigns();
-  const [pendingUpload, setPendingUpload] = useState(null); 
+  const [pendingUpload, setPendingUpload] = useState(null);
   const [uploadModelName, setUploadModelName] = useState('');
   const [isSavingToCloud, setIsSavingToCloud] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -677,7 +933,7 @@ export default function DHLAdvancedSimulator() {
     async function loadSavedModel() {
       const savedMeta = localStorage.getItem('sim_dhl_v2_layout_meta');
       if (!savedMeta) return;
-      
+
       const savedModel = await getModelFromIndexedDB(`sim_${simId}_active_model`);
       if (savedModel && savedModel.blob) {
         try {
@@ -720,7 +976,7 @@ export default function DHLAdvancedSimulator() {
         // Revisar si hay un autoguardado local más reciente (por F5 accidental)
         const suffix = activeProject?.id ? `${activeProject.id}_` : 'local_';
         const localAutoSaveStr = localStorage.getItem(`sim_dhl_v2_${suffix}autosave`);
-        
+
         if (localAutoSaveStr) {
           try {
             const localData = JSON.parse(localAutoSaveStr);
@@ -785,7 +1041,7 @@ export default function DHLAdvancedSimulator() {
       activeTab,
       timestamp: Date.now()
     };
-    
+
     if (twinLayout && !twinLayout.url?.startsWith('blob:')) {
       autoSaveData.twinLayout = twinLayout;
     }
@@ -853,7 +1109,7 @@ export default function DHLAdvancedSimulator() {
             localStorage.removeItem(`${prefix}twin_snapshot_isometrica`);
             console.log("Purgado de caché de imágenes antiguas exitoso.");
           }
-        } catch (err) {}
+        } catch (err) { }
         window.__twin_purged = true;
       }
 
@@ -872,7 +1128,7 @@ export default function DHLAdvancedSimulator() {
       const lat = localStorage.getItem(`${prefix}twin_snapshot_lateral`);
       const sup = localStorage.getItem(`${prefix}twin_snapshot_superior`);
       const iso = localStorage.getItem(`${prefix}twin_snapshot_isometrica`);
-      
+
       if (base64) setTwinSnapshot(base64);
       if (lat) setTwinSnapshotLateral(lat);
       if (sup) setTwinSnapshotSuperior(sup);
@@ -893,7 +1149,7 @@ export default function DHLAdvancedSimulator() {
     syncSnapshot(null); // carga inicial sin evento
     window.addEventListener('storage', syncSnapshot);
     window.addEventListener('twin_snapshot_captured', handleCustomSnapshot);
-    
+
     return () => {
       window.removeEventListener('storage', syncSnapshot);
       window.removeEventListener('twin_snapshot_captured', handleCustomSnapshot);
@@ -926,17 +1182,17 @@ export default function DHLAdvancedSimulator() {
   const results = useMemo(() => {
     // 1. DIMENSIONES Y CAPACIDAD
     const footprintM2 = (inputs.machineLength || 7.0) * (inputs.machineWidth || 1.8);
-    
+
     const capacidadNominalCajasH = currentNominalCapacity;
     // Capacidad real nunca excede la nominal, y se basa en OEE y reducción.
     // También validamos que el layout de la caja no obligue a producir más de 200.
     const realProductionPerHourBoxes = capacidadNominalCajasH * ((inputs.oee || 85) / 100);
-    
+
     const dailyProductionBoxes = realProductionPerHourBoxes * (inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 2);
     const weeklyProductionBoxes = dailyProductionBoxes * (inputs.daysPerWeek || 6);
     const monthlyProductionBoxes = dailyProductionBoxes * (inputs.daysPerMonth || 24);
     const annualProductionBoxes = monthlyProductionBoxes * 12;
-    
+
     const dailyGoalBoxes = inputs.meta_diaria_cajas || 3000;
     const requirementCoverage = dailyGoalBoxes > 0 ? (dailyProductionBoxes / dailyGoalBoxes) * 100 : 0;
     const systemUtilization = dailyProductionBoxes > 0 ? (dailyGoalBoxes / dailyProductionBoxes) * 100 : 0;
@@ -948,12 +1204,12 @@ export default function DHLAdvancedSimulator() {
     const motorSopladorKw = (inputs.motorSopladorHp || 10) * 0.746;
     const motorBandaKw = (inputs.motorBandaHp || 0.5) * 0.746;
     const calentamientoKw = inputs.calentamientoElectricoKw || 18.0;
-    
+
     let potenciaSecadoresAdicionalKw = 0;
     if (inputs.secadoresIncluidosEnSoplador === 'No') {
       potenciaSecadoresAdicionalKw = inputs.potenciaSecadoresAdicionalKw || 0;
     }
-    
+
     const baseSumPowerKw = motorBombaAguaKw + motorSopladorKw + motorBandaKw + calentamientoKw + potenciaSecadoresAdicionalKw;
     const installedPowerKw = inputs.customInstalledPowerKw !== undefined ? inputs.customInstalledPowerKw : baseSumPowerKw;
     const averageHourlyConsumptionKw = installedPowerKw * ((inputs.loadFactor || 85) / 100);
@@ -993,7 +1249,7 @@ export default function DHLAdvancedSimulator() {
     const precioEquipoUsd = inputs.precioEquipoUsd || 89700;
     const tipoCambio = inputs.tipoCambio || 18.00;
     const ivaUsd = precioEquipoUsd * ((inputs.iva || 16) / 100);
-    
+
     // Todo será capturado en porcentaje o dólares según la función, pero se pide que se muestren
     // los valores reales. Haremos lo mismo, si val>100 asume es USD, sino %.
     const getCapexValue = (val, base) => (val > 100 || val < -100) ? val : base * (val / 100);
@@ -1023,10 +1279,10 @@ export default function DHLAdvancedSimulator() {
       : manoObraCalculada;
     const mantenimientoMensualMxn = inputs.mantenimientoMensualMxn || 8275;
     const refaccionesMensualMxn = inputs.refaccionesMensualMxn || 6000;
-    
+
     const quimicosMensualMxn = inputs.quimicosMensualMxn !== undefined ? inputs.quimicosMensualMxn : 7000.20;
     const opexMensualMxn = (monthlyElectricityCostMxn || 0) + (waterCostMonthlyMxn || 0) + manoObraMensualMxn + mantenimientoMensualMxn + refaccionesMensualMxn + quimicosMensualMxn + (inputs.supervisionMensualMxn || 0) + (inputs.consumiblesMensualMxn || 0) + (inputs.tratamientoEfluentesMensualMxn || 0) + (inputs.disposicionResiduosMensualMxn || 0) + (inputs.otrosOpexMensualMxn || 0);
-    
+
     const opexAnualMxn = opexMensualMxn * 12;
     const opexPorCajaMxn = monthlyProductionBoxes > 0 ? (opexMensualMxn / monthlyProductionBoxes) : 0;
     const opexPor1000CajasMxn = opexPorCajaMxn * 1000;
@@ -1044,7 +1300,7 @@ export default function DHLAdvancedSimulator() {
     let estadoOperativo = "NO CUMPLE";
     let estadoColor = "text-red-700 bg-red-50 border-red-200";
     let dictamenTexto = "NO CUMPLE. Se requieren más horas, mayor velocidad validada o una línea adicional.";
-    
+
     if (dailyProductionBoxes >= dailyGoalBoxes) {
       estadoOperativo = "VIABLE";
       estadoColor = "text-emerald-600 bg-emerald-50 border-emerald-200";
@@ -1096,7 +1352,7 @@ export default function DHLAdvancedSimulator() {
   // --- 4. ESCENARIOS FINANCIEROS (OEE) ---
   const scenarioResults = useMemo(() => {
     if (!results) return null;
-    
+
     const nominalCapacity = currentNominalCapacity;
     const calcScenario = (params) => {
       const { oee, factorCarga, horasDia, diasMes } = params;
@@ -1104,7 +1360,7 @@ export default function DHLAdvancedSimulator() {
       const produccionDiariaKg = capacidadRealKgH * horasDia;
       const produccionDiariaTon = produccionDiariaKg / 1000;
       const produccionMensualTon = produccionDiariaTon * diasMes;
-      
+
       const baseMotorsKw = ((inputs.motorBombaAguaHp || 120) + (inputs.motorSopladorHp || 10)) * 0.746;
       const installedPowerKw = (inputs.calentamientoElectricoKw !== undefined && inputs.calentamientoElectricoKw !== 96.98)
         ? inputs.calentamientoElectricoKw
@@ -1165,12 +1421,12 @@ export default function DHLAdvancedSimulator() {
     let params = { oee: 85 };
     if (type === 'conservador') params = { oee: 70 };
     if (type === 'alto') params = { oee: 95 };
-    
+
     setInputs(prev => ({
       ...prev,
       oee: params.oee
     }));
-    
+
     setToastMessage(`Escenario [${type.toUpperCase()}] aplicado exitosamente.`);
     setShowToast(true);
     setTimeout(() => setShowToast(false), 3000);
@@ -1181,8 +1437,8 @@ export default function DHLAdvancedSimulator() {
     try {
       const { customProcessImage, ...safeInputs } = inputs;
       localStorage.setItem('sim_dhl_v2_inputs', JSON.stringify(safeInputs));
-    } catch(e) {}
-    
+    } catch (e) { }
+
     if (activeProject && activeProject.id && activeProject.id !== 'local-fallback-id') {
       try {
         const { customProcessImage, ...safeInputsForCloud } = inputs;
@@ -1201,11 +1457,11 @@ export default function DHLAdvancedSimulator() {
             results
           })
         };
-        
+
         await supabase
           .from('project_context_beta')
           .upsert([payload], { onConflict: 'project_id,key' });
-          
+
         setToastMessage('¡Simulador WM-500 guardado y sincronizado con Supabase!');
       } catch (dbErr) {
         console.error("Error al sincronizar con Supabase:", dbErr);
@@ -1214,7 +1470,7 @@ export default function DHLAdvancedSimulator() {
     } else {
       setToastMessage('¡Simulador guardado localmente!');
     }
-    
+
     setShowToast(true);
     setTimeout(() => setShowToast(false), 4000);
   };
@@ -1258,64 +1514,37 @@ export default function DHLAdvancedSimulator() {
     const { file, processedResult } = pendingUpload;
     const modelName = uploadModelName.trim() || processedResult.name;
     setIsSavingToCloud(true);
-    setUploadProgress(0);
+    setUploadProgress(100);
     try {
-      // Subir archivo binario a Supabase Storage con progreso
+      // MODO LOCAL - Guardar directamente en la página (Navegador vía IndexedDB) sin Supabase
       const ext = file.name.split('.').pop().toLowerCase();
-      const storagePath = `twin-models/${Date.now()}_${modelName.replace(/\s+/g, '_')}.${ext}`;
-      
-      const { data: storageData, error: storageError } = await uploadFileWithProgress(
-        'flow-assets',
-        storagePath,
-        file,
-        (p) => setUploadProgress(p)
-      );
 
-      if (storageError) {
-        throw new Error(storageError.message || storageError);
-      }
+      const localUrl = URL.createObjectURL(file);
 
-      const { data: urlData } = supabase.storage.from('flow-assets').getPublicUrl(storagePath);
-      if (!urlData?.publicUrl) {
-        throw new Error('No se pudo obtener la URL pública del archivo subido.');
-      }
-      const publicUrl = urlData.publicUrl;
-
-      // Crear la configuración de layout con la URL pública
+      // Crear la configuración de layout apuntando a la URL local
       const layoutRecord = {
         ...processedResult,
-        url: publicUrl,
+        url: localUrl,
         name: modelName,
-        storagePath: storageData?.path || storagePath,
+        storagePath: 'local_storage',
+        isLocal: true,
       };
 
-      // Guardar en flow_designs_beta como diseño con solo el layout 3D
-      const savedDesign = await saveDesignToDb({
-        name: modelName,
-        description: `Modelo 3D subido desde el simulador WM-500 (${ext.toUpperCase()})`,
-        nodes: [],
-        edges: [],
-        layout: layoutRecord,
-        customEquipments: null,
-      });
-
-      // Aplicar el layout al visor del simulador
+      // Aplicar el layout al visor del simulador inmediatamente
       setTwinLayout(layoutRecord);
-      if (savedDesign?.id) setCurrentDesignId(savedDesign.id);
 
-      // Guardar también en IndexedDB localmente para velocidad de carga
+      // Persistencia local (se queda en caché del navegador "tu página directa")
       await saveModelToIndexedDB(`sim_${simId}_active_model`, file, file.name, processedResult.type);
       localStorage.setItem('sim_dhl_v2_layout_meta', JSON.stringify({ name: file.name, type: processedResult.type }));
 
-      setPendingUpload(null);
-      setUploadModelName('');
-      setUploadProgress(0);
-      alert(`Modelo 3D "${modelName}" subido y guardado exitosamente en tu librería.`);
+      alert('¡Modelo 3D guardado localmente de forma exitosa en el navegador!');
     } catch (err) {
       console.error(err);
-      alert('Error guardando en la nube: ' + err.message);
+      alert('Error al procesar el guardado local. Por favor, reintenta: ' + err.message);
     } finally {
       setIsSavingToCloud(false);
+      setPendingUpload(null);
+      setUploadProgress(0);
     }
   };
 
@@ -1466,16 +1695,16 @@ export default function DHLAdvancedSimulator() {
   const printReport = async () => {
     const defaultName = `Proyeccion_Industrial_${(inputs.clientName || 'Cliente').replace(/\s+/g, '_')}_WM500`;
     const finalFileName = window.prompt("Ingresa el nombre del archivo PDF a exportar:", defaultName);
-    
+
     if (!finalFileName) return; // User cancelled or left empty
-    
+
     setIsGeneratingPdf(true);
     setPdfProgress(10);
-    
+
     const suffix = activeProject?.id ? `${activeProject.id}_` : '';
     // Las capturas del Gemelo Digital ya están sincronizadas en el estado local (twinSnapshotLateral, etc.)
     // No leemos de localStorage aquí para evitar sobreescribir las capturas en memoria con versiones antiguas o truncadas.
-    
+
     const waitForImages = (el) => {
       const images = el.querySelectorAll('img');
       const promises = Array.from(images).map(img => {
@@ -1491,22 +1720,22 @@ export default function DHLAdvancedSimulator() {
     try {
       setIsPreviewMode(false);
       setIsReportModalOpen(true);
-      
+
       // Esperar a que el componente se monte en el DOM
       await new Promise(resolve => setTimeout(resolve, 300));
-      
+
       const element = reportRef.current;
       if (element) {
         await waitForImages(element);
       }
-      
+
       // Espera de estabilidad del motor de pintado del navegador
       await new Promise(resolve => setTimeout(resolve, 300));
-      
+
       const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4', compress: true });
       const width = doc.internal.pageSize.getWidth();
       const height = doc.internal.pageSize.getHeight();
-      
+
       const pages = element.querySelectorAll('.pdf-page');
 
       for (let i = 0; i < pages.length; i++) {
@@ -1531,7 +1760,7 @@ export default function DHLAdvancedSimulator() {
 
   const exportToExcel = () => {
     const wb = XLSX.utils.book_new();
-    
+
     // Hoja 1: Parámetros e Indicadores
     const generalData = [
       [`SIMULADOR PARAMÉTRICO lavadora ${inputs.machineName?.toUpperCase() || 'WM-500'}`],
@@ -1602,45 +1831,45 @@ export default function DHLAdvancedSimulator() {
     const utilPct = results.systemUtilization * 100;
     const covPct = results.requirementCoverage;
     const list = [];
-    
+
     if (utilPct < 80) {
       list.push({
         type: 'success',
-        text: `Equipo viable con excelente reserva operativa disponible (${results.operationalReserve.toFixed(1)}%). El equipo trabajará holgadamente sin riesgos de fatiga térmica o saturación.`
+        text: <>{tf('Equipo viable con excelente reserva operativa disponible')} ({results.operationalReserve.toFixed(1)}%). {tf('El equipo trabajará holgadamente sin riesgos de fatiga térmica o saturación.')}</>
       });
     } else if (utilPct >= 80 && utilPct <= 95) {
       list.push({
         type: 'warning',
-        text: `Equipo viable operando bajo régimen exigente (Utilización: ${utilPct.toFixed(1)}%). Se sugiere monitorear el Filtros y Consumibles y programar paros periódicos de mantenimiento preventivo.`
+        text: <>{tf('Equipo viable operando bajo régimen exigente')} ({tf('Utilización')}: {utilPct.toFixed(1)}%). {tf('Se sugiere monitorear el Filtros y Consumibles y programar paros periódicos de mantenimiento preventivo.')}</>
       });
     } else {
       list.push({
         type: 'danger',
-        text: `Riesgo elevado de saturación técnica. La utilización proyectada es de ${utilPct.toFixed(1)}%, operando al límite de su capacidad real. Cualquier imprevisto detendrá el flujo productivo.`
+        text: <>{tf('Riesgo elevado de saturación técnica. La utilización proyectada es de')} {utilPct.toFixed(1)}%, {tf('operando al límite de su capacidad real. Cualquier imprevisto detendrá el flujo productivo.')}</>
       });
     }
 
     if (covPct < 100) {
       list.push({
         type: 'recommend',
-        text: "Se recomienda encarecidamente añadir una segunda máquina lavadora y secadora WM-500 en paralelo, o bien ampliar el turno diario actual para lograr el requerimiento diario objetivo."
+        text: tf("Se recomienda encarecidamente añadir una segunda máquina lavadora y secadora WM-500 en paralelo, o bien ampliar el turno diario actual para lograr el requerimiento diario objetivo.")
       });
     } else {
       list.push({
         type: 'success',
-        text: `La cobertura actual es del ${covPct.toFixed(1)}%, cumpliendo satisfactoriamente el requerimiento objetivo sin necesidad de unidades adicionales.`
+        text: <>{tf('La cobertura actual es del')} {covPct.toFixed(1)}%, {tf('cumpliendo satisfactoriamente el requerimiento objetivo sin necesidad de unidades adicionales.')}</>
       });
     }
 
     return list;
-  }, [results]);
+  }, [results, pdfLang]);
 
   // Proyecciones mensuales simuladas para gráficos (12 meses)
   const chartData = useMemo(() => {
     const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
     return months.map((m, idx) => {
       // Pequeñas variaciones estacionales en producción
-      const factor = 0.95 + Math.sin(idx / 1.5) * 0.05; 
+      const factor = 0.95 + Math.sin(idx / 1.5) * 0.05;
       const prodTon = (results.monthlyProductionBoxes || 0) * factor;
       const energyMxn = (results.monthlyElectricityCostMxn || 0) * factor;
       const kwhMonth = ((results.averageHourlyConsumptionKw || 0) * (inputs.hoursPerDay || 24) * (inputs.daysPerMonth || 30)) * factor;
@@ -1655,7 +1884,7 @@ export default function DHLAdvancedSimulator() {
   }, [results, inputs]);
 
   const hasAnySnapshot = !!(twinSnapshot || twinSnapshotLateral || twinSnapshotSuperior || twinSnapshotIsométrica);
-  
+
   const snapshotPages = [];
   if (twinSnapshotIsométrica) snapshotPages.push({ title: 'PERSPECTIVA ISOMÉTRICA', type: 'Isométrica', src: twinSnapshotIsométrica });
   if (twinSnapshotSuperior) snapshotPages.push({ title: 'PLANTA ARQUITECTÓNICA', type: 'Superior', src: twinSnapshotSuperior });
@@ -1677,20 +1906,20 @@ export default function DHLAdvancedSimulator() {
 
   // Estilos de Páginas Corporativas en Modal (Pandora 3.0 Standard)
   const S = {
-    page: { 
-      width: '1120px', 
-      height: '792px', 
-      background: 'radial-gradient(circle at 90% 8%, rgba(13,148,136,0.04) 0%, rgba(255,255,255,0) 40%), radial-gradient(circle at 10% 92%, rgba(15,118,110,0.03) 0%, rgba(255,255,255,0) 40%), #ffffff', 
-      borderRadius: '24px', 
-      overflow: 'hidden', 
+    page: {
+      width: '1120px',
+      height: '792px',
+      background: 'radial-gradient(circle at 90% 8%, rgba(13,148,136,0.04) 0%, rgba(255,255,255,0) 40%), radial-gradient(circle at 10% 92%, rgba(15,118,110,0.03) 0%, rgba(255,255,255,0) 40%), #ffffff',
+      borderRadius: '24px',
+      overflow: 'hidden',
       position: 'relative',
       border: '1px solid #dbe5ee',
       boxShadow: '0 10px 40px rgba(15,23,42,0.08)',
       boxSizing: 'border-box'
     },
-    inner: { 
-      padding: '38px 48px 50px', 
-      height: '100%', 
+    inner: {
+      padding: '38px 48px 50px',
+      height: '100%',
       position: 'relative',
       display: 'flex',
       flexDirection: 'column',
@@ -1711,14 +1940,15 @@ export default function DHLAdvancedSimulator() {
     const num = match ? match[1] + '. ' : '';
     const withoutNum = cleanTitle.replace(num, '').trim();
 
-    if (withoutNum.includes('ESPECIFICACIONES TÉCNICAS')) return { line1: num + 'CONFIGURACIÓN DEL SISTEMA', line2: withoutNum };
-    if (withoutNum.includes('VISTA')) return { line1: num + 'GEMELO DIGITAL 3D', line2: withoutNum };
-    if (withoutNum.includes('ESCENARIOS')) return { line1: (num || '6. ') + 'PROYECCIÓN PARAMÉTRICA', line2: withoutNum };
-    if (withoutNum.includes('FINANCIER')) return { line1: num + 'ANÁLISIS DE RENTABILIDAD', line2: withoutNum };
-    if (withoutNum.includes('OBRA CIVIL') || withoutNum.includes('CONCRETO') || withoutNum.includes('CIMENTACIÓN')) return { line1: num + 'REQUERIMIENTOS ESTRUCTURALES', line2: withoutNum };
-    if (withoutNum.includes('ENERGÍA') || withoutNum.includes('ENERGÍA') || withoutNum.includes('CAPACIDAD')) return { line1: num + 'REQUERIMIENTOS OPERATIVOS', line2: withoutNum };
-    
-    return { line1: num ? num + 'FICHA TÉCNICA Y COMPONENTES' : 'FICHA TÉCNICA Y COMPONENTES', line2: withoutNum };
+    if (withoutNum.includes('RESUMEN')) return { line1: <>{num}{tf('INFORME EJECUTIVO')}</>, line2: tf(withoutNum) };
+    if (withoutNum.includes('ESPECIFICACIONES TÉCNICAS')) return { line1: <>{num}{tf('CONFIGURACIÓN DEL SISTEMA')}</>, line2: tf(withoutNum) };
+    if (withoutNum.includes('VISTA')) return { line1: <>{num}{tf('GEMELO DIGITAL 3D')}</>, line2: tf(withoutNum) };
+    if (withoutNum.includes('ESCENARIOS')) return { line1: <>{num || '6. '}{tf('PROYECCIÓN PARAMÉTRICA')}</>, line2: tf(withoutNum) };
+    if (withoutNum.includes('FINANCIER')) return { line1: <>{num}{tf('ANÁLISIS DE RENTABILIDAD')}</>, line2: tf(withoutNum) };
+    if (withoutNum.includes('OBRA CIVIL') || withoutNum.includes('CONCRETO') || withoutNum.includes('CIMENTACIÓN')) return { line1: <>{num}{tf('REQUERIMIENTOS ESTRUCTURALES')}</>, line2: tf(withoutNum) };
+    if (withoutNum.includes('ENERGÍA') || withoutNum.includes('ENERGÍA') || withoutNum.includes('CAPACIDAD')) return { line1: <>{num}{tf('REQUERIMIENTOS OPERATIVOS')}</>, line2: tf(withoutNum) };
+
+    return { line1: <>{num ? num : ''}{tf('FICHA TÉCNICA Y COMPONENTES')}</>, line2: tf(withoutNum) };
   };
 
   const renderPageHeader = (title, subtitle) => {
@@ -1766,18 +1996,18 @@ export default function DHLAdvancedSimulator() {
 
   const renderPageFooter = (pageNum, total) => (
     <div style={{ width: '100%', borderTop: '1px solid #dbe5ee', paddingTop: 16, display: 'flex', justifyContent: 'space-between', fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1, flexShrink: 0, marginTop: 'auto' }}>
-      <span>{inputs.companyName?.toUpperCase() || 'EMPRESA'} | {inputs.clientName?.toUpperCase() || 'CLIENTE'} | MÁQUINA: {inputs.machineName?.toUpperCase() || 'BWD-250'}</span>
-      <span>PÁGINA {pageNum} DE {total}</span>
+      <span>{inputs.companyName?.toUpperCase() || 'EMPRESA'} | {tf('CLIENTE')}: {inputs.clientName?.toUpperCase() || 'CLIENTE'} | {tf('MÁQUINA')}: {inputs.machineName?.toUpperCase() || 'BWD-250'}</span>
+      <span>{tf('PÁGINA')} {pageNum} {tf('DE')} {total}</span>
     </div>
   );
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 p-6 md:p-8 font-sans relative overflow-x-hidden">
-      
+
       {/* HEADER DE CONTROL */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8 border-b border-slate-200 pb-6">
         <div className="flex items-center gap-4">
-          <button 
+          <button
             onClick={() => navigate('/alpha/simulators')}
             className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-all shadow-sm"
             title="Volver a la galería de simuladores"
@@ -1797,7 +2027,7 @@ export default function DHLAdvancedSimulator() {
                   className="bg-white border border-cyan-500/50 rounded-lg px-2 py-0.5 text-lg font-black text-slate-800 tracking-wide outline-none focus:ring-1 focus:ring-cyan-500 w-72 uppercase"
                 />
               ) : (
-                <h1 
+                <h1
                   onClick={() => setIsEditingProjectName(true)}
                   className="text-2xl font-black tracking-tight text-slate-900 uppercase cursor-pointer hover:text-cyan-600 transition-colors flex items-center gap-2 group"
                   title="Hacer click para editar nombre de simulación"
@@ -1822,7 +2052,7 @@ export default function DHLAdvancedSimulator() {
                   className="bg-white border border-cyan-500/50 rounded-lg px-2 py-0.5 text-xs font-bold text-slate-800 tracking-wide outline-none w-64 uppercase"
                 />
               ) : (
-                <span 
+                <span
                   onClick={() => setIsEditingClientName(true)}
                   className="text-cyan-600 cursor-pointer hover:underline flex items-center gap-1 font-black"
                 >
@@ -1837,7 +2067,7 @@ export default function DHLAdvancedSimulator() {
 
         {/* ACCIONES SUPERIORES */}
         <div className="flex flex-wrap items-center gap-3">
-          <button 
+          <button
             onClick={handleSaveSimulator}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-cyan-600 border border-cyan-700 hover:bg-cyan-700 text-white transition-all uppercase tracking-wider shadow-sm"
           >
@@ -1845,7 +2075,7 @@ export default function DHLAdvancedSimulator() {
             Guardar Configuración
           </button>
 
-          <button 
+          <button
             onClick={() => navigate('/alpha/simulators/wm-500-stable')}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-amber-50 border border-amber-200 hover:bg-amber-100 text-amber-700 transition-all uppercase tracking-wider shadow-sm"
             title="Descartar cambios experimentales y volver a la versión de respaldo"
@@ -1854,7 +2084,7 @@ export default function DHLAdvancedSimulator() {
             Versión Estable
           </button>
 
-          <button 
+          <button
             onClick={() => {
               setActiveTab('twin');
               setIs3DView(true);
@@ -1866,7 +2096,7 @@ export default function DHLAdvancedSimulator() {
             Visualizador 3D
           </button>
 
-          <button 
+          <button
             onClick={exportToExcel}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 transition-all uppercase tracking-wider shadow-sm"
           >
@@ -1874,7 +2104,7 @@ export default function DHLAdvancedSimulator() {
             Excel
           </button>
 
-          <button 
+          <button
             onClick={() => {
               setIsPreviewMode(true);
               setIsReportModalOpen(true);
@@ -1886,7 +2116,7 @@ export default function DHLAdvancedSimulator() {
             Visualizar Informe
           </button>
 
-          <button 
+          <button
             onClick={printReport}
             disabled={isGeneratingPdf}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-white border border-slate-200 hover:bg-red-50 hover:text-red-750 hover:border-red-200 text-slate-700 transition-all uppercase tracking-wider shadow-sm"
@@ -1895,7 +2125,7 @@ export default function DHLAdvancedSimulator() {
             {isGeneratingPdf ? `Generando ${pdfProgress}%` : 'Informe PDF'}
           </button>
 
-          <button 
+          <button
             onClick={handleResetInputs}
             className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold bg-white border border-slate-200 hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-all shadow-sm"
             title="Reiniciar a valores originales"
@@ -1907,633 +2137,645 @@ export default function DHLAdvancedSimulator() {
 
       {/* CUERPO DEL SIMULADOR - COLUMNAS */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-8 relative">
-        
+
         {/* PANEL IZQUIERDO: VARIABLES EDITABLES (CONFIGURADOR) */}
         {isSidebarOpen && (
-        <div className="lg:col-span-4 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col gap-6 relative">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-            <div className="flex items-center gap-2">
-              <Sliders className="w-5 h-5 text-cyan-600" />
-              <h2 className="text-sm font-black uppercase tracking-wider text-slate-900">Variables Editables</h2>
+          <div className="lg:col-span-4 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col gap-6 relative">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-2">
+                <Sliders className="w-5 h-5 text-cyan-600" />
+                <h2 className="text-sm font-black uppercase tracking-wider text-slate-900">Variables Editables</h2>
+              </div>
+              <button onClick={() => setIsSidebarOpen(false)} className="p-1 hover:bg-slate-100 rounded-md text-slate-400 hover:text-slate-700 transition-colors" title="Ocultar Panel">
+                <Minimize2 className="w-4 h-4" />
+              </button>
             </div>
-            <button onClick={() => setIsSidebarOpen(false)} className="p-1 hover:bg-slate-100 rounded-md text-slate-400 hover:text-slate-700 transition-colors" title="Ocultar Panel">
-              <Minimize2 className="w-4 h-4" />
-            </button>
-          </div>
 
-          <div className="overflow-y-auto max-h-[75vh] pr-2 custom-scrollbar">
-            
-            {/* 0. CONFIGURACIÓN DE PESTAÑAS */}
-            <details className="group mb-3 border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
-              <summary className="flex items-center justify-between p-4 cursor-pointer select-none bg-slate-50 hover:bg-slate-100 transition-colors">
-                <span className="text-[10px] font-black text-cyan-600 uppercase tracking-wider">0. Configuración de Pestañas</span>
-              </summary>
-              <div className="p-4 pt-0 space-y-2">
-                <span className="block text-[9px] font-bold text-slate-500 uppercase">Activar / Desactivar Secciones:</span>
-                <div className="grid grid-cols-1 gap-2">
-                  <label className="flex items-center gap-2.5 cursor-pointer bg-white p-2 rounded-lg border border-slate-200 hover:border-cyan-300 transition-colors">
-                    <input type="checkbox" checked={!inputs.hideCapex} onChange={e => setInputs(p => ({...p, hideCapex: !e.target.checked}))} className="accent-cyan-600 w-3.5 h-3.5" />
-                    <span className="text-[10px] font-black text-slate-850 uppercase">4. CAPEX/OPEX</span>
-                  </label>
-                  <label className="flex items-center gap-2.5 cursor-pointer bg-white p-2 rounded-lg border border-slate-200 hover:border-cyan-300 transition-colors">
-                    <input type="checkbox" checked={!inputs.hideEnergía} onChange={e => setInputs(p => ({...p, hideEnergía: !e.target.checked}))} className="accent-cyan-600 w-3.5 h-3.5" />
-                    <span className="text-[10px] font-black text-slate-850 uppercase">5. ENERGÍA</span>
-                  </label>
-                  <label className="flex items-center gap-2.5 cursor-pointer bg-white p-2 rounded-lg border border-slate-200 hover:border-cyan-300 transition-colors">
-                    <input type="checkbox" checked={!inputs.hideEscenarios} onChange={e => setInputs(p => ({...p, hideEscenarios: !e.target.checked}))} className="accent-cyan-600 w-3.5 h-3.5" />
-                    <span className="text-[10px] font-black text-slate-850 uppercase">6. ESCENARIOS</span>
-                  </label>
-                  <label className="flex items-center gap-2.5 cursor-pointer bg-white p-2 rounded-lg border border-slate-200 hover:border-cyan-300 transition-colors">
-                    <input type="checkbox" checked={!inputs.hideFinanciero} onChange={e => setInputs(p => ({...p, hideFinanciero: !e.target.checked}))} className="accent-cyan-600 w-3.5 h-3.5" />
-                    <span className="text-[10px] font-black text-slate-850 uppercase">7. FINANCIERO</span>
-                  </label>
-                  <label className="flex items-center gap-2.5 cursor-pointer bg-white p-2 rounded-lg border border-slate-200 hover:border-cyan-300 transition-colors">
-                    <input type="checkbox" checked={!inputs.hideRiesgos} onChange={e => setInputs(p => ({...p, hideRiesgos: !e.target.checked}))} className="accent-cyan-600 w-3.5 h-3.5" />
-                    <span className="text-[10px] font-black text-slate-850 uppercase">8. RIESGOS</span>
-                  </label>
-                </div>
-              </div>
-            </details>
+            <div className="overflow-y-auto max-h-[75vh] pr-2 custom-scrollbar">
 
-            {/* 1. METADATOS DEL PROYECTO */}
-            <details className="group mb-3 border border-slate-200 rounded-xl overflow-hidden bg-slate-50" open>
-              <summary className="flex items-center justify-between p-4 cursor-pointer select-none bg-slate-50 hover:bg-slate-100 transition-colors">
-                <span className="text-[10px] font-black text-indigo-600 uppercase tracking-wider">1. Metadatos del Proyecto</span>
-              </summary>
-              <div className="p-4 pt-0 grid grid-cols-1 gap-2">
-                <div className="flex flex-col gap-1">
-                  <span className="text-[9px] font-bold text-slate-500 uppercase">Empresa</span>
-                  <input type="text" value={inputs.companyName || ''} onChange={e => setInputs(p => ({...p, companyName: e.target.value}))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none uppercase" />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span className="text-[9px] font-bold text-slate-500 uppercase">Cliente</span>
-                  <input type="text" value={inputs.clientName || ''} onChange={e => setInputs(p => ({...p, clientName: e.target.value}))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none uppercase" />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span className="text-[9px] font-bold text-slate-500 uppercase">Máquina</span>
-                  <input type="text" value={inputs.machineName || ''} onChange={e => setInputs(p => ({...p, machineName: e.target.value}))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none uppercase" />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span className="text-[9px] font-bold text-slate-500 uppercase">Fecha</span>
-                  <input type="text" value={inputs.evaluationDate || ''} onChange={e => setInputs(p => ({...p, evaluationDate: e.target.value}))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none uppercase" />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span className="text-[9px] font-bold text-slate-500 uppercase">Material Evaluado</span>
-                  <input type="text" value={inputs.materialType || ''} onChange={e => setInputs(p => ({...p, materialType: e.target.value}))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none uppercase" />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[9px] font-bold text-slate-500 uppercase">Logo del Cliente</span>
-                    {inputs.customClientLogo && (
-                      <button 
-                        type="button" 
-                        onClick={() => setInputs(p => ({ ...p, customClientLogo: null }))}
-                        className="text-[8px] font-bold text-red-500 hover:underline"
-                      >
-                        Quitar Logo
-                      </button>
-                    )}
+              {/* 0. CONFIGURACIÓN DE PESTAÑAS */}
+              <details className="group mb-3 border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
+                <summary className="flex items-center justify-between p-4 cursor-pointer select-none bg-slate-50 hover:bg-slate-100 transition-colors">
+                  <span className="text-[10px] font-black text-cyan-600 uppercase tracking-wider">0. Configuración de Pestañas</span>
+                </summary>
+                <div className="p-4 pt-0 space-y-2">
+                  <span className="block text-[9px] font-bold text-slate-500 uppercase">Activar / Desactivar Secciones:</span>
+                  <div className="grid grid-cols-1 gap-2">
+                    <label className="flex items-center gap-2.5 cursor-pointer bg-white p-2 rounded-lg border border-slate-200 hover:border-cyan-300 transition-colors">
+                      <input type="checkbox" checked={!inputs.hideCapex} onChange={e => setInputs(p => ({ ...p, hideCapex: !e.target.checked }))} className="accent-cyan-600 w-3.5 h-3.5" />
+                      <span className="text-[10px] font-black text-slate-850 uppercase">4. CAPEX/OPEX</span>
+                    </label>
+                    <label className="flex items-center gap-2.5 cursor-pointer bg-white p-2 rounded-lg border border-slate-200 hover:border-cyan-300 transition-colors">
+                      <input type="checkbox" checked={!inputs.hideEnergía} onChange={e => setInputs(p => ({ ...p, hideEnergía: !e.target.checked }))} className="accent-cyan-600 w-3.5 h-3.5" />
+                      <span className="text-[10px] font-black text-slate-850 uppercase">5. ENERGÍA</span>
+                    </label>
+                    <label className="flex items-center gap-2.5 cursor-pointer bg-white p-2 rounded-lg border border-slate-200 hover:border-cyan-300 transition-colors">
+                      <input type="checkbox" checked={!inputs.hideEscenarios} onChange={e => setInputs(p => ({ ...p, hideEscenarios: !e.target.checked }))} className="accent-cyan-600 w-3.5 h-3.5" />
+                      <span className="text-[10px] font-black text-slate-850 uppercase">6. ESCENARIOS</span>
+                    </label>
+                    <label className="flex items-center gap-2.5 cursor-pointer bg-white p-2 rounded-lg border border-slate-200 hover:border-cyan-300 transition-colors">
+                      <input type="checkbox" checked={!inputs.hideFinanciero} onChange={e => setInputs(p => ({ ...p, hideFinanciero: !e.target.checked }))} className="accent-cyan-600 w-3.5 h-3.5" />
+                      <span className="text-[10px] font-black text-slate-850 uppercase">7. FINANCIERO</span>
+                    </label>
+                    <label className="flex items-center gap-2.5 cursor-pointer bg-white p-2 rounded-lg border border-slate-200 hover:border-cyan-300 transition-colors">
+                      <input type="checkbox" checked={!inputs.hideRiesgos} onChange={e => setInputs(p => ({ ...p, hideRiesgos: !e.target.checked }))} className="accent-cyan-600 w-3.5 h-3.5" />
+                      <span className="text-[10px] font-black text-slate-850 uppercase">8. RIESGOS</span>
+                    </label>
                   </div>
-                  {inputs.customClientLogo ? (
-                    <div className="flex items-center gap-2 p-1.5 bg-white border border-slate-200 rounded-lg">
-                      <img src={inputs.customClientLogo} alt="Logo" className="h-6 max-w-[100px] object-contain" />
-                      <span className="text-[9px] text-emerald-600 font-bold">Cargado</span>
+                </div>
+              </details>
+
+              {/* 1. METADATOS DEL PROYECTO */}
+              <details className="group mb-3 border border-slate-200 rounded-xl overflow-hidden bg-slate-50" open>
+                <summary className="flex items-center justify-between p-4 cursor-pointer select-none bg-slate-50 hover:bg-slate-100 transition-colors">
+                  <span className="text-[10px] font-black text-indigo-600 uppercase tracking-wider">1. Metadatos del Proyecto</span>
+                </summary>
+                <div className="p-4 pt-0 grid grid-cols-1 gap-2">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase">Empresa</span>
+                    <input type="text" value={inputs.companyName || ''} onChange={e => setInputs(p => ({ ...p, companyName: e.target.value }))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none uppercase" />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase">Cliente</span>
+                    <input type="text" value={inputs.clientName || ''} onChange={e => setInputs(p => ({ ...p, clientName: e.target.value }))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none uppercase" />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase">Máquina</span>
+                    <input type="text" value={inputs.machineName || ''} onChange={e => setInputs(p => ({ ...p, machineName: e.target.value }))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none uppercase" />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase">Fecha</span>
+                    <input type="text" value={inputs.evaluationDate || ''} onChange={e => setInputs(p => ({ ...p, evaluationDate: e.target.value }))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none uppercase" />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase">Material Evaluado</span>
+                    <input type="text" value={inputs.materialType || ''} onChange={e => setInputs(p => ({ ...p, materialType: e.target.value }))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none uppercase" />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[9px] font-bold text-slate-500 uppercase">Logo del Cliente</span>
+                      {inputs.customClientLogo && (
+                        <button
+                          type="button"
+                          onClick={() => setInputs(p => ({ ...p, customClientLogo: null }))}
+                          className="text-[8px] font-bold text-red-500 hover:underline"
+                        >
+                          Quitar Logo
+                        </button>
+                      )}
                     </div>
-                  ) : (
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      onChange={handleCustomClientLogoUpload} 
-                      className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-[10px] font-bold text-slate-600 focus:border-cyan-500 focus:outline-none" 
-                    />
-                  )}
-                </div>
-              </div>
-            </details>
-
-            {/* 2. OPERACIÓN */}
-            <details className="group mb-3 border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
-              <summary className="flex items-center justify-between p-4 cursor-pointer select-none bg-slate-50 hover:bg-slate-100 transition-colors">
-                <span className="text-[10px] font-black text-cyan-600 uppercase tracking-wider">2. Operación</span>
-              </summary>
-              <div className="p-4 pt-0 space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Caja a Simular</span>
-                    <select 
-                      value={inputs.activeBoxId || '1'} 
-                      onChange={e => {
-                        const newBoxId = e.target.value;
-                        const targetBox = (inputs.cajas || []).find(c => c.id === newBoxId) || activeBox;
-                        const gap = inputs.boxGapCm !== undefined ? inputs.boxGapCm : 15;
-                        const spaceCm = targetBox.largoCm + gap;
-                        const speedMH = inputs.conveyorSpeedMH !== undefined ? inputs.conveyorSpeedMH : 160;
-                        const newCap = spaceCm > 0 ? Math.floor((speedMH * 100) / spaceCm) : 0;
-                        setInputs(p => ({ ...p, activeBoxId: newBoxId, capacidad_nominal_cajas_h: newCap }));
-                      }} 
-                      className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none truncate"
-                    >
-                      {(inputs.cajas || []).map(c => (
-                        <option key={c.id} value={c.id}>{c.nombre} ({c.largoCm}cm)</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="block text-[9px] font-bold text-slate-500 uppercase">Capacidad Nominal (cajas/h)</span>
-                      <button 
-                        type="button"
-                        onClick={() => setInputs(p => ({ ...p, capacidad_nominal_cajas_h: capacidadGeometrica || 333 }))}
-                        className="text-[8px] font-black text-cyan-600 hover:underline uppercase"
-                        title={`Calcular automáticamente por geometría (${capacidadGeometrica} cajas/h)`}
-                      >
-                        Auto ({capacidadGeometrica})
-                      </button>
-                    </div>
-                    <input 
-                      type="number"
-                      step="10"
-                      min="1"
-                      value={inputs.capacidad_nominal_cajas_h !== undefined ? inputs.capacidad_nominal_cajas_h : currentNominalCapacity}
-                      onChange={e => {
-                        const newCap = parseFloat(e.target.value) || 0;
-                        const speedMH = espacioPorCajaCm > 0 ? Math.round((newCap * espacioPorCajaCm) / 100) : (inputs.conveyorSpeedMH || 160);
-                        setInputs(p => ({ ...p, capacidad_nominal_cajas_h: newCap, conveyorSpeedMH: speedMH }));
-                      }}
-                      className="w-full bg-white border border-cyan-500/50 rounded-lg px-2 py-1.5 text-xs font-black text-cyan-700 focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                    />
-                  </div>
-                  <div>
-                    <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Vel. Banda (m/h)</span>
-                    <input 
-                      type="number" 
-                      step="10" 
-                      value={inputs.conveyorSpeedMH !== undefined ? inputs.conveyorSpeedMH : 160} 
-                      onChange={e => {
-                        const newSpeed = parseFloat(e.target.value) || 0;
-                        const newCap = espacioPorCajaCm > 0 ? Math.floor((newSpeed * 100) / espacioPorCajaCm) : 0;
-                        setInputs(p => ({ ...p, conveyorSpeedMH: newSpeed, capacidad_nominal_cajas_h: newCap }));
-                      }} 
-                      className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none" 
-                    />
-                  </div>
-                  <div>
-                    <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Gap / Espacio (cm)</span>
-                    <input 
-                      type="number" 
-                      step="1" 
-                      value={inputs.boxGapCm !== undefined ? inputs.boxGapCm : 15} 
-                      onChange={e => {
-                        const newGap = parseFloat(e.target.value) || 0;
-                        const spaceCm = activeBox.largoCm + newGap;
-                        const speedMH = inputs.conveyorSpeedMH !== undefined ? inputs.conveyorSpeedMH : 160;
-                        const newCap = spaceCm > 0 ? Math.floor((speedMH * 100) / spaceCm) : 0;
-                        setInputs(p => ({ ...p, boxGapCm: newGap, capacidad_nominal_cajas_h: newCap }));
-                      }} 
-                      className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none" 
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Meta Diaria (cajas)</span>
-                    <input type="number" step="100" min="1" value={inputs.meta_diaria_cajas !== undefined ? inputs.meta_diaria_cajas : 3000} onChange={e => setInputs(p => ({...p, meta_diaria_cajas: parseFloat(e.target.value) || 0, dailyGoalKg: parseFloat(e.target.value) || 0}))} className="w-full bg-white border border-cyan-500/50 rounded-lg px-2 py-1.5 text-xs font-black text-cyan-700 focus:border-cyan-500 focus:outline-none" />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-xs font-black text-cyan-600">{inputs.utilization}%</span>
-                  </div>
-                  <input type="range" min="10" max="100" step="5" value={inputs.utilization || 0} onChange={e => setInputs(p => ({...p, utilization: parseInt(e.target.value) || 0}))} className="w-full accent-cyan-600" />
-                </div>
-
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-[9px] font-bold text-slate-500 uppercase">Eficiencia (OEE) (%)</span>
-                    <span className="text-xs font-black text-cyan-600">{inputs.oee}%</span>
-                  </div>
-                  <input type="range" min="10" max="100" step="5" value={inputs.oee || 0} onChange={e => setInputs(p => ({...p, oee: parseInt(e.target.value) || 0}))} className="w-full accent-cyan-600" />
-                </div>
-
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Hrs/Día</span>
-                    <input type="number" step="0.5" value={inputs.hoursPerDay || 0} onChange={e => setInputs(p => ({...p, hoursPerDay: parseFloat(e.target.value) || 0}))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 text-center focus:border-cyan-500 focus:outline-none" />
-                  </div>
-                  <div>
-                    <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Turnos</span>
-                    <input type="number" step="1" value={inputs.shiftsPerDay || 0} onChange={e => setInputs(p => ({...p, shiftsPerDay: parseInt(e.target.value) || 0}))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 text-center focus:border-cyan-500 focus:outline-none" />
-                  </div>
-                  <div>
-                    <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Días/Mes</span>
-                    <input type="number" step="1" value={inputs.daysPerMonth || 0} onChange={e => setInputs(p => ({...p, daysPerMonth: parseInt(e.target.value) || 0}))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 text-center focus:border-cyan-500 focus:outline-none" />
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-slate-200 grid grid-cols-3 gap-2">
-                  <div>
-                    <span className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5 text-center">Largo (m)</span>
-                    <input type="number" step="0.1" value={inputs.machineLength} onChange={e => setInputs(p => ({...p, machineLength: parseFloat(e.target.value) || 0}))} className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 text-[10px] font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-center" />
-                  </div>
-                  <div>
-                    <span className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5 text-center">Ancho (m)</span>
-                    <input type="number" step="0.1" value={inputs.machineWidth} onChange={e => setInputs(p => ({...p, machineWidth: parseFloat(e.target.value) || 0}))} className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 text-[10px] font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-center" />
-                  </div>
-                  <div>
-                    <span className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5 text-center">Alto (m)</span>
-                    <input type="number" step="0.1" value={inputs.machineHeight} onChange={e => setInputs(p => ({...p, machineHeight: parseFloat(e.target.value) || 0}))} className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 text-[10px] font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-center" />
-                  </div>
-                </div>
-
-
-                {/* Gestión de Cajas / Contenedores */}
-                <div className="pt-4 border-t border-slate-200">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest flex items-center gap-1.5"><Box className="w-3.5 h-3.5 text-cyan-600"/> Contenedores (Cajas)</span>
-                    <button 
-                      onClick={() => {
-                        const newId = Date.now().toString();
-                        setInputs(p => ({
-                          ...p, 
-                          cajas: [...(p.cajas || []), { id: newId, nombre: 'Nueva Caja', largoCm: 50, anchoCm: 30, altoCm: 20, color: '#cbd5e1', suciedad: 'Polvo' }]
-                        }));
-                      }}
-                      className="p-1 bg-cyan-50 text-cyan-700 rounded hover:bg-cyan-100 transition-colors"
-                      title="Añadir Caja"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                  <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                    {(inputs.cajas || []).map((caja, index) => (
-                      <div key={caja.id} className="bg-white border border-slate-200 rounded-lg p-2 shadow-sm">
-                        <div className="flex items-center justify-between mb-2">
-                          <input 
-                            type="text" 
-                            value={caja.nombre}
-                            onChange={(e) => {
-                              const newCajas = [...inputs.cajas];
-                              newCajas[index].nombre = e.target.value;
-                              setInputs(p => ({ ...p, cajas: newCajas }));
-                            }}
-                            className="text-[10px] font-bold text-slate-800 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-cyan-500 focus:outline-none w-full mr-2"
-                          />
-                          <div className="flex items-center gap-1">
-                            <input 
-                              type="color" 
-                              value={caja.color}
-                              onChange={(e) => {
-                                const newCajas = [...inputs.cajas];
-                                newCajas[index].color = e.target.value;
-                                setInputs(p => ({ ...p, cajas: newCajas }));
-                              }}
-                              className="w-4 h-4 p-0 border-0 rounded cursor-pointer"
-                              title="Color de la caja"
-                            />
-                            <button 
-                              onClick={() => {
-                                setInputs(p => ({ ...p, cajas: p.cajas.filter(c => c.id !== caja.id) }));
-                              }}
-                              className="text-red-400 hover:text-red-600 p-0.5"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-5 gap-1">
-                          <div>
-                            <span className="block text-[7px] text-slate-400 font-bold uppercase">Piezas/Día</span>
-                            <input type="number" step="1" value={caja.piezasDia2028 !== undefined ? caja.piezasDia2028 : 0} onChange={(e) => {
-                              const newCajas = [...inputs.cajas];
-                              const pDia = parseFloat(e.target.value) || 0;
-                              newCajas[index].piezasDia2028 = pDia;
-                              newCajas[index].reqCajasH = Number((pDia / (inputs.hoursPerDay || 9)).toFixed(1));
-                              const totalPiezas = newCajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0);
-                              setInputs(p => ({ ...p, cajas: newCajas, meta_diaria_cajas: totalPiezas > 0 ? totalPiezas : p.meta_diaria_cajas }));
-                            }} className="w-full text-[9px] font-mono font-black text-cyan-800 bg-cyan-50 border border-cyan-200 rounded px-1 py-0.5 text-center focus:outline-none focus:border-cyan-500" />
-                          </div>
-                          <div>
-                            <span className="block text-[7px] text-slate-400 font-bold uppercase">Largo(cm)</span>
-                            <input type="number" step="0.1" value={caja.largoCm} onChange={(e) => {
-                              const newCajas = [...inputs.cajas];
-                              newCajas[index].largoCm = parseFloat(e.target.value) || 0;
-                              setInputs(p => ({ ...p, cajas: newCajas }));
-                            }} className="w-full text-[9px] font-mono text-slate-700 bg-slate-50 border border-slate-200 rounded px-1 py-0.5 text-center focus:outline-none focus:border-cyan-500" />
-                          </div>
-                          <div>
-                            <span className="block text-[7px] text-slate-400 font-bold uppercase">Ancho(cm)</span>
-                            <input type="number" step="0.1" value={caja.anchoCm} onChange={(e) => {
-                              const newCajas = [...inputs.cajas];
-                              newCajas[index].anchoCm = parseFloat(e.target.value) || 0;
-                              setInputs(p => ({ ...p, cajas: newCajas }));
-                            }} className="w-full text-[9px] font-mono text-slate-700 bg-slate-50 border border-slate-200 rounded px-1 py-0.5 text-center focus:outline-none focus:border-cyan-500" />
-                          </div>
-                          <div>
-                            <span className="block text-[7px] text-slate-400 font-bold uppercase">Alto(cm)</span>
-                            <input type="number" step="0.1" value={caja.altoCm} onChange={(e) => {
-                              const newCajas = [...inputs.cajas];
-                              newCajas[index].altoCm = parseFloat(e.target.value) || 0;
-                              setInputs(p => ({ ...p, cajas: newCajas }));
-                            }} className="w-full text-[9px] font-mono text-slate-700 bg-slate-50 border border-slate-200 rounded px-1 py-0.5 text-center focus:outline-none focus:border-cyan-500" />
-                          </div>
-                          <div>
-                            <span className="block text-[7px] text-slate-400 font-bold uppercase">Suciedad</span>
-                            <select value={caja.suciedad} onChange={(e) => {
-                              const newCajas = [...inputs.cajas];
-                              newCajas[index].suciedad = e.target.value;
-                              setInputs(p => ({ ...p, cajas: newCajas }));
-                            }} className="w-full text-[9px] font-mono text-slate-700 bg-slate-50 border border-slate-200 rounded px-1 py-0.5 focus:outline-none focus:border-cyan-500">
-                              <option value="Ligera">Ligera</option>
-                              <option value="Polvo">Polvo</option>
-                              <option value="Aceite">Aceite</option>
-                              <option value="Pesada">Pesada</option>
-                            </select>
-                          </div>
-                        </div>
+                    {inputs.customClientLogo ? (
+                      <div className="flex items-center gap-2 p-1.5 bg-white border border-slate-200 rounded-lg">
+                        <img src={inputs.customClientLogo} alt="Logo" className="h-6 max-w-[100px] object-contain" />
+                        <span className="text-[9px] text-emerald-600 font-bold">Cargado</span>
                       </div>
-                    ))}
-                    {(!inputs.cajas || inputs.cajas.length === 0) && (
-                      <div className="text-center py-4 text-slate-400 text-[10px] font-bold">
-                        No hay cajas registradas
-                      </div>
+                    ) : (
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleCustomClientLogoUpload}
+                        className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-[10px] font-bold text-slate-600 focus:border-cyan-500 focus:outline-none"
+                      />
                     )}
                   </div>
                 </div>
-              </div>
-            </details>
+              </details>
 
-            {/* 3. ENERGÍA */}
-            <details className="group mb-3 border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
-              <summary className="flex items-center justify-between p-4 cursor-pointer select-none bg-slate-50 hover:bg-slate-100 transition-colors">
-                <span className="text-[10px] font-black text-amber-500 uppercase tracking-wider">3. Energía</span>
-              </summary>
-              <div className="p-4 pt-0 space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Potencia Instalada (kW)</span>
-                    <input type="number" step="0.1" value={inputs.customInstalledPowerKw !== undefined ? inputs.customInstalledPowerKw : 37.02} onChange={e => setInputs(p => ({...p, customInstalledPowerKw: parseFloat(e.target.value) || 0}))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none" />
-                  </div>
-                  <div>
-                    <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Tarifa (MXN/kWh)</span>
-                    <input type="number" step="0.05" value={inputs.electricityRate || 0} onChange={e => setInputs(p => ({...p, electricityRate: parseFloat(e.target.value) || 0}))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none" />
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-[9px] font-bold text-slate-500 uppercase">Factor de Carga (%)</span>
-                    <span className="text-xs font-black text-cyan-600">{inputs.loadFactor}%</span>
-                  </div>
-                  <input type="range" min="10" max="100" step="5" value={inputs.loadFactor || 0} onChange={e => setInputs(p => ({...p, loadFactor: parseInt(e.target.value) || 0}))} className="w-full accent-cyan-600" />
-                </div>
-                {/* --- SUB-PANEL HÍDRICO --- */}
-                <div className="mt-6 pt-4 border-t border-slate-200">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Droplet className="w-4 h-4 text-cyan-600" />
-                    <span className="text-[11px] font-black text-slate-800 uppercase tracking-wider">Gestión Hídrica</span>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-slate-600 uppercase">Capacidad Tanque (L)</span>
-                      <input type="number" value={inputs.waterTankLiters || 1200} onChange={e => setInputs(p => ({...p, waterTankLiters: parseFloat(e.target.value) || 0}))} className="w-20 bg-white border border-slate-200 rounded px-2 py-1 text-xs font-bold text-slate-800 text-center focus:border-cyan-500 focus:outline-none" />
+              {/* 2. OPERACIÓN */}
+              <details className="group mb-3 border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
+                <summary className="flex items-center justify-between p-4 cursor-pointer select-none bg-slate-50 hover:bg-slate-100 transition-colors">
+                  <span className="text-[10px] font-black text-cyan-600 uppercase tracking-wider">2. Operación</span>
+                </summary>
+                <div className="p-4 pt-0 space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Caja a Simular</span>
+                      <select
+                        value={inputs.activeBoxId || '1'}
+                        onChange={e => {
+                          const newBoxId = e.target.value;
+                          const targetBox = (inputs.cajas || []).find(c => c.id === newBoxId) || activeBox;
+                          const gap = inputs.boxGapCm !== undefined ? inputs.boxGapCm : 15;
+                          const spaceCm = targetBox.largoCm + gap;
+                          const speedMH = inputs.conveyorSpeedMH !== undefined ? inputs.conveyorSpeedMH : 160;
+                          const newCap = spaceCm > 0 ? Math.floor((speedMH * 100) / spaceCm) : 0;
+                          setInputs(p => ({ ...p, activeBoxId: newBoxId, capacidad_nominal_cajas_h: newCap }));
+                        }}
+                        className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none truncate"
+                      >
+                        {(inputs.cajas || []).map(c => (
+                          <option key={c.id} value={c.id}>{c.nombre} ({c.largoCm}cm)</option>
+                        ))}
+                      </select>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-slate-600 uppercase">Recambios Semanales</span>
-                      <input type="number" step="0.5" value={inputs.waterChangesPerWeek || 1} onChange={e => setInputs(p => ({...p, waterChangesPerWeek: parseFloat(e.target.value) || 0}))} className="w-20 bg-white border border-slate-200 rounded px-2 py-1 text-xs font-bold text-slate-800 text-center focus:border-cyan-500 focus:outline-none" />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-slate-600 uppercase">Arrastre / Evap (%)</span>
-                      <input type="number" step="1" value={inputs.waterDragOutPercent || 5} onChange={e => setInputs(p => ({...p, waterDragOutPercent: parseFloat(e.target.value) || 0}))} className="w-20 bg-white border border-slate-200 rounded px-2 py-1 text-xs font-bold text-slate-800 text-center focus:border-cyan-500 focus:outline-none" />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-slate-600 uppercase">Costo Agua (MXN/m³)</span>
-                      <input type="number" step="1" value={inputs.waterCostM3 || 35} onChange={e => setInputs(p => ({...p, waterCostM3: parseFloat(e.target.value) || 0}))} className="w-20 bg-white border border-slate-200 rounded px-2 py-1 text-xs font-bold text-slate-800 text-center focus:border-cyan-500 focus:outline-none" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </details>
-
-            {/* 4. CAPEX */}
-            <details className="group mb-3 border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
-              <summary className="flex items-center justify-between p-4 cursor-pointer select-none bg-slate-50 hover:bg-slate-100 transition-colors">
-                <span className="text-[10px] font-black text-emerald-600 uppercase tracking-wider">4. CAPEX</span>
-              </summary>
-              <div className="p-4 pt-0 grid grid-cols-2 gap-x-3 gap-y-2">
-                <div className="col-span-2">
-                  <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Precio Equipo Base (USD)</span>
-                  <div className="relative flex items-center">
-                    <span className="absolute left-2.5 text-xs font-black text-emerald-400">$</span>
-                    <input type="number" step="100" value={inputs.precioEquipoUsd || 0} onChange={e => setInputs(p => ({...p, precioEquipoUsd: parseFloat(e.target.value) || 0}))} className="w-full bg-white border border-slate-200 rounded-lg pl-6 pr-2 py-1.5 text-xs font-bold text-emerald-700 focus:border-cyan-500 focus:outline-none" />
-                  </div>
-                </div>
-                <div>
-                  <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">IVA (%)</span>
-                  <input type="number" value={inputs.iva || 0} onChange={e => setInputs(p => ({...p, iva: parseFloat(e.target.value) || 0}))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none" />
-                </div>
-                <div>
-                  <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Tipo de Cambio (MXN)</span>
-                  <div className="relative flex items-center">
-                    <span className="absolute left-2 text-xs font-black text-slate-400">$</span>
-                    <input type="number" step="0.1" value={inputs.tipoCambio || 0} onChange={e => setInputs(p => ({...p, tipoCambio: parseFloat(e.target.value) || 0}))} className="w-full bg-white border border-slate-200 rounded-lg pl-5 pr-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none" />
-                  </div>
-                </div>
-                <div className="col-span-2 border-t border-slate-200 mt-2 pt-2">
-                  <span className="block text-[8px] font-bold text-slate-400 uppercase mb-2">Costos Indirectos (% O Valor Absoluto en USD)</span>
-                </div>
-                {[
-                  { label: 'Maniobras', key: 'porcentajeManiobras' },
-                  { label: 'Montaje Mecánico', key: 'porcentajeMontajeMecanico' },
-                  { label: 'Obra Civil', key: 'porcentajeObraCivil' },
-                  { label: 'Eléctrico Principal', key: 'porcentajeElectricoPrincipal' },
-                  { label: 'Canalizaciones', key: 'porcentajeCanalizacionProtecciones' },
-                  { label: 'Extracción Polvo', key: 'porcentajeExtraccionPolvo' },
-                  { label: 'Seguridad Ind.', key: 'porcentajeSeguridadIndustrial' },
-                  { label: 'Ingeniería', key: 'porcentajeIngenieriaSupervision' },
-                  { label: 'Contingencia', key: 'porcentajeContingencia' }
-                ].map(item => (
-                  <div key={item.key} className="flex flex-col gap-0.5">
-                    <span className="text-[8px] font-bold text-slate-500 uppercase leading-tight truncate" title={item.label}>{item.label}</span>
-                    <input type="number" step="1" value={inputs[item.key] || 0} onChange={e => setInputs(p => ({...p, [item.key]: parseFloat(e.target.value) || 0}))} className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-[10px] font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right" />
-                  </div>
-                ))}
-              </div>
-            </details>
-
-            {/* 5. OPEX */}
-            <details className="group mb-3 border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
-              <summary className="flex items-center justify-between p-4 cursor-pointer select-none bg-slate-50 hover:bg-slate-100 transition-colors">
-                <span className="text-[10px] font-black text-rose-500 uppercase tracking-wider">5. OPEX Mensual (MXN)</span>
-              </summary>
-              <div className="p-4 pt-0 grid grid-cols-2 gap-x-3 gap-y-2">
-                {[
-                  { label: 'Operadores/Turno', key: 'operadoresPorTurno', isMxn: false },
-                  { label: 'Sueldo Op. (Mes MXN)', key: 'sueldoOperadorMensual', isMxn: true },
-                  { label: 'Supervisores/Turno', key: 'supervisoresPorTurno', isMxn: false },
-                  { label: 'Sueldo Sup. (Mes MXN)', key: 'sueldoSupervisorMensual', isMxn: true },
-                  { label: 'Mantenimiento Base/Año %', key: 'mantenimientoAnualPorcentaje', isMxn: false, full: true },
-                  { label: 'Detergentes (MXN)', key: 'filtrosMensualMxn', isMxn: true },
-                  { label: 'Refacciones (MXN)', key: 'refaccionesMensualMxn', isMxn: true },
-                  { label: 'Lubricación (MXN)', key: 'lubricacionMensualMxn', isMxn: true },
-                  { label: 'Limpieza (MXN)', key: 'limpiezaMensualMxn', isMxn: true },
-                  { label: 'Consumibles (MXN)', key: 'consumiblesMensualMxn', isMxn: true },
-                  { label: 'Otros OPEX (MXN)', key: 'otrosOpexMensualMxn', isMxn: true },
-                ].map((item, idx) => (
-                  <div key={item.key} className={`flex flex-col gap-0.5 ${item.full ? 'col-span-2 border-t border-slate-200 pt-2 mt-1' : ''}`}>
-                    <span className="text-[8px] font-bold text-slate-500 uppercase truncate">{item.label}</span>
-                    <div className="relative flex items-center">
-                      {item.isMxn && <span className="absolute left-2 text-[10px] font-black text-rose-400">$</span>}
-                      <input 
-                        type="number" 
-                        value={inputs[item.key] || 0} 
-                        onChange={e => setInputs(p => ({...p, [item.key]: parseFloat(e.target.value) || 0}))} 
-                        className={`w-full bg-white border border-slate-200 rounded-lg ${item.isMxn ? 'pl-5 pr-2' : 'px-2'} py-1 text-[10px] font-bold ${item.isMxn ? 'text-rose-700' : 'text-slate-800'} focus:border-cyan-500 focus:outline-none`} 
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="block text-[9px] font-bold text-slate-500 uppercase">Capacidad Nominal (cajas/h)</span>
+                        <button
+                          type="button"
+                          onClick={() => setInputs(p => ({ ...p, capacidad_nominal_cajas_h: capacidadGeometrica || 333 }))}
+                          className="text-[8px] font-black text-cyan-600 hover:underline uppercase"
+                          title={`Calcular automáticamente por geometría (${capacidadGeometrica} cajas/h)`}
+                        >
+                          Auto ({capacidadGeometrica})
+                        </button>
+                      </div>
+                      <input
+                        type="number"
+                        step="10"
+                        min="1"
+                        value={inputs.capacidad_nominal_cajas_h !== undefined ? inputs.capacidad_nominal_cajas_h : currentNominalCapacity}
+                        onChange={e => {
+                          const newCap = parseFloat(e.target.value) || 0;
+                          const speedMH = espacioPorCajaCm > 0 ? Math.round((newCap * espacioPorCajaCm) / 100) : (inputs.conveyorSpeedMH || 160);
+                          setInputs(p => ({ ...p, capacidad_nominal_cajas_h: newCap, conveyorSpeedMH: speedMH }));
+                        }}
+                        className="w-full bg-white border border-cyan-500/50 rounded-lg px-2 py-1.5 text-xs font-black text-cyan-700 focus:outline-none focus:ring-1 focus:ring-cyan-500"
                       />
                     </div>
-                  </div>
-                ))}
-              </div>
-            </details>
-
-            {/* 6. FINANCIERO */}
-            <details className="group mb-3 border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
-              <summary className="flex items-center justify-between p-4 cursor-pointer select-none bg-slate-50 hover:bg-slate-100 transition-colors">
-                <span className="text-[10px] font-black text-purple-600 uppercase tracking-wider">6. Financiero</span>
-              </summary>
-              <div className="p-4 pt-0 space-y-3">
-                <div className="flex bg-slate-200 p-1 rounded-lg">
-                  <button onClick={() => setInputs(p => ({...p, usarModoIngresoVenta: true, usarModoAhorroInterno: false}))} className={`flex-1 text-[9px] font-black uppercase py-1.5 rounded-md transition-all ${inputs.usarModoIngresoVenta ? 'bg-white shadow-sm text-purple-700' : 'text-slate-500 hover:text-slate-700'}`}>Ingreso por Venta</button>
-                  <button onClick={() => setInputs(p => ({...p, usarModoIngresoVenta: false, usarModoAhorroInterno: true}))} className={`flex-1 text-[9px] font-black uppercase py-1.5 rounded-md transition-all ${inputs.usarModoAhorroInterno ? 'bg-white shadow-sm text-purple-700' : 'text-slate-500 hover:text-slate-700'}`}>Ahorro Interno</button>
-                </div>
-                
-                {inputs.usarModoIngresoVenta && (
-                  <div>
-                    <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Precio de Venta (MXN/kCajas)</span>
-                    <div className="relative flex items-center">
-                      <span className="absolute left-2.5 text-xs font-black text-purple-400">$</span>
-                      <input type="number" step="10" value={inputs.precioVentaTonMxn || 0} onChange={e => setInputs(p => ({...p, precioVentaTonMxn: parseFloat(e.target.value) || 0}))} className="w-full bg-white border border-purple-200 rounded-lg pl-6 pr-2 py-1.5 text-xs font-bold text-purple-800 focus:border-purple-500 focus:outline-none" />
+                    <div>
+                      <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Vel. Banda (m/h)</span>
+                      <input
+                        type="number"
+                        step="10"
+                        value={inputs.conveyorSpeedMH !== undefined ? inputs.conveyorSpeedMH : 160}
+                        onChange={e => {
+                          const newSpeed = parseFloat(e.target.value) || 0;
+                          const newCap = espacioPorCajaCm > 0 ? Math.floor((newSpeed * 100) / espacioPorCajaCm) : 0;
+                          setInputs(p => ({ ...p, conveyorSpeedMH: newSpeed, capacidad_nominal_cajas_h: newCap }));
+                        }}
+                        className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Gap / Espacio (cm)</span>
+                      <input
+                        type="number"
+                        step="1"
+                        value={inputs.boxGapCm !== undefined ? inputs.boxGapCm : 15}
+                        onChange={e => {
+                          const newGap = parseFloat(e.target.value) || 0;
+                          const spaceCm = activeBox.largoCm + newGap;
+                          const speedMH = inputs.conveyorSpeedMH !== undefined ? inputs.conveyorSpeedMH : 160;
+                          const newCap = spaceCm > 0 ? Math.floor((speedMH * 100) / spaceCm) : 0;
+                          setInputs(p => ({ ...p, boxGapCm: newGap, capacidad_nominal_cajas_h: newCap }));
+                        }}
+                        className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Meta Diaria (cajas)</span>
+                      <input type="number" step="100" min="1" value={inputs.meta_diaria_cajas !== undefined ? inputs.meta_diaria_cajas : 3000} onChange={e => setInputs(p => ({ ...p, meta_diaria_cajas: parseFloat(e.target.value) || 0, dailyGoalKg: parseFloat(e.target.value) || 0 }))} className="w-full bg-white border border-cyan-500/50 rounded-lg px-2 py-1.5 text-xs font-black text-cyan-700 focus:border-cyan-500 focus:outline-none" />
                     </div>
                   </div>
-                )}
-                {inputs.usarModoAhorroInterno && (
+
                   <div>
-                    <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Ahorro Generado (MXN/kCajas)</span>
-                    <div className="relative flex items-center">
-                      <span className="absolute left-2.5 text-xs font-black text-purple-400">$</span>
-                      <input type="number" step="10" value={inputs.ahorroPorTonMxn || 0} onChange={e => setInputs(p => ({...p, ahorroPorTonMxn: parseFloat(e.target.value) || 0}))} className="w-full bg-white border border-purple-200 rounded-lg pl-6 pr-2 py-1.5 text-xs font-bold text-purple-800 focus:border-purple-500 focus:outline-none" />
+                    <div className="flex justify-between mb-1">
+                      <span className="text-xs font-black text-cyan-600">{inputs.utilization}%</span>
+                    </div>
+                    <input type="range" min="10" max="100" step="5" value={inputs.utilization || 0} onChange={e => setInputs(p => ({ ...p, utilization: parseInt(e.target.value) || 0 }))} className="w-full accent-cyan-600" />
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-[9px] font-bold text-slate-500 uppercase">Eficiencia (OEE) (%)</span>
+                      <span className="text-xs font-black text-cyan-600">{inputs.oee}%</span>
+                    </div>
+                    <input type="range" min="10" max="100" step="5" value={inputs.oee || 0} onChange={e => setInputs(p => ({ ...p, oee: parseInt(e.target.value) || 0 }))} className="w-full accent-cyan-600" />
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Hrs/Día</span>
+                      <input type="number" step="0.5" value={inputs.hoursPerDay || 0} onChange={e => setInputs(p => ({ ...p, hoursPerDay: parseFloat(e.target.value) || 0 }))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 text-center focus:border-cyan-500 focus:outline-none" />
+                    </div>
+                    <div>
+                      <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Turnos</span>
+                      <input type="number" step="1" value={inputs.shiftsPerDay || 0} onChange={e => setInputs(p => ({ ...p, shiftsPerDay: parseInt(e.target.value) || 0 }))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 text-center focus:border-cyan-500 focus:outline-none" />
+                    </div>
+                    <div>
+                      <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Días/Mes</span>
+                      <input type="number" step="1" value={inputs.daysPerMonth || 0} onChange={e => setInputs(p => ({ ...p, daysPerMonth: parseInt(e.target.value) || 0 }))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 text-center focus:border-cyan-500 focus:outline-none" />
                     </div>
                   </div>
-                )}
 
-                <div className="grid grid-cols-2 gap-2 border-t border-slate-200 pt-2">
-                  <div>
-                    <span className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Tasa Desc. (%)</span>
-                    <input type="number" step="1" value={inputs.tasaDescuento} onChange={e => setInputs(p => ({...p, tasaDescuento: parseFloat(e.target.value) || 0}))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-[10px] font-bold text-slate-800" />
+                  <div className="pt-2 border-t border-slate-200 grid grid-cols-3 gap-2">
+                    <div>
+                      <span className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5 text-center">Largo (m)</span>
+                      <input type="number" step="0.1" value={inputs.machineLength} onChange={e => setInputs(p => ({ ...p, machineLength: parseFloat(e.target.value) || 0 }))} className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 text-[10px] font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-center" />
+                    </div>
+                    <div>
+                      <span className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5 text-center">Ancho (m)</span>
+                      <input type="number" step="0.1" value={inputs.machineWidth} onChange={e => setInputs(p => ({ ...p, machineWidth: parseFloat(e.target.value) || 0 }))} className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 text-[10px] font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-center" />
+                    </div>
+                    <div>
+                      <span className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5 text-center">Alto (m)</span>
+                      <input type="number" step="0.1" value={inputs.machineHeight} onChange={e => setInputs(p => ({ ...p, machineHeight: parseFloat(e.target.value) || 0 }))} className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 text-[10px] font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-center" />
+                    </div>
                   </div>
-                  <div>
-                    <span className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Vida Útil (Años)</span>
-                    <input type="number" step="1" value={inputs.vidaUtilAnios} onChange={e => setInputs(p => ({...p, vidaUtilAnios: parseFloat(e.target.value) || 0}))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-[10px] font-bold text-slate-800" />
+
+
+                  {/* Gestión de Cajas / Contenedores */}
+                  <div className="pt-4 border-t border-slate-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest flex items-center gap-1.5"><Box className="w-3.5 h-3.5 text-cyan-600" /> Contenedores (Cajas)</span>
+                      <button
+                        onClick={() => {
+                          const newId = Date.now().toString();
+                          setInputs(p => ({
+                            ...p,
+                            cajas: [...(p.cajas || []), { id: newId, nombre: 'Nueva Caja', largoCm: 50, anchoCm: 30, altoCm: 20, color: '#cbd5e1', suciedad: 'Polvo' }]
+                          }));
+                        }}
+                        className="p-1 bg-cyan-50 text-cyan-700 rounded hover:bg-cyan-100 transition-colors"
+                        title="Añadir Caja"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                      {(inputs.cajas || []).map((caja, index) => (
+                        <div key={caja.id} className="bg-white border border-slate-200 rounded-lg p-2 shadow-sm">
+                          <div className="flex items-center justify-between mb-2">
+                            <input
+                              type="text"
+                              value={caja.nombre}
+                              onChange={(e) => {
+                                const newCajas = [...inputs.cajas];
+                                newCajas[index].nombre = e.target.value;
+                                setInputs(p => ({ ...p, cajas: newCajas }));
+                              }}
+                              className="text-[10px] font-bold text-slate-800 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-cyan-500 focus:outline-none w-full mr-2"
+                            />
+                            <select
+                              value={caja.tipo || 'Caja'}
+                              onChange={(e) => {
+                                const newCajas = [...inputs.cajas];
+                                newCajas[index].tipo = e.target.value;
+                                setInputs(p => ({ ...p, cajas: newCajas }));
+                              }}
+                              className="text-[8px] font-bold text-slate-600 bg-slate-100 border border-slate-200 rounded px-1 py-0.5 outline-none focus:border-cyan-500 cursor-pointer mr-2 shrink-0"
+                            >
+                              <option value="Caja">Caja</option>
+                              <option value="Dunnage">Dunnage</option>
+                            </select>
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="color"
+                                value={caja.color}
+                                onChange={(e) => {
+                                  const newCajas = [...inputs.cajas];
+                                  newCajas[index].color = e.target.value;
+                                  setInputs(p => ({ ...p, cajas: newCajas }));
+                                }}
+                                className="w-4 h-4 p-0 border-0 rounded cursor-pointer"
+                                title="Color de la caja"
+                              />
+                              <button
+                                onClick={() => {
+                                  setInputs(p => ({ ...p, cajas: p.cajas.filter(c => c.id !== caja.id) }));
+                                }}
+                                className="text-red-400 hover:text-red-600 p-0.5"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-5 gap-1">
+                            <div>
+                              <span className="block text-[7px] text-slate-400 font-bold uppercase">Piezas/Día</span>
+                              <input type="number" step="1" value={caja.piezasDia2028 !== undefined ? caja.piezasDia2028 : 0} onChange={(e) => {
+                                const newCajas = [...inputs.cajas];
+                                const pDia = parseFloat(e.target.value) || 0;
+                                newCajas[index].piezasDia2028 = pDia;
+                                newCajas[index].reqCajasH = Number((pDia / (inputs.hoursPerDay || 9)).toFixed(1));
+                                const totalPiezas = newCajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0);
+                                setInputs(p => ({ ...p, cajas: newCajas, meta_diaria_cajas: totalPiezas > 0 ? totalPiezas : p.meta_diaria_cajas }));
+                              }} className="w-full text-[9px] font-mono font-black text-cyan-800 bg-cyan-50 border border-cyan-200 rounded px-1 py-0.5 text-center focus:outline-none focus:border-cyan-500" />
+                            </div>
+                            <div>
+                              <span className="block text-[7px] text-slate-400 font-bold uppercase">Largo(cm)</span>
+                              <input type="number" step="0.1" value={caja.largoCm} onChange={(e) => {
+                                const newCajas = [...inputs.cajas];
+                                newCajas[index].largoCm = parseFloat(e.target.value) || 0;
+                                setInputs(p => ({ ...p, cajas: newCajas }));
+                              }} className="w-full text-[9px] font-mono text-slate-700 bg-slate-50 border border-slate-200 rounded px-1 py-0.5 text-center focus:outline-none focus:border-cyan-500" />
+                            </div>
+                            <div>
+                              <span className="block text-[7px] text-slate-400 font-bold uppercase">Ancho(cm)</span>
+                              <input type="number" step="0.1" value={caja.anchoCm} onChange={(e) => {
+                                const newCajas = [...inputs.cajas];
+                                newCajas[index].anchoCm = parseFloat(e.target.value) || 0;
+                                setInputs(p => ({ ...p, cajas: newCajas }));
+                              }} className="w-full text-[9px] font-mono text-slate-700 bg-slate-50 border border-slate-200 rounded px-1 py-0.5 text-center focus:outline-none focus:border-cyan-500" />
+                            </div>
+                            <div>
+                              <span className="block text-[7px] text-slate-400 font-bold uppercase">Alto(cm)</span>
+                              <input type="number" step="0.1" value={caja.altoCm} onChange={(e) => {
+                                const newCajas = [...inputs.cajas];
+                                newCajas[index].altoCm = parseFloat(e.target.value) || 0;
+                                setInputs(p => ({ ...p, cajas: newCajas }));
+                              }} className="w-full text-[9px] font-mono text-slate-700 bg-slate-50 border border-slate-200 rounded px-1 py-0.5 text-center focus:outline-none focus:border-cyan-500" />
+                            </div>
+                            <div>
+                              <span className="block text-[7px] text-slate-400 font-bold uppercase">Suciedad</span>
+                              <select value={caja.suciedad} onChange={(e) => {
+                                const newCajas = [...inputs.cajas];
+                                newCajas[index].suciedad = e.target.value;
+                                setInputs(p => ({ ...p, cajas: newCajas }));
+                              }} className="w-full text-[9px] font-mono text-slate-700 bg-slate-50 border border-slate-200 rounded px-1 py-0.5 focus:outline-none focus:border-cyan-500">
+                                <option value="Ligera">Ligera</option>
+                                <option value="Polvo">Polvo</option>
+                                <option value="Aceite">Aceite</option>
+                                <option value="Pesada">Pesada</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {(!inputs.cajas || inputs.cajas.length === 0) && (
+                        <div className="text-center py-4 text-slate-400 text-[10px] font-bold">
+                          No hay cajas registradas
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </details>
+              </details>
 
-            {/* 7. RIESGOS Y MANTENIMIENTO */}
-            <details className="group mb-3 border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
-              <summary className="flex items-center justify-between p-4 cursor-pointer select-none bg-slate-50 hover:bg-slate-100 transition-colors">
-                <span className="text-[10px] font-black text-red-500 uppercase tracking-wider">7. Riesgos y Mantenimiento</span>
-              </summary>
-              <div className="p-4 pt-0 space-y-3">
-                <div className="grid grid-cols-2 gap-2">
+              {/* 3. ENERGÍA */}
+              <details className="group mb-3 border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
+                <summary className="flex items-center justify-between p-4 cursor-pointer select-none bg-slate-50 hover:bg-slate-100 transition-colors">
+                  <span className="text-[10px] font-black text-amber-500 uppercase tracking-wider">3. Energía</span>
+                </summary>
+                <div className="p-4 pt-0 space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Potencia Instalada (kW)</span>
+                      <input type="number" step="0.1" value={inputs.customInstalledPowerKw !== undefined ? inputs.customInstalledPowerKw : 37.02} onChange={e => setInputs(p => ({ ...p, customInstalledPowerKw: parseFloat(e.target.value) || 0 }))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none" />
+                    </div>
+                    <div>
+                      <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Tarifa (MXN/kWh)</span>
+                      <input type="number" step="0.05" value={inputs.electricityRate || 0} onChange={e => setInputs(p => ({ ...p, electricityRate: parseFloat(e.target.value) || 0 }))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none" />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-[9px] font-bold text-slate-500 uppercase">Factor de Carga (%)</span>
+                      <span className="text-xs font-black text-cyan-600">{inputs.loadFactor}%</span>
+                    </div>
+                    <input type="range" min="10" max="100" step="5" value={inputs.loadFactor || 0} onChange={e => setInputs(p => ({ ...p, loadFactor: parseInt(e.target.value) || 0 }))} className="w-full accent-cyan-600" />
+                  </div>
+                  {/* --- SUB-PANEL HÍDRICO --- */}
+                  <div className="mt-6 pt-4 border-t border-slate-200">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Droplet className="w-4 h-4 text-cyan-600" />
+                      <span className="text-[11px] font-black text-slate-800 uppercase tracking-wider">Gestión Hídrica</span>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold text-slate-600 uppercase">Capacidad Tanque (L)</span>
+                        <input type="number" value={inputs.waterTankLiters || 1200} onChange={e => setInputs(p => ({ ...p, waterTankLiters: parseFloat(e.target.value) || 0 }))} className="w-20 bg-white border border-slate-200 rounded px-2 py-1 text-xs font-bold text-slate-800 text-center focus:border-cyan-500 focus:outline-none" />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold text-slate-600 uppercase">Recambios Semanales</span>
+                        <input type="number" step="0.5" value={inputs.waterChangesPerWeek || 1} onChange={e => setInputs(p => ({ ...p, waterChangesPerWeek: parseFloat(e.target.value) || 0 }))} className="w-20 bg-white border border-slate-200 rounded px-2 py-1 text-xs font-bold text-slate-800 text-center focus:border-cyan-500 focus:outline-none" />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold text-slate-600 uppercase">Arrastre / Evap (%)</span>
+                        <input type="number" step="1" value={inputs.waterDragOutPercent || 5} onChange={e => setInputs(p => ({ ...p, waterDragOutPercent: parseFloat(e.target.value) || 0 }))} className="w-20 bg-white border border-slate-200 rounded px-2 py-1 text-xs font-bold text-slate-800 text-center focus:border-cyan-500 focus:outline-none" />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold text-slate-600 uppercase">Costo Agua (MXN/m³)</span>
+                        <input type="number" step="1" value={inputs.waterCostM3 || 35} onChange={e => setInputs(p => ({ ...p, waterCostM3: parseFloat(e.target.value) || 0 }))} className="w-20 bg-white border border-slate-200 rounded px-2 py-1 text-xs font-bold text-slate-800 text-center focus:border-cyan-500 focus:outline-none" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </details>
+
+              {/* 4. CAPEX */}
+              <details className="group mb-3 border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
+                <summary className="flex items-center justify-between p-4 cursor-pointer select-none bg-slate-50 hover:bg-slate-100 transition-colors">
+                  <span className="text-[10px] font-black text-emerald-600 uppercase tracking-wider">4. CAPEX</span>
+                </summary>
+                <div className="p-4 pt-0 grid grid-cols-2 gap-x-3 gap-y-2">
+                  <div className="col-span-2">
+                    <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Precio Equipo Base (USD)</span>
+                    <div className="relative flex items-center">
+                      <span className="absolute left-2.5 text-xs font-black text-emerald-400">$</span>
+                      <input type="number" step="100" value={inputs.precioEquipoUsd || 0} onChange={e => setInputs(p => ({ ...p, precioEquipoUsd: parseFloat(e.target.value) || 0 }))} className="w-full bg-white border border-slate-200 rounded-lg pl-6 pr-2 py-1.5 text-xs font-bold text-emerald-700 focus:border-cyan-500 focus:outline-none" />
+                    </div>
+                  </div>
+                  <div>
+                    <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">IVA (%)</span>
+                    <input type="number" value={inputs.iva || 0} onChange={e => setInputs(p => ({ ...p, iva: parseFloat(e.target.value) || 0 }))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none" />
+                  </div>
+                  <div>
+                    <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Tipo de Cambio (MXN)</span>
+                    <div className="relative flex items-center">
+                      <span className="absolute left-2 text-xs font-black text-slate-400">$</span>
+                      <input type="number" step="0.1" value={inputs.tipoCambio || 0} onChange={e => setInputs(p => ({ ...p, tipoCambio: parseFloat(e.target.value) || 0 }))} className="w-full bg-white border border-slate-200 rounded-lg pl-5 pr-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none" />
+                    </div>
+                  </div>
+                  <div className="col-span-2 border-t border-slate-200 mt-2 pt-2">
+                    <span className="block text-[8px] font-bold text-slate-400 uppercase mb-2">Costos Indirectos (% O Valor Absoluto en USD)</span>
+                  </div>
                   {[
-                    { label: 'Riesgo Polvo', key: 'riesgoPolvo', options: ['bajo', 'medio', 'alto'] },
-                    { label: 'Riesgo Incendio', key: 'riesgoIncendio', options: ['bajo', 'medio', 'alto'] },
-                    { label: 'Riesgo Metales', key: 'riesgoMetal', options: ['bajo', 'medio', 'alto'] },
-                    { label: 'Riesgo Ruido', key: 'riesgoRuido', options: ['bajo', 'medio', 'alto'] },
+                    { label: 'Maniobras', key: 'porcentajeManiobras' },
+                    { label: 'Montaje Mecánico', key: 'porcentajeMontajeMecanico' },
+                    { label: 'Obra Civil', key: 'porcentajeObraCivil' },
+                    { label: 'Eléctrico Principal', key: 'porcentajeElectricoPrincipal' },
+                    { label: 'Canalizaciones', key: 'porcentajeCanalizacionProtecciones' },
+                    { label: 'Extracción Polvo', key: 'porcentajeExtraccionPolvo' },
+                    { label: 'Seguridad Ind.', key: 'porcentajeSeguridadIndustrial' },
+                    { label: 'Ingeniería', key: 'porcentajeIngenieriaSupervision' },
+                    { label: 'Contingencia', key: 'porcentajeContingencia' }
                   ].map(item => (
-                    <div key={item.key}>
-                      <span className="block text-[8px] font-bold text-slate-500 uppercase mb-0.5">{item.label}</span>
-                      <select value={inputs[item.key]} onChange={e => setInputs(p => ({...p, [item.key]: e.target.value}))} className="w-full bg-white border border-slate-200 rounded-lg px-1 py-1 text-[10px] font-bold text-slate-800 uppercase outline-none">
-                        {item.options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                      </select>
+                    <div key={item.key} className="flex flex-col gap-0.5">
+                      <span className="text-[8px] font-bold text-slate-500 uppercase leading-tight truncate" title={item.label}>{item.label}</span>
+                      <input type="number" step="1" value={inputs[item.key] || 0} onChange={e => setInputs(p => ({ ...p, [item.key]: parseFloat(e.target.value) || 0 }))} className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-[10px] font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right" />
                     </div>
                   ))}
                 </div>
-                <div className="grid grid-cols-2 gap-2 border-t border-slate-200 pt-2">
-                  <div>
-                    <span className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Vida Filtros (Hrs)</span>
-                    <input type="number" step="50" value={inputs.vidaUtilCuchillasHoras || ''} onChange={e => setInputs(p => ({...p, vidaUtilCuchillasHoras: parseFloat(e.target.value) || 0}))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[10px] font-bold text-slate-800 focus:border-red-500 focus:outline-none" />
+              </details>
+
+              {/* 5. OPEX */}
+              <details className="group mb-3 border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
+                <summary className="flex items-center justify-between p-4 cursor-pointer select-none bg-slate-50 hover:bg-slate-100 transition-colors">
+                  <span className="text-[10px] font-black text-rose-500 uppercase tracking-wider">5. OPEX Mensual (MXN)</span>
+                </summary>
+                <div className="p-4 pt-0 grid grid-cols-2 gap-x-3 gap-y-2">
+                  {[
+                    { label: 'Operadores/Turno', key: 'operadoresPorTurno', isMxn: false },
+                    { label: 'Sueldo Op. (Mes MXN)', key: 'sueldoOperadorMensual', isMxn: true },
+                    { label: 'Supervisores/Turno', key: 'supervisoresPorTurno', isMxn: false },
+                    { label: 'Sueldo Sup. (Mes MXN)', key: 'sueldoSupervisorMensual', isMxn: true },
+                    { label: 'Mantenimiento Base/Año %', key: 'mantenimientoAnualPorcentaje', isMxn: false, full: true },
+                    { label: 'Detergentes (MXN)', key: 'filtrosMensualMxn', isMxn: true },
+                    { label: 'Refacciones (MXN)', key: 'refaccionesMensualMxn', isMxn: true },
+                    { label: 'Lubricación (MXN)', key: 'lubricacionMensualMxn', isMxn: true },
+                    { label: 'Limpieza (MXN)', key: 'limpiezaMensualMxn', isMxn: true },
+                    { label: 'Consumibles (MXN)', key: 'consumiblesMensualMxn', isMxn: true },
+                    { label: 'Otros OPEX (MXN)', key: 'otrosOpexMensualMxn', isMxn: true },
+                  ].map((item, idx) => (
+                    <div key={item.key} className={`flex flex-col gap-0.5 ${item.full ? 'col-span-2 border-t border-slate-200 pt-2 mt-1' : ''}`}>
+                      <span className="text-[8px] font-bold text-slate-500 uppercase truncate">{item.label}</span>
+                      <div className="relative flex items-center">
+                        {item.isMxn && <span className="absolute left-2 text-[10px] font-black text-rose-400">$</span>}
+                        <input
+                          type="number"
+                          value={inputs[item.key] || 0}
+                          onChange={e => setInputs(p => ({ ...p, [item.key]: parseFloat(e.target.value) || 0 }))}
+                          className={`w-full bg-white border border-slate-200 rounded-lg ${item.isMxn ? 'pl-5 pr-2' : 'px-2'} py-1 text-[10px] font-bold ${item.isMxn ? 'text-rose-700' : 'text-slate-800'} focus:border-cyan-500 focus:outline-none`}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </details>
+
+              {/* 6. FINANCIERO */}
+              <details className="group mb-3 border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
+                <summary className="flex items-center justify-between p-4 cursor-pointer select-none bg-slate-50 hover:bg-slate-100 transition-colors">
+                  <span className="text-[10px] font-black text-purple-600 uppercase tracking-wider">6. Financiero</span>
+                </summary>
+                <div className="p-4 pt-0 space-y-3">
+                  <div className="flex bg-slate-200 p-1 rounded-lg">
+                    <button onClick={() => setInputs(p => ({ ...p, usarModoIngresoVenta: true, usarModoAhorroInterno: false }))} className={`flex-1 text-[9px] font-black uppercase py-1.5 rounded-md transition-all ${inputs.usarModoIngresoVenta ? 'bg-white shadow-sm text-purple-700' : 'text-slate-500 hover:text-slate-700'}`}>Ingreso por Venta</button>
+                    <button onClick={() => setInputs(p => ({ ...p, usarModoIngresoVenta: false, usarModoAhorroInterno: true }))} className={`flex-1 text-[9px] font-black uppercase py-1.5 rounded-md transition-all ${inputs.usarModoAhorroInterno ? 'bg-white shadow-sm text-purple-700' : 'text-slate-500 hover:text-slate-700'}`}>Ahorro Interno</button>
                   </div>
-                  <div>
-                    <span className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Frecuencia Mtto (Hrs)</span>
-                    <input type="number" step="10" value={inputs.frecuenciaMantenimientoHoras || ''} onChange={e => setInputs(p => ({...p, frecuenciaMantenimientoHoras: parseFloat(e.target.value) || 0}))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[10px] font-bold text-slate-800 focus:border-red-500 focus:outline-none" />
+
+                  {inputs.usarModoIngresoVenta && (
+                    <div>
+                      <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Precio de Venta (MXN/kCajas)</span>
+                      <div className="relative flex items-center">
+                        <span className="absolute left-2.5 text-xs font-black text-purple-400">$</span>
+                        <input type="number" step="10" value={inputs.precioVentaTonMxn || 0} onChange={e => setInputs(p => ({ ...p, precioVentaTonMxn: parseFloat(e.target.value) || 0 }))} className="w-full bg-white border border-purple-200 rounded-lg pl-6 pr-2 py-1.5 text-xs font-bold text-purple-800 focus:border-purple-500 focus:outline-none" />
+                      </div>
+                    </div>
+                  )}
+                  {inputs.usarModoAhorroInterno && (
+                    <div>
+                      <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Ahorro Generado (MXN/kCajas)</span>
+                      <div className="relative flex items-center">
+                        <span className="absolute left-2.5 text-xs font-black text-purple-400">$</span>
+                        <input type="number" step="10" value={inputs.ahorroPorTonMxn || 0} onChange={e => setInputs(p => ({ ...p, ahorroPorTonMxn: parseFloat(e.target.value) || 0 }))} className="w-full bg-white border border-purple-200 rounded-lg pl-6 pr-2 py-1.5 text-xs font-bold text-purple-800 focus:border-purple-500 focus:outline-none" />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-2 border-t border-slate-200 pt-2">
+                    <div>
+                      <span className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Tasa Desc. (%)</span>
+                      <input type="number" step="1" value={inputs.tasaDescuento} onChange={e => setInputs(p => ({ ...p, tasaDescuento: parseFloat(e.target.value) || 0 }))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-[10px] font-bold text-slate-800" />
+                    </div>
+                    <div>
+                      <span className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Vida Útil (Años)</span>
+                      <input type="number" step="1" value={inputs.vidaUtilAnios} onChange={e => setInputs(p => ({ ...p, vidaUtilAnios: parseFloat(e.target.value) || 0 }))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-[10px] font-bold text-slate-800" />
+                    </div>
                   </div>
                 </div>
-                <div className="border-t border-slate-200 pt-2 space-y-2">
-                  <span className="block text-[9px] font-bold text-slate-500 uppercase">Requisitos de Seguridad</span>
-                  <div className="grid grid-cols-2 gap-1">
+              </details>
+
+              {/* 7. RIESGOS Y MANTENIMIENTO */}
+              <details className="group mb-3 border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
+                <summary className="flex items-center justify-between p-4 cursor-pointer select-none bg-slate-50 hover:bg-slate-100 transition-colors">
+                  <span className="text-[10px] font-black text-red-500 uppercase tracking-wider">7. Riesgos y Mantenimiento</span>
+                </summary>
+                <div className="p-4 pt-0 space-y-3">
+                  <div className="grid grid-cols-2 gap-2">
                     {[
-                      { label: 'Extracción Polvo', key: 'requiereExtraccionPolvo' },
-                      { label: 'Sistema Incendio', key: 'requiereSistemaContraIncendio' },
-                      { label: 'Cabina Acústica', key: 'requiereCabinaAcustica' },
-                      { label: 'Protocolo LOTO', key: 'requiereLOTO' },
-                      { label: 'Guardas Físicas', key: 'requiereGuardas' },
-                      { label: 'E-Stop', key: 'requiereEStop' }
+                      { label: 'Riesgo Polvo', key: 'riesgoPolvo', options: ['bajo', 'medio', 'alto'] },
+                      { label: 'Riesgo Incendio', key: 'riesgoIncendio', options: ['bajo', 'medio', 'alto'] },
+                      { label: 'Riesgo Metales', key: 'riesgoMetal', options: ['bajo', 'medio', 'alto'] },
+                      { label: 'Riesgo Ruido', key: 'riesgoRuido', options: ['bajo', 'medio', 'alto'] },
                     ].map(item => (
-                      <label key={item.key} className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" checked={inputs[item.key]} onChange={e => setInputs(p => ({...p, [item.key]: e.target.checked}))} className="accent-red-500 w-3 h-3" />
-                        <span className="text-[9px] font-bold text-slate-700 uppercase">{item.label}</span>
-                      </label>
+                      <div key={item.key}>
+                        <span className="block text-[8px] font-bold text-slate-500 uppercase mb-0.5">{item.label}</span>
+                        <select value={inputs[item.key]} onChange={e => setInputs(p => ({ ...p, [item.key]: e.target.value }))} className="w-full bg-white border border-slate-200 rounded-lg px-1 py-1 text-[10px] font-bold text-slate-800 uppercase outline-none">
+                          {item.options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                        </select>
+                      </div>
                     ))}
                   </div>
+                  <div className="grid grid-cols-2 gap-2 border-t border-slate-200 pt-2">
+                    <div>
+                      <span className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Vida Filtros (Hrs)</span>
+                      <input type="number" step="50" value={inputs.vidaUtilCuchillasHoras || ''} onChange={e => setInputs(p => ({ ...p, vidaUtilCuchillasHoras: parseFloat(e.target.value) || 0 }))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[10px] font-bold text-slate-800 focus:border-red-500 focus:outline-none" />
+                    </div>
+                    <div>
+                      <span className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Frecuencia Mtto (Hrs)</span>
+                      <input type="number" step="10" value={inputs.frecuenciaMantenimientoHoras || ''} onChange={e => setInputs(p => ({ ...p, frecuenciaMantenimientoHoras: parseFloat(e.target.value) || 0 }))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[10px] font-bold text-slate-800 focus:border-red-500 focus:outline-none" />
+                    </div>
+                  </div>
+                  <div className="border-t border-slate-200 pt-2 space-y-2">
+                    <span className="block text-[9px] font-bold text-slate-500 uppercase">Requisitos de Seguridad</span>
+                    <div className="grid grid-cols-2 gap-1">
+                      {[
+                        { label: 'Extracción Polvo', key: 'requiereExtraccionPolvo' },
+                        { label: 'Sistema Incendio', key: 'requiereSistemaContraIncendio' },
+                        { label: 'Cabina Acústica', key: 'requiereCabinaAcustica' },
+                        { label: 'Protocolo LOTO', key: 'requiereLOTO' },
+                        { label: 'Guardas Físicas', key: 'requiereGuardas' },
+                        { label: 'E-Stop', key: 'requiereEStop' }
+                      ].map(item => (
+                        <label key={item.key} className="flex items-center gap-2 cursor-pointer">
+                          <input type="checkbox" checked={inputs[item.key]} onChange={e => setInputs(p => ({ ...p, [item.key]: e.target.checked }))} className="accent-red-500 w-3 h-3" />
+                          <span className="text-[9px] font-bold text-slate-700 uppercase">{item.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </details>
+              </details>
 
-            {/* 8. OBRA CIVIL Y CIMENTACIÓN */}
-            <details className="group mb-3 border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
-              <summary className="flex items-center justify-between p-4 cursor-pointer select-none bg-slate-50 hover:bg-slate-100 transition-colors">
-                <span className="text-[10px] font-black text-amber-600 uppercase tracking-wider">8. Obra Civil y Cimentación</span>
-              </summary>
-              <div className="p-4 pt-0 space-y-3">
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <span className="block text-[8px] font-bold text-slate-500 uppercase mb-0.5">Espesor Piso (cm)</span>
-                    <input type="number" value={inputs.civilEspesorPisoCm || ''} onChange={e => setInputs(p => ({...p, civilEspesorPisoCm: parseInt(e.target.value) || 0}))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-amber-500 focus:outline-none" />
+              {/* 8. OBRA CIVIL Y CIMENTACIÓN */}
+              <details className="group mb-3 border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
+                <summary className="flex items-center justify-between p-4 cursor-pointer select-none bg-slate-50 hover:bg-slate-100 transition-colors">
+                  <span className="text-[10px] font-black text-amber-600 uppercase tracking-wider">8. Obra Civil y Cimentación</span>
+                </summary>
+                <div className="p-4 pt-0 space-y-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <span className="block text-[8px] font-bold text-slate-500 uppercase mb-0.5">Espesor Piso (cm)</span>
+                      <input type="number" value={inputs.civilEspesorPisoCm || ''} onChange={e => setInputs(p => ({ ...p, civilEspesorPisoCm: parseInt(e.target.value) || 0 }))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-amber-500 focus:outline-none" />
+                    </div>
+                    <div>
+                      <span className="block text-[8px] font-bold text-slate-500 uppercase mb-0.5">Resistencia Concreto (f'c)</span>
+                      <input type="number" value={inputs.civilConcretoFc || ''} onChange={e => setInputs(p => ({ ...p, civilConcretoFc: parseInt(e.target.value) || 0 }))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-amber-500 focus:outline-none" />
+                    </div>
                   </div>
                   <div>
-                    <span className="block text-[8px] font-bold text-slate-500 uppercase mb-0.5">Resistencia Concreto (f'c)</span>
-                    <input type="number" value={inputs.civilConcretoFc || ''} onChange={e => setInputs(p => ({...p, civilConcretoFc: parseInt(e.target.value) || 0}))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-amber-500 focus:outline-none" />
+                    <span className="block text-[8px] font-bold text-slate-500 uppercase mb-0.5">Carga Máxima (Ton/m²)</span>
+                    <input type="number" step="0.5" value={inputs.civilCargaSoportada || ''} onChange={e => setInputs(p => ({ ...p, civilCargaSoportada: parseFloat(e.target.value) || 0 }))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-amber-500 focus:outline-none" />
+                  </div>
+                  <div>
+                    <span className="block text-[8px] font-bold text-slate-500 uppercase mb-0.5">Área Requerida (m²)</span>
+                    <input type="number" value={inputs.civilAreaRequeridaM2 || ''} onChange={e => setInputs(p => ({ ...p, civilAreaRequeridaM2: parseInt(e.target.value) || 0 }))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-amber-500 focus:outline-none" />
+                  </div>
+                  <div>
+                    <span className="block text-[8px] font-bold text-slate-500 uppercase mb-0.5">Excavación Base (m³)</span>
+                    <input type="number" step="0.1" value={inputs.civilExcavacionM3 || ''} onChange={e => setInputs(p => ({ ...p, civilExcavacionM3: parseFloat(e.target.value) || 0 }))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-amber-500 focus:outline-none" />
+                  </div>
+                  <div>
+                    <span className="block text-[8px] font-bold text-slate-500 uppercase mb-0.5">Refuerzo Estructural</span>
+                    <input type="text" value={inputs.civilRefuerzoPiso || ''} onChange={e => setInputs(p => ({ ...p, civilRefuerzoPiso: e.target.value }))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-amber-500 focus:outline-none uppercase" />
+                  </div>
+                  <div>
+                    <span className="block text-[8px] font-bold text-slate-500 uppercase mb-0.5">Acabado Piso</span>
+                    <input type="text" value={inputs.civilAcabadoPiso || ''} onChange={e => setInputs(p => ({ ...p, civilAcabadoPiso: e.target.value }))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-amber-500 focus:outline-none uppercase" />
                   </div>
                 </div>
-                <div>
-                  <span className="block text-[8px] font-bold text-slate-500 uppercase mb-0.5">Carga Máxima (Ton/m²)</span>
-                  <input type="number" step="0.5" value={inputs.civilCargaSoportada || ''} onChange={e => setInputs(p => ({...p, civilCargaSoportada: parseFloat(e.target.value) || 0}))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-amber-500 focus:outline-none" />
-                </div>
-                <div>
-                  <span className="block text-[8px] font-bold text-slate-500 uppercase mb-0.5">Área Requerida (m²)</span>
-                  <input type="number" value={inputs.civilAreaRequeridaM2 || ''} onChange={e => setInputs(p => ({...p, civilAreaRequeridaM2: parseInt(e.target.value) || 0}))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-amber-500 focus:outline-none" />
-                </div>
-                <div>
-                  <span className="block text-[8px] font-bold text-slate-500 uppercase mb-0.5">Excavación Base (m³)</span>
-                  <input type="number" step="0.1" value={inputs.civilExcavacionM3 || ''} onChange={e => setInputs(p => ({...p, civilExcavacionM3: parseFloat(e.target.value) || 0}))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-amber-500 focus:outline-none" />
-                </div>
-                <div>
-                  <span className="block text-[8px] font-bold text-slate-500 uppercase mb-0.5">Refuerzo Estructural</span>
-                  <input type="text" value={inputs.civilRefuerzoPiso || ''} onChange={e => setInputs(p => ({...p, civilRefuerzoPiso: e.target.value}))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-amber-500 focus:outline-none uppercase" />
-                </div>
-                <div>
-                  <span className="block text-[8px] font-bold text-slate-500 uppercase mb-0.5">Acabado Piso</span>
-                  <input type="text" value={inputs.civilAcabadoPiso || ''} onChange={e => setInputs(p => ({...p, civilAcabadoPiso: e.target.value}))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-amber-500 focus:outline-none uppercase" />
-                </div>
-              </div>
-            </details>
+              </details>
 
+            </div>
           </div>
-        </div>
         )}
 
         {/* PESTAÑA LATERAL FLOTANTE CUANDO ESTÁ CERRADO */}
         {!isSidebarOpen && (
-          <button 
+          <button
             onClick={() => setIsSidebarOpen(true)}
             className="absolute left-0 top-10 bg-slate-800 text-white p-3 pr-4 rounded-r-2xl shadow-xl hover:bg-slate-700 transition-all z-50 flex items-center gap-3 border border-l-0 border-slate-600"
             title="Abrir Variables Editables"
@@ -2545,7 +2787,7 @@ export default function DHLAdvancedSimulator() {
 
         {/* PANEL DERECHO: NAVEGACIÓN Y REPORTES INDUSTRIALES */}
         <div className={`${isSidebarOpen ? 'lg:col-span-8' : 'lg:col-span-12'} flex flex-col gap-6 transition-all duration-300 relative`}>
-          
+
           {/* TABS DE SECCIÓN */}
           <div className={`flex overflow-x-auto bg-slate-200 p-1.5 rounded-2xl gap-1 scrollbar-hide whitespace-nowrap ${!isSidebarOpen ? 'ml-36' : ''}`}>
             {/* BOTÓN EXTRA PARA OCULTAR (sólo si hay espacio o dentro del tab bar) */}
@@ -2589,7 +2831,7 @@ export default function DHLAdvancedSimulator() {
           {/* TAB 1: PORTADA EJECUTIVA */}
           {activeTab === 'resumen' && (
             <div className="space-y-6">
-              
+
               {/* BANNER DE INFORME INDUSTRIAL */}
               <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-3xl p-8 relative overflow-hidden shadow-sm">
                 <div className="absolute right-0 bottom-0 top-0 w-1/3 bg-cyan-500/10 skew-x-12 transform origin-bottom-right pointer-events-none" />
@@ -2611,7 +2853,7 @@ export default function DHLAdvancedSimulator() {
                           />
                         </div>
                       ) : (
-                        <h2 
+                        <h2
                           onClick={() => setIsEditingMachineName(true)}
                           className="text-3xl font-black text-white uppercase tracking-tight cursor-pointer hover:text-cyan-400 transition-colors flex items-center gap-2 group"
                           title="Hacer click para editar modelo del equipo"
@@ -2633,7 +2875,7 @@ export default function DHLAdvancedSimulator() {
                         className="bg-slate-800 border border-cyan-500/50 rounded-lg px-2 py-0.5 text-xs font-bold text-white uppercase tracking-wider outline-none focus:ring-1 focus:ring-cyan-500 w-96 mt-1"
                       />
                     ) : (
-                      <p 
+                      <p
                         onClick={() => setIsEditingEvaluationName(true)}
                         className="text-xs text-slate-300 font-bold uppercase tracking-wider mt-1 cursor-pointer hover:text-white transition-colors flex items-center gap-1.5 group"
                         title="Hacer click para editar descripción de la evaluación"
@@ -2666,7 +2908,7 @@ export default function DHLAdvancedSimulator() {
 
               {/* GRUPO DE INDICADORES PRINCIPALES (KPI CARDS) */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                
+
                 {/* Capacidad Real */}
                 <div className="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col justify-between shadow-sm transition-all hover:border-cyan-300 group">
                   {isEditingCapacityTitle ? (
@@ -2684,7 +2926,7 @@ export default function DHLAdvancedSimulator() {
                       </button>
                     </div>
                   ) : (
-                    <span 
+                    <span
                       className="text-[9px] font-black text-slate-500 uppercase tracking-wider flex items-center gap-1.5 group-hover:text-cyan-600 cursor-pointer"
                       onClick={() => setIsEditingCapacityTitle(true)}
                     >
@@ -2692,17 +2934,17 @@ export default function DHLAdvancedSimulator() {
                       {inputs.capacityCardTitle || 'CAPACIDAD REAL AJUSTADA'} <Edit2 className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </span>
                   )}
-                  
+
                   <div className="mt-4">
                     <span className="text-3xl font-black text-slate-900">{new Intl.NumberFormat().format(results.realProductionPerHourBoxes.toFixed(0))}</span>
                     <span className="text-xs font-bold text-slate-400 ml-1">cajas/h</span>
                   </div>
-                  
+
                   <div className="flex flex-col gap-1.5 mt-2">
                     <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono">
                       <span>Nominal:</span>
                       <div className="flex items-center gap-1">
-                        <input 
+                        <input
                           type="number"
                           value={inputs.capacidad_nominal_cajas_h !== undefined ? inputs.capacidad_nominal_cajas_h : currentNominalCapacity}
                           onChange={(e) => setInputs(prev => ({ ...prev, capacidad_nominal_cajas_h: parseFloat(e.target.value) || 0 }))}
@@ -2715,7 +2957,7 @@ export default function DHLAdvancedSimulator() {
                     <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono">
                       <span>Factor (OEE):</span>
                       <div>
-                        <input 
+                        <input
                           type="number"
                           value={inputs.oee}
                           onChange={(e) => setInputs(prev => ({ ...prev, oee: parseInt(e.target.value) || 0 }))}
@@ -2889,7 +3131,7 @@ export default function DHLAdvancedSimulator() {
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Visor simulado de la caja */}
                   <div className="flex items-center justify-center bg-white/5 rounded-xl border border-white/10 p-8 h-full min-h-[200px]">
                     <div className="relative flex items-center justify-center w-full h-full perspective-[800px]">
@@ -2977,18 +3219,39 @@ export default function DHLAdvancedSimulator() {
                           const reqH = caja.reqCajasH !== undefined ? caja.reqCajasH : (pDia / (inputs.hoursPerDay || 9));
                           const targetCap = inputs.capacidad_nominal_cajas_h || 350;
                           const isOk = reqH <= targetCap;
-                          
+
                           return (
                             <tr key={idx} className="hover:bg-slate-50 transition-colors">
                               <td className="py-2.5 px-4 font-black text-slate-800">
                                 <div className="flex items-center gap-2">
-                                  <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: caja.color }} title={caja.color} />
-                                  {caja.nombre}
+                                  <div className="w-3 h-3 rounded-full shadow-sm shrink-0" style={{ backgroundColor: caja.color }} title={caja.color} />
+                                  <input
+                                    type="text"
+                                    value={caja.nombre}
+                                    onChange={(e) => {
+                                      const newCajas = [...inputs.cajas];
+                                      newCajas[idx].nombre = e.target.value;
+                                      setInputs(p => ({ ...p, cajas: newCajas }));
+                                    }}
+                                    className="bg-transparent border-b border-dashed border-slate-300 focus:outline-none focus:border-cyan-500 text-slate-800 font-bold min-w-[120px]"
+                                  />
+                                  <select
+                                    value={caja.tipo || 'Caja'}
+                                    onChange={(e) => {
+                                      const newCajas = [...inputs.cajas];
+                                      newCajas[idx].tipo = e.target.value;
+                                      setInputs(p => ({ ...p, cajas: newCajas }));
+                                    }}
+                                    className="bg-slate-100 border border-slate-200 text-slate-600 rounded text-[9px] font-bold px-1.5 py-0.5 outline-none focus:border-cyan-500 cursor-pointer"
+                                  >
+                                    <option value="Caja">Caja</option>
+                                    <option value="Dunnage">Dunnage</option>
+                                  </select>
                                 </div>
                               </td>
                               <td className="py-2.5 px-4 text-right">
-                                <input 
-                                  type="number" 
+                                <input
+                                  type="number"
                                   value={pDia}
                                   onChange={(e) => {
                                     const val = parseFloat(e.target.value) || 0;
@@ -2997,12 +3260,12 @@ export default function DHLAdvancedSimulator() {
                                     newCajas[idx].reqCajasH = Number((val / (inputs.hoursPerDay || 9)).toFixed(1));
                                     const totalPiezas = newCajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0);
                                     setInputs(p => ({
-                                      ...p, 
+                                      ...p,
                                       cajas: newCajas,
                                       meta_diaria_cajas: totalPiezas > 0 ? totalPiezas : p.meta_diaria_cajas
                                     }));
                                   }}
-                                  className="w-20 bg-slate-50 border border-slate-200 rounded px-2 py-1 text-right focus:outline-none focus:border-cyan-500 font-mono text-slate-900 font-black" 
+                                  className="w-20 bg-slate-50 border border-slate-200 rounded px-2 py-1 text-right focus:outline-none focus:border-cyan-500 font-mono text-slate-900 font-black"
                                 />
                               </td>
                               <td className="py-2.5 px-4 text-right font-mono text-cyan-700 font-bold">{reqH.toFixed(1)}</td>
@@ -3067,7 +3330,7 @@ export default function DHLAdvancedSimulator() {
                           const reqDia = inputs.meta_diaria_cajas || 2819;
                           const hrsReq = reqDia / capCH;
                           const isViable = hrsReq <= (((inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1)) + 0.5);
-                          
+
                           return (
                             <tr key={idx} className="hover:bg-slate-50 transition-colors">
                               <td className="py-2.5 px-4">
@@ -3076,13 +3339,13 @@ export default function DHLAdvancedSimulator() {
                               <td className="py-2.5 px-4 font-black text-slate-800">{caja.nombre}</td>
                               <td className="py-2.5 px-4 text-slate-600">{caja.largoCm} x {caja.anchoCm} x {caja.altoCm} cm</td>
                               <td className="py-2.5 px-4 text-center">
-                                <select 
+                                <select
                                   className="bg-transparent border-b border-dashed border-slate-300 focus:outline-none focus:border-cyan-500 font-bold text-slate-600 cursor-pointer"
                                   value={caja.suciedad || 'Media'}
                                   onChange={(e) => {
                                     const newCajas = [...inputs.cajas];
                                     newCajas[idx].suciedad = e.target.value;
-                                    setInputs(p => ({...p, cajas: newCajas}));
+                                    setInputs(p => ({ ...p, cajas: newCajas }));
                                   }}
                                 >
                                   <option value="Baja">Baja</option>
@@ -3093,11 +3356,11 @@ export default function DHLAdvancedSimulator() {
                               <td className="py-2.5 px-4 text-right font-mono text-cyan-700">{new Intl.NumberFormat().format(capCH.toFixed(1))}</td>
                               <td className="py-2.5 px-4 text-right font-mono">{new Intl.NumberFormat().format(capDia.toFixed(0))}</td>
                               <td className="py-2.5 px-4 text-right">
-                                <input 
-                                  type="number" 
+                                <input
+                                  type="number"
                                   value={reqDia}
-                                  onChange={(e) => setInputs(p => ({...p, metaProduccionCajasDia: parseInt(e.target.value)||0}))}
-                                  className="w-16 bg-transparent border-b border-dashed border-slate-300 text-right focus:outline-none focus:border-cyan-500 font-mono text-slate-800 font-bold" 
+                                  onChange={(e) => setInputs(p => ({ ...p, metaProduccionCajasDia: parseInt(e.target.value) || 0 }))}
+                                  className="w-16 bg-transparent border-b border-dashed border-slate-300 text-right focus:outline-none focus:border-cyan-500 font-mono text-slate-800 font-bold"
                                 />
                               </td>
                               <td className="py-2.5 px-4 text-right font-mono text-slate-600">{hrsReq.toFixed(1)}h</td>
@@ -3161,7 +3424,7 @@ export default function DHLAdvancedSimulator() {
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                           <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} axisLine={false} tickLine={false} />
                           <YAxis tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                          <Tooltip 
+                          <Tooltip
                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                             itemStyle={{ fontSize: '11px', fontWeight: 700 }}
                             formatter={(value) => new Intl.NumberFormat().format(value.toFixed(0))}
@@ -3178,7 +3441,7 @@ export default function DHLAdvancedSimulator() {
                   <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
                     <h4 className="text-xs font-black text-slate-800 mb-2">Lavado y Secado — Parámetros Y1–Y5</h4>
                     <span className="text-[10px] font-bold text-slate-500 mb-6 block">Ref: {activeBox.nombre} · Rate base: {new Intl.NumberFormat().format(inputs.meta_diaria_cajas || 2819)} cajas/día</span>
-                    
+
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-[10px] font-bold text-slate-700 whitespace-nowrap">
                         <thead>
@@ -3196,15 +3459,15 @@ export default function DHLAdvancedSimulator() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                          {Array.from({length: 5}).map((_, i) => {
+                          {Array.from({ length: 5 }).map((_, i) => {
                             const reqDia = inputs.meta_diaria_cajas || 2819;
                             const baseHoursPerDay = inputs.hoursPerDay || 9;
                             const daysPerWeek = inputs.daysPerWeek || 6;
-                            
+
                             const capHNominal = currentNominalCapacity || 350;
                             const yearOEE = Math.min(0.99, ((inputs.oee || 95) / 100) + (i * 0.005));
                             const capH = capHNominal;
-                            
+
                             let turn = inputs.shiftsPerDay || 1;
                             let hrsPerShiftDay = baseHoursPerDay;
                             let efT = hrsPerShiftDay * yearOEE;
@@ -3223,7 +3486,7 @@ export default function DHLAdvancedSimulator() {
 
                             return (
                               <tr key={i} className="hover:bg-white transition-colors">
-                                <td className="py-2.5 px-2 text-cyan-600 font-bold">Y{i+1}</td>
+                                <td className="py-2.5 px-2 text-cyan-600 font-bold">Y{i + 1}</td>
                                 <td className="py-2.5 px-2 text-center">{hrsB}</td>
                                 <td className="py-2.5 px-2 text-center">{efT.toFixed(2)}</td>
                                 <td className="py-2.5 px-2 text-center">{turn}</td>
@@ -3251,7 +3514,7 @@ export default function DHLAdvancedSimulator() {
                           <div style={{ color: '#059669' }}><strong>Impacto OPEX:</strong> ${new Intl.NumberFormat().format(results.waterCostMonthlyMxn || 0)} MXN/mes</div>
                         </div>
                       </div>
-                      
+
                     </div>
                   </div>
                 </div>
@@ -3262,166 +3525,154 @@ export default function DHLAdvancedSimulator() {
           {/* TAB 2: TWIN DIGITAL & FLUJO */}
           {activeTab === 'twin' && (
             <div className="space-y-6">
-              
+
               {/* DIGITAL TWIN 3D / 2D VIEW CONTAINER */}
-              <div 
+              <div
                 ref={twinBlockRef}
-                className={`transition-all duration-300 relative ${
-                  isTwinBlockFullscreen 
-                    ? `w-screen h-screen overflow-y-auto ${twinTheme === 'toxic' ? 'bg-[#0d0d0e]' : twinTheme === 'blueprint' ? 'bg-[#edf4f9]' : 'bg-[#05070f]'} p-8 rounded-none border-none z-[9999] flex flex-col justify-between` 
-                    : twinTheme === 'toxic'
-                      ? 'bg-[#121212] border border-[#2c302e] rounded-3xl p-6 shadow-xl overflow-hidden'
-                      : twinTheme === 'blueprint'
-                        ? 'bg-white border border-slate-200 rounded-3xl p-6 shadow-sm overflow-hidden'
-                        : 'bg-[#0b0c10]/80 border border-slate-800/80 rounded-3xl p-6 shadow-xl backdrop-blur-md overflow-hidden'
-                }`}
+                className={`transition-all duration-300 relative ${isTwinBlockFullscreen
+                  ? `w-screen h-screen overflow-y-auto ${twinTheme === 'toxic' ? 'bg-[#0d0d0e]' : twinTheme === 'blueprint' ? 'bg-[#edf4f9]' : 'bg-[#05070f]'} p-8 rounded-none border-none z-[9999] flex flex-col justify-between`
+                  : twinTheme === 'toxic'
+                    ? 'bg-[#121212] border border-[#2c302e] rounded-3xl p-6 shadow-xl overflow-hidden'
+                    : twinTheme === 'blueprint'
+                      ? 'bg-white border border-slate-200 rounded-3xl p-6 shadow-sm overflow-hidden'
+                      : 'bg-[#0b0c10]/80 border border-slate-800/80 rounded-3xl p-6 shadow-xl backdrop-blur-md overflow-hidden'
+                  }`}
               >
-                <div className={`flex flex-col sm:flex-row sm:items-center justify-between border-b pb-4 mb-4 gap-4 ${
-                  twinTheme === 'toxic' ? 'border-[#2c302e]' : twinTheme === 'blueprint' ? 'border-slate-100' : 'border-slate-800'
-                }`}>
+                <div className={`flex flex-col sm:flex-row sm:items-center justify-between border-b pb-4 mb-4 gap-4 ${twinTheme === 'toxic' ? 'border-[#2c302e]' : twinTheme === 'blueprint' ? 'border-slate-100' : 'border-slate-800'
+                  }`}>
                   <div className="flex flex-wrap items-center gap-4">
                     <div className="flex items-center gap-2">
-                      <Cpu className={`w-5 h-5 animate-pulse ${
-                        twinTheme === 'toxic' ? 'text-[#84cc16]' : twinTheme === 'blueprint' ? 'text-cyan-650' : 'text-[#00F0FF]'
-                      }`} />
-                      <h3 className={`text-sm font-black uppercase tracking-wider ${
-                        twinTheme === 'toxic' ? 'text-[#84cc16]' : twinTheme === 'blueprint' ? 'text-slate-900' : 'text-white'
-                      }`}>
+                      <Cpu className={`w-5 h-5 animate-pulse ${twinTheme === 'toxic' ? 'text-[#84cc16]' : twinTheme === 'blueprint' ? 'text-cyan-650' : 'text-[#00F0FF]'
+                        }`} />
+                      <h3 className={`text-sm font-black uppercase tracking-wider ${twinTheme === 'toxic' ? 'text-[#84cc16]' : twinTheme === 'blueprint' ? 'text-slate-900' : 'text-white'
+                        }`}>
                         {`Twin Digital 3D de la Línea (WM-500) ${twinLayout?.name ? `- [${twinLayout.name.toUpperCase()}]` : ''}`}
                       </h3>
                       {renderPdfToggleButton('twin', 'Twin 3D')}
-                      {isProcessingModel && <Loader2 className={`w-3.5 h-3.5 animate-spin ${
-                        twinTheme === 'toxic' ? 'text-[#84cc16]' : twinTheme === 'blueprint' ? 'text-cyan-600' : 'text-[#00F0FF]'
-                      }`} />}
+                      {isProcessingModel && <Loader2 className={`w-3.5 h-3.5 animate-spin ${twinTheme === 'toxic' ? 'text-[#84cc16]' : twinTheme === 'blueprint' ? 'text-cyan-600' : 'text-[#00F0FF]'
+                        }`} />}
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2">
                     {is3DView ? (
                       <div className="flex flex-wrap items-center gap-2 text-xs">
-                        <button 
+                        <button
                           onClick={() => setIsDesignsLibraryOpen(true)}
-                          className={`flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all font-black uppercase tracking-widest text-[9px] shadow-sm ${
-                            twinTheme === 'toxic'
-                              ? 'bg-[#222222] border-[#2c302e] hover:border-[#84cc16] text-[#84cc16] hover:text-white border'
-                              : twinTheme === 'blueprint'
-                                ? 'bg-cyan-50/50 hover:bg-cyan-50 text-cyan-700 border-cyan-200/60 border'
-                                : 'bg-teal-950/40 hover:bg-teal-900/40 text-[#00F0FF] border border-[#0d9488]/40'
-                          }`}
+                          className={`flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all font-black uppercase tracking-widest text-[9px] shadow-sm ${twinTheme === 'toxic'
+                            ? 'bg-[#222222] border-[#2c302e] hover:border-[#84cc16] text-[#84cc16] hover:text-white border'
+                            : twinTheme === 'blueprint'
+                              ? 'bg-cyan-50/50 hover:bg-cyan-50 text-cyan-700 border-cyan-200/60 border'
+                              : 'bg-teal-950/40 hover:bg-teal-900/40 text-[#00F0FF] border border-[#0d9488]/40'
+                            }`}
                           title="Abrir librería de layouts guardados"
                         >
                           <FolderOpen className="w-3.5 h-3.5" /> Librería
                         </button>
 
-                        <label 
+                        <label
                           htmlFor="twin-upload-file-wm500"
-                          className={`flex items-center gap-1.5 px-3 py-2 rounded-xl cursor-pointer transition-all font-black uppercase tracking-widest text-[9px] shadow-sm ${
-                            twinTheme === 'toxic'
-                              ? 'bg-[#222222] border-[#2c302e] hover:border-[#84cc16] text-[#84cc16] hover:text-white border'
-                              : twinTheme === 'blueprint'
-                                ? 'bg-purple-50 hover:bg-purple-100/80 text-purple-700 border-purple-200/60 border'
-                                : 'bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                          }`}
+                          className={`flex items-center gap-1.5 px-3 py-2 rounded-xl cursor-pointer transition-all font-black uppercase tracking-widest text-[9px] shadow-sm ${twinTheme === 'toxic'
+                            ? 'bg-[#222222] border-[#2c302e] hover:border-[#84cc16] text-[#84cc16] hover:text-white border'
+                            : twinTheme === 'blueprint'
+                              ? 'bg-purple-50 hover:bg-purple-100/80 text-purple-700 border-purple-200/60 border'
+                              : 'bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                            }`}
                           title="Subir archivo 3D de la planta (.glb, .gltf o .fbx)"
                         >
                           <Upload className="w-3.5 h-3.5" /> Subir 3D
                         </label>
-                        <input 
-                          type="file" 
-                          id="twin-upload-file-wm500" 
-                          className="hidden" 
-                          accept=".glb,.gltf,.fbx" 
-                          onChange={handleTwinModelUpload} 
+                        <input
+                          type="file"
+                          id="twin-upload-file-wm500"
+                          className="hidden"
+                          accept=".glb,.gltf,.fbx"
+                          onChange={handleTwinModelUpload}
                         />
 
-                        <button 
+                        <button
                           onClick={() => setIsTwinEditMode(!isTwinEditMode)}
-                          className={`flex items-center gap-1.5 px-3 py-2 border rounded-xl transition-all font-black uppercase tracking-widest text-[9px] shadow-sm ${
-                            isTwinEditMode 
-                              ? twinTheme === 'toxic'
-                                ? 'bg-[#84cc16] hover:bg-[#a3e635] text-black font-extrabold border-none shadow-[0_0_12px_rgba(132,204,22,0.4)]'
-                                : twinTheme === 'blueprint'
-                                  ? 'bg-yellow-100 hover:bg-yellow-200/85 text-yellow-800 border-yellow-300 font-extrabold'
-                                  : 'bg-yellow-500/20 border-yellow-500 text-yellow-400 font-extrabold' 
-                              : twinTheme === 'toxic'
-                                ? 'bg-[#1a1a1a] border-[#2c302e] text-gray-400 hover:text-white'
-                                : twinTheme === 'blueprint'
-                                  ? 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200'
-                                  : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'
-                          }`}
+                          className={`flex items-center gap-1.5 px-3 py-2 border rounded-xl transition-all font-black uppercase tracking-widest text-[9px] shadow-sm ${isTwinEditMode
+                            ? twinTheme === 'toxic'
+                              ? 'bg-[#84cc16] hover:bg-[#a3e635] text-black font-extrabold border-none shadow-[0_0_12px_rgba(132,204,22,0.4)]'
+                              : twinTheme === 'blueprint'
+                                ? 'bg-yellow-100 hover:bg-yellow-200/85 text-yellow-800 border-yellow-300 font-extrabold'
+                                : 'bg-yellow-500/20 border-yellow-500 text-yellow-400 font-extrabold'
+                            : twinTheme === 'toxic'
+                              ? 'bg-[#1a1a1a] border-[#2c302e] text-gray-400 hover:text-white'
+                              : twinTheme === 'blueprint'
+                                ? 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200'
+                                : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'
+                            }`}
                           title="Activar edición de posiciones de máquinas en 3D"
                         >
                           <Sliders className="w-3.5 h-3.5" /> {isTwinEditMode ? 'Listo' : 'Ajustes'}
                         </button>
 
-                        <button 
+                        <button
                           onClick={toggleTwinBlockFullscreen}
-                          className={`flex items-center gap-1.5 px-3 py-2 border rounded-xl transition-all font-black uppercase tracking-widest text-[9px] shadow-sm ${
-                            isTwinBlockFullscreen 
-                              ? twinTheme === 'toxic'
-                                ? 'bg-[#84cc16]/25 border-[#84cc16] text-[#84cc16] font-extrabold shadow-[0_0_10px_rgba(132,204,22,0.25)]'
-                                : twinTheme === 'blueprint'
-                                  ? 'bg-cyan-100 border-cyan-300 text-cyan-800 font-extrabold'
-                                  : 'bg-[#00F0FF]/25 border-[#00F0FF] text-[#00F0FF] font-extrabold shadow-[0_0_10px_rgba(0,240,255,0.25)]'
-                              : twinTheme === 'toxic'
-                                ? 'bg-[#1a1a1a] border-[#2c302e] text-gray-400 hover:text-white hover:border-[#84cc16]/40'
-                                : twinTheme === 'blueprint'
-                                  ? 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200'
-                                  : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:border-white/20'
-                          }`}
+                          className={`flex items-center gap-1.5 px-3 py-2 border rounded-xl transition-all font-black uppercase tracking-widest text-[9px] shadow-sm ${isTwinBlockFullscreen
+                            ? twinTheme === 'toxic'
+                              ? 'bg-[#84cc16]/25 border-[#84cc16] text-[#84cc16] font-extrabold shadow-[0_0_10px_rgba(132,204,22,0.25)]'
+                              : twinTheme === 'blueprint'
+                                ? 'bg-cyan-100 border-cyan-300 text-cyan-800 font-extrabold'
+                                : 'bg-[#00F0FF]/25 border-[#00F0FF] text-[#00F0FF] font-extrabold shadow-[0_0_10px_rgba(0,240,255,0.25)]'
+                            : twinTheme === 'toxic'
+                              ? 'bg-[#1a1a1a] border-[#2c302e] text-gray-400 hover:text-white hover:border-[#84cc16]/40'
+                              : twinTheme === 'blueprint'
+                                ? 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200'
+                                : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:border-white/20'
+                            }`}
                           title={isTwinBlockFullscreen ? "Salir de Pantalla Completa" : "Editar en Pantalla Completa"}
                         >
                           {isTwinBlockFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
                           <span>{isTwinBlockFullscreen ? 'Ventana' : 'Pantalla Completa'}</span>
                         </button>
 
-                        <button 
+                        <button
                           onClick={handleSyncFromFlowDesigner}
-                          className={`flex items-center justify-center p-2 border rounded-xl transition-all shadow-sm ${
-                            twinTheme === 'toxic'
-                              ? 'bg-[#1a1a1a] border-[#2c302e] text-gray-400 hover:text-white'
-                              : twinTheme === 'blueprint'
-                                ? 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200'
-                                : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'
-                          }`}
+                          className={`flex items-center justify-center p-2 border rounded-xl transition-all shadow-sm ${twinTheme === 'toxic'
+                            ? 'bg-[#1a1a1a] border-[#2c302e] text-gray-400 hover:text-white'
+                            : twinTheme === 'blueprint'
+                              ? 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200'
+                              : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'
+                            }`}
                           title="Restablecer posiciones originales de fábrica"
                         >
                           <RotateCcw className="w-3.5 h-3.5" />
                         </button>
 
-                        <button 
+                        <button
                           onClick={handleAnchorToSimulator}
                           disabled={isAnchoring}
-                          className={`flex items-center gap-1.5 px-3 py-2 border rounded-xl transition-all font-black uppercase tracking-widest text-[9px] shadow-sm ${
-                            isAnchoring
-                              ? 'bg-green-500/10 border-green-500/30 text-green-400 opacity-70 cursor-wait'
-                              : isAnchored
-                                ? twinTheme === 'toxic'
-                                  ? 'bg-lime-500/25 border-lime-400 text-lime-300 font-extrabold shadow-[0_0_10px_rgba(132,204,22,0.25)]'
-                                  : twinTheme === 'blueprint'
-                                    ? 'bg-emerald-100 border-emerald-300 text-emerald-800 font-extrabold shadow-[0_0_10px_rgba(16,185,129,0.2)]'
-                                    : 'bg-green-500/20 border-green-500 text-green-400 font-extrabold shadow-[0_0_10px_rgba(34,197,94,0.2)]'
-                                : twinTheme === 'toxic'
-                                  ? 'bg-lime-500/10 hover:bg-lime-500/20 text-lime-400 border border-lime-500/30'
-                                  : twinTheme === 'blueprint'
-                                    ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200'
-                                    : 'bg-green-500/10 hover:bg-green-500/20 text-green-400 border border-green-500/30'
-                          }`}
+                          className={`flex items-center gap-1.5 px-3 py-2 border rounded-xl transition-all font-black uppercase tracking-widest text-[9px] shadow-sm ${isAnchoring
+                            ? 'bg-green-500/10 border-green-500/30 text-green-400 opacity-70 cursor-wait'
+                            : isAnchored
+                              ? twinTheme === 'toxic'
+                                ? 'bg-lime-500/25 border-lime-400 text-lime-300 font-extrabold shadow-[0_0_10px_rgba(132,204,22,0.25)]'
+                                : twinTheme === 'blueprint'
+                                  ? 'bg-emerald-100 border-emerald-300 text-emerald-800 font-extrabold shadow-[0_0_10px_rgba(16,185,129,0.2)]'
+                                  : 'bg-green-500/20 border-green-500 text-green-400 font-extrabold shadow-[0_0_10px_rgba(34,197,94,0.2)]'
+                              : twinTheme === 'toxic'
+                                ? 'bg-lime-500/10 hover:bg-lime-500/20 text-lime-400 border border-lime-500/30'
+                                : twinTheme === 'blueprint'
+                                  ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200'
+                                  : 'bg-green-500/10 hover:bg-green-500/20 text-green-400 border border-green-500/30'
+                            }`}
                           title="Guardar posiciones en este simulador"
                         >
                           <Check className="w-3.5 h-3.5" /> {isAnchoring ? 'Guardando...' : 'Anclado'}
                         </button>
                       </div>
                     ) : (
-                      <button 
+                      <button
                         onClick={() => setIsPlaying(p => !isPlaying)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border shadow-sm ${
-                          twinTheme === 'toxic'
-                            ? isPlaying ? 'bg-[#84cc16]/20 border-[#84cc16] text-[#84cc16]' : 'bg-[#1a1a1a] border-[#2c302e] text-gray-400 hover:text-white'
-                            : twinTheme === 'blueprint'
-                              ? isPlaying ? 'bg-cyan-50 border-cyan-200 text-cyan-700' : 'bg-slate-50 border-slate-200 text-slate-500 hover:text-slate-800'
-                              : isPlaying ? 'bg-cyan-500/25 border-cyan-400 text-cyan-300' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'
-                        }`}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border shadow-sm ${twinTheme === 'toxic'
+                          ? isPlaying ? 'bg-[#84cc16]/20 border-[#84cc16] text-[#84cc16]' : 'bg-[#1a1a1a] border-[#2c302e] text-gray-400 hover:text-white'
+                          : twinTheme === 'blueprint'
+                            ? isPlaying ? 'bg-cyan-50 border-cyan-200 text-cyan-700' : 'bg-slate-50 border-slate-200 text-slate-500 hover:text-slate-800'
+                            : isPlaying ? 'bg-cyan-500/25 border-cyan-400 text-cyan-300' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'
+                          }`}
                       >
                         {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
                         {isPlaying ? 'Pausar Flujo' : 'Simular Flujo'}
@@ -3431,13 +3682,12 @@ export default function DHLAdvancedSimulator() {
                 </div>
 
                 {is3DView && isTwinEditMode && (
-                  <div className={`mb-4 p-4 rounded-2xl border space-y-4 transition-all shadow-inner ${
-                    twinTheme === 'toxic'
-                      ? 'bg-[#121212] border-[#2c302e]'
-                      : twinTheme === 'blueprint'
-                        ? 'bg-slate-50 border-slate-200/85 shadow-inner'
-                        : 'bg-black/40 border-white/5 backdrop-blur-md'
-                  }`}>
+                  <div className={`mb-4 p-4 rounded-2xl border space-y-4 transition-all shadow-inner ${twinTheme === 'toxic'
+                    ? 'bg-[#121212] border-[#2c302e]'
+                    : twinTheme === 'blueprint'
+                      ? 'bg-slate-50 border-slate-200/85 shadow-inner'
+                      : 'bg-black/40 border-white/5 backdrop-blur-md'
+                    }`}>
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs">
                       {/* Altura de Fichas Slider */}
                       <div className="flex-1 space-y-1">
@@ -3446,54 +3696,51 @@ export default function DHLAdvancedSimulator() {
                             Altura de Fichas de Movimiento:
                           </span>
                           <span className={
-                            twinTheme === 'toxic' 
-                              ? 'text-[#84cc16] font-bold' 
-                              : twinTheme === 'blueprint' 
-                                ? 'text-cyan-600 font-bold' 
+                            twinTheme === 'toxic'
+                              ? 'text-[#84cc16] font-bold'
+                              : twinTheme === 'blueprint'
+                                ? 'text-cyan-600 font-bold'
                                 : 'text-[#00F0FF] font-bold'
                           }>
                             {twinLabelHeightOffset.toFixed(1)} m
                           </span>
                         </div>
-                        <input 
-                          type="range" 
-                          min="-2.0" 
-                          max="5.0" 
-                          step="0.1" 
-                          value={twinLabelHeightOffset} 
+                        <input
+                          type="range"
+                          min="-2.0"
+                          max="5.0"
+                          step="0.1"
+                          value={twinLabelHeightOffset}
                           onChange={(e) => setTwinLabelHeightOffset(Number(e.target.value))}
-                          className={`w-full h-1.5 rounded-lg appearance-none cursor-pointer ${
-                            twinTheme === 'toxic'
-                              ? 'bg-[#222] accent-[#84cc16]'
-                              : twinTheme === 'blueprint'
-                                ? 'bg-slate-200 accent-cyan-600'
-                                : 'bg-[#222] accent-[#00F0FF]'
-                          }`}
+                          className={`w-full h-1.5 rounded-lg appearance-none cursor-pointer ${twinTheme === 'toxic'
+                            ? 'bg-[#222] accent-[#84cc16]'
+                            : twinTheme === 'blueprint'
+                              ? 'bg-slate-200 accent-cyan-600'
+                              : 'bg-[#222] accent-[#00F0FF]'
+                            }`}
                         />
                       </div>
 
                       {/* Mostrar/Colapsar Fichas Toggle */}
                       <div className="flex items-center gap-3">
-                        <span className={`text-[10px] font-black uppercase tracking-wider ${
-                          twinTheme === 'blueprint' ? 'text-slate-500' : 'text-gray-400'
-                        }`}>
+                        <span className={`text-[10px] font-black uppercase tracking-wider ${twinTheme === 'blueprint' ? 'text-slate-500' : 'text-gray-400'
+                          }`}>
                           Modo Compacto:
                         </span>
-                        <button 
+                        <button
                           onClick={() => setTwinLabelsCollapsed(!twinLabelsCollapsed)}
-                          className={`px-3 py-1.5 rounded-lg border text-[9px] font-black uppercase tracking-wider transition-all shadow-sm ${
-                            twinLabelsCollapsed 
-                              ? twinTheme === 'toxic'
-                                ? 'bg-[#84cc16]/20 border-[#84cc16] text-[#84cc16]'
-                                : twinTheme === 'blueprint'
-                                  ? 'bg-cyan-100 border-cyan-300 text-cyan-800'
-                                  : 'bg-[#00F0FF]/25 border-[#00F0FF] text-[#00F0FF]' 
-                              : twinTheme === 'toxic'
-                                ? 'bg-white/5 border-white/10 text-gray-400'
-                                : twinTheme === 'blueprint'
-                                  ? 'bg-white border-slate-200 text-slate-600'
-                                  : 'bg-white/5 border-white/10 text-gray-400'
-                          }`}
+                          className={`px-3 py-1.5 rounded-lg border text-[9px] font-black uppercase tracking-wider transition-all shadow-sm ${twinLabelsCollapsed
+                            ? twinTheme === 'toxic'
+                              ? 'bg-[#84cc16]/20 border-[#84cc16] text-[#84cc16]'
+                              : twinTheme === 'blueprint'
+                                ? 'bg-cyan-100 border-cyan-300 text-cyan-800'
+                                : 'bg-[#00F0FF]/25 border-[#00F0FF] text-[#00F0FF]'
+                            : twinTheme === 'toxic'
+                              ? 'bg-white/5 border-white/10 text-gray-400'
+                              : twinTheme === 'blueprint'
+                                ? 'bg-white border-slate-200 text-slate-600'
+                                : 'bg-white/5 border-white/10 text-gray-400'
+                            }`}
                         >
                           {twinLabelsCollapsed ? 'Activado' : 'Desactivado'}
                         </button>
@@ -3502,9 +3749,8 @@ export default function DHLAdvancedSimulator() {
 
                     {/* Elevación del Piso del Modelo 3D + Candado */}
                     {twinLayout && (
-                      <div className={`border-t pt-3 space-y-1.5 ${
-                        twinTheme === 'blueprint' ? 'border-slate-200/60' : 'border-white/5'
-                      }`}>
+                      <div className={`border-t pt-3 space-y-1.5 ${twinTheme === 'blueprint' ? 'border-slate-200/60' : 'border-white/5'
+                        }`}>
                         <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider">
                           <span className={
                             twinFloorLocked
@@ -3520,74 +3766,68 @@ export default function DHLAdvancedSimulator() {
                             {twinFloorLocked ? '🔒' : '📍'} Elevación del Piso:
                           </span>
                           <div className="flex items-center gap-2">
-                            <span className={`tabular-nums ${
-                              twinTheme === 'toxic'
-                                ? 'text-[#84cc16]'
-                                : twinTheme === 'blueprint'
-                                  ? 'text-cyan-600'
-                                  : 'text-[#00F0FF]'
-                            }`}>{twinFloorElevation.toFixed(1)} m</span>
+                            <span className={`tabular-nums ${twinTheme === 'toxic'
+                              ? 'text-[#84cc16]'
+                              : twinTheme === 'blueprint'
+                                ? 'text-cyan-600'
+                                : 'text-[#00F0FF]'
+                              }`}>{twinFloorElevation.toFixed(1)} m</span>
                             <button
                               onClick={() => setTwinFloorLocked(l => !l)}
-                              className={`p-1.5 rounded-lg border text-[10px] transition-all shadow-sm ${
-                                twinFloorLocked
-                                  ? twinTheme === 'toxic'
-                                    ? 'bg-yellow-500/20 border-yellow-500/60 text-yellow-400'
-                                    : twinTheme === 'blueprint'
-                                      ? 'bg-amber-100 border-amber-300 text-amber-800'
-                                      : 'bg-yellow-500/20 border-yellow-500/60 text-yellow-400'
-                                  : twinTheme === 'toxic'
-                                    ? 'bg-white/5 border-white/10 text-gray-500 hover:text-white'
-                                    : twinTheme === 'blueprint'
-                                      ? 'bg-white border-slate-200 text-slate-500 hover:text-slate-800'
-                                      : 'bg-white/5 border-white/10 text-gray-500 hover:text-white'
-                              }`}
+                              className={`p-1.5 rounded-lg border text-[10px] transition-all shadow-sm ${twinFloorLocked
+                                ? twinTheme === 'toxic'
+                                  ? 'bg-yellow-500/20 border-yellow-500/60 text-yellow-400'
+                                  : twinTheme === 'blueprint'
+                                    ? 'bg-amber-100 border-amber-300 text-amber-800'
+                                    : 'bg-yellow-500/20 border-yellow-500/60 text-yellow-400'
+                                : twinTheme === 'toxic'
+                                  ? 'bg-white/5 border-white/10 text-gray-500 hover:text-white'
+                                  : twinTheme === 'blueprint'
+                                    ? 'bg-white border-slate-200 text-slate-500 hover:text-slate-800'
+                                    : 'bg-white/5 border-white/10 text-gray-500 hover:text-white'
+                                }`}
                               title={twinFloorLocked ? 'Desbloquear elevación del piso' : 'Bloquear elevación del piso'}
                             >
                               {twinFloorLocked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
                             </button>
                           </div>
                         </div>
-                        <input 
-                          type="range" 
-                          min="-10.0" 
-                          max="10.0" 
-                          step="0.1" 
-                          value={twinFloorElevation} 
-                          onChange={(e) => { 
-                            if (!twinFloorLocked) { 
-                              setTwinFloorElevation(Number(e.target.value)); 
-                              setIsAnchored(false); 
-                            } 
+                        <input
+                          type="range"
+                          min="-10.0"
+                          max="10.0"
+                          step="0.1"
+                          value={twinFloorElevation}
+                          onChange={(e) => {
+                            if (!twinFloorLocked) {
+                              setTwinFloorElevation(Number(e.target.value));
+                              setIsAnchored(false);
+                            }
                           }}
                           disabled={twinFloorLocked}
-                          className={`w-full h-1.5 rounded-lg appearance-none transition-opacity ${
-                            twinFloorLocked 
-                              ? 'bg-slate-250 opacity-50 cursor-not-allowed' 
-                              : twinTheme === 'toxic'
-                                ? 'bg-[#222] cursor-pointer accent-[#84cc16]'
-                                : twinTheme === 'blueprint'
-                                  ? 'bg-slate-300 cursor-pointer accent-cyan-650'
-                                  : 'bg-[#222] cursor-pointer accent-[#00F0FF]'
-                          }`}
+                          className={`w-full h-1.5 rounded-lg appearance-none transition-opacity ${twinFloorLocked
+                            ? 'bg-slate-250 opacity-50 cursor-not-allowed'
+                            : twinTheme === 'toxic'
+                              ? 'bg-[#222] cursor-pointer accent-[#84cc16]'
+                              : twinTheme === 'blueprint'
+                                ? 'bg-slate-300 cursor-pointer accent-cyan-650'
+                                : 'bg-[#222] cursor-pointer accent-[#00F0FF]'
+                            }`}
                         />
-                        <p className={`text-[9px] italic ${
-                          twinTheme === 'blueprint' ? 'text-slate-400' : 'text-gray-500'
-                        }`}>
-                          {twinFloorLocked 
-                            ? '🔒 Elevación bloqueada. Haz clic en el candado para ajustar de nuevo.' 
+                        <p className={`text-[9px] italic ${twinTheme === 'blueprint' ? 'text-slate-400' : 'text-gray-500'
+                          }`}>
+                          {twinFloorLocked
+                            ? '🔒 Elevación bloqueada. Haz clic en el candado para ajustar de nuevo.'
                             : '📍 Desliza para encontrar la altura correcta, luego bloquea con el candado.'}
                         </p>
                       </div>
                     )}
 
                     {/* Lista de Fichas / Equipos */}
-                    <div className={`border-t pt-3 space-y-2 ${
-                      twinTheme === 'blueprint' ? 'border-slate-200/60' : 'border-white/5'
-                    }`}>
-                      <div className={`text-[10px] font-black uppercase tracking-wider flex items-center justify-between ${
-                        twinTheme === 'blueprint' ? 'text-slate-500' : 'text-gray-400'
+                    <div className={`border-t pt-3 space-y-2 ${twinTheme === 'blueprint' ? 'border-slate-200/60' : 'border-white/5'
                       }`}>
+                      <div className={`text-[10px] font-black uppercase tracking-wider flex items-center justify-between ${twinTheme === 'blueprint' ? 'text-slate-500' : 'text-gray-400'
+                        }`}>
                         <span>Equipos en el Twin:</span>
                         <div className="flex gap-2">
                           <button
@@ -3614,19 +3854,18 @@ export default function DHLAdvancedSimulator() {
                           return (
                             <div
                               key={node.id}
-                              className={`flex items-center rounded-lg border overflow-hidden transition-all shadow-sm ${
-                                isActive
-                                  ? twinTheme === 'toxic'
-                                    ? 'border-[#84cc16] bg-[#84cc16]/15'
-                                    : twinTheme === 'blueprint'
-                                      ? 'border-cyan-500 bg-cyan-50'
-                                      : 'border-[#00F0FF] bg-[#00F0FF]/15'
-                                  : twinTheme === 'toxic'
-                                    ? 'border-[#252525] bg-[#111] hover:border-[#333]'
-                                    : twinTheme === 'blueprint'
-                                      ? 'border-slate-200 bg-white hover:border-slate-300'
-                                      : 'border-[#252525] bg-[#111] hover:border-[#333]'
-                              }`}
+                              className={`flex items-center rounded-lg border overflow-hidden transition-all shadow-sm ${isActive
+                                ? twinTheme === 'toxic'
+                                  ? 'border-[#84cc16] bg-[#84cc16]/15'
+                                  : twinTheme === 'blueprint'
+                                    ? 'border-cyan-500 bg-cyan-50'
+                                    : 'border-[#00F0FF] bg-[#00F0FF]/15'
+                                : twinTheme === 'toxic'
+                                  ? 'border-[#252525] bg-[#111] hover:border-[#333]'
+                                  : twinTheme === 'blueprint'
+                                    ? 'border-slate-200 bg-white hover:border-slate-300'
+                                    : 'border-[#252525] bg-[#111] hover:border-[#333]'
+                                }`}
                             >
                               <span
                                 className="w-2.5 h-2.5 rounded-full mx-1.5 flex-shrink-0"
@@ -3634,17 +3873,16 @@ export default function DHLAdvancedSimulator() {
                               />
                               <button
                                 onClick={() => setSelectedTwinNodeId(isActive ? null : node.id)}
-                                className={`py-1.5 px-3 text-[10px] font-extrabold transition-colors ${
-                                  isActive
-                                    ? twinTheme === 'toxic'
-                                      ? 'text-white font-bold'
-                                      : twinTheme === 'blueprint'
-                                        ? 'text-cyan-900 font-extrabold'
-                                        : 'text-white font-bold'
+                                className={`py-1.5 px-3 text-[10px] font-extrabold transition-colors ${isActive
+                                  ? twinTheme === 'toxic'
+                                    ? 'text-white font-bold'
                                     : twinTheme === 'blueprint'
-                                      ? 'text-slate-650 hover:text-slate-900'
-                                      : 'text-gray-400 hover:text-white'
-                                }`}
+                                      ? 'text-cyan-900 font-extrabold'
+                                      : 'text-white font-bold'
+                                  : twinTheme === 'blueprint'
+                                    ? 'text-slate-650 hover:text-slate-900'
+                                    : 'text-gray-400 hover:text-white'
+                                  }`}
                                 title="Seleccionar para mover en 3D"
                               >
                                 {node.data?.label || node.data?.type || 'Equipo'}
@@ -3653,9 +3891,8 @@ export default function DHLAdvancedSimulator() {
                           );
                         })}
                       </div>
-                      <p className={`text-[9px] italic ${
-                        twinTheme === 'blueprint' ? 'text-slate-400' : 'text-gray-500'
-                      }`}>
+                      <p className={`text-[9px] italic ${twinTheme === 'blueprint' ? 'text-slate-400' : 'text-gray-500'
+                        }`}>
                         💡 Clic en nombre → mover en 3D
                       </p>
                     </div>
@@ -3664,7 +3901,7 @@ export default function DHLAdvancedSimulator() {
 
                 {/* 3D CAD Twin Viewer Container */}
                 <div className={`relative rounded-2xl overflow-hidden border ${twinTheme === 'toxic' ? 'border-[#2c302e] bg-[#0c0d0e]' : twinTheme === 'blueprint' ? 'border-slate-200 bg-[#edf4f9]' : 'border-slate-200 bg-[#05070f]'}`} style={{ display: is3DView ? 'block' : 'none' }}>
-                  <SharedTwinViewer3D 
+                  <SharedTwinViewer3D
                     storagePrefix={`sim_dhl_v2_${activeProject?.id ? `${activeProject.id}_` : ''}`}
                     height={isTwinBlockFullscreen ? "calc(100vh - 280px)" : "480px"}
                     customNodes={twinNodes}
@@ -3680,7 +3917,7 @@ export default function DHLAdvancedSimulator() {
                     theme={twinTheme}
                     onThemeChange={setTwinTheme}
                   />
-                  
+
                   {/* Banner flotante inferior */}
                   <div className="absolute bottom-4 right-4 bg-black/85 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 text-[9px] font-black uppercase tracking-widest text-slate-300 flex items-center gap-1.5 select-none pointer-events-none shadow-lg">
                     <MousePointer className="w-3 h-3 text-cyan-400 animate-pulse" />
@@ -3734,7 +3971,7 @@ export default function DHLAdvancedSimulator() {
                       <div className={`flex-1 bg-slate-50/50 rounded-xl border border-slate-200 overflow-hidden flex flex-col relative`}>
                         <div className={`h-1.5 w-full bg-${f.color}-500`} style={{ backgroundColor: f.hex }} />
                         <div className="p-4 flex flex-col h-full">
-                          
+
                           <div className="flex items-start gap-3 mb-4">
                             <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black text-white`} style={{ backgroundColor: f.hex }}>
                               {f.num}
@@ -3747,13 +3984,13 @@ export default function DHLAdvancedSimulator() {
 
                           <h4 className="text-[13px] font-black text-slate-800 uppercase tracking-tight mb-2 leading-tight">{f.title}</h4>
                           <p className="text-[10px] text-slate-500 font-medium leading-relaxed flex-1">{f.desc}</p>
-                          
+
                           <div className="mt-6 pt-3 border-t border-slate-200/60 flex items-center justify-between">
                             <span className={`text-[9px] font-black uppercase tracking-widest`} style={{ color: f.hex }}>{f.footer}</span>
                           </div>
                         </div>
                       </div>
-                      
+
                       {i < 5 && (
                         <div className="flex items-center justify-center -mx-2 z-10">
                           <ArrowRight className="w-4 h-4 text-cyan-500 opacity-60" />
@@ -3774,7 +4011,7 @@ export default function DHLAdvancedSimulator() {
           {/* TAB 3: DATOS Y MÉTRICAS */}
           {activeTab === 'tabla' && (
             <div className="space-y-6">
-              
+
               {/* TABLA TÉCNICA WM-500 */}
               <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
                 <div className="flex items-center gap-2 border-b border-slate-100 pb-4 mb-4">
@@ -3815,318 +4052,318 @@ export default function DHLAdvancedSimulator() {
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {[
-                        { 
-                          comp: 'Modelo del Equipo', 
+                        {
+                          comp: 'Modelo del Equipo',
                           renderSpec: () => (
-                            <input 
-                              type="text" 
-                              value={inputs.machineName || ''} 
-                              onChange={e => setInputs(prev => ({ ...prev, machineName: e.target.value }))} 
+                            <input
+                              type="text"
+                              value={inputs.machineName || ''}
+                              onChange={e => setInputs(prev => ({ ...prev, machineName: e.target.value }))}
                               className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none"
                             />
-                          ), 
+                          ),
                           renderDetail: () => (
-                            <input 
-                              type="text" 
-                              value={inputs.machineNameDetalle !== undefined ? inputs.machineNameDetalle : 'Lavadora y Secadora Industrial de Madera'} 
-                              onChange={e => setInputs(prev => ({ ...prev, machineNameDetalle: e.target.value }))} 
+                            <input
+                              type="text"
+                              value={inputs.machineNameDetalle !== undefined ? inputs.machineNameDetalle : 'Lavadora y Secadora Industrial de Madera'}
+                              onChange={e => setInputs(prev => ({ ...prev, machineNameDetalle: e.target.value }))}
                               className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
                             />
-                          ) 
+                          )
                         },
-                        { 
-                          comp: 'Aplicación Operativa', 
+                        {
+                          comp: 'Aplicación Operativa',
                           renderSpec: () => (
-                            <input 
-                              type="text" 
-                              value={inputs.aplicacionOperativa !== undefined ? inputs.aplicacionOperativa : 'Madera, tarimas, clavos, grapas, tornillos'} 
-                              onChange={e => setInputs(prev => ({ ...prev, aplicacionOperativa: e.target.value }))} 
+                            <input
+                              type="text"
+                              value={inputs.aplicacionOperativa !== undefined ? inputs.aplicacionOperativa : 'Madera, tarimas, clavos, grapas, tornillos'}
+                              onChange={e => setInputs(prev => ({ ...prev, aplicacionOperativa: e.target.value }))}
                               className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none"
                             />
-                          ), 
+                          ),
                           renderDetail: () => (
-                            <input 
-                              type="text" 
-                              value={inputs.aplicacionDetalle !== undefined ? inputs.aplicacionDetalle : 'Separación magnética automática'} 
-                              onChange={e => setInputs(prev => ({ ...prev, aplicacionDetalle: e.target.value }))} 
+                            <input
+                              type="text"
+                              value={inputs.aplicacionDetalle !== undefined ? inputs.aplicacionDetalle : 'Separación magnética automática'}
+                              onChange={e => setInputs(prev => ({ ...prev, aplicacionDetalle: e.target.value }))}
                               className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
                             />
-                          ) 
+                          )
                         },
-                        { 
-                          comp: 'Capacidad Nominal', 
+                        {
+                          comp: 'Capacidad Nominal',
                           renderSpec: () => (
                             <div className="flex items-center gap-1.5 w-full justify-end pr-2">
                               <span className="text-xs font-black text-slate-800">{new Intl.NumberFormat().format(currentNominalCapacity)}</span>
                               <span className="text-xs font-bold text-slate-500 shrink-0">cajas/h</span>
                             </div>
-                          ), 
+                          ),
                           renderDetail: () => (
-                            <input 
-                              type="text" 
-                              value={inputs.capacidadNominalDetalle !== undefined ? inputs.capacidadNominalDetalle : 'Sujeta a OEE y factor de reducción'} 
-                              onChange={e => setInputs(prev => ({ ...prev, capacidadNominalDetalle: e.target.value }))} 
+                            <input
+                              type="text"
+                              value={inputs.capacidadNominalDetalle !== undefined ? inputs.capacidadNominalDetalle : 'Sujeta a OEE y factor de reducción'}
+                              onChange={e => setInputs(prev => ({ ...prev, capacidadNominalDetalle: e.target.value }))}
                               className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
                             />
-                          ) 
+                          )
                         },
-                        { 
-                          comp: 'Motorización Principal', 
+                        {
+                          comp: 'Motorización Principal',
                           renderSpec: () => (
                             <div className="flex items-center gap-1.5 w-full">
-                              <input 
-                                type="number" 
-                                value={inputs.motorBombaAguaHp || 0} 
-                                onChange={e => setInputs(prev => ({ ...prev, motorPrincipalHp: parseFloat(e.target.value) || 0 }))} 
+                              <input
+                                type="number"
+                                value={inputs.motorBombaAguaHp || 0}
+                                onChange={e => setInputs(prev => ({ ...prev, motorPrincipalHp: parseFloat(e.target.value) || 0 }))}
                                 className="w-16 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
                               />
                               <span className="text-xs font-bold text-slate-500 shrink-0">hp</span>
-                              <input 
-                                type="text" 
-                                value={inputs.motorMarca || ''} 
-                                onChange={e => setInputs(prev => ({ ...prev, motorMarca: e.target.value }))} 
+                              <input
+                                type="text"
+                                value={inputs.motorMarca || ''}
+                                onChange={e => setInputs(prev => ({ ...prev, motorMarca: e.target.value }))}
                                 className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none"
                               />
                             </div>
-                          ), 
+                          ),
                           renderDetail: () => (
-                            <input 
-                              type="text" 
-                              value={inputs.motorPrincipalDetalle !== undefined ? inputs.motorPrincipalDetalle : 'Alta eficiencia clase IE3'} 
-                              onChange={e => setInputs(prev => ({ ...prev, motorPrincipalDetalle: e.target.value }))} 
+                            <input
+                              type="text"
+                              value={inputs.motorPrincipalDetalle !== undefined ? inputs.motorPrincipalDetalle : 'Alta eficiencia clase IE3'}
+                              onChange={e => setInputs(prev => ({ ...prev, motorPrincipalDetalle: e.target.value }))}
                               className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
                             />
-                          ) 
+                          )
                         },
-                        { 
-                          comp: 'Motorización Auxiliar', 
+                        {
+                          comp: 'Motorización Auxiliar',
                           renderSpec: () => (
                             <div className="flex items-center gap-1.5 w-full">
-                              <input 
-                                type="number" 
-                                value={inputs.motorSopladorHp || 0} 
-                                onChange={e => setInputs(prev => ({ ...prev, motorAuxiliarHp: parseFloat(e.target.value) || 0 }))} 
+                              <input
+                                type="number"
+                                value={inputs.motorSopladorHp || 0}
+                                onChange={e => setInputs(prev => ({ ...prev, motorAuxiliarHp: parseFloat(e.target.value) || 0 }))}
                                 className="w-16 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
                               />
                               <span className="text-xs font-bold text-slate-500 shrink-0">hp</span>
-                              <input 
-                                type="text" 
-                                value={inputs.motorMarca || ''} 
-                                onChange={e => setInputs(prev => ({ ...prev, motorMarca: e.target.value }))} 
+                              <input
+                                type="text"
+                                value={inputs.motorMarca || ''}
+                                onChange={e => setInputs(prev => ({ ...prev, motorMarca: e.target.value }))}
                                 className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none"
                               />
                             </div>
-                          ), 
+                          ),
                           renderDetail: () => (
-                            <input 
-                              type="text" 
-                              value={inputs.motorAuxiliarDetalle !== undefined ? inputs.motorAuxiliarDetalle : 'Sistemas auxiliares e hidráulicos'} 
-                              onChange={e => setInputs(prev => ({ ...prev, motorAuxiliarDetalle: e.target.value }))} 
+                            <input
+                              type="text"
+                              value={inputs.motorAuxiliarDetalle !== undefined ? inputs.motorAuxiliarDetalle : 'Sistemas auxiliares e hidráulicos'}
+                              onChange={e => setInputs(prev => ({ ...prev, motorAuxiliarDetalle: e.target.value }))}
                               className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
                             />
-                          ) 
+                          )
                         },
-                        { 
-                          comp: 'Potencia Instalada Total', 
+                        {
+                          comp: 'Potencia Instalada Total',
                           renderSpec: () => (
                             <span className="text-slate-700 font-bold px-2 py-1">{results.totalHp} hp</span>
-                          ), 
+                          ),
                           renderDetail: () => (
                             <span className="text-slate-500 font-mono text-[11px] px-2 py-1 block text-right">{results.installedPowerKw.toFixed(2)} kW</span>
-                          ) 
+                          )
                         },
-                        { 
-                          comp: 'Dimensiones Bandas', 
+                        {
+                          comp: 'Dimensiones Bandas',
                           renderSpec: () => (
-                            <input 
-                              type="text" 
-                              value={inputs.dimensionesBandas !== undefined ? inputs.dimensionesBandas : 'Entrada: 4,000 mm | Salida: 3,000 mm'} 
-                              onChange={e => setInputs(prev => ({ ...prev, dimensionesBandas: e.target.value }))} 
+                            <input
+                              type="text"
+                              value={inputs.dimensionesBandas !== undefined ? inputs.dimensionesBandas : 'Entrada: 4,000 mm | Salida: 3,000 mm'}
+                              onChange={e => setInputs(prev => ({ ...prev, dimensionesBandas: e.target.value }))}
                               className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none"
                             />
-                          ), 
+                          ),
                           renderDetail: () => (
-                            <input 
-                              type="text" 
-                              value={inputs.dimensionesBandasDetalle !== undefined ? inputs.dimensionesBandasDetalle : 'Diseño continuo de banda reforzada'} 
-                              onChange={e => setInputs(prev => ({ ...prev, dimensionesBandasDetalle: e.target.value }))} 
+                            <input
+                              type="text"
+                              value={inputs.dimensionesBandasDetalle !== undefined ? inputs.dimensionesBandasDetalle : 'Diseño continuo de banda reforzada'}
+                              onChange={e => setInputs(prev => ({ ...prev, dimensionesBandasDetalle: e.target.value }))}
                               className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
                             />
-                          ) 
+                          )
                         },
-                        { 
-                          comp: 'Boca de Alimentación', 
+                        {
+                          comp: 'Boca de Alimentación',
                           renderSpec: () => (
-                            <input 
-                              type="text" 
-                              value={inputs.bocaAlimentacion || ''} 
-                              onChange={e => setInputs(prev => ({ ...prev, bocaAlimentacion: e.target.value }))} 
+                            <input
+                              type="text"
+                              value={inputs.bocaAlimentacion || ''}
+                              onChange={e => setInputs(prev => ({ ...prev, bocaAlimentacion: e.target.value }))}
                               className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none"
                             />
-                          ), 
+                          ),
                           renderDetail: () => (
-                            <input 
-                              type="text" 
-                              value={inputs.bocaAlimentacionDetalle !== undefined ? inputs.bocaAlimentacionDetalle : 'Apertura de seguridad'} 
-                              onChange={e => setInputs(prev => ({ ...prev, bocaAlimentacionDetalle: e.target.value }))} 
+                            <input
+                              type="text"
+                              value={inputs.bocaAlimentacionDetalle !== undefined ? inputs.bocaAlimentacionDetalle : 'Apertura de seguridad'}
+                              onChange={e => setInputs(prev => ({ ...prev, bocaAlimentacionDetalle: e.target.value }))}
                               className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
                             />
-                          ) 
+                          )
                         },
-                        { 
-                          comp: 'Rotación del Sistema de lavado', 
+                        {
+                          comp: 'Rotación del Sistema de lavado',
                           renderSpec: () => (
                             <div className="flex items-center gap-1.5 w-full">
-                              <input 
-                                type="number" 
-                                value={inputs.presionLavadoBar || 0} 
-                                onChange={e => setInputs(prev => ({ ...prev, presionLavadoBar: parseFloat(e.target.value) || 0 }))} 
+                              <input
+                                type="number"
+                                value={inputs.presionLavadoBar || 0}
+                                onChange={e => setInputs(prev => ({ ...prev, presionLavadoBar: parseFloat(e.target.value) || 0 }))}
                                 className="w-full max-w-[120px] bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
                               />
                               <span className="text-xs font-bold text-slate-500 shrink-0">rpm</span>
                             </div>
-                          ), 
+                          ),
                           renderDetail: () => (
-                            <input 
-                              type="text" 
-                              value={inputs.presionLavadoBarDetalle !== undefined ? inputs.presionLavadoBarDetalle : 'Eje balanceado dinámicamente'} 
-                              onChange={e => setInputs(prev => ({ ...prev, presionLavadoBarDetalle: e.target.value }))} 
+                            <input
+                              type="text"
+                              value={inputs.presionLavadoBarDetalle !== undefined ? inputs.presionLavadoBarDetalle : 'Eje balanceado dinámicamente'}
+                              onChange={e => setInputs(prev => ({ ...prev, presionLavadoBarDetalle: e.target.value }))}
                               className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
                             />
-                          ) 
+                          )
                         },
-                        { 
-                          comp: 'Tamaño de Partícula Final', 
+                        {
+                          comp: 'Tamaño de Partícula Final',
                           renderSpec: () => (
-                            <input 
-                              type="text" 
-                              value={inputs.particulaFinal || ''} 
-                              onChange={e => setInputs(prev => ({ ...prev, particulaFinal: e.target.value }))} 
+                            <input
+                              type="text"
+                              value={inputs.particulaFinal || ''}
+                              onChange={e => setInputs(prev => ({ ...prev, particulaFinal: e.target.value }))}
                               className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none"
                             />
-                          ), 
+                          ),
                           renderDetail: () => (
-                            <input 
-                              type="text" 
-                              value={inputs.particulaFinalDetalle !== undefined ? inputs.particulaFinalDetalle : 'Ideal para reciclaje o briquetas'} 
-                              onChange={e => setInputs(prev => ({ ...prev, particulaFinalDetalle: e.target.value }))} 
+                            <input
+                              type="text"
+                              value={inputs.particulaFinalDetalle !== undefined ? inputs.particulaFinalDetalle : 'Ideal para reciclaje o briquetas'}
+                              onChange={e => setInputs(prev => ({ ...prev, particulaFinalDetalle: e.target.value }))}
                               className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
                             />
-                          ) 
+                          )
                         },
-                        { 
-                          comp: 'Separación Metálica', 
+                        {
+                          comp: 'Separación Metálica',
                           renderSpec: () => (
-                            <input 
-                              type="text" 
-                              value={inputs.separadorMagnetico || ''} 
-                              onChange={e => setInputs(prev => ({ ...prev, separadorMagnetico: e.target.value }))} 
+                            <input
+                              type="text"
+                              value={inputs.separadorMagnetico || ''}
+                              onChange={e => setInputs(prev => ({ ...prev, separadorMagnetico: e.target.value }))}
                               className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none"
                             />
-                          ), 
+                          ),
                           renderDetail: () => (
-                            <input 
-                              type="text" 
-                              value={inputs.separadorMagneticoDetalle !== undefined ? inputs.separadorMagneticoDetalle : 'Imán sobrebanda autolimpiable'} 
-                              onChange={e => setInputs(prev => ({ ...prev, separadorMagneticoDetalle: e.target.value }))} 
+                            <input
+                              type="text"
+                              value={inputs.separadorMagneticoDetalle !== undefined ? inputs.separadorMagneticoDetalle : 'Imán sobrebanda autolimpiable'}
+                              onChange={e => setInputs(prev => ({ ...prev, separadorMagneticoDetalle: e.target.value }))}
                               className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
                             />
-                          ) 
+                          )
                         },
-                        { 
-                          comp: 'Dimensiones Físicas', 
+                        {
+                          comp: 'Dimensiones Físicas',
                           renderSpec: () => (
                             <div className="flex items-center gap-1 w-full overflow-hidden">
                               <span className="text-[9px] font-bold text-slate-400 shrink-0">L:</span>
-                              <input 
+                              <input
                                 type="number" step="0.05"
-                                value={inputs.machineLength || 0} 
-                                onChange={e => setInputs(prev => ({ ...prev, machineLength: parseFloat(e.target.value) || 0 }))} 
+                                value={inputs.machineLength || 0}
+                                onChange={e => setInputs(prev => ({ ...prev, machineLength: parseFloat(e.target.value) || 0 }))}
                                 className="w-14 bg-white border border-slate-200 rounded-lg px-1.5 py-1 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-center"
                               />
                               <span className="text-[9px] font-bold text-slate-400 shrink-0">W:</span>
-                              <input 
+                              <input
                                 type="number" step="0.05"
-                                value={inputs.machineWidth || 0} 
-                                onChange={e => setInputs(prev => ({ ...prev, machineWidth: parseFloat(e.target.value) || 0 }))} 
+                                value={inputs.machineWidth || 0}
+                                onChange={e => setInputs(prev => ({ ...prev, machineWidth: parseFloat(e.target.value) || 0 }))}
                                 className="w-14 bg-white border border-slate-200 rounded-lg px-1.5 py-1 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-center"
                               />
                               <span className="text-[9px] font-bold text-slate-400 shrink-0">H:</span>
-                              <input 
+                              <input
                                 type="number" step="0.05"
-                                value={inputs.machineHeight || 0} 
-                                onChange={e => setInputs(prev => ({ ...prev, machineHeight: parseFloat(e.target.value) || 0 }))} 
+                                value={inputs.machineHeight || 0}
+                                onChange={e => setInputs(prev => ({ ...prev, machineHeight: parseFloat(e.target.value) || 0 }))}
                                 className="w-14 bg-white border border-slate-200 rounded-lg px-1.5 py-1 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-center"
                               />
                               <span className="text-xs font-bold text-slate-500 shrink-0">m</span>
                             </div>
-                          ), 
+                          ),
                           renderDetail: () => (
                             <span className="text-slate-500 font-mono text-[11px] px-2 py-1 block text-right">Footprint: {(inputs.machineLength * inputs.machineWidth).toFixed(2)} m²</span>
-                          ) 
+                          )
                         },
-                        { 
-                          comp: 'Peso Total Equipo', 
+                        {
+                          comp: 'Peso Total Equipo',
                           renderSpec: () => (
                             <div className="flex items-center gap-1.5 w-full">
-                              <input 
-                                type="number" 
-                                value={inputs.pesoOperativoKg || 0} 
-                                onChange={e => setInputs(prev => ({ ...prev, pesoKg: parseFloat(e.target.value) || 0 }))} 
+                              <input
+                                type="number"
+                                value={inputs.pesoOperativoKg || 0}
+                                onChange={e => setInputs(prev => ({ ...prev, pesoKg: parseFloat(e.target.value) || 0 }))}
                                 className="w-full max-w-[120px] bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
                               />
                               <span className="text-xs font-bold text-slate-500 shrink-0">kg</span>
                             </div>
-                          ), 
+                          ),
                           renderDetail: () => (
-                            <input 
-                              type="text" 
-                              value={inputs.pesoOperativoKgDetalle !== undefined ? inputs.pesoOperativoKgDetalle : 'Anclaje antivibraciones'} 
-                              onChange={e => setInputs(prev => ({ ...prev, pesoKgDetalle: e.target.value }))} 
+                            <input
+                              type="text"
+                              value={inputs.pesoOperativoKgDetalle !== undefined ? inputs.pesoOperativoKgDetalle : 'Anclaje antivibraciones'}
+                              onChange={e => setInputs(prev => ({ ...prev, pesoKgDetalle: e.target.value }))}
                               className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
                             />
-                          ) 
+                          )
                         },
-                        { 
-                          comp: 'Componentes Eléctricos', 
+                        {
+                          comp: 'Componentes Eléctricos',
                           renderSpec: () => (
-                            <input 
-                              type="text" 
-                              value={inputs.componentesElectricos || ''} 
-                              onChange={e => setInputs(prev => ({ ...prev, componentesElectricos: e.target.value }))} 
+                            <input
+                              type="text"
+                              value={inputs.componentesElectricos || ''}
+                              onChange={e => setInputs(prev => ({ ...prev, componentesElectricos: e.target.value }))}
                               className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none"
                             />
-                          ), 
+                          ),
                           renderDetail: () => (
-                            <input 
-                              type="text" 
-                              value={inputs.componentesElectricosDetalle !== undefined ? inputs.componentesElectricosDetalle : 'Gabinete de control integrado'} 
-                              onChange={e => setInputs(prev => ({ ...prev, componentesElectricosDetalle: e.target.value }))} 
+                            <input
+                              type="text"
+                              value={inputs.componentesElectricosDetalle !== undefined ? inputs.componentesElectricosDetalle : 'Gabinete de control integrado'}
+                              onChange={e => setInputs(prev => ({ ...prev, componentesElectricosDetalle: e.target.value }))}
                               className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
                             />
-                          ) 
+                          )
                         },
-                        { 
-                          comp: 'Nivel de Ruido', 
+                        {
+                          comp: 'Nivel de Ruido',
                           renderSpec: () => (
                             <div className="flex items-center gap-1.5 w-full">
-                              <input 
-                                type="number" 
-                                value={inputs.ruidoDb || 0} 
-                                onChange={e => setInputs(prev => ({ ...prev, ruidoDb: parseFloat(e.target.value) || 0 }))} 
+                              <input
+                                type="number"
+                                value={inputs.ruidoDb || 0}
+                                onChange={e => setInputs(prev => ({ ...prev, ruidoDb: parseFloat(e.target.value) || 0 }))}
                                 className="w-full max-w-[120px] bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
                               />
                               <span className="text-xs font-bold text-slate-500 shrink-0">dB</span>
                             </div>
-                          ), 
+                          ),
                           renderDetail: () => (
-                            <input 
-                              type="text" 
-                              value={inputs.ruidoDbDetalle !== undefined ? inputs.ruidoDbDetalle : 'Diseño aislante de vibraciones'} 
-                              onChange={e => setInputs(prev => ({ ...prev, ruidoDbDetalle: e.target.value }))} 
+                            <input
+                              type="text"
+                              value={inputs.ruidoDbDetalle !== undefined ? inputs.ruidoDbDetalle : 'Diseño aislante de vibraciones'}
+                              onChange={e => setInputs(prev => ({ ...prev, ruidoDbDetalle: e.target.value }))}
                               className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
                             />
-                          ) 
+                          )
                         },
                       ].map((t, idx) => (
                         <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
@@ -4146,7 +4383,7 @@ export default function DHLAdvancedSimulator() {
           {/* TAB 4: ENERGÍA & CAPACIDAD */}
           {activeTab === 'energia' && (
             <div className="space-y-6">
-              
+
               {/* CONSUMO ENERGÉTICO */}
               <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
                 <div className="flex items-center gap-3 w-full border-b border-slate-100 pb-4 mb-6">
@@ -4182,7 +4419,7 @@ export default function DHLAdvancedSimulator() {
                       Potencia Instalada Total <Edit2 className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </span>
                     <div className="flex items-baseline gap-1 mt-1">
-                      <input 
+                      <input
                         type="number"
                         value={inputs.calentamientoElectricoKw === undefined || inputs.calentamientoElectricoKw === 96.98 ? results.installedPowerKw.toFixed(2) : inputs.calentamientoElectricoKw}
                         onChange={(e) => setInputs(prev => ({ ...prev, customInstalledPowerKw: parseFloat(e.target.value) || 0 }))}
@@ -4203,7 +4440,7 @@ export default function DHLAdvancedSimulator() {
                     <span className="text-xl font-black text-slate-800">${results.hourlyElectricityCostMxn.toFixed(2)} MXN</span>
                     <div className="flex items-center gap-1 text-[9px] text-slate-400 mt-1 font-mono">
                       Tarifa: $
-                      <input 
+                      <input
                         type="number"
                         value={inputs.electricityRate}
                         onChange={(e) => setInputs(prev => ({ ...prev, electricityRate: parseFloat(e.target.value) || 0 }))}
@@ -4341,7 +4578,7 @@ export default function DHLAdvancedSimulator() {
                   <Activity className="w-5 h-5 text-emerald-600" />
                   <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">Proyección de Viabilidad a 5 Años (Y1-Y5)</h3>
                 </div>
-                
+
                 <div className="overflow-x-auto mb-6">
                   <table className="w-full text-left text-sm whitespace-nowrap">
                     <thead className="bg-slate-50 border-y border-slate-200">
@@ -4374,7 +4611,7 @@ export default function DHLAdvancedSimulator() {
                     </tbody>
                   </table>
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-sky-50 border border-sky-100 rounded-xl p-4">
                     <span className="text-[10px] font-black text-sky-700 uppercase flex items-center gap-1.5 mb-1"><Droplet className="w-3.5 h-3.5" /> Consumo Hídrico Mensual</span>
@@ -4397,7 +4634,7 @@ export default function DHLAdvancedSimulator() {
           {/* TAB 5: COMPARATIVA DE ESCENARIOS */}
           {activeTab === 'escenarios' && (
             <div className="space-y-6">
-              
+
               {/* TABLA COMPARATIVA */}
               <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
@@ -4413,7 +4650,7 @@ export default function DHLAdvancedSimulator() {
                 </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  
+
                   {/* Conservador */}
                   <div className={`border rounded-2xl p-5 flex flex-col justify-between transition-all ${currentScenario === 'conservador' ? 'border-cyan-500 bg-cyan-50/30 shadow-sm' : 'border-slate-200 bg-white hover:bg-slate-50'}`}>
                     <div>
@@ -4425,10 +4662,10 @@ export default function DHLAdvancedSimulator() {
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Producción Diaria:</span><span className="text-slate-800 font-bold">{scenarioResults.conservador.dailyProdTon.toFixed(1)} ton</span></div>
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Costo por Ton:</span><span className="text-slate-800 font-bold">${scenarioResults.conservador.costPerTon.toFixed(1)} MXN</span></div>
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Cobertura Meta:</span><span className="text-slate-800 font-bold">{scenarioResults.conservador.coverage.toFixed(1)}%</span></div>
-                        
+
                       </div>
                     </div>
-                    <button 
+                    <button
                       onClick={() => applyScenario('conservador')}
                       className="mt-6 w-full py-2.5 rounded-xl text-xs font-bold bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 transition-all uppercase tracking-wider"
                     >
@@ -4447,10 +4684,10 @@ export default function DHLAdvancedSimulator() {
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Producción Diaria:</span><span className="text-slate-800 font-bold">{scenarioResults.normal.dailyProdTon.toFixed(1)} ton</span></div>
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Costo por Ton:</span><span className="text-slate-800 font-bold">${scenarioResults.normal.costPerTon.toFixed(1)} MXN</span></div>
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Cobertura Meta:</span><span className="text-slate-800 font-bold">{scenarioResults.normal.coverage.toFixed(1)}%</span></div>
-                        
+
                       </div>
                     </div>
-                    <button 
+                    <button
                       onClick={() => applyScenario('normal')}
                       className="mt-6 w-full py-2.5 rounded-xl text-xs font-bold bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 transition-all uppercase tracking-wider"
                     >
@@ -4469,10 +4706,10 @@ export default function DHLAdvancedSimulator() {
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Producción Diaria:</span><span className="text-slate-800 font-bold">{scenarioResults.alto.dailyProdTon.toFixed(1)} ton</span></div>
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Costo por Ton:</span><span className="text-slate-800 font-bold">${scenarioResults.alto.costPerTon.toFixed(1)} MXN</span></div>
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Cobertura Meta:</span><span className="text-slate-800 font-bold">{scenarioResults.alto.coverage.toFixed(1)}%</span></div>
-                        
+
                       </div>
                     </div>
-                    <button 
+                    <button
                       onClick={() => applyScenario('alto')}
                       className="mt-6 w-full py-2.5 rounded-xl text-xs font-bold bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 transition-all uppercase tracking-wider"
                     >
@@ -4481,7 +4718,7 @@ export default function DHLAdvancedSimulator() {
                   </div>
 
                 </div>
-                
+
                 {/* GRÁFICA COMPARATIVA DE ESCENARIOS */}
                 <div className="mt-8 border-t border-slate-100 pt-6">
                   <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 mb-4 flex items-center gap-2">
@@ -4556,7 +4793,7 @@ export default function DHLAdvancedSimulator() {
                     </div>
                     <div className="border-t border-slate-100 pt-3 mt-3 flex justify-between text-xs">
                       <span className="font-bold text-slate-400 uppercase">CAPEX por kCajas/h:</span>
-                      <span className="font-black text-slate-800">${new Intl.NumberFormat().format((results.capexInstaladoMxn / (results.realProductionPerHourBoxes/1000)).toFixed(0))} MXN</span>
+                      <span className="font-black text-slate-800">${new Intl.NumberFormat().format((results.capexInstaladoMxn / (results.realProductionPerHourBoxes / 1000)).toFixed(0))} MXN</span>
                     </div>
                   </div>
                 </div>
@@ -4599,7 +4836,7 @@ export default function DHLAdvancedSimulator() {
           {/* TAB 7: FINANCIERO */}
           {activeTab === 'financiero' && (
             <div className="space-y-6">
-              
+
               {/* CONFIGURACIÓN FINANCIERA INTERACTIVA */}
               <div className="bg-slate-50 p-6 rounded-3xl border border-slate-200 flex flex-col md:flex-row gap-6 items-center justify-between">
                 <div>
@@ -4610,10 +4847,10 @@ export default function DHLAdvancedSimulator() {
                   <p className="text-xs text-slate-500 font-medium max-w-sm">Configura cómo se genera el flujo de capital de la línea (Venta comercial directa del material procesado o Ahorro operativo interno).</p>
                 </div>
                 <div className="flex gap-2 bg-slate-200 p-1.5 rounded-2xl">
-                  <button onClick={() => setInputs(p => ({...p, usarModoIngresoVenta: true, usarModoAhorroInterno: false}))} className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${inputs.usarModoIngresoVenta ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                  <button onClick={() => setInputs(p => ({ ...p, usarModoIngresoVenta: true, usarModoAhorroInterno: false }))} className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${inputs.usarModoIngresoVenta ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
                     Venta Comercial
                   </button>
-                  <button onClick={() => setInputs(p => ({...p, usarModoIngresoVenta: false, usarModoAhorroInterno: true}))} className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${inputs.usarModoAhorroInterno ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                  <button onClick={() => setInputs(p => ({ ...p, usarModoIngresoVenta: false, usarModoAhorroInterno: true }))} className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${inputs.usarModoAhorroInterno ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
                     Ahorro Interno
                   </button>
                 </div>
@@ -4621,11 +4858,11 @@ export default function DHLAdvancedSimulator() {
                   <span className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">{inputs.usarModoIngresoVenta ? 'Precio de Venta por caja' : 'Ahorro Operativo por caja'} (MXN)</span>
                   <div className="relative">
                     <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
-                    <input 
-                      type="number" step="10" 
-                      value={inputs.usarModoIngresoVenta ? inputs.precioVentaTonMxn : inputs.ahorroPorTonMxn} 
-                      onChange={e => setInputs(p => inputs.usarModoIngresoVenta ? ({...p, precioVentaTonMxn: parseFloat(e.target.value) || 0}) : ({...p, ahorroPorTonMxn: parseFloat(e.target.value) || 0}))} 
-                      className="w-full pl-8 pr-4 py-2.5 bg-white border border-purple-200 rounded-xl text-sm font-black text-purple-700 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all shadow-sm" 
+                    <input
+                      type="number" step="10"
+                      value={inputs.usarModoIngresoVenta ? inputs.precioVentaTonMxn : inputs.ahorroPorTonMxn}
+                      onChange={e => setInputs(p => inputs.usarModoIngresoVenta ? ({ ...p, precioVentaTonMxn: parseFloat(e.target.value) || 0 }) : ({ ...p, ahorroPorTonMxn: parseFloat(e.target.value) || 0 }))}
+                      className="w-full pl-8 pr-4 py-2.5 bg-white border border-purple-200 rounded-xl text-sm font-black text-purple-700 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all shadow-sm"
                     />
                   </div>
                 </div>
@@ -4637,10 +4874,9 @@ export default function DHLAdvancedSimulator() {
                     <TrendingUp className="w-5 h-5 text-purple-600" />
                     Viabilidad y Retorno de Inversión
                   </h3>
-                  <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                    results.paybackMeses <= 24 ? 'bg-emerald-100 text-emerald-700' : 
+                  <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${results.paybackMeses <= 24 ? 'bg-emerald-100 text-emerald-700' :
                     results.paybackMeses <= 36 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
-                  }`}>
+                    }`}>
                     {results.estadoFinanciero}
                   </div>
                 </div>
@@ -4682,7 +4918,7 @@ export default function DHLAdvancedSimulator() {
           {activeTab === 'riesgos' && (
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                
+
                 {/* MATRIZ DE RIESGO */}
                 <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
                   <div className="flex items-center gap-4 mb-4 border-b border-slate-100 pb-3">
@@ -4701,10 +4937,9 @@ export default function DHLAdvancedSimulator() {
                     ].map((r, i) => (
                       <div key={i} className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
                         <span className="text-xs font-bold text-slate-600 uppercase flex items-center gap-2">{r.icon} {r.label}</span>
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                          r.val === 'alto' ? 'bg-red-100 text-red-700' : 
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${r.val === 'alto' ? 'bg-red-100 text-red-700' :
                           r.val === 'medio' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
-                        }`}>{r.val}</span>
+                          }`}>{r.val}</span>
                       </div>
                     ))}
                   </div>
@@ -4726,7 +4961,7 @@ export default function DHLAdvancedSimulator() {
                       <span className="text-lg font-black text-slate-800">{inputs.frecuenciaMantenimientoHoras || 250} hrs</span>
                     </div>
                   </div>
-                  
+
                   <h4 className="text-[10px] font-black text-slate-400 uppercase mb-3">Requisitos de Seguridad de Planta</h4>
                   <div className="flex flex-wrap gap-2">
                     {[
@@ -4751,7 +4986,7 @@ export default function DHLAdvancedSimulator() {
           {/* TAB 9: REQUERIMIENTOS DE OBRA CIVIL Y PISO */}
           {activeTab === 'civil' && (
             <div className="space-y-6">
-              
+
               {/* ENCABEZADO DE SECCIÓN CON CONTROL PDF */}
               <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4 shadow-sm">
                 <div className="flex items-center gap-3">
@@ -4774,7 +5009,7 @@ export default function DHLAdvancedSimulator() {
 
               {/* TARJETAS KPI DE OBRA CIVIL */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                
+
                 {/* Concreto */}
                 <div className="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col justify-between shadow-sm hover:border-slate-400 transition-colors group">
                   <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
@@ -4831,7 +5066,7 @@ export default function DHLAdvancedSimulator() {
 
               {/* DETALLES DE OBRA CIVIL Y ESPECIFICACIONES DE PISO */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                
+
                 {/* ESPECIFICACIONES DEL PISO DE LA BODEGA Y ÁREA */}
                 <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
                   <div>
@@ -4841,7 +5076,7 @@ export default function DHLAdvancedSimulator() {
                         Especificaciones del Piso y Bodega
                       </h3>
                     </div>
-                    
+
                     <div className="space-y-4">
                       <div className="flex justify-between items-center text-xs border-b border-slate-50 pb-2">
                         <span className="font-bold text-slate-500 uppercase">Acabado Superficial</span>
@@ -4920,14 +5155,14 @@ export default function DHLAdvancedSimulator() {
             </div>
           )}
 
-      </div>
+        </div>
       </div>
 
       {/* RENDERIZADO DEL INFORME COMPLETO EN LANDSCAPE */}
       {isReportModalOpen && (currentSectionIndex = 1, true) && (
-        <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex flex-col items-center justify-start p-4 overflow-y-auto">
-          <div className="bg-white border border-slate-300 rounded-3xl p-6 w-full max-w-[1200px] shadow-2xl relative text-slate-900 mt-10 mb-10 shrink-0">
-            <button 
+        <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex flex-col items-center justify-start p-4 overflow-y-auto overflow-x-hidden">
+          <div className="bg-white border border-slate-300 rounded-3xl p-6 w-full max-w-[1600px] shadow-2xl relative text-slate-900 mt-10 mb-10 shrink-0">
+            <button
               onClick={() => {
                 setIsReportModalOpen(false);
                 setIsPreviewMode(false);
@@ -4945,6 +5180,20 @@ export default function DHLAdvancedSimulator() {
               </div>
               {isPreviewMode && (
                 <div className="flex items-center gap-2">
+                  <div className="flex items-center bg-slate-100 rounded-xl p-1 shadow-sm mr-3">
+                    <button
+                      onClick={() => setPdfLang('es')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all uppercase ${pdfLang === 'es' ? 'bg-white shadow-sm text-cyan-600' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                      ESP (Español)
+                    </button>
+                    <button
+                      onClick={() => setPdfLang('en')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all uppercase ${pdfLang === 'en' ? 'bg-white shadow-sm text-cyan-600' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                      BILINGÜE (ESP/ENG)
+                    </button>
+                  </div>
                   <label className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all uppercase tracking-wider shadow-sm">
                     <Upload className="w-4 h-4" />
                     Subir Diagrama
@@ -4955,7 +5204,7 @@ export default function DHLAdvancedSimulator() {
                     Subir Logo
                     <input type="file" accept="image/*" className="hidden" onChange={handleCustomClientLogoUpload} />
                   </label>
-                  <button 
+                  <button
                     onClick={printReport}
                     disabled={isGeneratingPdf}
                     className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-red-500 hover:bg-red-600 text-white transition-all uppercase tracking-wider shadow-sm"
@@ -4968,864 +5217,1349 @@ export default function DHLAdvancedSimulator() {
             </div>
 
             {/* VISTA PREVIA DEL INFORME (A4 LANDSCAPE) */}
-            <div className="max-h-[600px] w-full overflow-y-auto overflow-x-hidden border border-slate-200 rounded-xl bg-slate-50 p-4 shadow-inner flex flex-col items-center">
+            <div className="max-h-[700px] w-full overflow-y-auto overflow-x-auto border border-slate-200 rounded-xl bg-slate-50 p-4 shadow-inner flex flex-col items-center">
               <div ref={reportRef} className="flex flex-col gap-8" style={{ width: '1120px' }}>
-                
+
                 {/* PÁGINA 1: PORTADA EJECUTIVA */}
                 {pdfConfig.resumen && (
-                <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
-                  <div style={{ height: 80, background: 'linear-gradient(to right, #008299, #00c2cb)', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 48px' }}>
-                    <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(120deg, transparent, transparent 28px, rgba(255,255,255,0.03) 28px, rgba(255,255,255,0.03) 30px)' }} />
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative', zIndex: 2 }}>
-                      <span style={{ color: '#fff', fontWeight: 900, fontSize: 36, letterSpacing: 1, textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{inputs.companyName || 'CENTERS DE MÉXICO'}</span>
-                      <span style={{ display: 'inline-block', fontSize: 10, fontWeight: 800, color: '#fff', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 6, padding: '2px 8px', background: 'rgba(255,255,255,0.1)' }}>PANDORA 3.0</span>
-                    </div>
-                    <div style={{ textAlign: 'right', position: 'relative', zIndex: 2 }}>
-                      <div style={{ color: '#fff', fontSize: 13, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 0.5 }}>lavadora INDUSTRIAL {inputs.machineName?.toUpperCase() || 'WM-500'}</div>
-                      <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10, fontWeight: 700, marginTop: 3 }}>CLIENTE: {inputs.clientName.toUpperCase()} &nbsp;|&nbsp; MÁQUINA: {inputs.machineName?.toUpperCase() || 'WM-500'} &nbsp;|&nbsp; FECHA: {(inputs.evaluationDate || new Date().toLocaleDateString()).toUpperCase()}</div>
-                    </div>
-                  </div>
-
-                  <div style={{ ...S.inner, height: 'auto', display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24, alignItems: 'center', flex: 1, paddingTop: 12, paddingBottom: 12 }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div>
-                          <div style={{ fontSize: 9, fontWeight: 900, color: '#008299', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 4 }}>INFORME PARAMÉTRICO DE SIMULACIÓN</div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            <div style={{ fontSize: 34, fontWeight: 900, color: '#0f2038', letterSpacing: -0.8, lineHeight: 1.0, fontFamily: 'sans-serif' }}>SIMULACIÓN</div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <div style={{ width: 4, height: 28, background: '#00c2cb', borderRadius: 2 }} />
-                              <div style={{ fontSize: 34, fontWeight: 900, color: '#00c2cb', letterSpacing: -0.8, lineHeight: 1.0, fontFamily: 'sans-serif' }}>DE LÍNEA</div>
-                            </div>
-                          </div>
-                        </div>
-                        {inputs.customClientLogo && (
-                          <img src={inputs.customClientLogo} alt="Logo Cliente" style={{ maxHeight: '40px', maxWidth: '130px', objectFit: 'contain' }} />
+                  <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
+                    {/* ENCABEZADO SUPERIOR LIMPIO */}
+                    <div style={{ height: '70px', padding: '0 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        {inputs.customClientLogo ? (
+                          <img src={inputs.customClientLogo} alt="Logo" style={{ maxHeight: '45px', maxWidth: '200px', objectFit: 'contain' }} />
+                        ) : (
+                          <span style={{ color: '#008299', fontWeight: 900, fontSize: 32, letterSpacing: -1, textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{inputs.companyName || 'CENTERS'}</span>
                         )}
                       </div>
-
-                      <div>
-                        <div style={{ fontSize: 9, fontWeight: 900, color: '#00c2cb', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 1 }}>CLIENTE</div>
-                        <div style={{ fontSize: 24, fontWeight: 900, color: '#0f2038', letterSpacing: -0.5 }}>{inputs.clientName.toUpperCase()}</div>
+                      <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <span style={{ fontSize: 11, color: '#0f2038', fontWeight: 800, letterSpacing: 0.5, textTransform: 'uppercase' }}>{tf('lavadora INDUSTRIAL')}</span>
+                        <span style={{ fontSize: 9, color: '#64748b', fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase' }}>ENGINEERING A CLEANER TOMORROW</span>
                       </div>
+                    </div>
 
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, width: 'fit-content', background: '#edfbfd', border: '1px solid #00c2cb', borderRadius: 20, padding: '3px 12px', fontSize: 9.5, color: '#008299', fontWeight: 800 }}>
-                        <span style={{ display: 'inline-block', width: 6, height: 6, background: '#008299', borderRadius: '50%' }} />
-                        Evaluación de Capacidad y Eficiencia
-                      </div>
+                    {/* CUERPO PRINCIPAL (2 COLUMNAS) */}
+                    <div style={{ ...S.inner, height: 'auto', display: 'grid', gridTemplateColumns: '1fr 1.05fr', gap: 32, flex: 1, paddingTop: 24, paddingBottom: 16 }}>
 
-                      <p style={{ color: '#475569', fontSize: 11, lineHeight: 1.45, margin: 0 }}>Análisis de capacidad, potencia instalada y viabilidad financiera para la línea de lavado, enjuague y secado de cajas plásticas con la {inputs.machineName || 'WM-500'}.</p>
-                      <div style={{ marginTop: 2, padding: '8px 10px', backgroundColor: "#f8fafc", borderLeft: "4px solid #0284c7", fontSize: 9.5, color: "#475569", lineHeight: 1.35, borderRadius: '0 6px 6px 0' }}>
-                        <strong>Nota Metodológica:</strong> La capacidad por modelo se calcula en función de la velocidad lineal de la banda, dimensión de caja y separación. Limitado a 350 cajas/h máximo.
-                      </div>
+                      {/* COLUMNA IZQUIERDA (TEXTOS Y PARÁMETROS) */}
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
 
-                      <div style={{ background: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 12, padding: 10 }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '4px', fontSize: 10, color: '#475569' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#008299', fontWeight: 700 }}>Empresa</span><strong style={{ color: '#1e293b' }}>{inputs.companyName || `MÁQUINA EN EVALUACIÓN - ${inputs.machineName || 'WM-500'}`}</strong></div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#008299', fontWeight: 700 }}>Cliente</span><strong style={{ color: '#1e293b' }}>{inputs.clientName}</strong></div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#008299', fontWeight: 700 }}>Máquina</span><strong style={{ color: '#1e293b' }}>{inputs.machineName || 'WM-500'}</strong></div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#008299', fontWeight: 700 }}>Proyecto</span><strong style={{ color: '#1e293b' }}>{inputs.projectName}</strong></div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#008299', fontWeight: 700 }}>Fecha</span><strong style={{ color: '#1e293b' }}>{new Date().toLocaleDateString()}</strong></div>
+                        {/* TÍTULO PRINCIPAL */}
+                        <div style={{ marginBottom: 20 }}>
+                          <div style={{ fontSize: 9.5, fontWeight: 900, color: '#008299', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>{tf('INFORME PARAMÉTRICO DE SIMULACIÓN')}</div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <div style={{ fontSize: 40, fontWeight: 900, color: '#0f2038', letterSpacing: -1, lineHeight: 1.0, fontFamily: 'sans-serif' }}>{tf('SIMULACIÓN')}</div>
+                            <div style={{ fontSize: 40, fontWeight: 900, color: '#00c2cb', letterSpacing: -1, lineHeight: 1.0, fontFamily: 'sans-serif' }}>{tf('DE LÍNEA')}</div>
+                          </div>
+                        </div>
+
+                        {/* CLIENTE */}
+                        <div style={{ marginBottom: 16 }}>
+                          <div style={{ fontSize: 9.5, fontWeight: 900, color: '#00c2cb', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 2 }}>{tf('CLIENTE')}</div>
+                          <div style={{ fontSize: 26, fontWeight: 900, color: '#0f2038', letterSpacing: -0.5 }}>{inputs.clientName.toUpperCase()}</div>
+                        </div>
+
+                        {/* PILL DE EVALUACIÓN */}
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, width: 'fit-content', background: '#edfbfd', border: '1px solid #cffafe', borderRadius: 20, padding: '5px 14px', marginBottom: 14 }}>
+                          <Activity size={14} color="#008299" />
+                          <span style={{ fontSize: 10, color: '#008299', fontWeight: 800 }}>{tf('Evaluación de Capacidad y Eficiencia')}</span>
+                        </div>
+
+                        {/* PARRAFO Y NOTA METODOLOGICA */}
+                        <p style={{ color: '#475569', fontSize: 10.5, lineHeight: 1.5, margin: 0, marginBottom: 14 }}>
+                          {tf('Análisis de capacidad, potencia instalada y viabilidad financiera para la línea de lavado, enjuague y secado de cajas plásticas con la')} {inputs.machineName || 'PLD - 120'}.
+                        </p>
+
+                        <div style={{ display: 'flex', gap: 12, padding: '12px 14px', backgroundColor: "#f8fafc", borderLeft: "4px solid #00c2cb", borderRadius: '0 8px 8px 0', marginBottom: 24, border: '1px solid #f1f5f9', borderLeftWidth: 4 }}>
+                          <FileSpreadsheet size={18} color="#008299" style={{ flexShrink: 0, marginTop: 2 }} />
+                          <div style={{ fontSize: 9.5, color: "#475569", lineHeight: 1.4 }}>
+                            <strong style={{ color: '#0f2038' }}>{tf('Nota Metodológica:')}</strong> {tf('La capacidad por modelo se calcula en función de la velocidad lineal de la banda, dimensión de caja y separación. Limitado a 350 cajas/h máximo.')}
+                          </div>
+                        </div>
+
+                        {/* CAJAS INFERIORES MODULARES */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 'auto' }}>
+
+                          {/* CAJA 1: INFORMACION PROYECTO */}
+                          <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 14, background: '#f8fafc' }}>
+                            <div style={{ fontSize: 9.5, fontWeight: 900, color: '#008299', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>{tf('INFORMACIÓN DEL PROYECTO')}</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 10, color: '#475569' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Building2 size={13} color="#008299" /> <span style={{ fontWeight: 700, color: '#008299' }}>{tf('Empresa')}</span></div>
+                                <strong style={{ color: '#1e293b' }}>{inputs.companyName || 'SEEMIC'}</strong>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Users size={13} color="#008299" /> <span style={{ fontWeight: 700, color: '#008299' }}>{tf('Cliente')}</span></div>
+                                <strong style={{ color: '#1e293b' }}>{inputs.clientName}</strong>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Settings size={13} color="#008299" /> <span style={{ fontWeight: 700, color: '#008299' }}>{tf('Máquina')}</span></div>
+                                <strong style={{ color: '#1e293b' }}>{inputs.machineName || 'PLD - 120'}</strong>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><FolderOpen size={13} color="#008299" /> <span style={{ fontWeight: 700, color: '#008299' }}>{tf('Proyecto')}</span></div>
+                                <strong style={{ color: '#1e293b' }}>{inputs.projectName}</strong>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Clock size={13} color="#008299" /> <span style={{ fontWeight: 700, color: '#008299' }}>{tf('Fecha')}</span></div>
+                                <strong style={{ color: '#1e293b' }}>{new Date().toLocaleDateString()}</strong>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* CAJA 2: MATERIAL SIMULADO */}
+                          <div style={{ border: '1px solid #cffafe', borderRadius: 12, padding: 14, background: '#f0fdfa' }}>
+                            <div style={{ fontSize: 9.5, fontWeight: 900, color: '#0f766e', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>{tf('PARÁMETROS DEL MATERIAL SIMULADO')}</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 10, color: '#475569' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Package size={14} color="#0f766e" /> <span style={{ fontWeight: 700, color: '#0f766e' }}>{tf('Material Evaluado')}</span></div>
+                                <strong style={{ color: '#0f172a' }}>{inputs.materialType.replace('_', ' ').toUpperCase()}</strong>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Clock size={14} color="#0f766e" /> <span style={{ fontWeight: 700, color: '#0f766e' }}>{tf('Régimen Diario')}</span></div>
+                                <strong style={{ color: '#0f172a' }}>{results.hoursPerDay} {tf('horas')} <br /><span style={{ fontSize: 9, fontWeight: 600 }}>({inputs.shiftsPerDay} {tf('turnos')})</span></strong>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Target size={14} color="#0f766e" /> <span style={{ fontWeight: 700, color: '#0f766e' }}>{tf('Meta Objetivo Diaria')}</span></div>
+                                <strong style={{ color: '#0f172a' }}>{new Intl.NumberFormat().format(inputs.meta_diaria_cajas)} {tf('cajas/día')}</strong>
+                              </div>
+                            </div>
+                          </div>
+
                         </div>
                       </div>
 
-                      <div style={{ background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: 12, padding: 10 }}>
-                        <span style={{ fontSize: 9, fontWeight: 900, color: '#0f766e', textTransform: 'uppercase', letterSpacing: 1.2, display: 'block', marginBottom: 2 }}>PARÁMETROS DEL MATERIAL SIMULADO</span>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '4px', fontSize: 10, color: '#475569' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#0f766e', fontWeight: 700 }}>Material Evaluado</span><strong style={{ color: '#0f172a', textTransform: 'uppercase' }}>{inputs.materialType.replace('_', ' ')}</strong></div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#0f766e', fontWeight: 700 }}>Régimen Diario</span><strong style={{ color: '#0f172a' }}>{results.hoursPerDay} horas ({inputs.shiftsPerDay} turnos)</strong></div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#0f766e', fontWeight: 700 }}>Meta Objetivo Diaria</span><strong style={{ color: '#0f172a' }}>{new Intl.NumberFormat().format(inputs.meta_diaria_cajas)} cajas/día</strong></div>
+                      {/* COLUMNA DERECHA (RESULTADOS PREVIEW CAJAS) */}
+                      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#f8fafc', borderRadius: 16, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+
+                        {/* HEADER CYAN */}
+                        <div style={{ background: '#008299', padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <BarChart3 size={18} color="#fff" />
+                          <div style={{ fontSize: 11, fontWeight: 900, color: '#fff', letterSpacing: 1.5, textTransform: 'uppercase' }}>
+                            {tf('VISTA PREVIA DE RESULTADOS')}
+                          </div>
+                        </div>
+
+                        {/* INTERNAL CARDS CONTAINER */}
+                        <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 12, flex: 1, justifyContent: 'center' }}>
+
+                          {/* CARD 1: CAPACIDAD */}
+                          <div style={{ background: '#fff', border: '1px solid #cbd5e1', borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                            <div style={{ background: '#edfbfd', padding: 10, borderRadius: '50%', border: '1px solid #cffafe', marginRight: 14 }}>
+                              <Package size={20} color="#008299" strokeWidth={1.5} />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: 11.5, fontWeight: 900, color: '#0f2038' }}>{tf('Capacidad Nominal vs Real')}</div>
+                              <div style={{ fontSize: 9.5, color: '#64748b', marginTop: 3 }}>Nominal: 350 c/h <br /> Real (OEE {inputs.oee}%): {results.realProductionPerHourBoxes.toFixed(0)} c/h</div>
+                            </div>
+                            <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' }}>
+                              <span style={{ fontSize: 26, fontWeight: 900, color: '#008299', lineHeight: 1 }}>{results.realProductionPerHourBoxes.toFixed(0)}</span>
+                              <span style={{ fontSize: 12, fontWeight: 900, color: '#008299' }}>{tf('c/h')}</span>
+                              <span style={{ fontSize: 9, color: '#0f766e', fontWeight: 800, marginTop: 4 }}>Nom: 350 {tf('c/h')}</span>
+                            </div>
+                          </div>
+
+                          {/* CARD 2: MARGEN */}
+                          <div style={{ background: '#fff', border: '1px solid #cbd5e1', borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                            <div style={{ background: '#edfbfd', padding: 10, borderRadius: '50%', border: '1px solid #cffafe', marginRight: 14 }}>
+                              <Settings size={20} color="#008299" strokeWidth={1.5} />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: 11.5, fontWeight: 900, color: '#0f2038' }}>{tf('Margen Diario Operativo')}</div>
+                              <div style={{ fontSize: 9.5, color: '#64748b', marginTop: 3 }}>Nominal: +331 c/día <br /> Real (OEE {inputs.oee}%): +{Math.max(0, results.dailyProductionBoxes - inputs.meta_diaria_cajas).toFixed(0)} c/día</div>
+                            </div>
+                            <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' }}>
+                              <span style={{ fontSize: 26, fontWeight: 900, color: '#008299', lineHeight: 1 }}>+{Math.max(0, results.dailyProductionBoxes - inputs.meta_diaria_cajas).toFixed(0)}</span>
+                              <span style={{ fontSize: 12, fontWeight: 900, color: '#008299' }}>{tf('c/día')}</span>
+                              <span style={{ fontSize: 9, color: '#0f766e', fontWeight: 800, marginTop: 4 }}>Nom: +331 {tf('c/día')}</span>
+                            </div>
+                          </div>
+
+                          {/* CARD 3: OPEX */}
+                          <div style={{ background: '#fff', border: '1px solid #cbd5e1', borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                            <div style={{ background: '#edfbfd', padding: 10, borderRadius: '50%', border: '1px solid #cffafe', marginRight: 14 }}>
+                              <DollarSign size={20} color="#008299" strokeWidth={1.5} />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: 11.5, fontWeight: 900, color: '#0f2038' }}>{tf('Costo Operativo (OPEX)')}</div>
+                              <div style={{ fontSize: 9.5, color: '#64748b', marginTop: 3 }}>Por 1,000 cajas <br /> (${(results.opexPor1000CajasMxn / 1000).toFixed(2)} MXN/caja)</div>
+                            </div>
+                            <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' }}>
+                              <span style={{ fontSize: 24, fontWeight: 900, color: '#008299', lineHeight: 1 }}>${results.opexPor1000CajasMxn.toFixed(1)}</span>
+                              <span style={{ fontSize: 11, fontWeight: 900, color: '#008299', marginTop: 2 }}>MXN / 1k {tf('cajas')}</span>
+                            </div>
+                          </div>
+
+                          {/* CARD 4: VIABILIDAD */}
+                          <div style={{ background: '#fff', border: '1px solid #cbd5e1', borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                            <div style={{ background: '#edfbfd', padding: 10, borderRadius: '50%', border: '1px solid #cffafe', marginRight: 14 }}>
+                              <Check size={20} color="#008299" strokeWidth={1.5} />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: 13, fontWeight: 900, color: '#0f2038' }}>{tf('Viabilidad Proyectada')}</div>
+                              <div style={{ fontSize: 9.5, color: '#64748b', marginTop: 3 }}>Utilización Real: {(inputs.meta_diaria_cajas / (results.dailyProductionBoxes || 1) * 100).toFixed(1)}% <br /> Cobertura: {results.requirementCoverage.toFixed(1)}%</div>
+                            </div>
+                            <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' }}>
+                              <span style={{ fontSize: 22, fontWeight: 900, color: '#008299', textTransform: 'uppercase', letterSpacing: 0.5 }}>{tf(results.viabilityState || 'VIABLE')}</span>
+                            </div>
+                          </div>
+
                         </div>
                       </div>
                     </div>
 
-                    <div style={{ background: '#edfbfd', borderRadius: 16, padding: 18, border: '1px solid #cffafe', display: 'flex', flexDirection: 'column', gap: 10, height: '100%', justifyContent: 'center' }}>
-                      <div style={{ fontSize: 11, fontWeight: 900, color: '#008299', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 2 }}>VISTA PREVIA DE RESULTADOS</div>
-                      
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #cffafe', paddingBottom: 8 }}>
-                        <div>
-                          <div style={{ fontSize: 12, fontWeight: 800, color: '#0f2038' }}>Capacidad Nominal vs Real</div>
-                          <div style={{ fontSize: 9.5, color: '#64748b', marginTop: 1 }}>Nominal: 350 c/h | Real (OEE {inputs.oee}%): {results.realProductionPerHourBoxes.toFixed(0)} c/h</div>
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: 18, fontWeight: 900, color: '#008299' }}>{results.realProductionPerHourBoxes.toFixed(0)} c/h</div>
-                          <div style={{ fontSize: 8.5, color: '#0f766e', fontWeight: 700 }}>Nom: 350 c/h</div>
-                        </div>
-                      </div>
-
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #cffafe', paddingBottom: 8 }}>
-                        <div>
-                          <div style={{ fontSize: 12, fontWeight: 800, color: '#0f2038' }}>Margen Diario Operativo</div>
-                          <div style={{ fontSize: 9.5, color: '#64748b', marginTop: 1 }}>Nominal: +331 c/día | Real (OEE {inputs.oee}%): +{Math.max(0, results.dailyProductionBoxes - inputs.meta_diaria_cajas).toFixed(0)} c/día</div>
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: 18, fontWeight: 900, color: '#008299' }}>+{Math.max(0, results.dailyProductionBoxes - inputs.meta_diaria_cajas).toFixed(0)} c/día</div>
-                          <div style={{ fontSize: 8.5, color: '#0f766e', fontWeight: 700 }}>Nom: +331 c/día</div>
-                        </div>
-                      </div>
-
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #cffafe', paddingBottom: 8 }}>
-                        <div>
-                          <div style={{ fontSize: 12, fontWeight: 800, color: '#0f2038' }}>Costo Operativo (OPEX)</div>
-                          <div style={{ fontSize: 9.5, color: '#64748b', marginTop: 1 }}>Por 1,000 cajas (${(results.opexPor1000CajasMxn / 1000).toFixed(2)} MXN/caja)</div>
-                        </div>
-                        <div style={{ fontSize: 18, fontWeight: 900, color: '#008299' }}>${results.opexPor1000CajasMxn.toFixed(1)} <span style={{ fontSize: 10, fontWeight: 700 }}>MXN / 1k cajas</span></div>
-                      </div>
-
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <div style={{ fontSize: 14, fontWeight: 900, color: '#0f2038' }}>Viabilidad Proyectada</div>
-                          <div style={{ fontSize: 9.5, color: '#64748b', marginTop: 1, fontWeight: 600 }}>Utilización Real: {(inputs.meta_diaria_cajas / (results.dailyProductionBoxes || 1) * 100).toFixed(1)}% | Cobertura ({results.requirementCoverage.toFixed(1)}%)</div>
-                        </div>
-                        <div style={{ fontSize: 18, fontWeight: 900, color: '#008299', textTransform: 'uppercase' }}>{results.viabilityState}</div>
-                      </div>
+                    {/* FOOOOTER (Línea Inferior similar al diseño) */}
+                    <div style={{ borderTop: '2px solid #f1f5f9', marginTop: 'auto', padding: '12px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ fontSize: 9, fontWeight: 800, color: '#94a3b8', letterSpacing: 1.5, textTransform: 'uppercase' }}>{inputs.clientName} // MÁQUINA: {inputs.machineName?.toUpperCase() || 'WM-500'}</div>
+                      <div style={{ fontSize: 9, fontWeight: 800, color: '#94a3b8', letterSpacing: 1.5, textTransform: 'uppercase' }}>PÁGINA {++pdfPageIndex} DE {totalPdfPages}</div>
                     </div>
                   </div>
-
-                  <div style={{ padding: '0 48px 14px' }}>
-                    <div style={{ borderTop: '1px solid #dbe5ee', paddingTop: 10, display: 'flex', justifyContent: 'space-between', fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1 }}>
-                      <span>{inputs.clientName.toUpperCase()} · MÁQUINA: {inputs.machineName?.toUpperCase() || 'WM-500'}</span><span>PÁGINA {++pdfPageIndex} DE {totalPdfPages}</span>
-                    </div>
-                  </div>
-                </div>
                 )}
 
                 {/* PÁGINA 2+: GEMELO DIGITAL 3D */}
                 {pdfConfig.twin && snapshotPages.length > 0 && (() => {
                   const pageSecNum = ++currentSectionIndex;
                   return snapshotPages.map((page, index) => (
-                    <div key={index} className="pdf-page bg-white relative flex flex-col" style={S.page}>
-                      <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 20 }}>
-                        {renderPageHeader(`${pageSecNum}. Vista ${page.type.charAt(0).toUpperCase() + page.type.slice(1)}`, 'Renderizado CAD de alta resolución del equipo en configuración de planta')}
-                      
-                      <div style={{ flex: 1, border: '1px solid #e2e8f0', borderRadius: 16, background: '#edf4f9', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <div style={{ width: '100%', height: '100%', backgroundImage: `url(${page.src})`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }} />
-                      </div>
+                    <div key={index} className="flex flex-col items-center relative mb-12">
+                      <div className="pdf-page bg-white relative flex flex-col mx-auto" style={{ ...S.page, flexShrink: 0 }}>
+                        <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                          {renderPageHeader(`${pageSecNum}. Vista ${page.type.charAt(0).toUpperCase() + page.type.slice(1)}`, tf('Renderizado CAD de alta resolución del equipo en configuración de planta'))}
 
-                      <div style={{ background: '#f0fdfa', border: '1px solid #ccfbf1', borderRadius: 12, padding: 16, fontSize: 10, lineHeight: 1.5, color: '#334155', fontWeight: 600 }}>
-                        <span style={{ color: '#0f766e', fontWeight: 900, textTransform: 'uppercase', marginRight: 6 }}>Nota de Escala Visual ({page.type}): </span>
-                        Esta proyección tridimensional corresponde a la captura exacta de la Lavadora {inputs.machineName || 'BWD-250'} evaluada bajo la perspectiva {page.type.toLowerCase()}. Las proporciones y el diseño representan el volumen real del equipo industrial proyectado en el software PANDORA 3.0.
+                          <div style={{ flex: 1, border: '1px solid #e2e8f0', borderRadius: 16, background: '#edf4f9', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                            <div style={{ width: '100%', height: '100%', backgroundImage: `url(${page.src})`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }} />
+                            {(page.type || '').toLowerCase() === 'lateral' && processFlags.map((step, i) => (
+                              <div
+                                key={i}
+                                id={`flag-wrapper-${i}`}
+                                style={{ position: 'absolute', top: step.top, left: step.left, width: 0, height: 0, zIndex: 10 }}
+                              >
+                                {/* DOT: ANCHOR MANIPULATOR */}
+                                <div
+                                  style={{ position: 'absolute', width: '12px', height: '12px', borderRadius: '50%', background: step.hex, top: '-6px', left: '-6px', cursor: draggedFlagIndex === `${i}-dot` ? 'grabbing' : 'grab', zIndex: 3, boxShadow: '0 0 0 2px white' }}
+                                  onPointerDown={(e) => {
+                                    e.stopPropagation();
+                                    e.currentTarget.setPointerCapture(e.pointerId);
+                                    e.currentTarget.dataset.dragging = 'dot';
+                                    setDraggedFlagIndex(`${i}-dot`);
+                                  }}
+                                  onPointerMove={(e) => {
+                                    if (e.currentTarget.dataset.dragging === 'dot') {
+                                      e.stopPropagation();
+                                      const parent = e.currentTarget.parentElement.parentElement;
+                                      const rect = parent.getBoundingClientRect();
+                                      let newLeft = ((e.clientX - rect.left) / rect.width) * 100;
+                                      let newTop = ((e.clientY - rect.top) / rect.height) * 100;
+                                      newLeft = Math.max(0, Math.min(100, newLeft));
+                                      newTop = Math.max(0, Math.min(100, newTop));
+                                      e.currentTarget.parentElement.style.left = `${newLeft}%`;
+                                      e.currentTarget.parentElement.style.top = `${newTop}%`;
+                                    }
+                                  }}
+                                  onPointerUp={(e) => {
+                                    if (e.currentTarget.dataset.dragging === 'dot') {
+                                      e.stopPropagation();
+                                      e.currentTarget.releasePointerCapture(e.pointerId);
+                                      e.currentTarget.dataset.dragging = 'false';
+                                      setDraggedFlagIndex(null);
+                                      const finalLeft = e.currentTarget.parentElement.style.left;
+                                      const finalTop = e.currentTarget.parentElement.style.top;
+                                      setProcessFlags(prev => {
+                                        const copy = [...prev];
+                                        copy[i] = { ...copy[i], left: finalLeft, top: finalTop };
+                                        return copy;
+                                      });
+                                    }
+                                  }}
+                                />
+
+                                {/* LINE */}
+                                <div
+                                  id={`flag-line-${i}`}
+                                  style={{
+                                    position: 'absolute',
+                                    width: '2px',
+                                    background: step.hex,
+                                    left: '-1px',
+                                    height: `${step.lineHeight}px`,
+                                    top: step.isBottom ? '6px' : `-${step.lineHeight + 6}px`,
+                                    zIndex: 1
+                                  }}
+                                />
+
+                                {/* BOX: HEIGHT & REVERSE MANIPULATOR */}
+                                <div
+                                  id={`flag-box-${i}`}
+                                  style={{
+                                    position: 'absolute',
+                                    left: 0,
+                                    transform: 'translateX(-50%)',
+                                    top: step.isBottom ? `${step.lineHeight + 6}px` : `-${step.lineHeight + 6 + 36}px`,
+                                    background: '#fff', border: `2px solid ${step.hex}`, borderRadius: '8px', padding: '6px 10px', display: 'flex', gap: '8px', alignItems: 'center', zIndex: 2, boxShadow: '0 4px 6px rgba(0,0,0,0.05)', whiteSpace: 'nowrap',
+                                    cursor: draggedFlagIndex === `${i}-box` ? 'row-resize' : 'ns-resize'
+                                  }}
+                                  onPointerDown={(e) => {
+                                    e.stopPropagation();
+                                    e.currentTarget.setPointerCapture(e.pointerId);
+                                    e.currentTarget.dataset.dragging = 'box';
+                                    setDraggedFlagIndex(`${i}-box`);
+                                  }}
+                                  onPointerMove={(e) => {
+                                    if (e.currentTarget.dataset.dragging === 'box') {
+                                      e.stopPropagation();
+                                      const parent = e.currentTarget.parentElement.parentElement;
+                                      const rect = parent.getBoundingClientRect();
+                                      const anchorTopPercent = parseFloat(e.currentTarget.parentElement.style.top || step.top);
+                                      const anchorY = rect.top + (anchorTopPercent / 100) * rect.height;
+                                      let dy = e.clientY - anchorY;
+
+                                      const line = document.getElementById(`flag-line-${i}`);
+                                      const box = e.currentTarget;
+
+                                      if (dy > 0) {
+                                        let h = Math.max(10, dy - 20);
+                                        line.style.top = '6px';
+                                        line.style.height = `${h}px`;
+                                        box.style.top = `${h + 6}px`;
+                                        box.dataset.tempBottom = 'true';
+                                        box.dataset.tempHeight = h.toString();
+                                      } else {
+                                        let h = Math.max(10, Math.abs(dy) - 20);
+                                        line.style.top = `-${h + 6}px`;
+                                        line.style.height = `${h}px`;
+                                        box.style.top = `-${h + 6 + 36}px`;
+                                        box.dataset.tempBottom = 'false';
+                                        box.dataset.tempHeight = h.toString();
+                                      }
+                                    }
+                                  }}
+                                  onPointerUp={(e) => {
+                                    if (e.currentTarget.dataset.dragging === 'box') {
+                                      e.stopPropagation();
+                                      e.currentTarget.releasePointerCapture(e.pointerId);
+                                      e.currentTarget.dataset.dragging = 'false';
+                                      setDraggedFlagIndex(null);
+
+                                      const finalHeight = parseInt(e.currentTarget.dataset.tempHeight || step.lineHeight, 10);
+                                      const finalBottom = e.currentTarget.dataset.tempBottom ? e.currentTarget.dataset.tempBottom === 'true' : step.isBottom;
+
+                                      setProcessFlags(prev => {
+                                        const copy = [...prev];
+                                        copy[i] = { ...copy[i], lineHeight: finalHeight, isBottom: finalBottom };
+                                        return copy;
+                                      });
+                                    }
+                                  }}
+                                >
+                                  <div style={{ background: step.hex, width: '34px', height: '34px', borderRadius: '6px', display: 'table', flexShrink: 0 }}>
+                                    <div
+                                      contentEditable
+                                      suppressContentEditableWarning
+                                      style={{ display: 'table-cell', verticalAlign: 'middle', textAlign: 'center', color: '#fff', fontWeight: 900, fontSize: '15px', border: 'none', outline: 'none', paddingBottom: '3px' }}
+                                      onPointerDown={e => e.stopPropagation()}
+                                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
+                                      onBlur={(e) => {
+                                        const newText = e.currentTarget.innerText;
+                                        setProcessFlags(p => {
+                                          const copy = [...p];
+                                          copy[i].num = newText;
+                                          return copy;
+                                        });
+                                      }}
+                                    >
+                                      {step.num}
+                                    </div>
+                                  </div>
+                                  <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', justifyContent: 'center', gap: '2px' }}>
+                                    <div
+                                      contentEditable
+                                      suppressContentEditableWarning
+                                      style={{ fontSize: '8px', color: step.hex, fontWeight: 900, letterSpacing: '0.5px', background: 'transparent', border: 'none', outline: 'none', margin: 0, padding: 0, lineHeight: '10px', minHeight: '10px' }}
+                                      onPointerDown={e => e.stopPropagation()}
+                                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
+                                      onBlur={(e) => {
+                                        const newText = e.currentTarget.innerText;
+                                        setProcessFlags(p => {
+                                          const copy = [...p];
+                                          copy[i].step = newText;
+                                          return copy;
+                                        });
+                                      }}
+                                    >
+                                      {step.step}
+                                    </div>
+                                    <div
+                                      contentEditable
+                                      suppressContentEditableWarning
+                                      style={{ fontSize: '10px', color: '#1e293b', fontWeight: 900, background: 'transparent', border: 'none', outline: 'none', margin: 0, padding: 0, lineHeight: '12px', minHeight: '12px' }}
+                                      onPointerDown={e => e.stopPropagation()}
+                                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
+                                      onBlur={(e) => {
+                                        const newText = e.currentTarget.innerText;
+                                        setProcessFlags(p => {
+                                          const copy = [...p];
+                                          copy[i].title = newText;
+                                          return copy;
+                                        });
+                                      }}
+                                    >
+                                      {step.title}
+                                    </div>
+                                    <div
+                                      contentEditable
+                                      suppressContentEditableWarning
+                                      style={{ fontSize: '7px', color: '#94a3b8', fontWeight: 700, background: 'transparent', border: 'none', outline: 'none', margin: 0, padding: 0, lineHeight: '8px', minHeight: '8px' }}
+                                      onPointerDown={e => e.stopPropagation()}
+                                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
+                                      onBlur={(e) => {
+                                        const newText = e.currentTarget.innerText;
+                                        setProcessFlags(p => {
+                                          const copy = [...p];
+                                          copy[i].sub = newText;
+                                          return copy;
+                                        });
+                                      }}
+                                    >
+                                      {step.sub}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+
+
+                            {/* === MOTOR DE FLECHAS DE FLUJO EN 360 GRADOS === */}
+                            {(page.type || '').toLowerCase() === 'lateral' && processArrows.map((arrow, i) => {
+                              const dx = typeof arrow.headDx !== 'undefined' ? arrow.headDx : 80;
+                              const dy = typeof arrow.headDy !== 'undefined' ? arrow.headDy : 0;
+                              const length = Math.sqrt(dx * dx + dy * dy);
+                              const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+
+                              return (
+                                <div
+                                  key={i}
+                                  id={`arrow-wrapper-${i}`}
+                                  style={{ position: 'absolute', top: arrow.top, left: arrow.left, width: 0, height: 0, zIndex: 9 }}
+                                >
+                                  {/* DOT: ANCLAJE (COLA DE LA FLECHA) */}
+                                  <div
+                                    style={{ position: 'absolute', width: '12px', height: '12px', borderRadius: '50%', background: arrow.hex, top: '-6px', left: '-6px', cursor: draggedFlagIndex === `arrow-${i}-dot` ? 'grabbing' : 'grab', zIndex: 3, boxShadow: '0 0 0 2px white' }}
+                                    onPointerDown={(e) => {
+                                      e.stopPropagation();
+                                      e.currentTarget.setPointerCapture(e.pointerId);
+                                      e.currentTarget.dataset.dragging = 'dot';
+                                      setDraggedFlagIndex(`arrow-${i}-dot`);
+                                    }}
+                                    onPointerMove={(e) => {
+                                      if (e.currentTarget.dataset.dragging === 'dot') {
+                                        e.stopPropagation();
+                                        const parent = e.currentTarget.parentElement.parentElement;
+                                        const rect = parent.getBoundingClientRect();
+                                        let newLeft = ((e.clientX - rect.left) / rect.width) * 100;
+                                        let newTop = ((e.clientY - rect.top) / rect.height) * 100;
+                                        newLeft = Math.max(0, Math.min(100, newLeft));
+                                        newTop = Math.max(0, Math.min(100, newTop));
+                                        e.currentTarget.parentElement.style.left = `${newLeft}%`;
+                                        e.currentTarget.parentElement.style.top = `${newTop}%`;
+                                      }
+                                    }}
+                                    onPointerUp={(e) => {
+                                      if (e.currentTarget.dataset.dragging === 'dot') {
+                                        e.stopPropagation();
+                                        e.currentTarget.releasePointerCapture(e.pointerId);
+                                        e.currentTarget.dataset.dragging = 'false';
+                                        setDraggedFlagIndex(null);
+                                        const finalLeft = e.currentTarget.parentElement.style.left;
+                                        const finalTop = e.currentTarget.parentElement.style.top;
+                                        setProcessArrows(prev => {
+                                          const copy = [...prev];
+                                          copy[i] = { ...copy[i], left: finalLeft, top: finalTop };
+                                          return copy;
+                                        });
+                                      }
+                                    }}
+                                  />
+
+                                  {/* LÍNEA DE LA FLECHA */}
+                                  <div
+                                    id={`arrow-line-${i}`}
+                                    style={{
+                                      position: 'absolute', height: '3px', background: arrow.hex, left: '0px', top: '-1.5px', width: `${length}px`, transformOrigin: '0 50%', transform: `rotate(${angle}deg)`, zIndex: 1
+                                    }}
+                                  >
+                                    <div style={{ position: 'absolute', right: '-2px', top: '50%', transform: 'translateY(-50%)', borderTop: '8px solid transparent', borderBottom: '8px solid transparent', borderLeft: `12px solid ${arrow.hex}` }} />
+                                  </div>
+
+                                  {/* DOT VIRTUAL: CABEZA DE LA FLECHA (MANIPULADOR DE DIRECCIÓN) */}
+                                  <div
+                                    id={`arrow-head-${i}`}
+                                    style={{
+                                      position: 'absolute', width: '20px', height: '20px', borderRadius: '50%', background: 'transparent', left: `${dx}px`, top: `${dy}px`, transform: 'translate(-50%, -50%)', cursor: draggedFlagIndex === `arrow-${i}-head` ? 'grabbing' : 'crosshair', zIndex: 4
+                                    }}
+                                    onPointerDown={(e) => {
+                                      e.stopPropagation();
+                                      e.currentTarget.setPointerCapture(e.pointerId);
+                                      e.currentTarget.dataset.dragging = 'head';
+                                      setDraggedFlagIndex(`arrow-${i}-head`);
+                                    }}
+                                    onPointerMove={(e) => {
+                                      if (e.currentTarget.dataset.dragging === 'head') {
+                                        e.stopPropagation();
+                                        const parent = e.currentTarget.parentElement.parentElement;
+                                        const rect = parent.getBoundingClientRect();
+                                        const anchorTopPercent = parseFloat(e.currentTarget.parentElement.style.top || arrow.top);
+                                        const anchorLeftPercent = parseFloat(e.currentTarget.parentElement.style.left || arrow.left);
+
+                                        const anchorY = rect.top + (anchorTopPercent / 100) * rect.height;
+                                        const anchorX = rect.left + (anchorLeftPercent / 100) * rect.width;
+
+                                        const newDx = e.clientX - anchorX;
+                                        const newDy = e.clientY - anchorY;
+
+                                        const line = document.getElementById(`arrow-line-${i}`);
+                                        const head = e.currentTarget;
+
+                                        const len = Math.sqrt(newDx * newDx + newDy * newDy);
+                                        const ang = Math.atan2(newDy, newDx) * (180 / Math.PI);
+
+                                        line.style.width = `${len}px`;
+                                        line.style.transform = `rotate(${ang}deg)`;
+
+                                        head.style.left = `${newDx}px`;
+                                        head.style.top = `${newDy}px`;
+
+                                        head.dataset.tempDx = newDx.toString();
+                                        head.dataset.tempDy = newDy.toString();
+                                      }
+                                    }}
+                                    onPointerUp={(e) => {
+                                      if (e.currentTarget.dataset.dragging === 'head') {
+                                        e.stopPropagation();
+                                        e.currentTarget.releasePointerCapture(e.pointerId);
+                                        e.currentTarget.dataset.dragging = 'false';
+                                        setDraggedFlagIndex(null);
+
+                                        const tempDx = e.currentTarget.dataset.tempDx !== undefined ? parseFloat(e.currentTarget.dataset.tempDx) : dx;
+                                        const tempDy = e.currentTarget.dataset.tempDy !== undefined ? parseFloat(e.currentTarget.dataset.tempDy) : dy;
+
+                                        setProcessArrows(prev => {
+                                          const copy = [...prev];
+                                          copy[i] = { ...copy[i], headDx: tempDx, headDy: tempDy };
+                                          return copy;
+                                        });
+                                      }
+                                    }}
+                                  />
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          <div style={{ background: '#f0fdfa', border: '1px solid #ccfbf1', borderRadius: 12, padding: 16, fontSize: 10, lineHeight: 1.5, color: '#334155', fontWeight: 600 }}>
+                            <span style={{ color: '#0f766e', fontWeight: 900, textTransform: 'uppercase', marginRight: 6 }}>{tf('Nota de Escala Visual')} ({tf(page.type.charAt(0).toUpperCase() + page.type.slice(1))}): </span>
+                            {tf('Esta proyección tridimensional corresponde a la captura exacta de la Lavadora')} {inputs.machineName || 'BWD-250'} {tf('evaluada bajo la perspectiva')} {tf(page.type.charAt(0).toUpperCase() + page.type.slice(1))}. {tf('Las proporciones y el diseño representan el volumen real del equipo industrial proyectado en el software PANDORA 3.0.')}
+                          </div>
+                          {renderPageFooter(++pdfPageIndex, totalPdfPages)}
+                        </div>
                       </div>
-                        {renderPageFooter(++pdfPageIndex, totalPdfPages)}
-                  </div>
+                      {/* NOTIFICACIÓN FLOTANTE GUARDADO */}
+                      {toastMessage && (
+                        <div style={{ position: 'fixed', top: '24px', left: '50%', transform: 'translateX(-50%)', zIndex: 999999, background: '#059669', color: 'white', padding: '12px 24px', borderRadius: '12px', fontWeight: 900, boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}>
+                          {toastMessage}
+                        </div>
+                      )}
+
+                      {/* TOOLBOX LATERAL (SÓLO VISTA PREVIA) */}
+                      {(page.type || '').toLowerCase() === 'lateral' && (
+                        <div
+                          id="toolbox-panel"
+                          style={{ position: 'fixed', top: typeof toolboxPos.top !== 'undefined' ? `${toolboxPos.top}px` : '96px', left: typeof toolboxPos.left !== 'undefined' ? `${toolboxPos.left}px` : 'auto', right: (typeof toolboxPos.right !== 'undefined' && typeof toolboxPos.left === 'undefined') ? `${toolboxPos.right}px` : 'auto', zIndex: 99999, width: isToolboxOpen ? '320px' : 'auto' }} className="bg-white rounded-3xl shadow-2xl border border-slate-200 p-4" data-html2canvas-ignore="true">
+
+                          <div className="flex items-center justify-between mb-1 relative">
+                            {/* ZONA DE ARRASTRE */}
+                            <div className="flex items-center gap-2 cursor-grab w-full active:cursor-grabbing"
+                              onPointerDown={(e) => {
+                                if (e.target.closest('button')) return; // ignorar clics en botones internos
+                                e.stopPropagation();
+                                e.currentTarget.setPointerCapture(e.pointerId);
+                                e.currentTarget.dataset.dragging = 'toolbox';
+                                e.currentTarget.dataset.startX = e.clientX.toString();
+                                e.currentTarget.dataset.startY = e.clientY.toString();
+                                const tb = document.getElementById('toolbox-panel');
+
+                                // Si está anclado a la derecha, convertir a valor izquierdo explícito para matemáticas fáciles
+                                if (!tb.style.left || tb.style.left === 'auto') {
+                                  const rect = tb.getBoundingClientRect();
+                                  tb.style.left = `${rect.left}px`;
+                                  tb.style.right = 'auto';
+                                }
+
+                                e.currentTarget.dataset.startLeft = parseFloat(tb.style.left);
+                                e.currentTarget.dataset.startTop = parseFloat(tb.style.top);
+                                setDraggedFlagIndex('toolbox');
+                              }}
+                              onPointerMove={(e) => {
+                                if (e.currentTarget.dataset.dragging === 'toolbox') {
+                                  e.stopPropagation();
+                                  const dx = e.clientX - parseFloat(e.currentTarget.dataset.startX);
+                                  const dy = e.clientY - parseFloat(e.currentTarget.dataset.startY);
+                                  const tb = document.getElementById('toolbox-panel');
+                                  tb.style.left = `${parseFloat(e.currentTarget.dataset.startLeft) + dx}px`;
+                                  tb.style.top = `${parseFloat(e.currentTarget.dataset.startTop) + dy}px`;
+                                }
+                              }}
+                              onPointerUp={(e) => {
+                                if (e.currentTarget.dataset.dragging === 'toolbox') {
+                                  e.stopPropagation();
+                                  e.currentTarget.releasePointerCapture(e.pointerId);
+                                  e.currentTarget.dataset.dragging = 'false';
+                                  setDraggedFlagIndex(null);
+                                  const tb = document.getElementById('toolbox-panel');
+                                  setToolboxPos({
+                                    left: parseFloat(tb.style.left),
+                                    top: parseFloat(tb.style.top)
+                                  });
+                                }
+                              }}
+                            >
+                              <div onClick={() => setIsToolboxOpen(!isToolboxOpen)} className="flex items-center gap-2 pointer-events-auto">
+                                {isToolboxOpen && <Settings className="w-5 h-5 text-emerald-600 pointer-events-none" />}
+                                <h3 className="font-black text-xs text-slate-800 uppercase tracking-wide pointer-events-none select-none">
+                                  {isToolboxOpen ? 'Banderas de Proceso' : 'Banderas'}
+                                </h3>
+                              </div>
+                            </div>
+
+                            <button onClick={() => setIsToolboxOpen(!isToolboxOpen)} className="absolute right-0 top-0 text-slate-400 hover:text-emerald-600 p-1.5 bg-slate-50 hover:bg-emerald-50 rounded-xl transition-colors shrink-0 z-10">
+                              {isToolboxOpen ? <X className="w-4 h-4" /> : <Settings className="w-4 h-4" />}
+                            </button>
+                          </div>
+
+                          {isToolboxOpen && (
+                            <>
+                              <div className="space-y-3 max-h-[420px] overflow-y-auto custom-scrollbar pr-2 mb-4 mt-4 border-t border-slate-100 pt-4">
+                                {processFlags.map((flag, idx) => (
+                                  <div key={idx} className="bg-slate-50 border border-slate-200 rounded-xl p-3 relative shadow-sm">
+                                    <div className="absolute top-2 right-2 flex gap-1">
+                                      <button onClick={() => setProcessFlags(p => p.filter((_, i) => i !== idx))} className="text-slate-400 hover:text-red-500 p-1"><Trash2 className="w-4 h-4" /></button>
+                                    </div>
+                                    <div className="flex items-center gap-2 mb-1 pr-8">
+                                      <input type="color" value={flag.hex} onChange={e => {
+                                        setProcessFlags(p => { const n = [...p]; n[idx].hex = e.target.value; return n; })
+                                      }} className="w-8 h-8 p-0 border-0 rounded-lg cursor-pointer flex-shrink-0 bg-transparent" />
+                                      <div className="flex flex-col w-full gap-1">
+                                        <input type="text" value={flag.title} onChange={e => {
+                                          setProcessFlags(p => { const n = [...p]; n[idx].title = e.target.value; return n; })
+                                        }} className="bg-white border border-slate-200 px-2 py-1 rounded-md text-[9px] font-black uppercase text-slate-700 w-full outline-none focus:border-emerald-500" placeholder="Título" />
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                                <div className="flex gap-2 mt-2">
+                                  <button onClick={() => setProcessFlags(p => {
+                                    const newLeft = 10 + (p.length % 5) * 15;
+                                    const newTop = 15 + Math.floor(p.length / 5) * 5;
+                                    return [...p, { num: String(p.length + 1).padStart(2, '0'), step: 'NUEVA', title: 'ETAPA DE PROCESO', sub: `ID_${p.length + 1}`, hex: '#10b981', top: `${newTop}%`, left: `${newLeft}%`, boxDx: 0, boxDy: 80 }];
+                                  })} className="w-full py-2 border-2 border-dashed border-slate-300 rounded-xl text-[10px] font-black text-slate-500 uppercase hover:border-emerald-500 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">
+                                    + Bandera
+                                  </button>
+                                  <button onClick={() => setProcessArrows(p => {
+                                    return [...p, { hex: '#ef4444', top: `50%`, left: `50%`, headDx: 60, headDy: 0 }];
+                                  })} className="w-full py-2 border-2 border-dashed border-slate-300 rounded-xl text-[10px] font-black text-slate-500 uppercase hover:border-orange-500 hover:bg-orange-50 hover:text-orange-600 transition-colors">
+                                    + Flecha
+                                  </button>
+                                </div>
+
+                                {processArrows.length > 0 && <div className="text-[9px] font-black uppercase text-slate-400 mt-4 mb-2">Flechas Direccionales</div>}
+                                {processArrows.map((arrow, idx) => (
+                                  <div key={`arr-${idx}`} className="bg-slate-50 border border-slate-200 rounded-xl p-2 relative shadow-sm mb-2 flex items-center gap-2">
+                                    <input type="color" value={arrow.hex} onChange={e => {
+                                      setProcessArrows(p => { const n = [...p]; n[idx].hex = e.target.value; return n; })
+                                    }} className="w-6 h-6 p-0 border-0 rounded-lg cursor-pointer flex-shrink-0 bg-transparent" />
+                                    <span className="text-[9px] font-black text-slate-600 uppercase flex-1">Flecha #{idx + 1} (Flujo)</span>
+                                    <button onClick={() => setProcessArrows(p => p.filter((_, i) => i !== idx))} className="text-slate-400 hover:text-red-500 p-1"><Trash2 className="w-4 h-4" /></button>
+                                  </div>
+                                ))}
+                              </div>
+
+                              <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 mb-4">
+                                <button onClick={() => {
+                                  localStorage.setItem('sim_dhl_v2_process_flags', JSON.stringify(processFlags));
+                                  localStorage.setItem('sim_dhl_v2_process_arrows', JSON.stringify(processArrows));
+                                  localStorage.setItem('sim_dhl_v2_toolbox_pos', JSON.stringify(toolboxPos));
+                                  setToastMessage('¡Diseño Guardado Correctamente!');
+                                  setTimeout(() => setToastMessage(null), 3000);
+                                }} className="w-full bg-emerald-600 text-white rounded-lg py-2 font-black text-[10px] uppercase hover:bg-emerald-700 transition shadow-sm mb-2 cursor-pointer">
+                                  Guardar Diseño
+                                </button>
+                                <p className="text-[9.5px] font-bold text-emerald-800 leading-relaxed text-center">
+                                  <span className="block mb-1">✓ Autorresguardo Activo</span>
+                                  Arrastra las banderas depositadas en la hoja visualmente. Todos los cambios se guardan en tu equipo al instante.
+                                </p>
+                              </div>
+
+                              <button onClick={() => setIsToolboxOpen(false)} className="w-full bg-slate-100 text-slate-600 py-3 rounded-xl font-black text-[10px] uppercase hover:bg-slate-200 transition shadow-sm border border-slate-200">
+                                MINIMIZAR PANEL
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ));
                 })()}
 
                 {/* PÁGINA SIGUIENTE: DATOS TÉCNICOS Y DICTAMEN AI */}
                 {pdfConfig.tabla && (
-                <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
-                  <div style={{ ...S.inner, flex: 1, paddingTop: 30, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {renderPageHeader(`${++currentSectionIndex}. Especificaciones Técnicas`, 'Listado físico nominal con potencias individuales calculadas al factor de carga')}
+                  <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
+                    <div style={{ ...S.inner, flex: 1, paddingTop: 30, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {renderPageHeader(`${++currentSectionIndex}. Especificaciones Técnicas`, tf('Listado físico nominal con potencias individuales calculadas al factor de carga'))}
 
-                    <div style={{ width: '100%' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10 }}>
-                        <thead>
-                          <tr>
-                            <th style={{ ...REPORT_STYLES.th, padding: '6px 12px', background: '#edfbfd' }}>Equipo</th>
-                            <th style={{ ...REPORT_STYLES.th, padding: '6px 12px', background: '#edfbfd', textAlign: 'center' }}>Capacidad</th>
-                            <th style={{ ...REPORT_STYLES.th, padding: '6px 12px', background: '#edfbfd', textAlign: 'center' }}>kW Instalados</th>
-                            <th style={{ ...REPORT_STYLES.th, padding: '6px 12px', background: '#edfbfd', textAlign: 'center' }}>Carga Activa ({inputs.loadFactor}%)</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            <td style={REPORT_STYLES.td}>Banda Alimentadora (4,000 mm)</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>-</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>1.65 kW</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(1.65 * (inputs.loadFactor/100)).toFixed(2)} kW</td>
-                          </tr>
-                          <tr>
-                            <td style={REPORT_STYLES.td}>Lavadora Principal {inputs.machineName || 'BWD-350'} (Sistema de lavado {inputs.presionLavadoBar || 650} RPM)</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{new Intl.NumberFormat().format(currentNominalCapacity)} cajas/h</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>11.19 kW</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(11.19 * (inputs.loadFactor/100)).toFixed(2)} kW</td>
-                          </tr>
-                          <tr>
-                            <td style={REPORT_STYLES.td}>Módulo de Secado de Alta Presión (Cuchillas de Aire & Sopladores)</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{new Intl.NumberFormat().format(currentNominalCapacity)} cajas/h</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>22.00 kW</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(22.00 * (inputs.loadFactor/100)).toFixed(2)} kW</td>
-                          </tr>
-                          <tr>
-                            <td style={REPORT_STYLES.td}>Calentamiento & Recirculación Hídrica</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>-</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>13.05 kW</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(13.05 * (inputs.loadFactor/100)).toFixed(2)} kW</td>
-                          </tr>
-                          <tr>
-                            <td style={REPORT_STYLES.td}>Motor Auxiliar Hidráulico (10 HP)</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>-</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>7.46 kW</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(7.46 * (inputs.loadFactor/100)).toFixed(2)} kW</td>
-                          </tr>
-                          <tr>
-                            <td style={REPORT_STYLES.td}>Banda de Descarga (3,000 mm)</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>-</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>1.65 kW</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(1.65 * (inputs.loadFactor/100)).toFixed(2)} kW</td>
-                          </tr>
-                        </tbody>
-                        <tfoot>
-                          <tr style={{ background: '#f8fafc', fontWeight: 800 }}>
-                            <td style={{ ...REPORT_STYLES.td, color: '#0d9488' }}>Total Sistema de Lavado {inputs.machineName || 'BWD-350'}</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>-</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{(results.installedPowerKw || 57.00).toFixed(2)} kW</td>
-                            <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488' }}>{(results.averageHourlyConsumptionKw || 48.45).toFixed(2)} kW</td>
-                          </tr>
-                        </tfoot>
-                      </table>
-                    </div>
-
-                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: '8px 12px', fontSize: 10, color: '#475569', lineHeight: 1.4 }}>
-                      <strong>Nota del Ingeniero:</strong> Los componentes han sido calibrados mecánicamente para un voltaje nominal adaptado a los requerimientos eléctricos del sitio, con una carga activa basada en un OEE del {inputs.oee}%.
-                    </div>
-
-                    <div style={{ marginTop: 0, background: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 16, padding: '8px 20px' }}>
-                      <span style={{ fontSize: 9, fontWeight: 900, color: '#008299', textTransform: 'uppercase', letterSpacing: 1, display: 'block', marginBottom: 2 }}>DISTRIBUCIÓN DE POTENCIA INSTALADA POR EQUIPO (kW)</span>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', border: 'none', fontSize: 10, lineHeight: '1.2' }}>
-                        <tbody>
-                          {[
-                            { name: 'Banda Alimentadora', kw: 1.65 },
-                            { name: 'Motor Lavado Principal', kw: 11.19 },
-                            { name: 'Módulo Secado Alta Presión', kw: 22.00 },
-                            { name: 'Calentamiento & Recirculación', kw: 13.05 },
-                            { name: 'Motor Hidráulico', kw: 7.46 },
-                            { name: 'Banda de Descarga', kw: 1.65 },
-                          ].map((eq, i) => {
-                            const percentage = (eq.kw / (results.installedPowerKw || 57.00)) * 100;
-                            return (
-                              <tr key={i} style={{ border: 'none' }}>
-                                <td style={{ width: 160, color: '#475569', fontWeight: 650, padding: '2px 0 2px 10px', verticalAlign: 'middle', whiteSpace: 'nowrap', border: 'none' }}>
-                                  {eq.name}
-                                </td>
-                                <td style={{ padding: '2px 10px', verticalAlign: 'middle', border: 'none' }}>
-                                  <div style={{ height: 6, background: '#e2e8f0', borderRadius: 3, overflow: 'hidden', width: '100%' }}>
-                                    <div style={{ width: `${percentage}%`, height: '100%', background: 'linear-gradient(90deg, #008299, #00c2cb)', borderRadius: 3 }} />
-                                  </div>
-                                </td>
-                                <td style={{ width: 75, textAlign: 'right', fontWeight: 700, color: '#1e293b', padding: '2px 10px 2px 0', verticalAlign: 'middle', whiteSpace: 'nowrap', border: 'none' }}>
-                                  {eq.kw.toFixed(2)} kW
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    <div style={{ marginTop: 0 }}>
-                      <span style={{ fontSize: 9, fontWeight: 900, color: '#0f766e', letterSpacing: 1.5, textTransform: 'uppercase', display: 'block', marginBottom: 2 }}>DICTAMEN TÉCNICO AUTOMÁTICO</span>
-                      <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 16, padding: '10px 20px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        {conclusions.map((c, i) => (
-                          <div key={i} style={{ fontSize: 10, lineHeight: 1.35, fontWeight: 600, color: '#334155' }}>
-                            <span style={{ color: '#00c2cb', fontWeight: 900, marginRight: 6 }}>▪</span>{c.text}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div style={{ flex: 1 }} />
-                    {renderPageFooter(++pdfPageIndex, totalPdfPages)}
-                  </div>
-                </div>
-                )}
-
-                {/* PÁGINA 3: FICHA TÉCNICA DE HOMOLOGACIÓN */}
-                {pdfConfig.tabla && (
-                <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
-                  <div style={{ ...S.inner, flex: 1, paddingTop: 30, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {renderPageHeader(`3. ${inputs.technicalSheetName === 'Ficha Técnica de Homologación BWD-250' ? 'Ficha Técnica de Máquina de Lavado BWD-250' : inputs.technicalSheetName}`, 'Desglose detallado de especificaciones, capacidades y componentes de fabricación')}
-
-                    <div style={{ width: '100%', flex: 1 }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
-                        <thead>
-                          <tr>
-                            <th style={{ ...REPORT_STYLES.th, padding: '5px 10px', background: '#edfbfd' }}>Componente / Característica</th>
-                            <th style={{ ...REPORT_STYLES.th, padding: '5px 10px', background: '#edfbfd', textAlign: 'center' }}>Especificación Original</th>
-                            <th style={{ ...REPORT_STYLES.th, padding: '5px 10px', background: '#edfbfd', textAlign: 'right' }}>Detalle Técnico</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {[
-                            { comp: 'Modelo del Equipo', spec: inputs.machineName || 'BWD-250', detail: inputs.machineNameDetalle !== undefined ? inputs.machineNameDetalle : 'Lavadora Industrial de Cajas (Agua y Aire)' },
-                            { comp: 'Aplicación Operativa', spec: inputs.aplicacionOperativa !== undefined ? inputs.aplicacionOperativa : 'Lavado, enjuague y secado de cajas plásticas', detail: inputs.aplicacionDetalle !== undefined ? inputs.aplicacionDetalle : 'Eficiencia de Lavado: 90-95% | Secado: 80-90%' },
-                            { comp: 'Capacidad Nominal (Dinámica)', spec: `${new Intl.NumberFormat().format(currentNominalCapacity)} cajas/h`, detail: `Calculada para: ${activeBox.nombre} (${activeBox.largoCm}cm)` },
-                            { comp: 'Motorización Principal (Bomba)', spec: `${inputs.motorBombaAguaHp || 15} hp ${inputs.motorMarca || 'Siemens'}`, detail: inputs.motorPrincipalDetalle !== undefined ? inputs.motorPrincipalDetalle : 'Motor de Bomba de Agua: 15 hp' },
-                            { comp: 'Motorización Auxiliar (Soplador)', spec: `${inputs.motorSopladorHp || 10} hp ${inputs.motorMarca || 'Siemens'}`, detail: inputs.motorAuxiliarDetalle !== undefined ? inputs.motorAuxiliarDetalle : 'Motor Soplador: 10 hp | Banda: 0.5 hp' },
-                            { comp: 'Potencia Instalada Total', spec: `${results.totalHp} hp`, detail: `${results.installedPowerKw.toFixed(2)} kW` },
-                            { comp: 'Temperaturas de Proceso', spec: inputs.dimensionesBandas !== undefined ? inputs.dimensionesBandas : 'Temperatura de Lavado: 60-80°C', detail: inputs.dimensionesBandasDetalle !== undefined ? inputs.dimensionesBandasDetalle : 'Calentamiento: 18 kW' },
-                            { comp: 'Presión de Aspersión', spec: inputs.bocaAlimentacion || '5.0 bar (Nominal)', detail: inputs.bocaAlimentacionDetalle !== undefined ? inputs.bocaAlimentacionDetalle : 'Presión de Agua: 5.0 bar' },
-                            { comp: 'Control de Tracción', spec: inputs.presionLavadoBar ? `${inputs.presionLavadoBar} m/min` : 'Velocidad Variable', detail: inputs.presionLavadoBarDetalle !== undefined ? inputs.presionLavadoBarDetalle : 'Inversor: Incluido (SIEMENS)' },
-                            { comp: 'Sistema de Control', spec: inputs.particulaFinal || 'Gabinete NEMA 4 (Estanco)', detail: inputs.particulaFinalDetalle !== undefined ? inputs.particulaFinalDetalle : 'Contactores y Relays: SCHNEIDER' },
-                            { comp: 'Alimentación Eléctrica', spec: inputs.separadorMagnetico || 'Trifásica 60Hz', detail: inputs.separadorMagneticoDetalle !== undefined ? inputs.separadorMagneticoDetalle : 'Voltaje: 220/440V' },
-                            { comp: 'Dimensiones Físicas', spec: `Largo: ${inputs.machineLength || 11.5} m | Ancho: ${inputs.machineWidth || 1.8} m | Alto: ${inputs.machineHeight || 1.75} m`, detail: `Footprint: ${((inputs.machineLength || 11.5) * (inputs.machineWidth || 1.8)).toFixed(2)} m²` },
-                            { comp: 'Peso Total Equipo', spec: `${(!inputs.pesoOperativoKg || inputs.pesoOperativoKg === 1000) ? 1800 : inputs.pesoOperativoKg} kg`, detail: inputs.pesoOperativoKgDetalle !== undefined ? inputs.pesoOperativoKgDetalle : 'Estructura en Acero Inoxidable' },
-                            { comp: 'Componentes Eléctricos', spec: inputs.componentesElectricos || 'Schneider / Siemens', detail: inputs.componentesElectricosDetalle !== undefined ? inputs.componentesElectricosDetalle : 'Contactores SCHNEIDER, Inversor SIEMENS' },
-                            { comp: 'Nivel de Ruido', spec: `${inputs.ruidoDb || 60} dB`, detail: inputs.ruidoDbDetalle !== undefined ? inputs.ruidoDbDetalle : 'Nivel óptimo para piso de producción' },
-                          ].map((t, idx) => (
-                            <tr key={idx}>
-                              <td style={{ ...REPORT_STYLES.td, padding: '5px 10px' }}>{t.comp}</td>
-                              <td style={{ ...REPORT_STYLES.td, padding: '5px 10px', textAlign: 'center', color: '#008299' }}>{t.spec}</td>
-                              <td style={{ ...REPORT_STYLES.td, padding: '5px 10px', textAlign: 'right' }}>{t.detail}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                      </div>
-                      {renderPageFooter(++pdfPageIndex, totalPdfPages)}
-                  </div>
-                </div>
-                )}
-
-                {/* PÁGINA 4: FLUJO DE PROCESO */}
-                {pdfConfig.tabla && (
-                <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
-                  <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 20 }}>
-                    {renderPageHeader(`${++currentSectionIndex}. FLUJO DEL PROCESO`, 'Esquema secuencial de la línea de lavado, enjuague y secado de cajas plásticas')}
-
-                    <div style={{ width: '100%', flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                      {inputs.customProcessImage ? (
-                        <div style={{ width: '100%', height: '480px', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                          <img src={inputs.customProcessImage} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="Diagrama de Flujo Personalizado" />
-                        </div>
-                      ) : (
-                      <div style={{ width: '100%', height: '480px', position: 'relative', background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                        {twinSnapshotLateral ? (
-                          <img src={twinSnapshotLateral} style={{ width: '90%', height: '90%', objectFit: 'contain', opacity: 0.85, transform: 'scale(1.05)' }} alt="Lateral" />
-                        ) : (
-                          <span style={{ color: '#94a3b8', fontSize: '14px', fontWeight: 600 }}>Requiere Captura Lateral del Gemelo Digital</span>
-                        )}
-
-                        {[
-                          { num: '01', step: 'ETAPA A', title: 'ALIMENTACIÓN', sub: 'FEED_01', hex: '#10b981', top: '8%', left: '8%', lineHeight: 220 },
-                          { num: '02', step: 'ETAPA B', title: 'INGRESO AL TÚNEL', sub: 'INLET_02', hex: '#3b82f6', top: '8%', left: '22%', lineHeight: 140 },
-                          { num: '03', step: 'ETAPA C', title: 'LAVADO POR ASPERSIÓN', sub: 'WASH_03', hex: '#f59e0b', top: '8%', left: '37%', lineHeight: 135 },
-                          { num: '04', step: 'ETAPA D', title: 'RECIRCULACIÓN DE AGUA', sub: 'RECYCLE_04', hex: '#8b5cf6', top: '80%', left: '44%', lineHeight: 80, isBottom: true },
-                          { num: '05', step: 'ETAPA E', title: 'SECADO 1', sub: 'DRY_05', hex: '#0f766e', top: '8%', left: '55%', lineHeight: 140 },
-                          { num: '06', step: 'ETAPA F', title: 'SECADO 2', sub: 'DRY_06', hex: '#84cc16', top: '8%', left: '68%', lineHeight: 135 },
-                          { num: '07', step: 'ETAPA G', title: 'DESCARGA FINAL', sub: 'OUTPUT_07', hex: '#ef4444', top: '8%', left: '79%', lineHeight: 210 },
-                        ].map((step, i) => (
-                          <div key={i} style={{ position: 'absolute', top: step.top, left: step.left, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                            {step.isBottom ? (
-                              <>
-                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: step.hex, marginBottom: '-4px', zIndex: 2 }} />
-                                <div style={{ width: '2px', height: `${step.lineHeight}px`, background: step.hex }} />
-                                <div style={{ background: '#fff', border: `2px solid ${step.hex}`, borderRadius: '8px', padding: '6px 10px', display: 'flex', gap: '8px', alignItems: 'center', zIndex: 2, marginTop: '-2px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', whiteSpace: 'nowrap' }}>
-                                  <div style={{ background: step.hex, color: '#fff', padding: '4px 8px', borderRadius: '6px', fontWeight: 900, fontSize: '14px' }}>{step.num}</div>
-                                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                    <span style={{ fontSize: '8px', color: step.hex, fontWeight: 900, letterSpacing: '0.5px' }}>{step.step}</span>
-                                    <span style={{ fontSize: '10px', color: '#1e293b', fontWeight: 900 }}>{step.title}</span>
-                                    <span style={{ fontSize: '8px', color: '#94a3b8', fontWeight: 700 }}>{step.sub}</span>
-                                  </div>
-                                </div>
-                              </>
-                            ) : (
-                              <>
-                                <div style={{ background: '#fff', border: `2px solid ${step.hex}`, borderRadius: '8px', padding: '6px 10px', display: 'flex', gap: '8px', alignItems: 'center', zIndex: 2, marginBottom: '-2px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', whiteSpace: 'nowrap' }}>
-                                  <div style={{ background: step.hex, color: '#fff', padding: '4px 8px', borderRadius: '6px', fontWeight: 900, fontSize: '14px' }}>{step.num}</div>
-                                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                    <span style={{ fontSize: '8px', color: step.hex, fontWeight: 900, letterSpacing: '0.5px' }}>{step.step}</span>
-                                    <span style={{ fontSize: '10px', color: '#1e293b', fontWeight: 900 }}>{step.title}</span>
-                                    <span style={{ fontSize: '8px', color: '#94a3b8', fontWeight: 700 }}>{step.sub}</span>
-                                  </div>
-                                </div>
-                                <div style={{ width: '2px', height: `${step.lineHeight}px`, background: step.hex }} />
-                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: step.hex, marginTop: '-4px', zIndex: 2 }} />
-                              </>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                      )}
-                      </div>
-                      {renderPageFooter(++pdfPageIndex, totalPdfPages)}
-                  </div>
-                </div>
-                )}
-
-                {/* PÁGINA 4.5: MODELOS DE CONTENEDORES (DEMANDA 2028) */}
-                {pdfConfig.tabla && (
-                <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
-                  <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 14 }}>
-                    {renderPageHeader(`${++currentSectionIndex}. MODELOS DE CONTENEDORES EVALUADOS (DEMANDA 2028)`, 'Especificaciones técnicas, demanda proyectada al 2028 y capacidad requerida por modelo de caja.')}
-
-                    {/* TOP SUMMARY CARDS */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginTop: '4px' }}>
-                      <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '12px', padding: '10px 14px' }}>
-                        <span style={{ display: 'block', fontSize: '8px', fontWeight: 800, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.5px' }}>VOLUMEN MÁXIMO 2028</span>
-                        <div style={{ fontSize: '22px', fontWeight: 900, color: '#1e3a8a', marginTop: '2px' }}>
-                          {new Intl.NumberFormat().format(inputs.cajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) || inputs.meta_diaria_cajas || 2819)}
-                        </div>
-                        <span style={{ fontSize: '8px', fontWeight: 700, color: '#3b82f6' }}>cajas/día</span>
-                      </div>
-
-                      <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '10px 14px' }}>
-                        <span style={{ display: 'block', fontSize: '8px', fontWeight: 800, color: '#d97706', textTransform: 'uppercase', letterSpacing: '0.5px' }}>REQUERIDO PROMEDIO</span>
-                        <div style={{ fontSize: '22px', fontWeight: 900, color: '#78350f', marginTop: '2px' }}>
-                          {(((inputs.cajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) || inputs.meta_diaria_cajas || 2819) / (inputs.hoursPerDay || 9))).toFixed(1)}
-                        </div>
-                        <span style={{ fontSize: '8px', fontWeight: 700, color: '#f59e0b' }}>cajas/hora</span>
-                      </div>
-
-                      <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '10px 14px' }}>
-                        <span style={{ display: 'block', fontSize: '8px', fontWeight: 800, color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>CAPACIDAD PROPUESTA</span>
-                        <div style={{ fontSize: '20px', fontWeight: 900, color: '#14532d', marginTop: '2px' }}>
-                          350 <span style={{ fontSize: '10px', color: '#16a34a', fontWeight: 'bold' }}>nom</span> / 333 <span style={{ fontSize: '10px', color: '#16a34a', fontWeight: 'bold' }}>real</span>
-                        </div>
-                        <span style={{ fontSize: '8px', fontWeight: 700, color: '#22c55e' }}>cajas/h (350 nominal / 333 @ 95% OEE)</span>
-                      </div>
-
-                      <div style={{ background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: '12px', padding: '10px 14px' }}>
-                        <span style={{ display: 'block', fontSize: '8px', fontWeight: 800, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.5px' }}>MARGEN DIARIO</span>
-                        <div style={{ fontSize: '18px', fontWeight: 900, color: '#134e4a', marginTop: '2px' }}>
-                          +331 <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#0d9488' }}>nom</span> / +174 <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#0d9488' }}>real</span>
-                        </div>
-                        <span style={{ fontSize: '8px', fontWeight: 700, color: '#14b8a6' }}>cajas/día (+331 nom / +174 real OEE 95%)</span>
-                      </div>
-                    </div>
-
-                    {/* BANNER INFORMATIVO DE HOLGURA */}
-                    <div style={{ background: '#1e293b', borderRadius: '8px', padding: '8px 14px', color: '#fff', fontSize: '9px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span>Capacidad nominal: 350 c/h (3,150 c/día) | Capacidad real (OEE 95%): 333 c/h (2,993 c/día). Meta: 2,819 c/día.</span>
-                      <span style={{ color: '#38bdf8' }}>Uso nominal: 89.5% | Uso real (OEE 95%): 94.2% | Margen nominal: +331 c/día | Margen real (OEE 95%): +174 c/día</span>
-                    </div>
-
-                    {/* TABLE */}
-                    <div style={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9px' }}>
-                        <thead>
-                          <tr style={{ background: '#0284c7', color: '#ffffff' }}>
-                            <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 'bold' }}>Referencia</th>
-                            <th style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 'bold' }}>Piezas/día 2028</th>
-                            <th style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 'bold' }}>Req. cajas/h ({inputs.hoursPerDay || 9}h)</th>
-                            <th style={{ padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>Capacidad objetivo</th>
-                            <th style={{ padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>Estatus</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {inputs.cajas.map((caja, idx) => {
-                            const pDia = caja.piezasDia2028 !== undefined ? caja.piezasDia2028 : 0;
-                            const reqH = caja.reqCajasH !== undefined ? caja.reqCajasH : (pDia / (inputs.hoursPerDay || 9));
-                            const targetCap = inputs.capacidad_nominal_cajas_h || 350;
-                            const isOk = reqH <= targetCap;
-                            return (
-                              <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0', background: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
-                                <td style={{ padding: '5px 8px', fontWeight: 'bold', color: '#1e293b' }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <div style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: caja.color || '#0284c7' }} />
-                                    {caja.nombre}
-                                  </div>
-                                </td>
-                                <td style={{ padding: '5px 8px', textAlign: 'right', fontWeight: 900, color: '#0f172a' }}>{new Intl.NumberFormat().format(pDia)}</td>
-                                <td style={{ padding: '5px 8px', textAlign: 'right', fontWeight: 700, color: '#0369a1' }}>{reqH.toFixed(1)}</td>
-                                <td style={{ padding: '5px 8px', textAlign: 'center', color: '#475569' }}>{targetCap} cajas/h</td>
-                                <td style={{ padding: '5px 8px', textAlign: 'center' }}>
-                                  <span style={{ fontSize: '8px', fontWeight: 900, padding: '2px 6px', borderRadius: '4px', backgroundColor: isOk ? '#dcfce7' : '#fee2e2', color: isOk ? '#15803d' : '#b91c1c' }}>
-                                    {isOk ? 'OK' : 'EXCEDE'}
-                                  </span>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                        <tfoot>
-                          <tr style={{ background: '#e0f2fe', fontWeight: 900, borderTop: '2px solid #0284c7' }}>
-                            <td style={{ padding: '6px 8px', color: '#0369a1' }}>TOTAL GENERAL</td>
-                            <td style={{ padding: '6px 8px', textAlign: 'right', color: '#0f172a' }}>
-                              {new Intl.NumberFormat().format(inputs.cajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0))}
-                            </td>
-                            <td style={{ padding: '6px 8px', textAlign: 'right', color: '#0369a1' }}>
-                              {(inputs.cajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) / (inputs.hoursPerDay || 9)).toFixed(1)}
-                            </td>
-                            <td style={{ padding: '6px 8px', textAlign: 'center', color: '#0f172a' }}>{inputs.capacidad_nominal_cajas_h || 350} cajas/h</td>
-                            <td style={{ padding: '6px 8px', textAlign: 'center', color: '#15803d' }}>APROBADO</td>
-                          </tr>
-                        </tfoot>
-                      </table>
-                    </div>
-                    {renderPageFooter(++pdfPageIndex, totalPdfPages)}
-                  </div>
-                </div>
-                )}
-
-                {/* PÁGINA 4.6: ANÁLISIS DE LA LÍNEA */}
-                {pdfConfig.analisis && (
-                <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
-                  <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 20 }}>
-                    {renderPageHeader(`${++currentSectionIndex}. CAPACIDAD VS REQUERIMIENTO`, 'Contraste gráfico de la capacidad real frente a la demanda por modelo de caja.')}
-
-                    <div style={{ width: '100%', flex: 1, display: 'flex', gap: '20px' }}>
-                      {/* Left: Capacidad vs Requerimiento (Graphic) */}
-                      <div style={{ flex: '1', display: 'flex', flexDirection: 'column', background: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-                        <h4 style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e293b', marginBottom: '20px' }}>Capacidad vs Requerimiento por Modelo</h4>
-                        <div style={{ flex: 1, minHeight: '300px' }}>
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart
-                              data={[{
-                                name: activeBox.nombre,
-                                CapDia: ((((inputs.conveyorSpeedMH !== undefined ? inputs.conveyorSpeedMH : 160) / 60) * 100) / (activeBox.largoCm + (inputs.boxGapCm || 15))) * 60 * ((inputs.oee || 85) / 100) * (inputs.hoursPerDay || 20),
-                                ReqDia: inputs.meta_diaria_cajas || 3000
-                              }]}
-                              margin={{ top: 10, right: 10, left: 0, bottom: 20 }}
-                            >
-                              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                              <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                              <YAxis tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                              <Bar dataKey="CapDia" name="Cap/Día" fill="#14b8a6" radius={[4, 4, 0, 0]} barSize={60} />
-                              <Bar dataKey="ReqDia" name="Req/Día" fill="#0f172a" radius={[4, 4, 0, 0]} barSize={60} />
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </div>
-                        <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '16px' }}>
-                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '12px', height: '12px', background: '#14b8a6' }} /> <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#475569' }}>Cap/Día</span></div>
-                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '12px', height: '12px', background: '#0f172a' }} /> <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#475569' }}>Req/Día</span></div>
-                        </div>
-                      </div>
-
-                      {/* Right: Table */}
-                      <div style={{ flex: '1.2', display: 'flex', flexDirection: 'column', background: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-                        <h4 style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e293b', marginBottom: '8px' }}>Lavado y Secado — Parámetros Y1-Y5</h4>
-                        <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 'bold', marginBottom: '24px' }}>Ref: {activeBox.nombre} · Rate base: {new Intl.NumberFormat().format(inputs.meta_diaria_cajas || 2819)} cajas/día</span>
-                        
-                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <div style={{ width: '100%' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10 }}>
                           <thead>
-                            <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-                              <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'left' }}>AÑO</th>
-                              <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'center' }}>HRS B</th>
-                              <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'center' }}>EF/T</th>
-                              <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'center' }}>TURN</th>
-                              <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'center' }}>T.DISP</th>
-                              <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'right' }}>REQ/H</th>
-                              <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'right' }}>CAP/H</th>
-                              <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'right' }}>BAL.</th>
-                              <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'right' }}>COB.</th>
-                              <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'center' }}>LÍNEAS</th>
+                            <tr>
+                              <th style={{ ...REPORT_STYLES.th, padding: '6px 12px', background: '#edfbfd' }}>{tf('Equipo')}</th>
+                              <th style={{ ...REPORT_STYLES.th, padding: '6px 12px', background: '#edfbfd', textAlign: 'center' }}>{tf('Capacidad')}</th>
+                              <th style={{ ...REPORT_STYLES.th, padding: '6px 12px', background: '#edfbfd', textAlign: 'center' }}>{tf('kW Instalados')}</th>
+                              <th style={{ ...REPORT_STYLES.th, padding: '6px 12px', background: '#edfbfd', textAlign: 'center' }}>{tf('Carga Activa')} ({inputs.loadFactor}%)</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {Array.from({length: 5}).map((_, i) => {
-                              const reqDia = inputs.meta_diaria_cajas || 2819;
-                              const baseHoursPerDay = inputs.hoursPerDay || 9;
-                              const daysPerWeek = inputs.daysPerWeek || 6;
-                              
-                              const capHNominal = currentNominalCapacity || 350;
-                              const yearOEE = Math.min(0.99, ((inputs.oee || 95) / 100) + (i * 0.005));
-                              const capH = capHNominal;
-                              
-                              let turn = inputs.shiftsPerDay || 1;
-                              let hrsPerShiftDay = baseHoursPerDay;
-                              let efT = hrsPerShiftDay * yearOEE;
-                              let tDisp = efT * turn;
-                              let reqH = reqDia / tDisp;
+                            <tr>
+                              <td style={REPORT_STYLES.td}>{tf('Banda Alimentadora (4,000 mm)')}</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>-</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>1.65 kW</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(1.65 * (inputs.loadFactor / 100)).toFixed(2)} kW</td>
+                            </tr>
+                            <tr>
+                              <td style={REPORT_STYLES.td}>Lavadora Principal {inputs.machineName || 'BWD-350'} ({tf('Sistema de lavado')} {inputs.presionLavadoBar || 650} RPM)</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{new Intl.NumberFormat().format(currentNominalCapacity)} {tf('cajas/h')}</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>11.19 kW</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(11.19 * (inputs.loadFactor / 100)).toFixed(2)} kW</td>
+                            </tr>
+                            <tr>
+                              <td style={REPORT_STYLES.td}>{tf('Módulo de Secado de Alta Presión (Cuchillas de Aire & Sopladores)')}</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{new Intl.NumberFormat().format(currentNominalCapacity)} {tf('cajas/h')}</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>22.00 kW</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(22.00 * (inputs.loadFactor / 100)).toFixed(2)} kW</td>
+                            </tr>
+                            <tr>
+                              <td style={REPORT_STYLES.td}>{tf('Calentamiento & Recirculación Hídrica')}</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>-</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>13.05 kW</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(13.05 * (inputs.loadFactor / 100)).toFixed(2)} kW</td>
+                            </tr>
+                            <tr>
+                              <td style={REPORT_STYLES.td}>{tf('Motor Auxiliar Hidráulico (10 HP)')}</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>-</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>7.46 kW</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(7.46 * (inputs.loadFactor / 100)).toFixed(2)} kW</td>
+                            </tr>
+                            <tr>
+                              <td style={REPORT_STYLES.td}>{tf('Banda de Descarga (3,000 mm)')}</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>-</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>1.65 kW</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(1.65 * (inputs.loadFactor / 100)).toFixed(2)} kW</td>
+                            </tr>
+                          </tbody>
+                          <tfoot>
+                            <tr style={{ background: '#f8fafc', fontWeight: 800 }}>
+                              <td style={{ ...REPORT_STYLES.td, color: '#0d9488' }}>{tf('Total Sistema de Lavado')} {inputs.machineName || 'BWD-350'}</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>-</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{(results.installedPowerKw || 57.00).toFixed(2)} kW</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488' }}>{(results.averageHourlyConsumptionKw || 48.45).toFixed(2)} kW</td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
 
-                              if (reqH > capH * yearOEE) {
-                                turn = Math.max(turn, Math.ceil(reqDia / (capH * yearOEE * efT)));
-                                tDisp = efT * turn;
-                                reqH = reqDia / tDisp;
-                              }
+                      <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: '8px 12px', fontSize: 10, color: '#475569', lineHeight: 1.4 }}>
+                        <strong>{tf('Nota del Ingeniero:')}</strong> {tf('Los componentes han sido calibrados mecánicamente para un voltaje nominal adaptado a los requerimientos eléctricos del sitio, con una carga activa basada en un OEE del')} {inputs.oee}%.
+                      </div>
 
-                              const hrsB = baseHoursPerDay * daysPerWeek * turn;
-                              const bal = capH - reqH;
-                              const cob = (capH / reqH) * 100;
-
+                      <div style={{ marginTop: 0, background: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 16, padding: '8px 20px' }}>
+                        <span style={{ fontSize: 9, fontWeight: 900, color: '#008299', textTransform: 'uppercase', letterSpacing: 1, display: 'block', marginBottom: 2 }}>{tf('DISTRIBUCIÓN DE POTENCIA INSTALADA POR EQUIPO (kW)')}</span>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', border: 'none', fontSize: 10, lineHeight: '1.2' }}>
+                          <tbody>
+                            {[
+                              { name: 'Banda Alimentadora', kw: 1.65 },
+                              { name: 'Motor Lavado Principal', kw: 11.19 },
+                              { name: 'Módulo Secado Alta Presión', kw: 22.00 },
+                              { name: 'Calentamiento & Recirculación', kw: 13.05 },
+                              { name: 'Motor Hidráulico', kw: 7.46 },
+                              { name: 'Banda de Descarga', kw: 1.65 },
+                            ].map((eq, i) => {
+                              const percentage = (eq.kw / (results.installedPowerKw || 57.00)) * 100;
                               return (
-                                <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                  <td style={{ padding: '12px 4px', fontSize: '10px', fontWeight: 'bold', color: '#0284c7' }}>Y{i+1}</td>
-                                  <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'center' }}>{hrsB}</td>
-                                  <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'center' }}>{efT.toFixed(2)}</td>
-                                  <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'center' }}>{turn}</td>
-                                  <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'center' }}>{tDisp.toFixed(2)}</td>
-                                  <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'right' }}>{reqH.toFixed(1)}</td>
-                                  <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'right' }}>{capH.toFixed(1)}</td>
-                                  <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'right', fontWeight: 'bold', color: bal >= 0 ? '#16a34a' : '#ef4444' }}>{bal >= 0 ? '+' : ''}{bal.toFixed(1)}</td>
-                                  <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'right', fontWeight: 'bold', color: cob >= 100 ? '#16a34a' : '#f97316' }}>{cob.toFixed(1)}%</td>
-                                  <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'center', color: '#64748b' }}>1 maq.</td>
+                                <tr key={i} style={{ border: 'none' }}>
+                                  <td style={{ width: 160, color: '#475569', fontWeight: 650, padding: '2px 0 2px 10px', verticalAlign: 'middle', whiteSpace: 'nowrap', border: 'none' }}>
+                                    {tf(eq.name)}
+                                  </td>
+                                  <td style={{ padding: '2px 10px', verticalAlign: 'middle', border: 'none' }}>
+                                    <div style={{ height: 6, background: '#e2e8f0', borderRadius: 3, overflow: 'hidden', width: '100%' }}>
+                                      <div style={{ width: `${percentage}%`, height: '100%', background: 'linear-gradient(90deg, #008299, #00c2cb)', borderRadius: 3 }} />
+                                    </div>
+                                  </td>
+                                  <td style={{ width: 75, textAlign: 'right', fontWeight: 700, color: '#1e293b', padding: '2px 10px 2px 0', verticalAlign: 'middle', whiteSpace: 'nowrap', border: 'none' }}>
+                                    {eq.kw.toFixed(2)} kW
+                                  </td>
                                 </tr>
                               );
                             })}
                           </tbody>
                         </table>
                       </div>
-                    </div>
 
-                    {/* --- ANÁLISIS HÍDRICO (REPORTE) --- */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginTop: 'auto' }}>
-                      <div style={{ background: '#f0f9ff', border: '1px solid #e0f2fe', borderRadius: '16px', padding: '16px' }}>
-                        <span style={{ fontSize: '10px', fontWeight: 900, color: '#0369a1', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                          <Droplet size={14} /> Consumo Hídrico Mensual
-                        </span>
-                        <div style={{ fontSize: '20px', fontWeight: 900, color: '#0c4a6e', marginTop: '4px' }}>{new Intl.NumberFormat().format(results.totalWaterMonthlyLiters || 0)} L</div>
+                      <div style={{ marginTop: 0 }}>
+                        <span style={{ fontSize: 9, fontWeight: 900, color: '#0f766e', letterSpacing: 1.5, textTransform: 'uppercase', display: 'block', marginBottom: 2 }}>{tf('DICTAMEN TÉCNICO AUTOMÁTICO')}</span>
+                        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 16, padding: '10px 20px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          {conclusions.map((c, i) => (
+                            <div key={i} style={{ fontSize: 10, lineHeight: 1.35, fontWeight: 600, color: '#334155' }}>
+                              <span style={{ color: '#00c2cb', fontWeight: 900, marginRight: 6 }}>▪</span>{c.text}
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <div style={{ background: '#f0f9ff', border: '1px solid #e0f2fe', borderRadius: '16px', padding: '16px' }}>
-                        <span style={{ fontSize: '10px', fontWeight: 900, color: '#0369a1', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                          <AlertCircle size={14} /> Recambios + Evaporación
-                        </span>
-                        <div style={{ fontSize: '14px', fontWeight: 700, color: '#075985', marginTop: '4px' }}>Tanque: {inputs.waterTankLiters}L / {inputs.waterDragOutPercent}% Arrastre</div>
-                      </div>
-                      <div style={{ background: '#ecfdf5', border: '1px solid #d1fae5', borderRadius: '16px', padding: '16px' }}>
-                        <span style={{ fontSize: '10px', fontWeight: 900, color: '#047857', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                          <Activity size={14} /> Impacto OPEX Hídrico
-                        </span>
-                        <div style={{ fontSize: '20px', fontWeight: 900, color: '#064e3b', marginTop: '4px' }}>${new Intl.NumberFormat().format(results.waterCostMonthlyMxn || 0)} MXN</div>
+
+                      <div style={{ flex: 1 }} />
+                      {renderPageFooter(++pdfPageIndex, totalPdfPages)}
+                    </div>
+                  </div>
+                )}
+
+                {/* PÁGINA 3: FICHA TÉCNICA DE HOMOLOGACIÓN */}
+                {pdfConfig.tabla && (
+                  <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
+                    <div style={{ ...S.inner, flex: 1, paddingTop: 30, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {renderPageHeader(`3. ${inputs.technicalSheetName === 'Ficha Técnica de Homologación BWD-250' ? 'Ficha Técnica de Máquina de Lavado BWD-250' : inputs.technicalSheetName}`, tf('Desglose detallado de especificaciones, capacidades y componentes de fabricación'))}
+
+                      <div style={{ width: '100%', flex: 1 }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+                          <thead>
+                            <tr>
+                              <th style={{ ...REPORT_STYLES.th, padding: '5px 10px', background: '#edfbfd' }}>{tf('Componente / Característica')}</th>
+                              <th style={{ ...REPORT_STYLES.th, padding: '5px 10px', background: '#edfbfd', textAlign: 'center' }}>{tf('Especificación Original')}</th>
+                              <th style={{ ...REPORT_STYLES.th, padding: '5px 10px', background: '#edfbfd', textAlign: 'right' }}>{tf('Detalle Técnico')}</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {[
+                              { comp: 'Modelo del Equipo', spec: inputs.machineName || 'BWD-250', detail: inputs.machineNameDetalle !== undefined ? inputs.machineNameDetalle : 'Lavadora Industrial de Cajas (Agua y Aire)' },
+                              { comp: 'Aplicación Operativa', spec: inputs.aplicacionOperativa !== undefined ? inputs.aplicacionOperativa : 'Lavado, enjuague y secado de cajas plásticas', detail: inputs.aplicacionDetalle !== undefined ? inputs.aplicacionDetalle : 'Eficiencia de Lavado: 90-95% | Secado: 80-90%' },
+                              { comp: 'Capacidad Nominal (Dinámica)', spec: `${new Intl.NumberFormat().format(currentNominalCapacity)} cajas/h`, detail: `Calculada para: ${activeBox.nombre} (${activeBox.largoCm}cm)` },
+                              { comp: 'Motorización Principal (Bomba)', spec: `${inputs.motorBombaAguaHp || 15} hp ${inputs.motorMarca || 'Siemens'}`, detail: inputs.motorPrincipalDetalle !== undefined ? inputs.motorPrincipalDetalle : 'Motor de Bomba de Agua: 15 hp' },
+                              { comp: 'Motorización Auxiliar (Soplador)', spec: `${inputs.motorSopladorHp || 10} hp ${inputs.motorMarca || 'Siemens'}`, detail: inputs.motorAuxiliarDetalle !== undefined ? inputs.motorAuxiliarDetalle : 'Motor Soplador: 10 hp | Banda: 0.5 hp' },
+                              { comp: 'Potencia Instalada Total', spec: `${results.totalHp} hp`, detail: `${results.installedPowerKw.toFixed(2)} kW` },
+                              { comp: 'Temperaturas de Proceso', spec: inputs.dimensionesBandas !== undefined ? inputs.dimensionesBandas : 'Temperatura de Lavado: 60-80°C', detail: inputs.dimensionesBandasDetalle !== undefined ? inputs.dimensionesBandasDetalle : 'Calentamiento: 18 kW' },
+                              { comp: 'Presión de Aspersión', spec: inputs.bocaAlimentacion || '5.0 bar (Nominal)', detail: inputs.bocaAlimentacionDetalle !== undefined ? inputs.bocaAlimentacionDetalle : 'Presión de Agua: 5.0 bar' },
+                              { comp: 'Control de Tracción', spec: inputs.presionLavadoBar ? `${inputs.presionLavadoBar} m/min` : 'Velocidad Variable', detail: inputs.presionLavadoBarDetalle !== undefined ? inputs.presionLavadoBarDetalle : 'Inversor: Incluido (SIEMENS)' },
+                              { comp: 'Sistema de Control', spec: inputs.particulaFinal || 'Gabinete NEMA 4 (Estanco)', detail: inputs.particulaFinalDetalle !== undefined ? inputs.particulaFinalDetalle : 'Contactores y Relays: SCHNEIDER' },
+                              { comp: 'Alimentación Eléctrica', spec: inputs.separadorMagnetico || 'Trifásica 60Hz', detail: inputs.separadorMagneticoDetalle !== undefined ? inputs.separadorMagneticoDetalle : 'Voltaje: 220/440V' },
+                              { comp: 'Dimensiones Físicas', spec: `Largo: ${inputs.machineLength || 11.5} m | Ancho: ${inputs.machineWidth || 1.8} m | Alto: ${inputs.machineHeight || 1.75} m`, detail: `Footprint: ${((inputs.machineLength || 11.5) * (inputs.machineWidth || 1.8)).toFixed(2)} m²` },
+                              { comp: 'Peso Total Equipo', spec: `${(!inputs.pesoOperativoKg || inputs.pesoOperativoKg === 1000) ? 1800 : inputs.pesoOperativoKg} kg`, detail: inputs.pesoOperativoKgDetalle !== undefined ? inputs.pesoOperativoKgDetalle : 'Estructura en Acero Inoxidable' },
+                              { comp: 'Componentes Eléctricos', spec: inputs.componentesElectricos || 'Schneider / Siemens', detail: inputs.componentesElectricosDetalle !== undefined ? inputs.componentesElectricosDetalle : 'Contactores SCHNEIDER, Inversor SIEMENS' },
+                              { comp: 'Nivel de Ruido', spec: `${inputs.ruidoDb || 60} dB`, detail: inputs.ruidoDbDetalle !== undefined ? inputs.ruidoDbDetalle : 'Nivel óptimo para piso de producción' },
+                            ].map((t, idx) => (
+                              <tr key={idx}>
+                                <td style={{ ...REPORT_STYLES.td, padding: '5px 10px' }}>{tf(t.comp)}</td>
+                                <td style={{ ...REPORT_STYLES.td, padding: '5px 10px', textAlign: 'center', color: '#008299' }}>{tf(t.spec)}</td>
+                                <td style={{ ...REPORT_STYLES.td, padding: '5px 10px', textAlign: 'right' }}>{tf(t.detail)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                       {renderPageFooter(++pdfPageIndex, totalPdfPages)}
                     </div>
                   </div>
-                </div>
+                )}
+
+
+
+                {/* PÁGINA 4.5: MODELOS DE CONTENEDORES (DEMANDA 2028) */}
+                {pdfConfig.tabla && (
+                  <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
+                    <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 14 }}>
+                      {renderPageHeader(`${++currentSectionIndex}. ${tf('MODELOS DE CONTENEDORES EVALUADOS (DEMANDA 2028)')}`, 'Especificaciones técnicas, demanda proyectada al 2028 y capacidad requerida por modelo de caja.')}
+
+                      {/* TOP SUMMARY CARDS */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginTop: '4px' }}>
+                        <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '12px', padding: '10px 14px' }}>
+                          <span style={{ display: 'block', fontSize: '8px', fontWeight: 800, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.5px' }}>VOLUMEN MÁXIMO 2028</span>
+                          <div style={{ fontSize: '22px', fontWeight: 900, color: '#1e3a8a', marginTop: '2px' }}>
+                            {new Intl.NumberFormat().format(inputs.cajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) || inputs.meta_diaria_cajas || 2819)}
+                          </div>
+                          <span style={{ fontSize: '8px', fontWeight: 700, color: '#3b82f6' }}>cajas/día</span>
+                        </div>
+
+                        <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '10px 14px' }}>
+                          <span style={{ display: 'block', fontSize: '8px', fontWeight: 800, color: '#d97706', textTransform: 'uppercase', letterSpacing: '0.5px' }}>REQUERIDO PROMEDIO</span>
+                          <div style={{ fontSize: '22px', fontWeight: 900, color: '#78350f', marginTop: '2px' }}>
+                            {(((inputs.cajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) || inputs.meta_diaria_cajas || 2819) / (inputs.hoursPerDay || 9))).toFixed(1)}
+                          </div>
+                          <span style={{ fontSize: '8px', fontWeight: 700, color: '#f59e0b' }}>cajas/hora</span>
+                        </div>
+
+                        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '10px 14px' }}>
+                          <span style={{ display: 'block', fontSize: '8px', fontWeight: 800, color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>CAPACIDAD PROPUESTA</span>
+                          <div style={{ fontSize: '20px', fontWeight: 900, color: '#14532d', marginTop: '2px' }}>
+                            350 <span style={{ fontSize: '10px', color: '#16a34a', fontWeight: 'bold' }}>nom</span> / 333 <span style={{ fontSize: '10px', color: '#16a34a', fontWeight: 'bold' }}>real</span>
+                          </div>
+                          <span style={{ fontSize: '8px', fontWeight: 700, color: '#22c55e' }}>cajas/h (350 nominal / 333 @ 95% OEE)</span>
+                        </div>
+
+                        <div style={{ background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: '12px', padding: '10px 14px' }}>
+                          <span style={{ display: 'block', fontSize: '8px', fontWeight: 800, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.5px' }}>MARGEN DIARIO</span>
+                          <div style={{ fontSize: '18px', fontWeight: 900, color: '#134e4a', marginTop: '2px' }}>
+                            +331 <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#0d9488' }}>nom</span> / +174 <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#0d9488' }}>real</span>
+                          </div>
+                          <span style={{ fontSize: '8px', fontWeight: 700, color: '#14b8a6' }}>cajas/día (+331 nom / +174 real OEE 95%)</span>
+                        </div>
+                      </div>
+
+                      {/* BANNER INFORMATIVO DE HOLGURA */}
+                      <div style={{ background: '#1e293b', borderRadius: '8px', padding: '8px 14px', color: '#fff', fontSize: '9px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span>Capacidad nominal: 350 c/h (3,150 c/día) | Capacidad real (OEE 95%): 333 c/h (2,993 c/día). Meta: 2,819 c/día.</span>
+                        <span style={{ color: '#38bdf8' }}>Uso nominal: 89.5% | Uso real (OEE 95%): 94.2% | Margen nominal: +331 c/día | Margen real (OEE 95%): +174 c/día</span>
+                      </div>
+
+                      {/* TABLE */}
+                      <div style={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9px' }}>
+                          <thead>
+                            <tr style={{ background: '#0284c7', color: '#ffffff' }}>
+                              <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 'bold' }}>{tf('Referencia')}</th>
+                              <th style={{ padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>{tf('Tipo')}</th>
+                              <th style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 'bold' }}>{tf('Piezas/día 2028')}</th>
+                              <th style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 'bold' }}>{tf('Req. cajas/h')} ({inputs.hoursPerDay || 9}h)</th>
+                              <th style={{ padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>{tf('Capacidad objetivo')}</th>
+                              <th style={{ padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>{tf('Estatus')}</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {inputs.cajas.map((caja, idx) => {
+                              const pDia = caja.piezasDia2028 !== undefined ? caja.piezasDia2028 : 0;
+                              const reqH = caja.reqCajasH !== undefined ? caja.reqCajasH : (pDia / (inputs.hoursPerDay || 9));
+                              const targetCap = inputs.capacidad_nominal_cajas_h || 350;
+                              const isOk = reqH <= targetCap;
+                              return (
+                                <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0', background: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
+                                  <td style={{ padding: '5px 8px', fontWeight: 'bold', color: '#1e293b' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      <div style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: caja.color || '#0284c7' }} />
+                                      {caja.nombre}
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: '5px 8px', textAlign: 'center', fontWeight: 700, color: '#475569' }}>{tf(caja.tipo || 'Caja')}</td>
+                                  <td style={{ padding: '5px 8px', textAlign: 'right', fontWeight: 900, color: '#0f172a' }}>{new Intl.NumberFormat().format(pDia)}</td>
+                                  <td style={{ padding: '5px 8px', textAlign: 'right', fontWeight: 700, color: '#0369a1' }}>{reqH.toFixed(1)}</td>
+                                  <td style={{ padding: '5px 8px', textAlign: 'center', color: '#475569' }}>{targetCap} cajas/h</td>
+                                  <td style={{ padding: '5px 8px', textAlign: 'center' }}>
+                                    <span style={{ fontSize: '8px', fontWeight: 900, padding: '2px 6px', borderRadius: '4px', backgroundColor: isOk ? '#dcfce7' : '#fee2e2', color: isOk ? '#15803d' : '#b91c1c' }}>
+                                      {isOk ? 'OK' : 'EXCEDE'}
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                          <tfoot>
+                            <tr style={{ background: '#e0f2fe', fontWeight: 900, borderTop: '2px solid #0284c7' }}>
+                              <td colSpan="2" style={{ padding: '6px 8px', color: '#0369a1' }}>{tf('TOTAL GENERAL')}</td>
+                              <td style={{ padding: '6px 8px', textAlign: 'right', color: '#0f172a' }}>
+                                {new Intl.NumberFormat().format(inputs.cajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0))}
+                              </td>
+                              <td style={{ padding: '6px 8px', textAlign: 'right', color: '#0369a1' }}>
+                                {(inputs.cajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) / (inputs.hoursPerDay || 9)).toFixed(1)}
+                              </td>
+                              <td style={{ padding: '6px 8px', textAlign: 'center', color: '#0f172a' }}>{inputs.capacidad_nominal_cajas_h || 350} cajas/h</td>
+                              <td style={{ padding: '6px 8px', textAlign: 'center', color: '#15803d' }}>{tf('APROBADO')}</td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                      {renderPageFooter(++pdfPageIndex, totalPdfPages)}
+                    </div>
+                  </div>
+                )}
+
+                {/* PÁGINA 4.6: ANÁLISIS DE LA LÍNEA */}
+                {pdfConfig.analisis && (
+                  <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
+                    <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                      {renderPageHeader(`${++currentSectionIndex}. CAPACIDAD VS REQUERIMIENTO`, 'Contraste gráfico de la capacidad real frente a la demanda por modelo de caja.')}
+
+                      <div style={{ width: '100%', flex: 1, display: 'flex', gap: '20px' }}>
+                        {/* Left: Capacidad vs Requerimiento (Graphic) */}
+                        <div style={{ flex: '1', display: 'flex', flexDirection: 'column', background: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                          <h4 style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e293b', marginBottom: '20px' }}>Capacidad vs Requerimiento por Modelo</h4>
+                          <div style={{ flex: 1, minHeight: '300px' }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart
+                                data={[{
+                                  name: activeBox.nombre,
+                                  CapDia: ((((inputs.conveyorSpeedMH !== undefined ? inputs.conveyorSpeedMH : 160) / 60) * 100) / (activeBox.largoCm + (inputs.boxGapCm || 15))) * 60 * ((inputs.oee || 85) / 100) * (inputs.hoursPerDay || 20),
+                                  ReqDia: inputs.meta_diaria_cajas || 3000
+                                }]}
+                                margin={{ top: 10, right: 10, left: 0, bottom: 20 }}
+                              >
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                                <YAxis tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                                <Bar dataKey="CapDia" name="Cap/Día" fill="#14b8a6" radius={[4, 4, 0, 0]} barSize={60} />
+                                <Bar dataKey="ReqDia" name="Req/Día" fill="#0f172a" radius={[4, 4, 0, 0]} barSize={60} />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </div>
+                          <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '16px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '12px', height: '12px', background: '#14b8a6' }} /> <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#475569' }}>Cap/Día</span></div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '12px', height: '12px', background: '#0f172a' }} /> <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#475569' }}>Req/Día</span></div>
+                          </div>
+                        </div>
+
+                        {/* Right: Table */}
+                        <div style={{ flex: '1.2', display: 'flex', flexDirection: 'column', background: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                          <h4 style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e293b', marginBottom: '8px' }}>Lavado y Secado — Parámetros Y1-Y5</h4>
+                          <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 'bold', marginBottom: '24px' }}>Ref: {activeBox.nombre} · Rate base: {new Intl.NumberFormat().format(inputs.meta_diaria_cajas || 2819)} cajas/día</span>
+
+                          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <thead>
+                              <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                                <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'left' }}>AÑO</th>
+                                <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'center' }}>HRS B</th>
+                                <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'center' }}>EF/T</th>
+                                <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'center' }}>TURN</th>
+                                <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'center' }}>T.DISP</th>
+                                <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'right' }}>REQ/H</th>
+                                <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'right' }}>CAP/H</th>
+                                <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'right' }}>BAL.</th>
+                                <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'right' }}>COB.</th>
+                                <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'center' }}>LÍNEAS</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {Array.from({ length: 5 }).map((_, i) => {
+                                const reqDia = inputs.meta_diaria_cajas || 2819;
+                                const baseHoursPerDay = inputs.hoursPerDay || 9;
+                                const daysPerWeek = inputs.daysPerWeek || 6;
+
+                                const capHNominal = currentNominalCapacity || 350;
+                                const yearOEE = Math.min(0.99, ((inputs.oee || 95) / 100) + (i * 0.005));
+                                const capH = capHNominal;
+
+                                let turn = inputs.shiftsPerDay || 1;
+                                let hrsPerShiftDay = baseHoursPerDay;
+                                let efT = hrsPerShiftDay * yearOEE;
+                                let tDisp = efT * turn;
+                                let reqH = reqDia / tDisp;
+
+                                if (reqH > capH * yearOEE) {
+                                  turn = Math.max(turn, Math.ceil(reqDia / (capH * yearOEE * efT)));
+                                  tDisp = efT * turn;
+                                  reqH = reqDia / tDisp;
+                                }
+
+                                const hrsB = baseHoursPerDay * daysPerWeek * turn;
+                                const bal = capH - reqH;
+                                const cob = (capH / reqH) * 100;
+
+                                return (
+                                  <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                    <td style={{ padding: '12px 4px', fontSize: '10px', fontWeight: 'bold', color: '#0284c7' }}>Y{i + 1}</td>
+                                    <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'center' }}>{hrsB}</td>
+                                    <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'center' }}>{efT.toFixed(2)}</td>
+                                    <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'center' }}>{turn}</td>
+                                    <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'center' }}>{tDisp.toFixed(2)}</td>
+                                    <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'right' }}>{reqH.toFixed(1)}</td>
+                                    <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'right' }}>{capH.toFixed(1)}</td>
+                                    <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'right', fontWeight: 'bold', color: bal >= 0 ? '#16a34a' : '#ef4444' }}>{bal >= 0 ? '+' : ''}{bal.toFixed(1)}</td>
+                                    <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'right', fontWeight: 'bold', color: cob >= 100 ? '#16a34a' : '#f97316' }}>{cob.toFixed(1)}%</td>
+                                    <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'center', color: '#64748b' }}>1 maq.</td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      {/* --- ANÁLISIS HÍDRICO (REPORTE) --- */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginTop: 'auto' }}>
+                        <div style={{ background: '#f0f9ff', border: '1px solid #e0f2fe', borderRadius: '16px', padding: '16px' }}>
+                          <span style={{ fontSize: '10px', fontWeight: 900, color: '#0369a1', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                            <Droplet size={14} /> Consumo Hídrico Mensual
+                          </span>
+                          <div style={{ fontSize: '20px', fontWeight: 900, color: '#0c4a6e', marginTop: '4px' }}>{new Intl.NumberFormat().format(results.totalWaterMonthlyLiters || 0)} L</div>
+                        </div>
+                        <div style={{ background: '#f0f9ff', border: '1px solid #e0f2fe', borderRadius: '16px', padding: '16px' }}>
+                          <span style={{ fontSize: '10px', fontWeight: 900, color: '#0369a1', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                            <AlertCircle size={14} /> Recambios + Evaporación
+                          </span>
+                          <div style={{ fontSize: '14px', fontWeight: 700, color: '#075985', marginTop: '4px' }}>Tanque: {inputs.waterTankLiters}L / {inputs.waterDragOutPercent}% Arrastre</div>
+                        </div>
+                        <div style={{ background: '#ecfdf5', border: '1px solid #d1fae5', borderRadius: '16px', padding: '16px' }}>
+                          <span style={{ fontSize: '10px', fontWeight: 900, color: '#047857', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                            <Activity size={14} /> Impacto OPEX Hídrico
+                          </span>
+                          <div style={{ fontSize: '20px', fontWeight: 900, color: '#064e3b', marginTop: '4px' }}>${new Intl.NumberFormat().format(results.waterCostMonthlyMxn || 0)} MXN</div>
+                        </div>
+                        {renderPageFooter(++pdfPageIndex, totalPdfPages)}
+                      </div>
+                    </div>
+                  </div>
                 )}
 
                 {/* PÁGINA 5: ENERGÍA Y CAPACIDAD */}
                 {pdfConfig.energia && (
-                <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
-                  <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 20 }}>
-                    {renderPageHeader(`${++currentSectionIndex}. ${inputs.energySectionTitle || 'Energía & Capacidad'}`, 'Desglose energético operativo y comparativa de producción real vs consumo en kWh')}
+                  <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
+                    <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                      {renderPageHeader(`${++currentSectionIndex}. ${inputs.energySectionTitle || 'Energía & Capacidad'}`, 'Desglose energético operativo y comparativa de producción real vs consumo en kWh')}
 
-                    <div style={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', gap: 24 }}>
-                      
-                      {/* KPIs de Energía */}
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-                        {[
-                          { title: 'Potencia Instalada Total', val: `${results.installedPowerKw.toFixed(2)} kW`, sub: `${results.totalHp} hp equivalentes` },
-                          { title: 'Consumo Promedio Hora', val: `${results.averageHourlyConsumptionKw.toFixed(2)} kWh`, sub: `Factor de Carga: ${inputs.loadFactor}%` },
-                          { title: 'Costo Eléctrico Hora', val: `$${results.hourlyElectricityCostMxn.toFixed(2)} MXN`, sub: `Tarifa: $${inputs.electricityRate}/kWh` },
-                          { title: 'Consumo Específico', val: `${results.kwhPer1000Boxes.toFixed(1)} kWh/kCajas`, sub: 'Relación energía-producción' },
-                          { title: 'Costo por 1000 Cajas', val: `$${results.electricityCostPer1000BoxesMxn.toFixed(2)} MXN`, sub: 'Costo operativo directo' },
-                          { title: 'Costo Eléctrico Mensual', val: `$${new Intl.NumberFormat().format(results.monthlyElectricityCostMxn.toFixed(0))} MXN`, sub: 'Proyección mensual base' },
-                        ].map((k, i) => (
-                          <div key={i} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 16 }}>
-                            <div style={{ fontSize: 10, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: 6 }}>{k.title}</div>
-                            <div style={{ fontSize: 22, fontWeight: 900, color: '#0f2038' }}>{k.val}</div>
-                            <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 4, fontFamily: 'monospace' }}>{k.sub}</div>
-                          </div>
-                        ))}
-                      </div>
+                      <div style={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', gap: 24 }}>
 
-                      {/* Charts Area */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, flex: 1, minHeight: 0 }}>
-                        <div style={{ border: '1px solid #e2e8f0', borderRadius: 16, padding: 16, display: 'flex', flexDirection: 'column' }}>
-                          <div style={{ fontSize: 10, fontWeight: 900, color: '#0f766e', textTransform: 'uppercase', marginBottom: 4 }}>Capacidad Diaria vs Requerimiento Diario</div>
-                          <div style={{ flex: 1, minHeight: 0 }}>
-                            <ResponsiveContainer width="100%" height="100%">
-                              <BarChart
-                                data={[
-                                  { name: 'Requerimiento', valor: inputs.meta_diaria_cajas, fill: '#64748b' },
-                                  { name: 'Capacidad', valor: results.dailyProductionBoxes, fill: '#06b6d4' }
-                                ]}
-                                margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-                              >
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} tickLine={false} />
-                                <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} width={40} />
-                                <Tooltip formatter={(value) => [`${new Intl.NumberFormat().format(value)} kg`, 'Valor']} />
-                                <Bar dataKey="valor" radius={[4, 4, 0, 0]} maxBarSize={40}>
-                                  {[{fill: '#64748b'}, {fill: '#06b6d4'}].map((e,i)=><Cell key={i} fill={e.fill}/>)}
-                                </Bar>
-                              </BarChart>
-                            </ResponsiveContainer>
-                          </div>
-                          <div style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, color: '#64748b', marginTop: 8 }}>
-                            Margen operativo disponible: <span style={{ color: '#008299' }}>{new Intl.NumberFormat().format(Math.max(0, results.dailyProductionBoxes - inputs.meta_diaria_cajas).toFixed(0))} cajas/día</span>
-                          </div>
+                        {/* KPIs de Energía */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+                          {[
+                            { title: 'Potencia Instalada Total', val: `${results.installedPowerKw.toFixed(2)} kW`, sub: `${results.totalHp} hp equivalentes` },
+                            { title: 'Consumo Promedio Hora', val: `${results.averageHourlyConsumptionKw.toFixed(2)} kWh`, sub: `Factor de Carga: ${inputs.loadFactor}%` },
+                            { title: 'Costo Eléctrico Hora', val: `$${results.hourlyElectricityCostMxn.toFixed(2)} MXN`, sub: `Tarifa: $${inputs.electricityRate}/kWh` },
+                            { title: 'Consumo Específico', val: `${results.kwhPer1000Boxes.toFixed(1)} kWh/kCajas`, sub: 'Relación energía-producción' },
+                            { title: 'Costo por 1000 Cajas', val: `$${results.electricityCostPer1000BoxesMxn.toFixed(2)} MXN`, sub: 'Costo operativo directo' },
+                            { title: 'Costo Eléctrico Mensual', val: `$${new Intl.NumberFormat().format(results.monthlyElectricityCostMxn.toFixed(0))} MXN`, sub: 'Proyección mensual base' },
+                          ].map((k, i) => (
+                            <div key={i} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 16 }}>
+                              <div style={{ fontSize: 10, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: 6 }}>{k.title}</div>
+                              <div style={{ fontSize: 22, fontWeight: 900, color: '#0f2038' }}>{k.val}</div>
+                              <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 4, fontFamily: 'monospace' }}>{k.sub}</div>
+                            </div>
+                          ))}
                         </div>
 
-                        <div style={{ border: '1px solid #e2e8f0', borderRadius: 16, padding: 16, display: 'flex', flexDirection: 'column' }}>
-                          <div style={{ fontSize: 10, fontWeight: 900, color: '#4f46e5', textTransform: 'uppercase', marginBottom: 4 }}>Producción vs Consumo Energético</div>
-                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10 }}>
-                              <thead>
-                                <tr>
-                                  <th style={{ ...REPORT_STYLES.th, background: '#f8fafc', textAlign: 'left' }}>Período</th>
-                                  <th style={{ ...REPORT_STYLES.th, background: '#ecfeff', textAlign: 'right', color: '#0e7490' }}>Producción (Cajas)</th>
-                                  <th style={{ ...REPORT_STYLES.th, background: '#eef2ff', textAlign: 'right', color: '#4338ca' }}>Consumo (kWh)</th>
-                                  <th style={{ ...REPORT_STYLES.th, background: '#ecfdf5', textAlign: 'right', color: '#047857' }}>Ratio (kWh/kCajas)</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {[
-                                  { period: 'Por Hora', prod: results.realProductionPerHourBoxes || 0, cons: results.averageHourlyConsumptionKw || 0 },
-                                  { period: 'Por Día', prod: results.dailyProductionBoxes || 0, cons: (results.averageHourlyConsumptionKw || 0) * ((inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1)) },
-                                  { period: 'Por Semana', prod: (results.dailyProductionBoxes || 0) * 7, cons: (results.averageHourlyConsumptionKw || 0) * ((inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1)) * 7 },
-                                  { period: 'Por Mes', prod: (results.dailyProductionBoxes || 0) * (inputs.daysPerMonth || 24), cons: (results.averageHourlyConsumptionKw || 0) * ((inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1)) * (inputs.daysPerMonth || 24) }
-                                ].map((row, idx) => (
-                                  <tr key={idx}>
-                                    <td style={{ ...REPORT_STYLES.td, fontWeight: 'bold' }}>{row.period}</td>
-                                    <td style={{ ...REPORT_STYLES.td, textAlign: 'right', fontWeight: 'bold', color: '#0891b2' }}>{new Intl.NumberFormat().format(Math.round(row.prod))}</td>
-                                    <td style={{ ...REPORT_STYLES.td, textAlign: 'right', fontWeight: 'bold', color: '#4f46e5' }}>{new Intl.NumberFormat().format((row.cons).toFixed(1))}</td>
-                                    <td style={{ ...REPORT_STYLES.td, textAlign: 'right', fontWeight: 'bold', color: '#059669' }}>{new Intl.NumberFormat().format((row.prod > 0 ? (row.cons / (row.prod / 1000)) : 0).toFixed(2))}</td>
+                        {/* Charts Area */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, flex: 1, minHeight: 0 }}>
+                          <div style={{ border: '1px solid #e2e8f0', borderRadius: 16, padding: 16, display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ fontSize: 10, fontWeight: 900, color: '#0f766e', textTransform: 'uppercase', marginBottom: 4 }}>Capacidad Diaria vs Requerimiento Diario</div>
+                            <div style={{ flex: 1, minHeight: 0 }}>
+                              <ResponsiveContainer width="100%" height="100%">
+                                <BarChart
+                                  data={[
+                                    { name: 'Requerimiento', valor: inputs.meta_diaria_cajas, fill: '#64748b' },
+                                    { name: 'Capacidad', valor: results.dailyProductionBoxes, fill: '#06b6d4' }
+                                  ]}
+                                  margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                                >
+                                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                  <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} tickLine={false} />
+                                  <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} width={40} />
+                                  <Tooltip formatter={(value) => [`${new Intl.NumberFormat().format(value)} kg`, 'Valor']} />
+                                  <Bar dataKey="valor" radius={[4, 4, 0, 0]} maxBarSize={40}>
+                                    {[{ fill: '#64748b' }, { fill: '#06b6d4' }].map((e, i) => <Cell key={i} fill={e.fill} />)}
+                                  </Bar>
+                                </BarChart>
+                              </ResponsiveContainer>
+                            </div>
+                            <div style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, color: '#64748b', marginTop: 8 }}>
+                              Margen operativo disponible: <span style={{ color: '#008299' }}>{new Intl.NumberFormat().format(Math.max(0, results.dailyProductionBoxes - inputs.meta_diaria_cajas).toFixed(0))} cajas/día</span>
+                            </div>
+                          </div>
+
+                          <div style={{ border: '1px solid #e2e8f0', borderRadius: 16, padding: 16, display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ fontSize: 10, fontWeight: 900, color: '#4f46e5', textTransform: 'uppercase', marginBottom: 4 }}>Producción vs Consumo Energético</div>
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10 }}>
+                                <thead>
+                                  <tr>
+                                    <th style={{ ...REPORT_STYLES.th, background: '#f8fafc', textAlign: 'left' }}>Período</th>
+                                    <th style={{ ...REPORT_STYLES.th, background: '#ecfeff', textAlign: 'right', color: '#0e7490' }}>Producción (Cajas)</th>
+                                    <th style={{ ...REPORT_STYLES.th, background: '#eef2ff', textAlign: 'right', color: '#4338ca' }}>Consumo (kWh)</th>
+                                    <th style={{ ...REPORT_STYLES.th, background: '#ecfdf5', textAlign: 'right', color: '#047857' }}>Ratio (kWh/kCajas)</th>
                                   </tr>
-                                ))}
-                              </tbody>
-                            </table>
+                                </thead>
+                                <tbody>
+                                  {[
+                                    { period: 'Por Hora', prod: results.realProductionPerHourBoxes || 0, cons: results.averageHourlyConsumptionKw || 0 },
+                                    { period: 'Por Día', prod: results.dailyProductionBoxes || 0, cons: (results.averageHourlyConsumptionKw || 0) * ((inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1)) },
+                                    { period: 'Por Semana', prod: (results.dailyProductionBoxes || 0) * 7, cons: (results.averageHourlyConsumptionKw || 0) * ((inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1)) * 7 },
+                                    { period: 'Por Mes', prod: (results.dailyProductionBoxes || 0) * (inputs.daysPerMonth || 24), cons: (results.averageHourlyConsumptionKw || 0) * ((inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1)) * (inputs.daysPerMonth || 24) }
+                                  ].map((row, idx) => (
+                                    <tr key={idx}>
+                                      <td style={{ ...REPORT_STYLES.td, fontWeight: 'bold' }}>{row.period}</td>
+                                      <td style={{ ...REPORT_STYLES.td, textAlign: 'right', fontWeight: 'bold', color: '#0891b2' }}>{new Intl.NumberFormat().format(Math.round(row.prod))}</td>
+                                      <td style={{ ...REPORT_STYLES.td, textAlign: 'right', fontWeight: 'bold', color: '#4f46e5' }}>{new Intl.NumberFormat().format((row.cons).toFixed(1))}</td>
+                                      <td style={{ ...REPORT_STYLES.td, textAlign: 'right', fontWeight: 'bold', color: '#059669' }}>{new Intl.NumberFormat().format((row.prod > 0 ? (row.cons / (row.prod / 1000)) : 0).toFixed(2))}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
                           </div>
                         </div>
+                        {renderPageFooter(++pdfPageIndex, totalPdfPages)}
                       </div>
-                      {renderPageFooter(++pdfPageIndex, totalPdfPages)}
                     </div>
                   </div>
-                </div>
                 )}
 
 
                 {/* PÁGINA 5: ESCENARIOS OPERATIVOS */}
                 {pdfConfig.escenarios && (
-                <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
-                  <div style={{ ...S.inner, flex: 1, paddingTop: 20, display: 'flex', flexDirection: 'column', gap: 15 }}>
-                    {renderPageHeader(`${++currentSectionIndex}. Simulación de Escenarios`, 'Comparativa de rendimiento bajo diferentes métricas de eficiencia (OEE)')}
+                  <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
+                    <div style={{ ...S.inner, flex: 1, paddingTop: 20, display: 'flex', flexDirection: 'column', gap: 15 }}>
+                      {renderPageHeader(`${++currentSectionIndex}. Simulación de Escenarios`, 'Comparativa de rendimiento bajo diferentes métricas de eficiencia (OEE)')}
 
-                    <div style={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-                        <thead>
-                          <tr>
-                            <th style={{ backgroundColor: '#159b9a', padding: '8px 12px', color: 'white', textAlign: 'left', width: '31%', borderRight: '1px solid rgba(255,255,255,0.2)', fontSize: '11.5px' }}>MÉTRICA DE EVALUACIÓN</th>
-                            <th style={{ backgroundColor: '#059ca0', padding: '8px', color: 'white', textAlign: 'center', width: '23%', borderRight: '1px solid rgba(255,255,255,0.2)' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><Shield size={16} /> <div style={{ textAlign: 'left', lineHeight: '1.2' }}><span style={{fontWeight: 'bold', fontSize: '11.5px'}}>CONSERVADOR</span><br/><span style={{fontSize:'9.5px', fontWeight:'normal'}}>(70% OEE)</span></div></div>
-                            </th>
-                            <th style={{ backgroundColor: '#1b71b8', padding: '8px', color: 'white', textAlign: 'center', width: '23%', borderRight: '1px solid rgba(255,255,255,0.2)' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><TrendingUp size={16} /> <div style={{ textAlign: 'left', lineHeight: '1.2' }}><span style={{fontWeight: 'bold', fontSize: '11.5px'}}>NORMAL</span><br/><span style={{fontSize:'9.5px', fontWeight:'normal'}}>(85% OEE)</span></div></div>
-                            </th>
-                            <th style={{ backgroundColor: '#3bb565', padding: '8px', color: 'white', textAlign: 'center', width: '23%' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><Trophy size={16} /> <div style={{ textAlign: 'left', lineHeight: '1.2' }}><span style={{fontWeight: 'bold', fontSize: '11.5px'}}>ALTO RENDIMIENTO</span><br/><span style={{fontSize:'9.5px', fontWeight:'normal'}}>(95% OEE)</span></div></div>
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            <td style={{ padding: '8px 12px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', backgroundColor: '#fff' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <Package size={18} color="#159b9a" />
-                                <div>
-                                  <div style={{ fontWeight: 'bold', fontSize: '11.5px', color: '#334155' }}>Producción Diaria Proyectada</div>
-                                  <div style={{ fontSize: '9.5px', color: '#64748b' }}>(cajas/día)</div>
+                      <div style={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                          <thead>
+                            <tr>
+                              <th style={{ backgroundColor: '#159b9a', padding: '8px 12px', color: 'white', textAlign: 'left', width: '31%', borderRight: '1px solid rgba(255,255,255,0.2)', fontSize: '11.5px' }}>MÉTRICA DE EVALUACIÓN</th>
+                              <th style={{ backgroundColor: '#059ca0', padding: '8px', color: 'white', textAlign: 'center', width: '23%', borderRight: '1px solid rgba(255,255,255,0.2)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><Shield size={16} /> <div style={{ textAlign: 'left', lineHeight: '1.2' }}><span style={{ fontWeight: 'bold', fontSize: '11.5px' }}>CONSERVADOR</span><br /><span style={{ fontSize: '9.5px', fontWeight: 'normal' }}>(70% OEE)</span></div></div>
+                              </th>
+                              <th style={{ backgroundColor: '#1b71b8', padding: '8px', color: 'white', textAlign: 'center', width: '23%', borderRight: '1px solid rgba(255,255,255,0.2)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><TrendingUp size={16} /> <div style={{ textAlign: 'left', lineHeight: '1.2' }}><span style={{ fontWeight: 'bold', fontSize: '11.5px' }}>NORMAL</span><br /><span style={{ fontSize: '9.5px', fontWeight: 'normal' }}>(85% OEE)</span></div></div>
+                              </th>
+                              <th style={{ backgroundColor: '#3bb565', padding: '8px', color: 'white', textAlign: 'center', width: '23%' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><Trophy size={16} /> <div style={{ textAlign: 'left', lineHeight: '1.2' }}><span style={{ fontWeight: 'bold', fontSize: '11.5px' }}>ALTO RENDIMIENTO</span><br /><span style={{ fontSize: '9.5px', fontWeight: 'normal' }}>(95% OEE)</span></div></div>
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td style={{ padding: '8px 12px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', backgroundColor: '#fff' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                  <Package size={18} color="#159b9a" />
+                                  <div>
+                                    <div style={{ fontWeight: 'bold', fontSize: '11.5px', color: '#334155' }}>Producción Diaria Proyectada</div>
+                                    <div style={{ fontSize: '9.5px', color: '#64748b' }}>(cajas/día)</div>
+                                  </div>
                                 </div>
-                              </div>
-                            </td>
-                            <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
-                              <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#059ca0' }}>{new Intl.NumberFormat().format((scenarioResults.conservador.dailyProdTon * 1000).toFixed(0))}</div>
-                              <div style={{ fontSize: '9.5px', color: '#64748b' }}>cajas/día</div>
-                            </td>
-                            <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
-                              <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1b71b8' }}>{new Intl.NumberFormat().format((scenarioResults.normal.dailyProdTon * 1000).toFixed(0))}</div>
-                              <div style={{ fontSize: '9.5px', color: '#64748b' }}>cajas/día</div>
-                            </td>
-                            <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
-                              <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#3bb565' }}>{new Intl.NumberFormat().format((scenarioResults.alto.dailyProdTon * 1000).toFixed(0))}</div>
-                              <div style={{ fontSize: '9.5px', color: '#64748b' }}>cajas/día</div>
-                            </td>
-                          </tr>
-                          <tr>
-                            <td style={{ padding: '8px 12px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', backgroundColor: '#fff' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <Zap size={18} color="#159b9a" />
-                                <div>
-                                  <div style={{ fontWeight: 'bold', fontSize: '11.5px', color: '#334155' }}>Costo Operativo (Eléctrico)</div>
-                                  <div style={{ fontSize: '9.5px', color: '#64748b' }}>por caja</div>
+                              </td>
+                              <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
+                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#059ca0' }}>{new Intl.NumberFormat().format((scenarioResults.conservador.dailyProdTon * 1000).toFixed(0))}</div>
+                                <div style={{ fontSize: '9.5px', color: '#64748b' }}>cajas/día</div>
+                              </td>
+                              <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
+                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1b71b8' }}>{new Intl.NumberFormat().format((scenarioResults.normal.dailyProdTon * 1000).toFixed(0))}</div>
+                                <div style={{ fontSize: '9.5px', color: '#64748b' }}>cajas/día</div>
+                              </td>
+                              <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
+                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#3bb565' }}>{new Intl.NumberFormat().format((scenarioResults.alto.dailyProdTon * 1000).toFixed(0))}</div>
+                                <div style={{ fontSize: '9.5px', color: '#64748b' }}>cajas/día</div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style={{ padding: '8px 12px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', backgroundColor: '#fff' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                  <Zap size={18} color="#159b9a" />
+                                  <div>
+                                    <div style={{ fontWeight: 'bold', fontSize: '11.5px', color: '#334155' }}>Costo Operativo (Eléctrico)</div>
+                                    <div style={{ fontSize: '9.5px', color: '#64748b' }}>por caja</div>
+                                  </div>
                                 </div>
-                              </div>
-                            </td>
-                            <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
-                              <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#059ca0' }}>${new Intl.NumberFormat().format(scenarioResults.conservador.costPerTon.toFixed(2))}</div>
-                              <div style={{ fontSize: '9.5px', color: '#64748b' }}>MXN</div>
-                            </td>
-                            <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
-                              <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1b71b8' }}>${new Intl.NumberFormat().format(scenarioResults.normal.costPerTon.toFixed(2))}</div>
-                              <div style={{ fontSize: '9.5px', color: '#64748b' }}>MXN</div>
-                            </td>
-                            <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
-                              <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#3bb565' }}>${new Intl.NumberFormat().format(scenarioResults.alto.costPerTon.toFixed(2))}</div>
-                              <div style={{ fontSize: '9.5px', color: '#64748b' }}>MXN</div>
-                            </td>
-                          </tr>
-                          <tr>
-                            <td style={{ padding: '8px 12px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', backgroundColor: '#fff' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <Target size={18} color="#159b9a" />
-                                <div>
-                                  <div style={{ fontWeight: 'bold', fontSize: '11.5px', color: '#334155' }}>Cobertura de la Meta</div>
-                                  <div style={{ fontSize: '9.5px', color: '#64748b' }}>Diaria Objetivo</div>
+                              </td>
+                              <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
+                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#059ca0' }}>${new Intl.NumberFormat().format(scenarioResults.conservador.costPerTon.toFixed(2))}</div>
+                                <div style={{ fontSize: '9.5px', color: '#64748b' }}>MXN</div>
+                              </td>
+                              <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
+                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1b71b8' }}>${new Intl.NumberFormat().format(scenarioResults.normal.costPerTon.toFixed(2))}</div>
+                                <div style={{ fontSize: '9.5px', color: '#64748b' }}>MXN</div>
+                              </td>
+                              <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
+                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#3bb565' }}>${new Intl.NumberFormat().format(scenarioResults.alto.costPerTon.toFixed(2))}</div>
+                                <div style={{ fontSize: '9.5px', color: '#64748b' }}>MXN</div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style={{ padding: '8px 12px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', backgroundColor: '#fff' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                  <Target size={18} color="#159b9a" />
+                                  <div>
+                                    <div style={{ fontWeight: 'bold', fontSize: '11.5px', color: '#334155' }}>Cobertura de la Meta</div>
+                                    <div style={{ fontSize: '9.5px', color: '#64748b' }}>Diaria Objetivo</div>
+                                  </div>
                                 </div>
-                              </div>
-                            </td>
-                            <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
-                              <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#059ca0' }}>{scenarioResults.conservador.coverage.toFixed(1)}%</div>
-                            </td>
-                            <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
-                              <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1b71b8' }}>{scenarioResults.normal.coverage.toFixed(1)}%</div>
-                            </td>
-                            <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
-                              <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#3bb565' }}>{scenarioResults.alto.coverage.toFixed(1)}%</div>
-                            </td>
-                          </tr>
-                          <tr>
-                            <td style={{ padding: '8px 12px', borderRight: '1px solid #e2e8f0', backgroundColor: '#fff' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <Gauge size={18} color="#159b9a" />
-                                <div>
-                                  <div style={{ fontWeight: 'bold', fontSize: '11.5px', color: '#334155' }}>Utilización de la Capacidad</div>
-                                  <div style={{ fontSize: '9.5px', color: '#64748b' }}>de Planta</div>
+                              </td>
+                              <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
+                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#059ca0' }}>{scenarioResults.conservador.coverage.toFixed(1)}%</div>
+                              </td>
+                              <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
+                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1b71b8' }}>{scenarioResults.normal.coverage.toFixed(1)}%</div>
+                              </td>
+                              <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
+                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#3bb565' }}>{scenarioResults.alto.coverage.toFixed(1)}%</div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style={{ padding: '8px 12px', borderRight: '1px solid #e2e8f0', backgroundColor: '#fff' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                  <Gauge size={18} color="#159b9a" />
+                                  <div>
+                                    <div style={{ fontWeight: 'bold', fontSize: '11.5px', color: '#334155' }}>Utilización de la Capacidad</div>
+                                    <div style={{ fontSize: '9.5px', color: '#64748b' }}>de Planta</div>
+                                  </div>
                                 </div>
-                              </div>
-                            </td>
-                            <td style={{ padding: '8px', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
-                              <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#059ca0' }}>{(scenarioResults.conservador.utilization * 100).toFixed(1)}%</div>
-                            </td>
-                            <td style={{ padding: '8px', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
-                              <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1b71b8' }}>{(scenarioResults.normal.utilization * 100).toFixed(1)}%</div>
-                            </td>
-                            <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#fff' }}>
-                              <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#3bb565' }}>{(scenarioResults.alto.utilization * 100).toFixed(1)}%</div>
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
+                              </td>
+                              <td style={{ padding: '8px', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
+                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#059ca0' }}>{(scenarioResults.conservador.utilization * 100).toFixed(1)}%</div>
+                              </td>
+                              <td style={{ padding: '8px', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
+                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1b71b8' }}>{(scenarioResults.normal.utilization * 100).toFixed(1)}%</div>
+                              </td>
+                              <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#fff' }}>
+                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#3bb565' }}>{(scenarioResults.alto.utilization * 100).toFixed(1)}%</div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
 
-                      <div style={{ padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#fff', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                        <div style={{ textAlign: 'center', marginBottom: '10px' }}>
-                          <h4 style={{ fontSize: '11.5px', fontWeight: '900', color: '#1e293b', textTransform: 'uppercase' }}>PRODUCCIÓN DIARIA Y COSTO OPERATIVO POR ESCENARIO</h4>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginBottom: '5px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <div style={{ width: '16px', height: '8px', backgroundColor: '#059ca0', borderRadius: '2px' }}/>
-                            <span style={{fontSize: '9.5px', color: '#334155', fontWeight: 'bold'}}>Producción Diaria (cajas/día)</span>
+                        <div style={{ padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#fff', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                          <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+                            <h4 style={{ fontSize: '11.5px', fontWeight: '900', color: '#1e293b', textTransform: 'uppercase' }}>PRODUCCIÓN DIARIA Y COSTO OPERATIVO POR ESCENARIO</h4>
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', border: '2px solid #1b71b8', position: 'relative' }}>
-                              <div style={{ position: 'absolute', top: '50%', left: '-8px', right: '-8px', height: '2px', backgroundColor: '#1b71b8', transform: 'translateY(-50%)', zIndex: -1 }} />
+                          <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginBottom: '5px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <div style={{ width: '16px', height: '8px', backgroundColor: '#059ca0', borderRadius: '2px' }} />
+                              <span style={{ fontSize: '9.5px', color: '#334155', fontWeight: 'bold' }}>Producción Diaria (cajas/día)</span>
                             </div>
-                            <span style={{fontSize: '9.5px', color: '#334155', fontWeight: 'bold'}}>Costo Operativo Eléctrico (MXN por caja)</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <div style={{ width: '8px', height: '8px', borderRadius: '50%', border: '2px solid #1b71b8', position: 'relative' }}>
+                                <div style={{ position: 'absolute', top: '50%', left: '-8px', right: '-8px', height: '2px', backgroundColor: '#1b71b8', transform: 'translateY(-50%)', zIndex: -1 }} />
+                              </div>
+                              <span style={{ fontSize: '9.5px', color: '#334155', fontWeight: 'bold' }}>Costo Operativo Eléctrico (MXN por caja)</span>
+                            </div>
+                          </div>
+                          <div style={{ width: '100%', flex: 1, minHeight: '160px' }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                              <ComposedChart
+                                data={[
+                                  { name: 'Conservador\n(70% OEE)', prod: scenarioResults.conservador.dailyProdTon * 1000, costo: scenarioResults.conservador.costPerTon },
+                                  { name: 'Normal\n(85% OEE)', prod: scenarioResults.normal.dailyProdTon * 1000, costo: scenarioResults.normal.costPerTon },
+                                  { name: 'Alto Rendimiento\n(95% OEE)', prod: scenarioResults.alto.dailyProdTon * 1000, costo: scenarioResults.alto.costPerTon }
+                                ]}
+                                margin={{ top: 20, right: 10, bottom: 0, left: 10 }}
+                              >
+                                <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" vertical={false} />
+                                <XAxis dataKey="name" tick={{ fontSize: 10.5, fill: '#1e293b', fontWeight: 'bold' }} axisLine={false} tickLine={false} dy={10} />
+                                <YAxis yAxisId="left" tick={{ fontSize: 10.5, fill: '#059ca0', fontWeight: 'bold' }} axisLine={false} tickLine={false} dx={-5} />
+                                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10.5, fill: '#1b71b8', fontWeight: 'bold' }} axisLine={false} tickLine={false} dx={5} />
+                                <Tooltip cursor={{ fill: '#f8fafc' }} />
+                                <Bar yAxisId="left" dataKey="prod" fill="#059ca0" barSize={60} radius={[4, 4, 0, 0]} label={{ position: 'top', fill: '#059ca0', fontSize: 11.5, fontWeight: 'bold', formatter: (v) => new Intl.NumberFormat().format(v.toFixed(0)) }} />
+                                <Line yAxisId="right" type="monotone" dataKey="costo" stroke="#1b71b8" strokeWidth={2} dot={{ r: 4, stroke: '#1b71b8', strokeWidth: 2, fill: '#fff' }} label={{ position: 'bottom', fill: '#1b71b8', fontSize: 11.5, fontWeight: 'bold', formatter: (v) => '$' + v.toFixed(2) }} />
+                              </ComposedChart>
+                            </ResponsiveContainer>
                           </div>
                         </div>
-                        <div style={{ width: '100%', flex: 1, minHeight: '160px' }}>
-                          <ResponsiveContainer width="100%" height="100%">
-                            <ComposedChart 
-                              data={[
-                                { name: 'Conservador\n(70% OEE)', prod: scenarioResults.conservador.dailyProdTon * 1000, costo: scenarioResults.conservador.costPerTon },
-                                { name: 'Normal\n(85% OEE)', prod: scenarioResults.normal.dailyProdTon * 1000, costo: scenarioResults.normal.costPerTon },
-                                { name: 'Alto Rendimiento\n(95% OEE)', prod: scenarioResults.alto.dailyProdTon * 1000, costo: scenarioResults.alto.costPerTon }
-                              ]} 
-                              margin={{ top: 20, right: 10, bottom: 0, left: 10 }}
-                            >
-                              <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" vertical={false} />
-                              <XAxis dataKey="name" tick={{ fontSize: 10.5, fill: '#1e293b', fontWeight: 'bold' }} axisLine={false} tickLine={false} dy={10} />
-                              <YAxis yAxisId="left" tick={{ fontSize: 10.5, fill: '#059ca0', fontWeight: 'bold' }} axisLine={false} tickLine={false} dx={-5} />
-                              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10.5, fill: '#1b71b8', fontWeight: 'bold' }} axisLine={false} tickLine={false} dx={5} />
-                              <Tooltip cursor={{fill: '#f8fafc'}} />
-                              <Bar yAxisId="left" dataKey="prod" fill="#059ca0" barSize={60} radius={[4,4,0,0]} label={{ position: 'top', fill: '#059ca0', fontSize: 11.5, fontWeight: 'bold', formatter: (v) => new Intl.NumberFormat().format(v.toFixed(0)) }} />
-                              <Line yAxisId="right" type="monotone" dataKey="costo" stroke="#1b71b8" strokeWidth={2} dot={{ r: 4, stroke: '#1b71b8', strokeWidth: 2, fill: '#fff' }} label={{ position: 'bottom', fill: '#1b71b8', fontSize: 11.5, fontWeight: 'bold', formatter: (v) => '$' + v.toFixed(2) }} />
-                            </ComposedChart>
-                          </ResponsiveContainer>
+
+                        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: 12, fontSize: 11.5, color: '#64748b', lineHeight: 1.4 }}>
+                          <strong style={{ color: '#334155' }}>Nota del Analista:</strong> Las proyecciones mostradas asumen un flujo constante de material de alimentación y no consideran variaciones drásticas en la humedad o densidad del sustrato.
                         </div>
                       </div>
 
-                      <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: 12, fontSize: 11.5, color: '#64748b', lineHeight: 1.4 }}>
-                        <strong style={{color:'#334155'}}>Nota del Analista:</strong> Las proyecciones mostradas asumen un flujo constante de material de alimentación y no consideran variaciones drásticas en la humedad o densidad del sustrato.
-                      </div>
+                      <div style={{ flex: 1 }} />
+                      {renderPageFooter(++pdfPageIndex, totalPdfPages)}
                     </div>
-
-                    <div style={{ flex: 1 }} />
-                    {renderPageFooter(++pdfPageIndex, totalPdfPages)}
                   </div>
-                </div>
                 )}
 
                 {/* PÁGINA: ANÁLISIS HÍDRICO Y SUSTENTABILIDAD */}
@@ -5834,7 +6568,7 @@ export default function DHLAdvancedSimulator() {
                   const realCapH = baseCapH * ((inputs.oee || 95) / 100);
                   const hrsDay = inputs.hoursPerDay || 9;
                   const realWaterPerHr = (results.totalWaterMonthlyLiters || 0) / 24 / hrsDay;
-                  
+
                   return (
                     <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
                       <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -5885,7 +6619,7 @@ export default function DHLAdvancedSimulator() {
                           {/* Configuración y Eficiencia Hídrica */}
                           <div style={{ border: '1px solid #e2e8f0', borderRadius: '16px', padding: '24px', background: '#fff', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column' }}>
                             <div style={{ fontSize: '14px', fontWeight: 900, color: '#0f2038', marginBottom: '24px' }}>Configuración y Eficiencia Hídrica</div>
-                            
+
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
                                 <div>
@@ -5894,7 +6628,7 @@ export default function DHLAdvancedSimulator() {
                                 </div>
                                 <div style={{ fontSize: '16px', fontWeight: 900, color: '#0891b2' }}>85.0%</div>
                               </div>
-                              
+
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
                                 <div>
                                   <div style={{ fontSize: '11px', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>Capacidad Nominal del Tanque</div>
@@ -5902,7 +6636,7 @@ export default function DHLAdvancedSimulator() {
                                 </div>
                                 <div style={{ fontSize: '16px', fontWeight: 900, color: '#0891b2' }}>{new Intl.NumberFormat().format(inputs.waterTankLiters || 1200)} Litros</div>
                               </div>
-                              
+
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
                                 <div>
                                   <div style={{ fontSize: '11px', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>Frecuencia de Cambio de Agua</div>
@@ -5910,7 +6644,7 @@ export default function DHLAdvancedSimulator() {
                                 </div>
                                 <div style={{ fontSize: '16px', fontWeight: 900, color: '#0891b2' }}>Cada {Math.round(6 / (inputs.waterChangesPerWeek || 1))} días</div>
                               </div>
-                              
+
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div>
                                   <div style={{ fontSize: '11px', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>Modelo de Referencia Activo</div>
@@ -5924,7 +6658,7 @@ export default function DHLAdvancedSimulator() {
                           {/* Análisis de Huella Hídrica */}
                           <div style={{ border: '1px solid #e2e8f0', borderRadius: '16px', padding: '24px', background: '#fff', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column' }}>
                             <div style={{ fontSize: '14px', fontWeight: 900, color: '#0f2038', marginBottom: '24px' }}>Análisis de Huella Hídrica por Contenedor</div>
-                            
+
                             <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                               <div>
                                 <div style={{ fontSize: '12px', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>Consumo Específico por Caja</div>
@@ -5943,9 +6677,9 @@ export default function DHLAdvancedSimulator() {
                             </div>
                           </div>
                           {renderPageFooter(++pdfPageIndex, totalPdfPages)}
-                  </div>
-                  </div>
-                  </div>
+                        </div>
+                      </div>
+                    </div>
                   );
                 })()}
 
@@ -5953,51 +6687,51 @@ export default function DHLAdvancedSimulator() {
                 {pdfConfig.financiero && (
                   <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
                     <div style={{ ...S.inner, flex: 1, paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {renderPageHeader(`${++currentSectionIndex}. Análisis Financiero de Inversión`, 'Resumen Ejecutivo de CAPEX y Gasto Operativo Mensual')}
+                      {renderPageHeader(`${++currentSectionIndex}. Análisis Financiero de Inversión`, tf('Resumen Ejecutivo de CAPEX y Gasto Operativo Mensual'))}
 
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                         {/* CAPEX Card */}
                         <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', background: '#fff' }}>
                           <div style={{ background: '#1d70b8', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <Building2 size={20} color="#fff" />
-                            <div style={{ fontSize: '11px', fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Estructura CAPEX (Inversión Inicial)</div>
+                            <div style={{ fontSize: '11px', fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{tf('Estructura CAPEX (Inversión Inicial)')}</div>
                           </div>
                           <div style={{ padding: '10px 14px' }}>
-                            <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, marginBottom: '2px' }}>Inversión Total Estimada</div>
+                            <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, marginBottom: '2px' }}>{tf('Inversión Total Estimada')}</div>
                             <div style={{ fontSize: '22px', fontWeight: 900, color: '#0f2038', marginBottom: '8px' }}>${new Intl.NumberFormat().format(results.capexInstaladoMxn.toFixed(0))} MXN</div>
-                            
+
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '11px', color: '#334155', fontWeight: 600 }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#e0f2fe', padding: '6px', borderRadius: '6px', display: 'flex' }}><Factory size={14} color="#0284c7" /></div> Equipo Base</div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#e0f2fe', padding: '6px', borderRadius: '6px', display: 'flex' }}><Factory size={14} color="#0284c7" /></div> {tf('Equipo Base')}</div>
                                 <span style={{ fontWeight: 800, color: '#0284c7' }}>${new Intl.NumberFormat().format((results.precioEquipoUsd * (inputs.tipoCambio || 1)).toFixed(0))}</span>
                               </div>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#e0f2fe', padding: '6px', borderRadius: '6px', display: 'flex' }}><Wrench size={14} color="#0284c7" /></div> Montaje y Maniobras</div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#e0f2fe', padding: '6px', borderRadius: '6px', display: 'flex' }}><Wrench size={14} color="#0284c7" /></div> {tf('Montaje y Maniobras')}</div>
                                 <span style={{ fontWeight: 800, color: '#0284c7' }}>${new Intl.NumberFormat().format(((results.maniobrasUsd + results.montajeMecanicoUsd) * (inputs.tipoCambio || 1)).toFixed(0))}</span>
                               </div>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#e0f2fe', padding: '6px', borderRadius: '6px', display: 'flex' }}><Zap size={14} color="#0284c7" /></div> Instalación Eléctrica</div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#e0f2fe', padding: '6px', borderRadius: '6px', display: 'flex' }}><Zap size={14} color="#0284c7" /></div> {tf('Instalación Eléctrica')}</div>
                                 <span style={{ fontWeight: 800, color: '#0284c7' }}>${new Intl.NumberFormat().format(((results.electricoPrincipalUsd + results.canalizacionProteccionesUsd) * (inputs.tipoCambio || 1)).toFixed(0))}</span>
                               </div>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#e0f2fe', padding: '6px', borderRadius: '6px', display: 'flex' }}><Droplet size={14} color="#0284c7" /></div> Sistemas Hídricos / Drenaje</div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#e0f2fe', padding: '6px', borderRadius: '6px', display: 'flex' }}><Droplet size={14} color="#0284c7" /></div> {tf('Sistemas Hídricos / Drenaje')}</div>
                                 <span style={{ fontWeight: 800, color: '#0284c7' }}>${new Intl.NumberFormat().format(((results.extraccionPolvoUsd + results.seguridadIndustrialUsd) * (inputs.tipoCambio || 1)).toFixed(0))}</span>
                               </div>
                               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><div style={{ background: "#e0f2fe", padding: "6px", borderRadius: "6px", display: "flex" }}><Building2 size={14} color="#0284c7" /></div> Obra Civil e Ingeniería</div>
+                                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><div style={{ background: "#e0f2fe", padding: "6px", borderRadius: "6px", display: "flex" }}><Building2 size={14} color="#0284c7" /></div> {tf('Obra Civil e Ingeniería')}</div>
                                 <span style={{ fontWeight: 800, color: "#0284c7" }}>${new Intl.NumberFormat().format(((results.obraCivilUsd + results.ingenieriaSupervisionUsd) * (inputs.tipoCambio || 1)).toFixed(0))}</span>
                               </div>
                               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><div style={{ background: "#e0f2fe", padding: "6px", borderRadius: "6px", display: "flex" }}><ShieldAlert size={14} color="#0284c7" /></div> Contingencia y Otros</div>
+                                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><div style={{ background: "#e0f2fe", padding: "6px", borderRadius: "6px", display: "flex" }}><ShieldAlert size={14} color="#0284c7" /></div> {tf('Contingencia y Otros')}</div>
                                 <span style={{ fontWeight: 800, color: "#0284c7" }}>${new Intl.NumberFormat().format(((results.contingenciaUsd + results.otrosCapexUsd) * (inputs.tipoCambio || 1)).toFixed(0))}</span>
                               </div>
                             </div>
                             <div style={{ marginTop: '12px', padding: '10px', background: '#f0f9ff', borderLeft: '3px solid #38bdf8', fontSize: '10px', fontWeight: 500, color: '#0369a1', lineHeight: '1.4' }}>
-                              * Las partidas de Obra Civil, Ingeniería y Contingencia son estimaciones sujetas a evaluación en sitio y diseño de layout final.
+                              {tf('* Las partidas de Obra Civil, Ingeniería y Contingencia son estimaciones sujetas a evaluación en sitio y diseño de layout final.')}
                             </div>
                           </div>
                           <div style={{ background: '#f8fafc', padding: '10px 14px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '11px', fontWeight: 800, color: '#1d70b8' }}>INVERSIÓN INICIAL TOTAL</span>
+                            <span style={{ fontSize: '11px', fontWeight: 800, color: '#1d70b8' }}>{tf('INVERSIÓN INICIAL TOTAL')}</span>
                             <span style={{ background: '#1d70b8', color: '#fff', fontSize: '12px', fontWeight: 900, padding: '4px 12px', borderRadius: '16px' }}>${new Intl.NumberFormat().format(results.capexInstaladoMxn.toFixed(0))} MXN</span>
                           </div>
                         </div>
@@ -6006,45 +6740,45 @@ export default function DHLAdvancedSimulator() {
                         <div style={{ border: '1px solid #fecdd3', borderRadius: '8px', overflow: 'hidden', background: '#fff' }}>
                           <div style={{ background: '#e11d48', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <Settings size={20} color="#fff" />
-                            <div style={{ fontSize: '11px', fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Estructura OPEX (Gasto Mensual)</div>
+                            <div style={{ fontSize: '11px', fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{tf('Estructura OPEX (Gasto Mensual)')}</div>
                           </div>
                           <div style={{ padding: '10px 14px' }}>
-                            <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, marginBottom: '2px' }}>Gasto Operativo Mensual Estimado</div>
+                            <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, marginBottom: '2px' }}>{tf('Gasto Operativo Mensual Estimado')}</div>
                             <div style={{ fontSize: '22px', fontWeight: 900, color: '#0f2038', marginBottom: '8px' }}>${new Intl.NumberFormat().format(results.opexMensualMxn.toFixed(0))} MXN</div>
-                            
+
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '11px', color: '#334155', fontWeight: 600 }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#ffe4e6', padding: '6px', borderRadius: '6px', display: 'flex' }}><Zap size={14} color="#e11d48" /></div> Energía Eléctrica</div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#ffe4e6', padding: '6px', borderRadius: '6px', display: 'flex' }}><Zap size={14} color="#e11d48" /></div> {tf('Energía Eléctrica')}</div>
                                 <span style={{ fontWeight: 800, color: '#e11d48' }}>${new Intl.NumberFormat().format(results.monthlyElectricityCostMxn.toFixed(0))}</span>
                               </div>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#ffe4e6', padding: '6px', borderRadius: '6px', display: 'flex' }}><Droplet size={14} color="#e11d48" /></div> Impacto Hídrico (Agua)</div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#ffe4e6', padding: '6px', borderRadius: '6px', display: 'flex' }}><Droplet size={14} color="#e11d48" /></div> {tf('Impacto Hídrico (Agua)')}</div>
                                 <span style={{ fontWeight: 800, color: '#e11d48' }}>${new Intl.NumberFormat().format(results.waterCostMonthlyMxn || 0)}</span>
                               </div>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#ffe4e6', padding: '6px', borderRadius: '6px', display: 'flex' }}><Users size={14} color="#e11d48" /></div> Mano de Obra</div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#ffe4e6', padding: '6px', borderRadius: '6px', display: 'flex' }}><Users size={14} color="#e11d48" /></div> {tf('Mano de Obra')}</div>
                                 <span style={{ fontWeight: 800, color: '#e11d48' }}>${new Intl.NumberFormat().format(results.manoObraMensualMxn.toFixed(0))}</span>
                               </div>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#ffe4e6', padding: '6px', borderRadius: '6px', display: 'flex' }}><Shield size={14} color="#e11d48" /></div> Mantenimiento Preventivo</div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#ffe4e6', padding: '6px', borderRadius: '6px', display: 'flex' }}><Shield size={14} color="#e11d48" /></div> {tf('Mantenimiento Preventivo')}</div>
                                 <span style={{ fontWeight: 800, color: '#e11d48' }}>${new Intl.NumberFormat().format(results.mantenimientoMensualMxn.toFixed(0))}</span>
                               </div>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#ffe4e6', padding: '6px', borderRadius: '6px', display: 'flex' }}><Wrench size={14} color="#e11d48" /></div> Refacciones / Consumibles</div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#ffe4e6', padding: '6px', borderRadius: '6px', display: 'flex' }}><Wrench size={14} color="#e11d48" /></div> {tf('Refacciones / Consumibles')}</div>
                                 <span style={{ fontWeight: 800, color: '#e11d48' }}>${new Intl.NumberFormat().format((inputs.filtrosMensualMxn + inputs.refaccionesMensualMxn + inputs.lubricacionMensualMxn).toFixed(0))}</span>
                               </div>
                               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><div style={{ background: "#ffe4e6", padding: "6px", borderRadius: "6px", display: "flex" }}><FlaskConical size={14} color="#e11d48" /></div> Químicos Tratamiento</div>
+                                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><div style={{ background: "#ffe4e6", padding: "6px", borderRadius: "6px", display: "flex" }}><FlaskConical size={14} color="#e11d48" /></div> {tf('Químicos Tratamiento')}</div>
                                 <span style={{ fontWeight: 800, color: "#e11d48" }}>${new Intl.NumberFormat().format(7000.20)}</span>
                               </div>
                               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><div style={{ background: "#ffe4e6", padding: "6px", borderRadius: "6px", display: "flex" }}><Sliders size={14} color="#e11d48" /></div> Consumibles, Disposición & Otros</div>
+                                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><div style={{ background: "#ffe4e6", padding: "6px", borderRadius: "6px", display: "flex" }}><Sliders size={14} color="#e11d48" /></div> {tf('Consumibles, Disposición & Otros')}</div>
                                 <span style={{ fontWeight: 800, color: "#e11d48" }}>${new Intl.NumberFormat().format(((inputs.supervisionMensualMxn || 0) + (inputs.consumiblesMensualMxn || 0) + (inputs.tratamientoEfluentesMensualMxn || 0) + (inputs.disposicionResiduosMensualMxn || 0) + (inputs.otrosOpexMensualMxn || 0) || 6999.60).toFixed(0))}</span>
                               </div>
                             </div>
                           </div>
                           <div style={{ background: '#fff1f2', padding: '10px 14px', borderTop: '1px solid #fecdd3', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '11px', fontWeight: 800, color: '#e11d48' }}>GASTO OPERATIVO MENSUAL TOTAL</span>
+                            <span style={{ fontSize: '11px', fontWeight: 800, color: '#e11d48' }}>{tf('GASTO OPERATIVO MENSUAL TOTAL')}</span>
                             <span style={{ background: '#e11d48', color: '#fff', fontSize: '12px', fontWeight: 900, padding: '4px 12px', borderRadius: '16px' }}>${new Intl.NumberFormat().format(results.opexMensualMxn.toFixed(0))} MXN</span>
                           </div>
                         </div>
@@ -6055,11 +6789,11 @@ export default function DHLAdvancedSimulator() {
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                             <div style={{ background: '#ea580c', borderRadius: '50%', padding: '4px', display: 'flex' }}><Shield size={14} color="#fff" /></div>
                             <div>
-                              <div style={{ fontSize: '11px', fontWeight: 900, color: '#ea580c', textTransform: 'uppercase' }}>Matriz de Riesgo y Operación</div>
-                              <div style={{ fontSize: '9px', color: '#64748b' }}>Evaluación cualitativa de los principales riesgos operativos</div>
+                              <div style={{ fontSize: '11px', fontWeight: 900, color: '#ea580c', textTransform: 'uppercase' }}>{tf('Matriz de Riesgo y Operación')}</div>
+                              <div style={{ fontSize: '9px', color: '#64748b' }}>{tf('Evaluación cualitativa de los principales riesgos operativos')}</div>
                             </div>
                           </div>
-                          
+
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '10px', color: '#334155', fontWeight: 600 }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', border: '1px solid #f1f5f9', padding: '6px', borderRadius: '6px' }}>
@@ -6097,7 +6831,7 @@ export default function DHLAdvancedSimulator() {
                               <div style={{ fontSize: '9px', color: '#64748b' }}>Proporción de gastos operativos mensuales</div>
                             </div>
                           </div>
-                          
+
                           <div style={{ display: 'flex', gap: '8px', flex: 1 }}>
                             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                               <div style={{ fontSize: '9px', color: '#475569', lineHeight: 1.2 }}>El gráfico circular muestra la distribución porcentual de los componentes del gasto operativo (OPEX).</div>
@@ -6131,7 +6865,7 @@ export default function DHLAdvancedSimulator() {
                                       return percent > 0.05 ? <text x={x} y={y} fill="white" fontSize="7" fontWeight="bold" textAnchor="middle" dominantBaseline="central">{`${(percent * 100).toFixed(0)}%`}</text> : null;
                                     }}
                                   >
-                                    {[{fill: '#1d4ed8'}, {fill: '#8b5cf6'}, {fill: '#0ea5e9'}, {fill: '#ea580c'}, {fill: '#65a30d'}].map((e,i) => <Cell key={i} fill={e.fill} />)}
+                                    {[{ fill: '#1d4ed8' }, { fill: '#8b5cf6' }, { fill: '#0ea5e9' }, { fill: '#ea580c' }, { fill: '#65a30d' }].map((e, i) => <Cell key={i} fill={e.fill} />)}
                                   </Pie>
                                 </PieChart>
                               </ResponsiveContainer>
@@ -6160,8 +6894,8 @@ export default function DHLAdvancedSimulator() {
                           </div>
                         </div>
                         {renderPageFooter(++pdfPageIndex, totalPdfPages)}
+                      </div>
                     </div>
-                  </div>
                   </div>
                 )}
 
@@ -6170,9 +6904,9 @@ export default function DHLAdvancedSimulator() {
                   <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
                     <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 20 }}>
                       {renderPageHeader('Obra Civil y Cimentación', 'Dictamen y Especificaciones Estructurales de Piso y Bodega')}
-                      
+
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                        
+
                         {/* Panel izquierdo: Especificaciones y Ficha */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                           <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 16, background: '#fffbeb' }}>
@@ -6223,7 +6957,7 @@ export default function DHLAdvancedSimulator() {
                           Estándar de Obra Civil de PANDORA v3.0
                         </div>
                       </div>
-                      
+
                       {renderPageFooter(++pdfPageIndex, totalPdfPages)}
                     </div>
                   </div>
@@ -6234,10 +6968,11 @@ export default function DHLAdvancedSimulator() {
 
           </div>
         </div>
-      )}
+      )
+      }
 
       {/* MODAL: LIBRERÍA DE DISEÑOS 3D */}
-      <FlowDesignsLibrary 
+      <FlowDesignsLibrary
         isOpen={isDesignsLibraryOpen}
         onClose={() => setIsDesignsLibraryOpen(false)}
         onLoad={handleLoadDesignFromLibrary}
@@ -6246,74 +6981,78 @@ export default function DHLAdvancedSimulator() {
       />
 
       {/* MODAL: CONFIRMACIÓN Y NOMBRADO DE SUBIDA 3D */}
-      {pendingUpload && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[10000] flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 animate-in zoom-in-95">
-            <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
-              <div className="w-10 h-10 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600">
-                <Upload className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-sm font-black text-slate-900 uppercase">Subir a Librería de Diseños</h3>
-                <p className="text-[10px] text-slate-400">Asigna un nombre para guardar el modelo CAD en la nube</p>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Nombre del Layout:</label>
-              <input 
-                type="text"
-                value={uploadModelName}
-                onChange={(e) => setUploadModelName(e.target.value)}
-                placeholder="Ej: Planta de Lavado Norte"
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20 outline-none transition-all"
-              />
-            </div>
-
-            {isSavingToCloud && (
-              <div className="space-y-2">
-                <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase">
-                  <span>Subiendo archivo binario...</span>
-                  <span className="text-cyan-600 font-mono">{uploadProgress}%</span>
+      {
+        pendingUpload && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[10000] flex items-center justify-center p-4">
+            <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 animate-in zoom-in-95">
+              <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
+                <div className="w-10 h-10 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600">
+                  <Upload className="w-5 h-5" />
                 </div>
-                <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                  <div className="bg-gradient-to-r from-cyan-500 to-purple-500 h-full rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+                <div>
+                  <h3 className="text-sm font-black text-slate-900 uppercase">Subir a Librería de Diseños</h3>
+                  <p className="text-[10px] text-slate-400">Asigna un nombre para guardar el modelo CAD en la nube</p>
                 </div>
               </div>
-            )}
 
-            <div className="flex gap-3 justify-end pt-2">
-              <button 
-                onClick={handleCancelUpload}
-                disabled={isSavingToCloud}
-                className="px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-500 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-all"
-              >
-                Cancelar
-              </button>
-              <button 
-                onClick={handleConfirmUploadToLibrary}
-                disabled={isSavingToCloud}
-                className="px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider text-white bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-700 hover:to-purple-700 shadow-md hover:shadow-lg transition-all"
-              >
-                {isSavingToCloud ? 'Guardando...' : 'Confirmar y Guardar'}
-              </button>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Nombre del Layout:</label>
+                <input
+                  type="text"
+                  value={uploadModelName}
+                  onChange={(e) => setUploadModelName(e.target.value)}
+                  placeholder="Ej: Planta de Lavado Norte"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20 outline-none transition-all"
+                />
+              </div>
+
+              {isSavingToCloud && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase">
+                    <span>Subiendo archivo binario...</span>
+                    <span className="text-cyan-600 font-mono">{uploadProgress}%</span>
+                  </div>
+                  <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                    <div className="bg-gradient-to-r from-cyan-500 to-purple-500 h-full rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-3 justify-end pt-2">
+                <button
+                  onClick={handleCancelUpload}
+                  disabled={isSavingToCloud}
+                  className="px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-500 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleConfirmUploadToLibrary}
+                  disabled={isSavingToCloud}
+                  className="px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider text-white bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-700 hover:to-purple-700 shadow-md hover:shadow-lg transition-all"
+                >
+                  {isSavingToCloud ? 'Guardando...' : 'Confirmar y Guardar'}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* TOAST DE NOTIFICACIÓN DE ÉXITO */}
-      {showToast && (
-        <div className="fixed bottom-8 right-8 z-[9999] px-5 py-3.5 rounded-xl bg-slate-900 border border-cyan-500/30 text-white shadow-lg flex items-center gap-3 animate-in fade-in slide-in-from-bottom-5">
-          <div className="w-7 h-7 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center">
-            <Check className="w-4 h-4 text-cyan-400" />
+      {
+        showToast && (
+          <div className="fixed bottom-8 right-8 z-[9999] px-5 py-3.5 rounded-xl bg-slate-900 border border-cyan-500/30 text-white shadow-lg flex items-center gap-3 animate-in fade-in slide-in-from-bottom-5">
+            <div className="w-7 h-7 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center">
+              <Check className="w-4 h-4 text-cyan-400" />
+            </div>
+            <div>
+              <h4 className="text-xs font-black uppercase tracking-wider">Notificación de Sistema</h4>
+              <p className="text-[10px] text-slate-400 mt-0.5 font-medium">{toastMessage}</p>
+            </div>
           </div>
-          <div>
-            <h4 className="text-xs font-black uppercase tracking-wider">Notificación de Sistema</h4>
-            <p className="text-[10px] text-slate-400 mt-0.5 font-medium">{toastMessage}</p>
-          </div>
-        </div>
-      )}
+        )
+      }
 
       {/* ESTILOS DE ANIMACIÓN EN SVG */}
       <style>{`
@@ -6337,7 +7076,7 @@ export default function DHLAdvancedSimulator() {
         }
       `}</style>
 
-    </div>
+    </div >
   );
 }
 

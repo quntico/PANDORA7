@@ -10,7 +10,7 @@ import FlowDesignsLibrary from '@/components/flow/FlowDesignsLibrary';
 import { FolderOpen, Upload, Check, Sliders, Pencil, Link2, Droplets, Zap, Wind, Navigation, Cpu, Warehouse, Wrench, Anchor, Save } from 'lucide-react';
 
 
-import { Activity, ArrowLeft, Bot, Box, Brain, ChevronLeft, ChevronRight, Download, Edit3, Eye, FileText, LayoutDashboard, Lock, Minus, Plus, Send, Settings, Table2, Target, Trash2, Unlock, Loader2, X, Play, RotateCcw, Copy, Maximize2, Minimize2, Power, Calculator, EyeOff, FileDigit, GripVertical, AlertTriangle, Printer, Truck, BarChart2, CheckCircle2, Factory, Layers } from 'lucide-react';
+import { Activity, ArrowLeft, Bot, Box, Brain, ChevronLeft, ChevronRight, Download, Edit3, Eye, FileText, LayoutDashboard, Lock, Minus, Plus, Send, Settings, Table2, Target, Trash2, Unlock, Loader2, X, Play, RotateCcw, Copy, Maximize2, Minimize2, Power, Calculator, EyeOff, FileDigit, GripVertical, AlertTriangle, Printer, Truck, BarChart2, CheckCircle2, Factory, Layers, Image as ImageIcon } from 'lucide-react';
 import axios from 'axios';
 import { Link, useParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -536,6 +536,61 @@ export default function RiderSimulatorPage() {
   const [tempFileName, setTempFileName] = useState('');
   const [pdfPendingAction, setPdfPendingAction] = useState(false);
 
+  // ── Logo Corporativo Personalizado por Simulador ──
+  const [customLogo, setCustomLogo] = useState(() => {
+    return localStorage.getItem(`sim_${simulatorId}_logo`) || localStorage.getItem('pandora_custom_logo') || '';
+  });
+  const logoInputRef = useRef(null);
+
+  useEffect(() => {
+    const syncLogo = () => {
+      const saved = localStorage.getItem(`sim_${simulatorId}_logo`) || localStorage.getItem('pandora_custom_logo') || '';
+      setCustomLogo(saved);
+    };
+    window.addEventListener('pandora_logo_update', syncLogo);
+    window.addEventListener('storage', syncLogo);
+    return () => {
+      window.removeEventListener('pandora_logo_update', syncLogo);
+      window.removeEventListener('storage', syncLogo);
+    };
+  }, [simulatorId]);
+
+  const handleLogoUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor selecciona un archivo de imagen válido (PNG, JPG, SVG, WEBP).');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      alert('La imagen es demasiado grande. Elige una imagen de menos de 10MB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const base64 = evt.target.result;
+      setCustomLogo(base64);
+      localStorage.setItem(`sim_${simulatorId}_logo`, base64);
+      localStorage.setItem('pandora_custom_logo', base64);
+      window.dispatchEvent(new CustomEvent('pandora_logo_update', { detail: { base64, simulatorId } }));
+      setToastMessage('¡Logo corporativo grabado y guardado para este simulador!');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 4000);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveLogo = (e) => {
+    e.stopPropagation();
+    setCustomLogo('');
+    localStorage.removeItem(`sim_${simulatorId}_logo`);
+    localStorage.removeItem('pandora_custom_logo');
+    window.dispatchEvent(new CustomEvent('pandora_logo_update', { detail: { base64: '', simulatorId } }));
+    setToastMessage('Logo corporativo eliminado.');
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3000);
+  };
+
   const handleSetFileName = () => {
     setTempFileName(customFileName);
     setPdfPendingAction(false);
@@ -559,6 +614,7 @@ export default function RiderSimulatorPage() {
       waterChangeDays,
       clientName,
       customerName,
+      customLogo,
       productImageBase64,
       twinSnapshotLateral,
       twinSnapshotSuperior,
@@ -2345,6 +2401,39 @@ ${userMsg}
           </div>
           <div className="flex flex-col items-end gap-3">
             <div className="flex gap-3">
+              {/* ── Logo Corporativo Button ── */}
+              <input
+                type="file"
+                ref={logoInputRef}
+                onChange={handleLogoUpload}
+                accept="image/*"
+                className="hidden"
+              />
+              <button
+                onClick={() => logoInputRef.current?.click()}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-purple-500/10 border border-purple-500/30 hover:bg-purple-500/20 text-purple-300 transition-all text-sm font-bold relative group"
+                title={customLogo ? 'Logo Corporativo Grabado (Click para cambiar)' : 'Subir Logo Corporativo del Simulador'}
+              >
+                {customLogo ? (
+                  <>
+                    <img src={customLogo} alt="Logo" className="h-5 max-w-[60px] object-contain rounded bg-white/20 p-0.5" />
+                    <span className="text-xs font-extrabold text-purple-300">Logo OK</span>
+                    <span
+                      onClick={handleRemoveLogo}
+                      className="ml-0.5 p-0.5 hover:bg-red-500/40 rounded text-red-400 hover:text-white transition-colors"
+                      title="Eliminar logo"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <ImageIcon className="w-4 h-4 text-purple-400" />
+                    <span>Logo</span>
+                  </>
+                )}
+              </button>
+
               <button onClick={openConfig} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#00F0FF]/10 border border-[#00F0FF]/30 hover:bg-[#00F0FF]/20 text-[#00F0FF] transition-all text-sm font-bold" title="Configuración del Simulador">
                 <Settings className="w-4 h-4" /> Configurar
               </button>

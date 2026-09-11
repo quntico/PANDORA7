@@ -24,6 +24,7 @@ export function buildRyderReportData({
   waterChangeDays,
   clientName,
   customerName,
+  customLogo,
   productImageBase64,
   twinSnapshotLateral,
   twinSnapshotSuperior,
@@ -154,6 +155,7 @@ export function buildRyderReportData({
         return inputs.machineName || 'BDW 200';
       })(),
       version:   'v7.76',
+      customLogo: customLogo || localStorage.getItem('pandora_custom_logo') || null,
     },
     kpis: {
       velocidadBandaMph:      speedMH,

@@ -116,6 +116,8 @@ export default function PanalCamaSimulator() {
         setCustomLogo(base64);
         try {
           localStorage.setItem(LOGO_KEY, base64);
+          localStorage.setItem('pandora_custom_logo', base64);
+          window.dispatchEvent(new CustomEvent('pandora_logo_update', { detail: { base64, simulatorId: 'panal_cama' } }));
         } catch (err) {}
         triggerToast('Logo corporativo cargado correctamente.');
       };
@@ -127,6 +129,8 @@ export default function PanalCamaSimulator() {
     setCustomLogo(null);
     try {
       localStorage.removeItem(LOGO_KEY);
+      localStorage.removeItem('pandora_custom_logo');
+      window.dispatchEvent(new CustomEvent('pandora_logo_update', { detail: { base64: null, simulatorId: 'panal_cama' } }));
     } catch (e) {}
     triggerToast('Logo eliminado.');
   };
