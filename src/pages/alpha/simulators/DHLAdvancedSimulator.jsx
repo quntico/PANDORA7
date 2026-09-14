@@ -312,12 +312,12 @@ export default function DHLAdvancedSimulator() {
     // Metadatos
     companyName: 'SOLIWASTE',
     clientName: 'FRANCISCO LOUVIER',
-    machineName: 'PLD-120',
+    machineName: 'PLD-120 (Config. 240 cajas/h)',
     projectName: 'PROYECTO LAVADO DE CAJAS',
     evaluationDate: '17/7/2026',
     materialType: 'CAJAS DE PLÁSTICO',
-    evaluationName: 'Lavadora y Secadora Industrial PLD-120',
-    technicalSheetName: 'FICHA TÉCNICA DE LAVADORA Y SECADORA INDUSTRIAL PLD-120',
+    evaluationName: 'Lavadora y Secadora Industrial PLD-120 (Configuración 240 cajas/h)',
+    technicalSheetName: 'FICHA TÉCNICA DE LAVADORA Y SECADORA INDUSTRIAL PLD-120 - Configuración 240 Cajas/h',
     garantia_estandar_meses: 12,
     garantia_extendida_meses: 24,
     alcance_garantia: 'Defectos de fabricación y vicios ocultos',
@@ -348,8 +348,8 @@ export default function DHLAdvancedSimulator() {
     civilVentilacion: 'Campana extractora opcional',
 
     // Operación
-    capacidad_nominal_h: 120, // variable maestra nueva
-    tipo_unidad: 'pallets', // seleccionable: pallets/cajas
+    capacidad_nominal_h: 240, // variable maestra nueva
+    tipo_unidad: 'cajas', // seleccionable: pallets/cajas
     utilization: 207.4,
     oee: 95,
     loadFactor: 85,
@@ -557,21 +557,21 @@ export default function DHLAdvancedSimulator() {
       let changed = false;
       let newInputs = { ...prev };
       if (newInputs.machineName === 'BWS-250' || newInputs.machineName === 'BWD-200 + BA' || newInputs.machineName === 'BWD-250' || (newInputs.evaluationName && (newInputs.evaluationName.includes('BWS-250') || newInputs.evaluationName.includes('BWD-250')))) {
-        newInputs.machineName = 'PLD-120';
-        newInputs.evaluationName = 'Lavadora y Secadora Industrial PLD-120';
-        newInputs.technicalSheetName = 'FICHA TÉCNICA DE LAVADORA Y SECADORA INDUSTRIAL PLD-120';
+        newInputs.machineName = 'PLD-120\n(Config. 240 cajas/h)';
+        newInputs.evaluationName = 'Lavadora y Secadora Industrial PLD-120 (Configuración 240 cajas/h)';
+        newInputs.technicalSheetName = 'FICHA TÉCNICA DE LAVADORA Y SECADORA INDUSTRIAL PLD-120 - Configuración 240 Cajas/h';
         newInputs.customInstalledPowerKw = 23.17;
         changed = true;
       }
 
       // Force update boxes and capabilities if missing modern parametric identifiers
-      if (!newInputs.tipo_unidad || newInputs.meta_diaria_cajas === 3000 || newInputs.machineName?.includes('BWD')) {
-        newInputs.machineName = 'PLD-120';
-        newInputs.evaluationName = 'Lavadora y Secadora Industrial PLD-120';
-        newInputs.technicalSheetName = 'FICHA TÉCNICA DE LAVADORA Y SECADORA INDUSTRIAL PLD-120';
+      if (!newInputs.tipo_unidad || newInputs.meta_diaria_cajas === 3000 || newInputs.machineName?.includes('BWD') || newInputs.capacidad_nominal_h === 120) {
+        newInputs.machineName = 'PLD-120\n(Config. 240 cajas/h)';
+        newInputs.evaluationName = 'Lavadora y Secadora Industrial PLD-120 (Configuración 240 cajas/h)';
+        newInputs.technicalSheetName = 'FICHA TÉCNICA DE LAVADORA Y SECADORA INDUSTRIAL PLD-120 - Configuración 240 Cajas/h';
         newInputs.meta_diaria_cajas = 2128;
-        newInputs.capacidad_nominal_h = 120;
-        newInputs.tipo_unidad = 'pallets';
+        newInputs.capacidad_nominal_h = 240;
+        newInputs.tipo_unidad = 'cajas';
         newInputs.hoursPerDay = 9;
         newInputs.shiftsPerDay = 1;
         newInputs.customInstalledPowerKw = 23.17;
@@ -1170,7 +1170,7 @@ export default function DHLAdvancedSimulator() {
   const conveyorSpeedCmH = conveyorSpeedMH * 100;
   const espacioPorCajaCm = activeBox.largoCm + (inputs.boxGapCm !== undefined ? inputs.boxGapCm : 15);
   const capacidadGeometrica = espacioPorCajaCm > 0 ? Math.floor(conveyorSpeedCmH / espacioPorCajaCm) : 0;
-  const currentNominalCapacity = inputs.capacidad_nominal_h || 120;
+  const currentNominalCapacity = inputs.capacidad_nominal_h || 240;
 
   // --- 2. CÁLCULO DE MÉTRICAS AUTOMÁTICAS ---
   const results = useMemo(() => {
@@ -1212,11 +1212,9 @@ export default function DHLAdvancedSimulator() {
     const electricityCostPer1000BoxesMxn = kwhPer1000Boxes * (inputs.electricityRate || 2.50);
 
     // 3.5. AGUA E HÍDRICO
-    const caudalLavado = inputs.caudal_lavado_lh || 865;
     const recirculacion = inputs.recirculacion_agua !== undefined ? inputs.recirculacion_agua : 85;
-
-    // Reposicion de agua (L/h)
-    const reposicionTotalLH = caudalLavado * (1 - (recirculacion / 100));
+    const reposicionTotalLH = inputs.waterReplenishmentLH || 130;  // 130 L/h
+    const caudalLavado = reposicionTotalLH / (1 - (recirculacion / 100));
     const consumoPorCajaL = realProductionPerHourBoxes > 0 ? (reposicionTotalLH / realProductionPerHourBoxes) : 0;
 
     // Consumo Diario L/día
@@ -1306,20 +1304,22 @@ export default function DHLAdvancedSimulator() {
     }
 
     // ESTADO OPERATIVO (DICTAMEN)
-    let estadoOperativo = "NO CUMPLE";
+    let estadoOperativo = "NO VIABLE";
     let estadoColor = "text-red-700 bg-red-50 border-red-200";
-    let dictamenTexto = "NO CUMPLE. Se requieren más horas, mayor velocidad validada o una línea adicional.";
+
+    // Calcular tiempo extra requerido
+    const diffHours = (dailyGoalBoxes / (realProductionPerHourBoxes || 1)) - (inputs.hoursPerDay || 9);
+    const diffMinutes = Math.ceil(diffHours * 60);
+    let dictamenTexto = `NO VIABLE. El déficit es crítico. Faltan aproximadamente ${Math.ceil(diffHours)} horas efectivas.`;
 
     if (dailyProductionBoxes >= dailyGoalBoxes) {
       estadoOperativo = "VIABLE";
       estadoColor = "text-emerald-600 bg-emerald-50 border-emerald-200";
-      if (systemUtilization <= 70) {
-        dictamenTexto = "VIABLE. La línea cubre la meta diaria bajo el escenario seleccionado. La línea dispone de margen operativo suficiente.";
-      } else if (systemUtilization <= 90) {
-        dictamenTexto = "VIABLE. La línea cubre la meta diaria bajo el escenario seleccionado. La línea cubre la meta con margen operativo moderado.";
-      } else {
-        dictamenTexto = "VIABLE. La línea cubre la meta diaria bajo el escenario seleccionado. La línea cubre la meta con margen limitado.";
-      }
+      dictamenTexto = "VIABLE. La línea cubre la meta diaria bajo el escenario seleccionado de forma holgada.";
+    } else if (diffMinutes <= 120) {
+      estadoOperativo = "CAPACIDAD CERCANA A META";
+      estadoColor = "text-amber-700 bg-amber-50 border-amber-200";
+      dictamenTexto = `NO VIABLE. Capacidad cercana a meta: Requiere aproximadamente +${diffMinutes} min/día efectivos.`;
     }
 
     return {
@@ -2283,7 +2283,7 @@ export default function DHLAdvancedSimulator() {
                         <span className="block text-[9px] font-bold text-slate-500 uppercase">{tf('Capacidad Nominal')} {inputs.tipo_unidad === 'pallets' ? `(${tf('p/h')})` : `(${tf('c/h')})`}</span>
                         <button
                           type="button"
-                          onClick={() => setInputs(p => ({ ...p, capacidad_nominal_h: capacidadGeometrica || 120 }))}
+                          onClick={() => setInputs(p => ({ ...p, capacidad_nominal_h: capacidadGeometrica || 240 }))}
                           className="text-[8px] font-black text-cyan-600 hover:underline uppercase"
                           title={`Calcular automáticamente por geometría (${capacidadGeometrica})`}
                         >
@@ -6265,7 +6265,7 @@ export default function DHLAdvancedSimulator() {
                                 const baseHoursPerDay = inputs.hoursPerDay || 9;
                                 const daysPerWeek = inputs.daysPerWeek || 6;
 
-                                const capHNominal = currentNominalCapacity || 120;
+                                const capHNominal = currentNominalCapacity || 240;
                                 const yearOEE = Math.min(0.99, ((inputs.oee || 95) / 100) + (i * 0.005));
                                 const turn = inputs.shiftsPerDay || 1;
 
