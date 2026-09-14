@@ -1166,6 +1166,10 @@ export default function DHLAdvancedSimulator() {
 
   // --- 1.5 CÁLCULO DINÁMICO DE CAPACIDAD POR CAJA ---
   const activeBox = (inputs.cajas || []).find(c => c.id === (inputs.activeBoxId || '1')) || (inputs.cajas || [])[0] || { largoCm: 60, nombre: 'Caja Genérica' };
+  const conveyorSpeedMH = inputs.conveyorSpeedMH !== undefined ? inputs.conveyorSpeedMH : 160;
+  const conveyorSpeedCmH = conveyorSpeedMH * 100;
+  const espacioPorCajaCm = activeBox.largoCm + (inputs.boxGapCm !== undefined ? inputs.boxGapCm : 15);
+  const capacidadGeometrica = espacioPorCajaCm > 0 ? Math.floor(conveyorSpeedCmH / espacioPorCajaCm) : 0;
   const currentNominalCapacity = inputs.capacidad_nominal_h || 120;
 
   // --- 2. CÁLCULO DE MÉTRICAS AUTOMÁTICAS ---
@@ -2255,7 +2259,7 @@ export default function DHLAdvancedSimulator() {
                           const spaceCm = targetBox.largoCm + gap;
                           const speedMH = inputs.conveyorSpeedMH !== undefined ? inputs.conveyorSpeedMH : 160;
                           const newCap = spaceCm > 0 ? Math.floor((speedMH * 100) / spaceCm) : 0;
-                          setInputs(p => ({ ...p, activeBoxId: newBoxId, capacidad_nominal_cajas_h: newCap }));
+                          setInputs(p => ({ ...p, activeBoxId: newBoxId, capacidad_nominal_h: newCap }));
                         }}
                         className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none truncate"
                       >
@@ -2266,12 +2270,12 @@ export default function DHLAdvancedSimulator() {
                     </div>
                     <div>
                       <div className="flex justify-between items-center mb-1">
-                        <span className="block text-[9px] font-bold text-slate-500 uppercase">Capacidad Nominal (cajas/h)</span>
+                        <span className="block text-[9px] font-bold text-slate-500 uppercase">{tf('Capacidad Nominal')} {inputs.tipo_unidad === 'pallets' ? `(${tf('p/h')})` : `(${tf('c/h')})`}</span>
                         <button
                           type="button"
-                          onClick={() => setInputs(p => ({ ...p, capacidad_nominal_cajas_h: capacidadGeometrica || 333 }))}
+                          onClick={() => setInputs(p => ({ ...p, capacidad_nominal_h: capacidadGeometrica || 120 }))}
                           className="text-[8px] font-black text-cyan-600 hover:underline uppercase"
-                          title={`Calcular automáticamente por geometría (${capacidadGeometrica} cajas/h)`}
+                          title={`Calcular automáticamente por geometría (${capacidadGeometrica})`}
                         >
                           Auto ({capacidadGeometrica})
                         </button>
@@ -2280,11 +2284,11 @@ export default function DHLAdvancedSimulator() {
                         type="number"
                         step="10"
                         min="1"
-                        value={inputs.capacidad_nominal_cajas_h !== undefined ? inputs.capacidad_nominal_cajas_h : currentNominalCapacity}
+                        value={inputs.capacidad_nominal_h !== undefined ? inputs.capacidad_nominal_h : currentNominalCapacity}
                         onChange={e => {
                           const newCap = parseFloat(e.target.value) || 0;
                           const speedMH = espacioPorCajaCm > 0 ? Math.round((newCap * espacioPorCajaCm) / 100) : (inputs.conveyorSpeedMH || 160);
-                          setInputs(p => ({ ...p, capacidad_nominal_cajas_h: newCap, conveyorSpeedMH: speedMH }));
+                          setInputs(p => ({ ...p, capacidad_nominal_h: newCap, conveyorSpeedMH: speedMH }));
                         }}
                         className="w-full bg-white border border-cyan-500/50 rounded-lg px-2 py-1.5 text-xs font-black text-cyan-700 focus:outline-none focus:ring-1 focus:ring-cyan-500"
                       />
