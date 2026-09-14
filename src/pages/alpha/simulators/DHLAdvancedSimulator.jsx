@@ -312,12 +312,12 @@ export default function DHLAdvancedSimulator() {
     // Metadatos
     companyName: 'SOLIWASTE',
     clientName: 'FRANCISCO LOUVIER',
-    machineName: 'PLD-120 (Config. 240 cajas/h)',
+    machineName: 'PLD-120 (Config. 300 cajas/h)',
     projectName: 'PROYECTO LAVADO DE CAJAS',
     evaluationDate: '17/7/2026',
     materialType: 'CAJAS DE PLÁSTICO',
-    evaluationName: 'Lavadora y Secadora Industrial PLD-120 (Configuración 240 cajas/h)',
-    technicalSheetName: 'FICHA TÉCNICA DE LAVADORA Y SECADORA INDUSTRIAL PLD-120 - Configuración 240 Cajas/h',
+    evaluationName: 'Lavadora y Secadora Industrial PLD-120 (Configuración 300 cajas/h)',
+    technicalSheetName: 'FICHA TÉCNICA DE LAVADORA Y SECADORA INDUSTRIAL PLD-120 - Configuración 300 Cajas/h',
     garantia_estandar_meses: 12,
     garantia_extendida_meses: 24,
     alcance_garantia: 'Defectos de fabricación y vicios ocultos',
@@ -348,8 +348,8 @@ export default function DHLAdvancedSimulator() {
     civilVentilacion: 'Campana extractora opcional',
 
     // Operación
-    capacidad_nominal_h: 240, // variable maestra nueva
-    tipo_unidad: 'cajas', // seleccionable: pallets/cajas
+    capacidad_nominal_h: 300, // Configuración maestra de 300 cajas/h
+    tipo_unidad: 'cajas',
     utilization: 207.4,
     oee: 95,
     loadFactor: 85,
@@ -557,24 +557,33 @@ export default function DHLAdvancedSimulator() {
       let changed = false;
       let newInputs = { ...prev };
       if (newInputs.machineName === 'BWS-250' || newInputs.machineName === 'BWD-200 + BA' || newInputs.machineName === 'BWD-250' || (newInputs.evaluationName && (newInputs.evaluationName.includes('BWS-250') || newInputs.evaluationName.includes('BWD-250')))) {
-        newInputs.machineName = 'PLD-120\n(Config. 240 cajas/h)';
-        newInputs.evaluationName = 'Lavadora y Secadora Industrial PLD-120 (Configuración 240 cajas/h)';
-        newInputs.technicalSheetName = 'FICHA TÉCNICA DE LAVADORA Y SECADORA INDUSTRIAL PLD-120 - Configuración 240 Cajas/h';
-        newInputs.customInstalledPowerKw = 23.17;
+        newInputs.machineName = 'PLD-120\n(Config. 300 cajas/h)';
+        newInputs.evaluationName = 'Lavadora y Secadora Industrial PLD-120 (Configuración 300 cajas/h)';
+        newInputs.technicalSheetName = 'FICHA TÉCNICA DE LAVADORA Y SECADORA INDUSTRIAL PLD-120 - Configuración 300 Cajas/h';
+        newInputs.customInstalledPowerKw = 57.00;
         changed = true;
       }
 
       // Force update boxes and capabilities if missing modern parametric identifiers
-      if (!newInputs.tipo_unidad || newInputs.meta_diaria_cajas === 3000 || newInputs.machineName?.includes('BWD') || newInputs.capacidad_nominal_h === 120) {
-        newInputs.machineName = 'PLD-120\n(Config. 240 cajas/h)';
-        newInputs.evaluationName = 'Lavadora y Secadora Industrial PLD-120 (Configuración 240 cajas/h)';
-        newInputs.technicalSheetName = 'FICHA TÉCNICA DE LAVADORA Y SECADORA INDUSTRIAL PLD-120 - Configuración 240 Cajas/h';
+      if (!newInputs.tipo_unidad || newInputs.meta_diaria_cajas === 3000 || newInputs.machineName?.includes('BWD') || newInputs.capacidad_nominal_h === 240 || newInputs.capacidad_nominal_h === 120) {
+        newInputs.machineName = 'PLD-120\n(Config. 300 cajas/h)';
+        newInputs.evaluationName = 'Lavadora y Secadora Industrial PLD-120 (Configuración 300 cajas/h)';
+        newInputs.technicalSheetName = 'FICHA TÉCNICA DE LAVADORA Y SECADORA INDUSTRIAL PLD-120 - Configuración 300 Cajas/h';
         newInputs.meta_diaria_cajas = 2128;
-        newInputs.capacidad_nominal_h = 240;
+        newInputs.capacidad_nominal_h = 300;
         newInputs.tipo_unidad = 'cajas';
         newInputs.hoursPerDay = 9;
         newInputs.shiftsPerDay = 1;
-        newInputs.customInstalledPowerKw = 23.17;
+        newInputs.customInstalledPowerKw = 57.00;
+
+        // Ajuste breakdown de motores para sumar exactamente 57 kW:
+        // 57 kW = (20 HP -> 14.91) + (25 HP -> 18.64) + (1 HP -> 0.75) + 20kW termico + 2.70kW estático.
+        newInputs.motorBombaAguaHp = 20;
+        newInputs.motorSopladorHp = 25;
+        newInputs.motorBandaHp = 1;
+        newInputs.calentamientoElectricoKw = 20.0;
+        newInputs.potenciaSecadoresAdicionalKw = 2.70;
+
         newInputs.precioEquipoUsd = 26000;
         newInputs.cajas = defaultInputs.cajas;
         changed = true;
@@ -1352,7 +1361,7 @@ export default function DHLAdvancedSimulator() {
       precioEquipoUsd, ivaUsd, maniobrasUsd, montajeMecanicoUsd, obraCivilUsd, electricoPrincipalUsd, canalizacionProteccionesUsd, extraccionPolvoUsd, seguridadIndustrialUsd, ingenieriaSupervisionUsd, contingenciaUsd, otrosCapexUsd,
       capexInstaladoUsd, capexFiscalUsd, capexInstaladoMxn,
       // OPEX
-      manoObraMensualMxn, mantenimientoMensualMxn, opexMensualMxn, opexAnualMxn, opexPorCajaMxn, opexPor1000CajasMxn,
+      energiaMensualMxn, aguaMensualMxn, manoObraMensualMxn, mantenimientoMensualMxn, refaccionesMensualMxn, quimicosMensualMxn, consumiblesMensualMxn, opexMensualMxn, opexAnualMxn, opexPorCajaMxn, opexPor1000CajasMxn,
       // WATER
       reposicionTotalLH, consumoPorCajaL, consumoDiarioOperacionL, consumoPorCambioTanqueLDia, consumoDiarioTotalL,
       // FINANCE
@@ -1412,7 +1421,7 @@ export default function DHLAdvancedSimulator() {
         costPer1000: opexPor1000,
         coverage: coberturaMeta,
         margenDiario,
-        utilization: produccionDiaria > 0 ? (dailyGoalBoxes / produccionDiaria) * 100 : 0,
+        utilization: produccionDiaria > 0 ? ((dailyGoalBoxes / horasDia) / capacidadRealH) * 100 : 0,
         estado,
         estadoColor
       };
@@ -1824,7 +1833,7 @@ export default function DHLAdvancedSimulator() {
       ['Producción Diaria (cajas/día)', scenarioResults.conservador.dailyProd.toFixed(0), scenarioResults.normal.dailyProd.toFixed(0), scenarioResults.alto.dailyProd.toFixed(0)],
       ['Costo Energético por kCajas (MXN/kCajas)', scenarioResults.conservador.costPer1000.toFixed(2), scenarioResults.normal.costPer1000.toFixed(2), scenarioResults.alto.costPer1000.toFixed(2)],
       ['Cobertura de Requerimiento (%)', scenarioResults.conservador.coverage.toFixed(1), scenarioResults.normal.coverage.toFixed(1), scenarioResults.alto.coverage.toFixed(1)],
-      ['Utilización del Equipo (%)', (scenarioResults.conservador.utilization * 100).toFixed(1), (scenarioResults.normal.utilization * 100).toFixed(1), (scenarioResults.alto.utilization * 100).toFixed(1)],
+      ['Utilización del Equipo (%)', scenarioResults.conservador.utilization.toFixed(1), scenarioResults.normal.utilization.toFixed(1), scenarioResults.alto.utilization.toFixed(1)],
     ];
     const wsScenarios = XLSX.utils.aoa_to_sheet(scenarioData);
     XLSX.utils.book_append_sheet(wb, wsScenarios, 'Comparación Escenarios');
@@ -2283,7 +2292,7 @@ export default function DHLAdvancedSimulator() {
                         <span className="block text-[9px] font-bold text-slate-500 uppercase">{tf('Capacidad Nominal')} {inputs.tipo_unidad === 'pallets' ? `(${tf('p/h')})` : `(${tf('c/h')})`}</span>
                         <button
                           type="button"
-                          onClick={() => setInputs(p => ({ ...p, capacidad_nominal_h: capacidadGeometrica || 240 }))}
+                          onClick={() => setInputs(p => ({ ...p, capacidad_nominal_h: capacidadGeometrica || 300 }))}
                           className="text-[8px] font-black text-cyan-600 hover:underline uppercase"
                           title={`Calcular automáticamente por geometría (${capacidadGeometrica})`}
                         >
@@ -6517,13 +6526,13 @@ export default function DHLAdvancedSimulator() {
                                 </div>
                               </td>
                               <td style={{ padding: '8px', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
-                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#059ca0' }}>{(scenarioResults.conservador.utilization * 100).toFixed(1)}%</div>
+                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#059ca0' }}>{scenarioResults.conservador.utilization.toFixed(1)}%</div>
                               </td>
                               <td style={{ padding: '8px', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
-                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1b71b8' }}>{(scenarioResults.normal.utilization * 100).toFixed(1)}%</div>
+                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1b71b8' }}>{scenarioResults.normal.utilization.toFixed(1)}%</div>
                               </td>
                               <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#fff' }}>
-                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#3bb565' }}>{(scenarioResults.alto.utilization * 100).toFixed(1)}%</div>
+                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#3bb565' }}>{scenarioResults.alto.utilization.toFixed(1)}%</div>
                               </td>
                             </tr>
                           </tbody>
@@ -6866,11 +6875,13 @@ export default function DHLAdvancedSimulator() {
                                 <PieChart>
                                   <Pie
                                     data={[
-                                      { name: 'Energía Eléctrica', value: results.monthlyElectricityCostMxn, fill: '#1d4ed8' },
-                                      { name: 'Mano de Obra', value: results.manoObraMensualMxn, fill: '#8b5cf6' },
-                                      { name: 'Impacto Hídrico (Agua)', value: results.waterCostMonthlyMxn || 0, fill: '#0ea5e9' },
-                                      { name: 'Mantenimiento Preventivo', value: results.mantenimientoMensualMxn, fill: '#ea580c' },
-                                      { name: 'Refacciones / Consumibles', value: inputs.filtrosMensualMxn + inputs.refaccionesMensualMxn + inputs.lubricacionMensualMxn, fill: '#65a30d' }
+                                      { name: 'Energía Eléctrica', value: results.energiaMensualMxn || 0, fill: '#1d4ed8' },
+                                      { name: 'Mano de Obra', value: results.manoObraMensualMxn || 0, fill: '#8b5cf6' },
+                                      { name: 'Agua', value: results.aguaMensualMxn || 0, fill: '#0ea5e9' },
+                                      { name: 'Mantenimiento', value: results.mantenimientoMensualMxn || 0, fill: '#ea580c' },
+                                      { name: 'Refacciones', value: results.refaccionesMensualMxn || 0, fill: '#65a30d' },
+                                      { name: 'Químicos', value: results.quimicosMensualMxn || 0, fill: '#059ca0' },
+                                      { name: 'Consumibles / Otros', value: results.consumiblesMensualMxn || 0, fill: '#f59e0b' }
                                     ].filter(d => d.value > 0)}
                                     cx="50%" cy="50%" innerRadius={25} outerRadius={42} paddingAngle={2} dataKey="value"
                                     labelLine={false}
@@ -6881,7 +6892,7 @@ export default function DHLAdvancedSimulator() {
                                       return percent > 0.05 ? <text x={x} y={y} fill="white" fontSize="7" fontWeight="bold" textAnchor="middle" dominantBaseline="central">{`${(percent * 100).toFixed(0)}%`}</text> : null;
                                     }}
                                   >
-                                    {[{ fill: '#1d4ed8' }, { fill: '#8b5cf6' }, { fill: '#0ea5e9' }, { fill: '#ea580c' }, { fill: '#65a30d' }].map((e, i) => <Cell key={i} fill={e.fill} />)}
+                                    {[{ fill: '#1d4ed8' }, { fill: '#8b5cf6' }, { fill: '#0ea5e9' }, { fill: '#ea580c' }, { fill: '#65a30d' }, { fill: '#059ca0' }, { fill: '#f59e0b' }].map((e, i) => <Cell key={i} fill={e.fill} />)}
                                   </Pie>
                                 </PieChart>
                               </ResponsiveContainer>
