@@ -312,12 +312,12 @@ export default function DHLAdvancedSimulator() {
     // Metadatos
     companyName: 'SOLIWASTE',
     clientName: 'FRANCISCO LOUVIER',
-    machineName: 'BWD-350',
+    machineName: 'PLD-120',
     projectName: 'PROYECTO LAVADO DE CAJAS',
     evaluationDate: '17/7/2026',
     materialType: 'CAJAS DE PLÁSTICO',
-    evaluationName: 'Lavadora y Secadora de Cajas BWD-350',
-    technicalSheetName: 'Ficha Técnica de Lavadora y Secadora de Cajas BWD-350',
+    evaluationName: 'Lavadora y Secadora Industrial PLD-120',
+    technicalSheetName: 'FICHA TÉCNICA DE LAVADORA Y SECADORA INDUSTRIAL PLD-120',
     garantia_estandar_meses: 12,
     garantia_extendida_meses: 24,
     alcance_garantia: 'Defectos de fabricación y vicios ocultos',
@@ -348,9 +348,10 @@ export default function DHLAdvancedSimulator() {
     civilVentilacion: 'Campana extractora opcional',
 
     // Operación
-    capacidad_nominal_cajas_h: 350,
-    utilization: 90,
-    oee: 85,
+    capacidad_nominal_h: 120, // variable maestra nueva
+    tipo_unidad: 'pallets', // seleccionable: pallets/cajas
+    utilization: 207.4,
+    oee: 95,
     loadFactor: 85,
     hoursPerDay: 9,
     shiftsPerDay: 1,
@@ -369,24 +370,20 @@ export default function DHLAdvancedSimulator() {
 
 
     // Energía y Motor
-    motorBombaAguaHp: 15,
-    motorSopladorHp: 10,
+    motorBombaAguaHp: 7.5,
+    motorSopladorHp: 0,
     motorBandaHp: 0.5,
     calentamientoElectricoKw: 15.00,
     secadoresIncluidosEnSoplador: 'No',
     potenciaSecadoresAdicionalKw: 2.2,
-    customInstalledPowerKw: 23.16,
-    potenciaActivaKw: 20,
+    customInstalledPowerKw: 23.17,
+    potenciaActivaKw: 19.69,
     electricityRate: 2.50,
     volumen_tanque_l: 1200,
-    caudal_interno_l_h: 2527,
-    porcentaje_recirculacion: 85,
-    reposicion_por_arrastre_l_h: 145,
-    reposicion_por_evaporacion_l_h: 0,
-    purga_l_h: 0,
+    caudal_lavado_lh: 865,
+    recirculacion_agua: 85,
     frecuencia_cambio_tanque_dias: 7,
     waterCostM3: 35.0,
-    waterDragOutPercent: 5,
 
     // Especificaciones Técnicas
     machineLength: 7.00,
@@ -405,17 +402,17 @@ export default function DHLAdvancedSimulator() {
     motorMarca: '15 hp (Bomba) | 10 hp (Soplador)',
 
     // CAPEX
-    precioEquipoUsd: 89700,
+    precioEquipoUsd: 26000,
     iva: 16,
-    tipoCambio: 18,
-    porcentajeManiobras: 2,
-    porcentajeMontajeMecanico: 3,
-    porcentajeObraCivil: 2,
-    porcentajeElectricoPrincipal: 4,
-    porcentajeCanalizacionProtecciones: 3,
+    tipoCambio: 19.6153846,
+    porcentajeManiobras: 5,
+    porcentajeMontajeMecanico: 0,
+    porcentajeObraCivil: 4,
+    porcentajeElectricoPrincipal: 7,
+    porcentajeCanalizacionProtecciones: 2,
     porcentajeExtraccionPolvo: 0,
-    porcentajeSeguridadIndustrial: 2,
-    porcentajeIngenieriaSupervision: 2,
+    porcentajeSeguridadIndustrial: 0,
+    porcentajeIngenieriaSupervision: 0,
     porcentajeContingencia: 5,
 
     // OPEX
@@ -424,10 +421,12 @@ export default function DHLAdvancedSimulator() {
     supervisoresPorTurno: 0,
     sueldoSupervisorMensual: 20000,
     mantenimientoAnualPorcentaje: 5,
+    mantenimientoMensualMxn: 8275, // Nuevo
     filtrosMensualMxn: 0,
-    refaccionesMensualMxn: 5000,
-    lubricacionMensualMxn: 1000,
-    limpiezaMensualMxn: 4000,
+    refaccionesMensualMxn: 6000,
+    lubricacionMensualMxn: 0,
+    limpiezaMensualMxn: 0,
+    quimicosMensualMxn: 7000.20, // Añadido
     consumiblesMensualMxn: 8000,
     otrosOpexMensualMxn: 0,
 
@@ -558,28 +557,26 @@ export default function DHLAdvancedSimulator() {
       let changed = false;
       let newInputs = { ...prev };
       if (newInputs.machineName === 'BWS-250' || newInputs.machineName === 'BWD-200 + BA' || newInputs.machineName === 'BWD-250' || (newInputs.evaluationName && (newInputs.evaluationName.includes('BWS-250') || newInputs.evaluationName.includes('BWD-250')))) {
-        newInputs.machineName = 'BWD-350';
-        newInputs.evaluationName = 'Lavadora y Secadora de Cajas BWD-350';
-        newInputs.technicalSheetName = 'Ficha Técnica de Lavadora y Secadora de Cajas BWD-350';
-        newInputs.customInstalledPowerKw = 57.00;
+        newInputs.machineName = 'PLD-120';
+        newInputs.evaluationName = 'Lavadora y Secadora Industrial PLD-120';
+        newInputs.technicalSheetName = 'FICHA TÉCNICA DE LAVADORA Y SECADORA INDUSTRIAL PLD-120';
+        newInputs.customInstalledPowerKw = 23.17;
         changed = true;
       }
 
-      // Force update boxes if missing pieces/day properties or if meta is 3000
-      if (!newInputs.cajas || !newInputs.cajas[0]?.piezasDia2028 || newInputs.meta_diaria_cajas === 3000 || newInputs.hoursPerDay === 8) {
-        newInputs.meta_diaria_cajas = 2819;
-        newInputs.capacidad_nominal_cajas_h = 350;
+      // Force update boxes and capabilities if missing modern parametric identifiers
+      if (!newInputs.tipo_unidad || newInputs.meta_diaria_cajas === 3000 || newInputs.machineName?.includes('BWD')) {
+        newInputs.machineName = 'PLD-120';
+        newInputs.evaluationName = 'Lavadora y Secadora Industrial PLD-120';
+        newInputs.technicalSheetName = 'FICHA TÉCNICA DE LAVADORA Y SECADORA INDUSTRIAL PLD-120';
+        newInputs.meta_diaria_cajas = 2128;
+        newInputs.capacidad_nominal_h = 120;
+        newInputs.tipo_unidad = 'pallets';
         newInputs.hoursPerDay = 9;
         newInputs.shiftsPerDay = 1;
+        newInputs.customInstalledPowerKw = 23.17;
+        newInputs.precioEquipoUsd = 26000;
         newInputs.cajas = defaultInputs.cajas;
-        newInputs.customInstalledPowerKw = 57.00;
-        changed = true;
-      }
-
-      // Also catch if they already migrated but have the bad power value or old name or legacy fixed labor cost
-      if ((newInputs.machineName === 'BWD-250' || newInputs.machineName === 'BWD-350') && (newInputs.customInstalledPowerKw === 18 || newInputs.customInstalledPowerKw === 37.02)) {
-        newInputs.machineName = 'BWD-350';
-        newInputs.customInstalledPowerKw = 57.00;
         changed = true;
       }
 
@@ -1169,51 +1166,41 @@ export default function DHLAdvancedSimulator() {
 
   // --- 1.5 CÁLCULO DINÁMICO DE CAPACIDAD POR CAJA ---
   const activeBox = (inputs.cajas || []).find(c => c.id === (inputs.activeBoxId || '1')) || (inputs.cajas || [])[0] || { largoCm: 60, nombre: 'Caja Genérica' };
-  const conveyorSpeedMH = inputs.conveyorSpeedMH !== undefined ? inputs.conveyorSpeedMH : 160;
-  const conveyorSpeedCmH = conveyorSpeedMH * 100;
-  const espacioPorCajaCm = activeBox.largoCm + (inputs.boxGapCm !== undefined ? inputs.boxGapCm : 15);
-  const capacidadGeometrica = espacioPorCajaCm > 0 ? Math.floor(conveyorSpeedCmH / espacioPorCajaCm) : 0;
-  const currentNominalCapacity = (inputs.capacidad_nominal_cajas_h !== undefined && inputs.capacidad_nominal_cajas_h !== null && Number(inputs.capacidad_nominal_cajas_h) > 0)
-    ? Number(inputs.capacidad_nominal_cajas_h)
-    : (capacidadGeometrica || 333);
+  const currentNominalCapacity = inputs.capacidad_nominal_h || 120;
 
   // --- 2. CÁLCULO DE MÉTRICAS AUTOMÁTICAS ---
   const results = useMemo(() => {
     // 1. DIMENSIONES Y CAPACIDAD
-    const footprintM2 = (inputs.machineLength || 7.0) * (inputs.machineWidth || 1.8);
+    const footprintM2 = (inputs.machineLength || 7.00) * (inputs.machineWidth || 1.80);
 
     const capacidadNominalCajasH = currentNominalCapacity;
-    // Capacidad real nunca excede la nominal, y se basa en OEE y reducción.
-    // También validamos que el layout de la caja no obligue a producir más de 200.
-    const realProductionPerHourBoxes = capacidadNominalCajasH * ((inputs.oee || 85) / 100);
+    const realProductionPerHourBoxes = capacidadNominalCajasH * ((inputs.oee || 95) / 100);
 
-    const dailyProductionBoxes = realProductionPerHourBoxes * (inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 2);
+    const dailyProductionBoxes = realProductionPerHourBoxes * (inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1);
     const weeklyProductionBoxes = dailyProductionBoxes * (inputs.daysPerWeek || 6);
     const monthlyProductionBoxes = dailyProductionBoxes * (inputs.daysPerMonth || 24);
     const annualProductionBoxes = monthlyProductionBoxes * 12;
 
-    const dailyGoalBoxes = inputs.meta_diaria_cajas || 3000;
+    const dailyGoalBoxes = inputs.meta_diaria_cajas || 2128;
     const requirementCoverage = dailyGoalBoxes > 0 ? (dailyProductionBoxes / dailyGoalBoxes) * 100 : 0;
-    const systemUtilization = dailyProductionBoxes > 0 ? (dailyGoalBoxes / dailyProductionBoxes) * 100 : 0;
+    const capacidadRequeridaH = dailyGoalBoxes / (inputs.hoursPerDay || 9);
+    const systemUtilization = realProductionPerHourBoxes > 0 ? (capacidadRequeridaH / realProductionPerHourBoxes) * 100 : 0;
     const operationalReserve = dailyProductionBoxes - dailyGoalBoxes;
-    const hoursRequired = realProductionPerHourBoxes > 0 ? (dailyGoalBoxes / realProductionPerHourBoxes) : 0;
+    const hoursRequired = capacidadRequeridaH;
 
     // 3. ENERGÍA
-    const motorBombaAguaKw = (inputs.motorBombaAguaHp || 15) * 0.746;
-    const motorSopladorKw = (inputs.motorSopladorHp || 10) * 0.746;
-    const motorBandaKw = (inputs.motorBandaHp || 0.5) * 0.746;
-    const calentamientoKw = inputs.calentamientoElectricoKw || 18.0;
+    const motorBombaAguaKw = (inputs.motorBombaAguaHp || 7.5) * 0.7457;
+    const motorSopladorKw = (inputs.motorSopladorHp || 0) * 0.7457;
+    const motorBandaKw = (inputs.motorBandaHp || 0.5) * 0.7457;
+    const calentamientoKw = inputs.calentamientoElectricoKw || 15.0;
 
-    let potenciaSecadoresAdicionalKw = 0;
-    if (inputs.secadoresIncluidosEnSoplador === 'No') {
-      potenciaSecadoresAdicionalKw = inputs.potenciaSecadoresAdicionalKw || 0;
-    }
+    let potenciaSecadoresAdicionalKw = inputs.potenciaSecadoresAdicionalKw || 2.2;
 
     const baseSumPowerKw = motorBombaAguaKw + motorSopladorKw + motorBandaKw + calentamientoKw + potenciaSecadoresAdicionalKw;
     const installedPowerKw = inputs.customInstalledPowerKw !== undefined ? inputs.customInstalledPowerKw : baseSumPowerKw;
     const averageHourlyConsumptionKw = installedPowerKw * ((inputs.loadFactor || 85) / 100);
     const hourlyElectricityCostMxn = averageHourlyConsumptionKw * (inputs.electricityRate || 2.50);
-    const dailyElectricityCostMxn = hourlyElectricityCostMxn * (inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 2);
+    const dailyElectricityCostMxn = hourlyElectricityCostMxn * (inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1);
     const monthlyElectricityCostMxn = dailyElectricityCostMxn * (inputs.daysPerMonth || 24);
     const annualElectricityCostMxn = monthlyElectricityCostMxn * 12;
 
@@ -1221,23 +1208,30 @@ export default function DHLAdvancedSimulator() {
     const electricityCostPer1000BoxesMxn = kwhPer1000Boxes * (inputs.electricityRate || 2.50);
 
     // 3.5. AGUA E HÍDRICO
-    const reposicionTotalLH = (inputs.reposicion_por_arrastre_l_h || 145) + (inputs.reposicion_por_evaporacion_l_h || 0) + (inputs.purga_l_h || 0);
+    const caudalLavado = inputs.caudal_lavado_lh || 865;
+    const recirculacion = inputs.recirculacion_agua !== undefined ? inputs.recirculacion_agua : 85;
+
+    // Reposicion de agua (L/h)
+    const reposicionTotalLH = caudalLavado * (1 - (recirculacion / 100));
     const consumoPorCajaL = realProductionPerHourBoxes > 0 ? (reposicionTotalLH / realProductionPerHourBoxes) : 0;
-    const consumoDiarioOperacionL = reposicionTotalLH * (inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 2);
-    const consumoPorCambioTanqueLDia = (inputs.volumen_tanque_l || 1200) / (inputs.frecuencia_cambio_tanque_dias || 7);
-    const consumoDiarioTotalL = consumoDiarioOperacionL + consumoPorCambioTanqueLDia;
+
+    // Consumo Diario L/día
+    const consumoDiarioOperacionL = reposicionTotalLH * (inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1);
+
+    // El costo incluye la operación base del mes sin agregar de forma secundaria lo del tanque (según nuevo requerimiento)
+    const consumoPorCambioTanqueLDia = 0;
+    const consumoDiarioTotalL = consumoDiarioOperacionL;
     const totalWaterMonthlyLiters = consumoDiarioTotalL * (inputs.daysPerMonth || 24);
     const waterCostMonthlyMxn = (totalWaterMonthlyLiters / 1000) * (inputs.waterCostM3 || 35.0);
 
-    // 3.6 ESCENARIOS (70%, 85%, 95%, 100%)
+    // 3.6 ESCENARIOS
     const scenarios = [
       { name: 'Conservador', oee: 70 },
       { name: 'Normal', oee: 85 },
-      { name: 'Alto Rendimiento', oee: 95 },
-      { name: 'Máximo Teórico', oee: 100 }
+      { name: 'Alto Rendimiento', oee: 95 }
     ].map(esc => {
-      const escCapH = Math.min(capacidadNominalCajasH, capacidadNominalCajasH * (esc.oee / 100));
-      const escCapDia = escCapH * (inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 2);
+      const escCapH = capacidadNominalCajasH * (esc.oee / 100);
+      const escCapDia = escCapH * (inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1);
       const escHorasReq = escCapH > 0 ? (dailyGoalBoxes / escCapH) : 0;
       const escCob = dailyGoalBoxes > 0 ? (escCapDia / dailyGoalBoxes) * 100 : 0;
       const escMargen = escCapDia - dailyGoalBoxes;
@@ -1276,11 +1270,15 @@ export default function DHLAdvancedSimulator() {
     const manoObraMensualMxn = (inputs.manoObraMensualMxn !== undefined && inputs.manoObraMensualMxn !== 48000)
       ? inputs.manoObraMensualMxn
       : manoObraCalculada;
+
     const mantenimientoMensualMxn = inputs.mantenimientoMensualMxn || 8275;
     const refaccionesMensualMxn = inputs.refaccionesMensualMxn || 6000;
+    const quimicosMensualMxn = inputs.quimicosMensualMxn || 7000.20;
+    const energiaMensualMxn = monthlyElectricityCostMxn || 0;
+    const aguaMensualMxn = waterCostMonthlyMxn || 0;
+    const consumiblesMensualMxn = inputs.consumiblesMensualMxn || 8000;
 
-    const quimicosMensualMxn = inputs.quimicosMensualMxn !== undefined ? inputs.quimicosMensualMxn : 7000.20;
-    const opexMensualMxn = (monthlyElectricityCostMxn || 0) + (waterCostMonthlyMxn || 0) + manoObraMensualMxn + mantenimientoMensualMxn + refaccionesMensualMxn + quimicosMensualMxn + (inputs.supervisionMensualMxn || 0) + (inputs.consumiblesMensualMxn || 0) + (inputs.tratamientoEfluentesMensualMxn || 0) + (inputs.disposicionResiduosMensualMxn || 0) + (inputs.otrosOpexMensualMxn || 0);
+    const opexMensualMxn = energiaMensualMxn + aguaMensualMxn + manoObraMensualMxn + mantenimientoMensualMxn + refaccionesMensualMxn + quimicosMensualMxn + consumiblesMensualMxn;
 
     const opexAnualMxn = opexMensualMxn * 12;
     const opexPorCajaMxn = monthlyProductionBoxes > 0 ? (opexMensualMxn / monthlyProductionBoxes) : 0;
@@ -1353,66 +1351,65 @@ export default function DHLAdvancedSimulator() {
     if (!results) return null;
 
     const nominalCapacity = currentNominalCapacity;
+    const dailyGoalBoxes = inputs.meta_diaria_cajas || 2128;
     const calcScenario = (params) => {
       const { oee, factorCarga, horasDia, diasMes } = params;
-      const capacidadRealKgH = nominalCapacity * (oee / 100);
-      const produccionDiariaKg = capacidadRealKgH * horasDia;
-      const produccionDiariaTon = produccionDiariaKg / 1000;
-      const produccionMensualTon = produccionDiariaTon * diasMes;
+      const capacidadRealH = nominalCapacity * (oee / 100);
+      const produccionDiaria = capacidadRealH * horasDia;
+      const produccionMensual = produccionDiaria * diasMes;
 
-      const baseMotorsKw = ((inputs.motorBombaAguaHp || 120) + (inputs.motorSopladorHp || 10)) * 0.746;
-      const installedPowerKw = (inputs.calentamientoElectricoKw !== undefined && inputs.calentamientoElectricoKw !== 96.98)
-        ? inputs.calentamientoElectricoKw
-        : (baseMotorsKw + 3.30);
+      const installedPowerKw = results.installedPowerKw || 23.17;
       const consumoPromedioHoraKwh = installedPowerKw * (factorCarga / 100);
       const costoElectricoHora = consumoPromedioHoraKwh * (inputs.electricityRate || 2.50);
       const costoElectricoMensual = costoElectricoHora * horasDia * diasMes;
+      const costoElectricoPor1000 = capacidadRealH > 0 ? (consumoPromedioHoraKwh / capacidadRealH) * 1000 * (inputs.electricityRate || 2.5) : 0;
 
-      const manoObraMensual = ((inputs.operadoresPorTurno || 0) * (inputs.shiftsPerDay || 2) * (inputs.sueldoOperadorMensual || 0)) + ((inputs.supervisoresPorTurno || 0) * (inputs.shiftsPerDay || 2) * (inputs.sueldoSupervisorMensual || 0));
-      const capexInstaladoMxn = results.capexInstaladoMxn || 0;
-      const mantenimientoMensualMxn = (capexInstaladoMxn * ((inputs.mantenimientoAnualPorcentaje || 0) / 100)) / 12;
+      const manoObraMensual = ((inputs.operadoresPorTurno !== undefined ? inputs.operadoresPorTurno : 2) * (inputs.shiftsPerDay || 1) * (inputs.sueldoOperadorMensual !== undefined ? inputs.sueldoOperadorMensual : 12000)) +
+        ((inputs.supervisoresPorTurno || 0) * (inputs.shiftsPerDay || 1) * (inputs.sueldoSupervisorMensual !== undefined ? inputs.sueldoSupervisorMensual : 20000));
 
-      const opexMensualMxn = (costoElectricoMensual || 0) + (manoObraMensual || 0) + (mantenimientoMensualMxn || 0) + (inputs.filtrosMensualMxn || 0) + (inputs.refaccionesMensualMxn || 0) + (inputs.lubricacionMensualMxn || 0) + (inputs.limpiezaMensualMxn || 0) + (inputs.consumiblesMensualMxn || 0) + (inputs.otrosOpexMensualMxn || 0);
-      const opexPorTon = produccionMensualTon > 0 ? (opexMensualMxn / produccionMensualTon) : 0;
-      const coberturaMeta = (inputs.meta_diaria_cajas || 0) > 0 ? (produccionDiariaKg / inputs.meta_diaria_cajas) * 100 : 0;
+      const mantenimientoMensual = inputs.mantenimientoMensualMxn || 8275;
+      const refaccionesMensual = inputs.refaccionesMensualMxn || 6000;
+      const quimicosMensual = inputs.quimicosMensualMxn || 7000.20;
+      const aguaMensual = results.waterCostMonthlyMxn || 0;
+      const consumiblesMensual = inputs.consumiblesMensualMxn || 8000;
 
-      let ingresoMensual = 0;
-      if (inputs.usarModoIngresoVenta) ingresoMensual = produccionMensualTon * (inputs.precioVentaTonMxn || 0);
-      else if (inputs.usarModoAhorroInterno) ingresoMensual = produccionMensualTon * (inputs.ahorroPorTonMxn || 0);
+      const opexMensualMxn = costoElectricoMensual + aguaMensual + manoObraMensual + mantenimientoMensual + refaccionesMensual + quimicosMensual + consumiblesMensual;
 
-      const flujoOperativoMensual = ingresoMensual - opexMensualMxn;
-      const payback = flujoOperativoMensual > 0 ? (capexInstaladoMxn / flujoOperativoMensual) : Infinity;
+      const opexPor1000 = produccionMensual > 0 ? (opexMensualMxn / produccionMensual) * 1000 : 0;
+      const coberturaMeta = dailyGoalBoxes > 0 ? (produccionDiaria / dailyGoalBoxes) * 100 : 0;
+      const margenDiario = produccionDiaria - dailyGoalBoxes;
 
       let estado = "NO VIABLE";
       let estadoColor = "text-red-700 bg-red-50 border-red-200";
-      if (flujoOperativoMensual > 0) {
-        if (payback <= 24) { estado = "VIABLE"; estadoColor = "text-emerald-600 bg-emerald-50 border-emerald-200"; }
-        else if (payback <= 36) { estado = "REVISAR"; estadoColor = "text-amber-600 bg-amber-50 border-amber-200"; }
+      if (produccionDiaria >= dailyGoalBoxes) {
+        estado = "VIABLE";
+        estadoColor = "text-emerald-600 bg-emerald-50 border-emerald-200";
       }
 
       return {
         ...params,
-        capacidadRealKgH,
-        dailyProdTon: produccionDiariaTon,
-        produccionMensualTon,
+        capacidadRealH,
+        dailyProd: produccionDiaria,
+        produccionMensual,
         consumoPromedioHoraKwh,
         costoElectricoMensual,
+        costoElectricoPor1000,
         opexMensual: opexMensualMxn,
-        costPerTon: opexPorTon,
+        costPer1000: opexPor1000,
         coverage: coberturaMeta,
-        utilization: produccionDiariaTon > 0 ? ((inputs.meta_diaria_cajas / 1000) / produccionDiariaTon) : 0,
-        payback,
+        margenDiario,
+        utilization: produccionDiaria > 0 ? (dailyGoalBoxes / produccionDiaria) * 100 : 0,
         estado,
         estadoColor
       };
     };
 
     return {
-      conservador: calcScenario({ oee: 70, factorCarga: inputs.loadFactor || 85, horasDia: (inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1), diasMes: inputs.daysPerMonth || 24 }),
-      normal: calcScenario({ oee: 85, factorCarga: inputs.loadFactor || 85, horasDia: (inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1), diasMes: inputs.daysPerMonth || 24 }),
-      alto: calcScenario({ oee: 95, factorCarga: inputs.loadFactor || 85, horasDia: (inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1), diasMes: inputs.daysPerMonth || 24 })
+      conservador: calcScenario({ oee: 70, factorCarga: inputs.loadFactor || 85, horasDia: (inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1), diasMes: inputs.daysPerMonth || 24 }),
+      normal: calcScenario({ oee: 85, factorCarga: inputs.loadFactor || 85, horasDia: (inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1), diasMes: inputs.daysPerMonth || 24 }),
+      alto: calcScenario({ oee: 95, factorCarga: inputs.loadFactor || 85, horasDia: (inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1), diasMes: inputs.daysPerMonth || 24 })
     };
-  }, [inputs, results.capexInstaladoMxn]);
+  }, [inputs, results, currentNominalCapacity]);
 
   // Sincronizar de entradas al cambiar de escenario (para simular de forma rápida)
   const applyScenario = (type) => {
@@ -5375,12 +5372,12 @@ export default function DHLAdvancedSimulator() {
                             </div>
                             <div style={{ flex: 1 }}>
                               <div style={{ fontSize: 11.5, fontWeight: 900, color: '#0f2038' }}>{tf('Capacidad Nominal vs Real')}</div>
-                              <div style={{ fontSize: 9.5, color: '#64748b', marginTop: 3 }}>Nominal: 350 c/h <br /> Real (OEE {inputs.oee}%): {results.realProductionPerHourBoxes.toFixed(0)} c/h</div>
+                              <div style={{ fontSize: 9.5, color: '#64748b', marginTop: 3 }}>Nominal: {currentNominalCapacity} {inputs.tipo_unidad === 'pallets' ? 'p/h' : 'c/h'} <br /> Real (OEE {inputs.oee}%): {results.realProductionPerHourBoxes.toFixed(0)} {inputs.tipo_unidad === 'pallets' ? 'p/h' : 'c/h'}</div>
                             </div>
                             <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' }}>
                               <span style={{ fontSize: 26, fontWeight: 900, color: '#008299', lineHeight: 1 }}>{results.realProductionPerHourBoxes.toFixed(0)}</span>
-                              <span style={{ fontSize: 12, fontWeight: 900, color: '#008299' }}>{tf('c/h')}</span>
-                              <span style={{ fontSize: 9, color: '#0f766e', fontWeight: 800, marginTop: 4 }}>Nom: 350 {tf('c/h')}</span>
+                              <span style={{ fontSize: 12, fontWeight: 900, color: '#008299' }}>{inputs.tipo_unidad === 'pallets' ? tf('p/h') : tf('c/h')}</span>
+                              <span style={{ fontSize: 9, color: '#0f766e', fontWeight: 800, marginTop: 4 }}>Nom: {currentNominalCapacity} {inputs.tipo_unidad === 'pallets' ? tf('p/h') : tf('c/h')}</span>
                             </div>
                           </div>
 
@@ -5391,12 +5388,12 @@ export default function DHLAdvancedSimulator() {
                             </div>
                             <div style={{ flex: 1 }}>
                               <div style={{ fontSize: 11.5, fontWeight: 900, color: '#0f2038' }}>{tf('Margen Diario Operativo')}</div>
-                              <div style={{ fontSize: 9.5, color: '#64748b', marginTop: 3 }}>Nominal: {((inputs.capacidad_nominal_cajas_h * (inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1)) - inputs.meta_diaria_cajas) > 0 ? '+' : ''}{((inputs.capacidad_nominal_cajas_h * (inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1)) - inputs.meta_diaria_cajas).toFixed(0)} c/día <br /> Real (OEE {inputs.oee}%): {(results.dailyProductionBoxes - inputs.meta_diaria_cajas) > 0 ? '+' : ''}{(results.dailyProductionBoxes - inputs.meta_diaria_cajas).toFixed(0)} c/día</div>
+                              <div style={{ fontSize: 9.5, color: '#64748b', marginTop: 3 }}>Nominal: {((currentNominalCapacity * (inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1)) - (inputs.meta_diaria_cajas || 2128)) > 0 ? '+' : ''}{((currentNominalCapacity * (inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1)) - (inputs.meta_diaria_cajas || 2128)).toFixed(0)} {inputs.tipo_unidad === 'pallets' ? 'p/día' : 'c/día'} <br /> Real (OEE {inputs.oee}%): {(results.dailyProductionBoxes - (inputs.meta_diaria_cajas || 2128)) > 0 ? '+' : ''}{(results.dailyProductionBoxes - (inputs.meta_diaria_cajas || 2128)).toFixed(0)} {inputs.tipo_unidad === 'pallets' ? 'p/día' : 'c/día'}</div>
                             </div>
                             <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' }}>
-                              <span style={{ fontSize: 26, fontWeight: 900, color: (results.dailyProductionBoxes - inputs.meta_diaria_cajas) < 0 ? '#ef4444' : '#008299', lineHeight: 1 }}>{(results.dailyProductionBoxes - inputs.meta_diaria_cajas) > 0 ? '+' : ''}{(results.dailyProductionBoxes - inputs.meta_diaria_cajas).toFixed(0)}</span>
-                              <span style={{ fontSize: 12, fontWeight: 900, color: (results.dailyProductionBoxes - inputs.meta_diaria_cajas) < 0 ? '#ef4444' : '#008299' }}>{tf('c/día')}</span>
-                              <span style={{ fontSize: 9, color: (results.dailyProductionBoxes - inputs.meta_diaria_cajas) < 0 ? '#ef4444' : '#0f766e', fontWeight: 800, marginTop: 4 }}>Nom: {((inputs.capacidad_nominal_cajas_h * (inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1)) - inputs.meta_diaria_cajas) > 0 ? '+' : ''}{((inputs.capacidad_nominal_cajas_h * (inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1)) - inputs.meta_diaria_cajas).toFixed(0)} {tf('c/día')}</span>
+                              <span style={{ fontSize: 26, fontWeight: 900, color: (results.dailyProductionBoxes - (inputs.meta_diaria_cajas || 2128)) < 0 ? '#ef4444' : '#008299', lineHeight: 1 }}>{(results.dailyProductionBoxes - (inputs.meta_diaria_cajas || 2128)) > 0 ? '+' : ''}{(results.dailyProductionBoxes - (inputs.meta_diaria_cajas || 2128)).toFixed(0)}</span>
+                              <span style={{ fontSize: 12, fontWeight: 900, color: (results.dailyProductionBoxes - (inputs.meta_diaria_cajas || 2128)) < 0 ? '#ef4444' : '#008299' }}>{inputs.tipo_unidad === 'pallets' ? tf('p/día') : tf('c/día')}</span>
+                              <span style={{ fontSize: 9, color: (results.dailyProductionBoxes - (inputs.meta_diaria_cajas || 2128)) < 0 ? '#ef4444' : '#0f766e', fontWeight: 800, marginTop: 4 }}>Nom: {((currentNominalCapacity * (inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1)) - (inputs.meta_diaria_cajas || 2128)) > 0 ? '+' : ''}{((currentNominalCapacity * (inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1)) - (inputs.meta_diaria_cajas || 2128)).toFixed(0)} {inputs.tipo_unidad === 'pallets' ? tf('p/día') : tf('c/día')}</span>
                             </div>
                           </div>
 
@@ -6114,9 +6111,9 @@ export default function DHLAdvancedSimulator() {
                         <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '10px 14px' }}>
                           <span style={{ display: 'block', fontSize: '8px', fontWeight: 800, color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>CAPACIDAD PROPUESTA</span>
                           <div style={{ fontSize: '20px', fontWeight: 900, color: '#14532d', marginTop: '2px' }}>
-                            350 <span style={{ fontSize: '10px', color: '#16a34a', fontWeight: 'bold' }}>nom</span> / 333 <span style={{ fontSize: '10px', color: '#16a34a', fontWeight: 'bold' }}>real</span>
+                            {currentNominalCapacity} <span style={{ fontSize: '10px', color: '#16a34a', fontWeight: 'bold' }}>nom</span> / {results.realProductionPerHourBoxes ? results.realProductionPerHourBoxes.toFixed(0) : (currentNominalCapacity * (inputs.oee / 100)).toFixed(0)} <span style={{ fontSize: '10px', color: '#16a34a', fontWeight: 'bold' }}>real</span>
                           </div>
-                          <span style={{ fontSize: '8px', fontWeight: 700, color: '#22c55e' }}>cajas/h (350 nominal / 333 @ 95% OEE)</span>
+                          <span style={{ fontSize: '8px', fontWeight: 700, color: '#22c55e' }}>{inputs.tipo_unidad === 'pallets' ? tf('pallets/h') : tf('cajas/h')} ({currentNominalCapacity} nominal / {results.realProductionPerHourBoxes ? results.realProductionPerHourBoxes.toFixed(0) : (currentNominalCapacity * (inputs.oee / 100)).toFixed(0)} @ {inputs.oee}% OEE)</span>
                         </div>
 
                         <div style={{ background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: '12px', padding: '10px 14px' }}>
@@ -6250,29 +6247,23 @@ export default function DHLAdvancedSimulator() {
                             </thead>
                             <tbody>
                               {Array.from({ length: 5 }).map((_, i) => {
-                                const reqDia = inputs.meta_diaria_cajas || 2819;
+                                const reqDia = inputs.meta_diaria_cajas || 2128;
                                 const baseHoursPerDay = inputs.hoursPerDay || 9;
                                 const daysPerWeek = inputs.daysPerWeek || 6;
 
-                                const capHNominal = currentNominalCapacity || 350;
+                                const capHNominal = currentNominalCapacity || 120;
                                 const yearOEE = Math.min(0.99, ((inputs.oee || 95) / 100) + (i * 0.005));
-                                const capH = capHNominal;
+                                const turn = inputs.shiftsPerDay || 1;
 
-                                let turn = inputs.shiftsPerDay || 1;
-                                let hrsPerShiftDay = baseHoursPerDay;
-                                let efT = hrsPerShiftDay * yearOEE;
-                                let tDisp = efT * turn;
-                                let reqH = reqDia / tDisp;
+                                const produccion_h = capHNominal * yearOEE;
+                                const produccion_dia = produccion_h * baseHoursPerDay * turn;
 
-                                if (reqH > capH * yearOEE) {
-                                  turn = Math.max(turn, Math.ceil(reqDia / (capH * yearOEE * efT)));
-                                  tDisp = efT * turn;
-                                  reqH = reqDia / tDisp;
-                                }
+                                const reqH = reqDia / (baseHoursPerDay * turn);
+                                const bal_dia = produccion_dia - reqDia;
+                                const cob = reqDia > 0 ? (produccion_dia / reqDia) * 100 : 0;
 
                                 const hrsB = baseHoursPerDay * daysPerWeek * turn;
-                                const bal = capH - reqH;
-                                const cob = (capH / reqH) * 100;
+                                let efT = baseHoursPerDay * yearOEE;
 
                                 return (
                                   <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
@@ -6280,10 +6271,10 @@ export default function DHLAdvancedSimulator() {
                                     <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'center' }}>{hrsB}</td>
                                     <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'center' }}>{efT.toFixed(2)}</td>
                                     <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'center' }}>{turn}</td>
-                                    <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'center' }}>{tDisp.toFixed(2)}</td>
-                                    <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'right' }}>{reqH.toFixed(1)}</td>
-                                    <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'right' }}>{capH.toFixed(1)}</td>
-                                    <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'right', fontWeight: 'bold', color: bal >= 0 ? '#16a34a' : '#ef4444' }}>{bal >= 0 ? '+' : ''}{bal.toFixed(1)}</td>
+                                    <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'center' }}>{(efT * turn).toFixed(2)}</td>
+                                    <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'right', fontWeight: 'bold' }}>{reqH.toFixed(2)}</td>
+                                    <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'right', fontWeight: 'bold', color: '#0f766e' }}>{produccion_h.toFixed(2)}</td>
+                                    <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'right', fontWeight: 'bold', color: bal_dia < 0 ? '#ef4444' : '#10b981' }}>{bal_dia > 0 ? '+' : ''}{bal_dia.toFixed(0)}</td>
                                     <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'right', fontWeight: 'bold', color: cob >= 100 ? '#16a34a' : '#f97316' }}>{cob.toFixed(1)}%</td>
                                     <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'center', color: '#64748b' }}>1 maq.</td>
                                   </tr>
