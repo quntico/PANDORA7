@@ -5971,36 +5971,36 @@ export default function DHLAdvancedSimulator() {
                           </thead>
                           <tbody>
                             <tr>
-                              <td style={REPORT_STYLES.td}>{tf('Motor Bomba de Agua (Lavado Principal 7.5 HP)')}</td>
+                              <td style={REPORT_STYLES.td}>{tf('Motor Bomba de Agua (Lavado Principal 20 HP)')}</td>
                               <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{new Intl.NumberFormat().format(currentNominalCapacity)} {tf('cajas/h')}</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>5.59 kW</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(5.59 * (inputs.loadFactor / 100)).toFixed(2)} kW</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>14.91 kW</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(14.91 * (inputs.loadFactor / 100)).toFixed(2)} kW</td>
                             </tr>
                             <tr>
-                              <td style={REPORT_STYLES.td}>{tf('Motor Banda Transportadora (1/2 HP)')}</td>
+                              <td style={REPORT_STYLES.td}>{tf('Motor Banda Transportadora (1 HP)')}</td>
                               <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>-</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>0.37 kW</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(0.37 * (inputs.loadFactor / 100)).toFixed(2)} kW</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>0.75 kW</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(0.75 * (inputs.loadFactor / 100)).toFixed(2)} kW</td>
                             </tr>
                             <tr>
-                              <td style={REPORT_STYLES.td}>{tf('Módulo de Secado (Motor 2.2 kW)')}</td>
+                              <td style={REPORT_STYLES.td}>{tf('Módulos de Secado por Aire (Blower 25 HP + Adicional)')}</td>
                               <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{new Intl.NumberFormat().format(currentNominalCapacity)} {tf('cajas/h')}</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>2.20 kW</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(2.20 * (inputs.loadFactor / 100)).toFixed(2)} kW</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>21.34 kW</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(21.34 * (inputs.loadFactor / 100)).toFixed(2)} kW</td>
                             </tr>
                             <tr>
                               <td style={REPORT_STYLES.td}>{tf('Sistema Calentamiento Hídrico (Resistencias)')}</td>
                               <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>60-80°C</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>15.00 kW</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(15.00 * (inputs.loadFactor / 100)).toFixed(2)} kW</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>20.00 kW</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(20.00 * (inputs.loadFactor / 100)).toFixed(2)} kW</td>
                             </tr>
                           </tbody>
                           <tfoot>
                             <tr style={{ background: '#f8fafc', fontWeight: 800 }}>
                               <td style={{ ...REPORT_STYLES.td, color: '#0d9488' }}>{tf('Total Sistema de Lavado PLD-120')}</td>
                               <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>-</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{(results.installedPowerKw || 23.16).toFixed(2)} kW</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488' }}>{(results.averageHourlyConsumptionKw || 19.68).toFixed(2)} kW</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{(results.installedPowerKw || 57.00).toFixed(2)} kW</td>
+                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488' }}>{(results.averageHourlyConsumptionKw || 48.45).toFixed(2)} kW</td>
                             </tr>
                           </tfoot>
                         </table>
@@ -6015,10 +6015,10 @@ export default function DHLAdvancedSimulator() {
                         <table style={{ width: '100%', borderCollapse: 'collapse', border: 'none', fontSize: 10, lineHeight: '1.2' }}>
                           <tbody>
                             {[
-                              { name: 'Bomba Principal (7.5 HP)', kw: 5.59 },
-                              { name: 'Banda Transp. (0.5 HP)', kw: 0.37 },
-                              { name: 'Módulo Secado (2.2 kW)', kw: 2.20 },
-                              { name: 'Calentamiento (15 kW)', kw: 15.00 }
+                              { name: 'Bomba Principal (20 HP)', kw: 14.91 },
+                              { name: 'Banda Transp. (1 HP)', kw: 0.75 },
+                              { name: 'Sopladores (25 HP +)', kw: 21.34 },
+                              { name: 'Calentamiento (20 kW)', kw: 20.00 }
                             ].map((eq, i) => {
                               const percentage = (eq.kw / (results.installedPowerKw || 23.16)) * 100;
                               return (
@@ -6075,7 +6075,7 @@ export default function DHLAdvancedSimulator() {
                           </thead>
                           <tbody>
                             {[
-                              { comp: 'Modelo del Equipo', spec: inputs.machineName || 'BWD-250', detail: inputs.machineNameDetalle !== undefined ? inputs.machineNameDetalle : 'Lavadora Industrial de Cajas (Agua y Aire)' },
+                              { comp: 'Modelo del Equipo', spec: inputs.machineName || 'PLD-120', detail: inputs.machineNameDetalle !== undefined ? inputs.machineNameDetalle : 'Lavadora Industrial de Cajas (Agua y Aire)' },
                               { comp: 'Aplicación Operativa', spec: inputs.aplicacionOperativa !== undefined ? inputs.aplicacionOperativa : 'Lavado, enjuague y secado de cajas plásticas', detail: inputs.aplicacionDetalle !== undefined ? inputs.aplicacionDetalle : 'Eficiencia de Lavado: 90-95% | Secado: 80-90%' },
                               { comp: 'Capacidad Nominal (Dinámica)', spec: `${new Intl.NumberFormat().format(currentNominalCapacity)} cajas/h`, detail: `Calculada para: ${activeBox.nombre} (${activeBox.largoCm}cm)` },
                               { comp: 'Motorización Principal (Bomba)', spec: `${inputs.motorBombaAguaHp || 15} hp ${inputs.motorMarca || 'Siemens'}`, detail: inputs.motorPrincipalDetalle !== undefined ? inputs.motorPrincipalDetalle : 'Motor de Bomba de Agua: 15 hp' },
@@ -6086,8 +6086,8 @@ export default function DHLAdvancedSimulator() {
                               { comp: 'Control de Tracción', spec: inputs.presionLavadoBar ? `${inputs.presionLavadoBar} m/min` : 'Velocidad Variable', detail: inputs.presionLavadoBarDetalle !== undefined ? inputs.presionLavadoBarDetalle : 'Inversor: Incluido (SIEMENS)' },
                               { comp: 'Sistema de Control', spec: inputs.particulaFinal || 'Gabinete NEMA 4 (Estanco)', detail: inputs.particulaFinalDetalle !== undefined ? inputs.particulaFinalDetalle : 'Contactores y Relays: SCHNEIDER' },
                               { comp: 'Alimentación Eléctrica', spec: inputs.separadorMagnetico || 'Trifásica 60Hz', detail: inputs.separadorMagneticoDetalle !== undefined ? inputs.separadorMagneticoDetalle : 'Voltaje: 220/440V' },
-                              { comp: 'Dimensiones Físicas', spec: `Largo: ${inputs.machineLength || 11.5} m | Ancho: ${inputs.machineWidth || 1.8} m | Alto: ${inputs.machineHeight || 1.75} m`, detail: `Footprint: ${((inputs.machineLength || 11.5) * (inputs.machineWidth || 1.8)).toFixed(2)} m²` },
-                              { comp: 'Peso Total Equipo', spec: `${(!inputs.pesoOperativoKg || inputs.pesoOperativoKg === 1000) ? 1800 : inputs.pesoOperativoKg} kg`, detail: inputs.pesoOperativoKgDetalle !== undefined ? inputs.pesoOperativoKgDetalle : 'Estructura en Acero Inoxidable' },
+                              { comp: 'Dimensiones Físicas', spec: `Largo: ${inputs.machineLength || 7.00} m | Ancho: ${inputs.machineWidth || 1.80} m | Alto: ${inputs.machineHeight || 1.70} m`, detail: `Footprint: ${((inputs.machineLength || 7.00) * (inputs.machineWidth || 1.80)).toFixed(2)} m²` },
+                              { comp: 'Peso Total Equipo', spec: `${(!inputs.pesoOperativoKg || inputs.pesoOperativoKg === 1000) ? 880 : inputs.pesoOperativoKg} kg`, detail: inputs.pesoOperativoKgDetalle !== undefined ? inputs.pesoOperativoKgDetalle : 'Estructura en Acero Inoxidable' },
                               { comp: 'Componentes Eléctricos', spec: inputs.componentesElectricos || 'Schneider / Siemens', detail: inputs.componentesElectricosDetalle !== undefined ? inputs.componentesElectricosDetalle : 'Contactores SCHNEIDER, Inversor SIEMENS' },
                               { comp: 'Nivel de Ruido', spec: `${inputs.ruidoDb || 60} dB`, detail: inputs.ruidoDbDetalle !== undefined ? inputs.ruidoDbDetalle : 'Nivel óptimo para piso de producción' },
                             ].map((t, idx) => (
@@ -6618,9 +6618,9 @@ export default function DHLAdvancedSimulator() {
                         {/* TOP ROW: 4 CARDS */}
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
                           <div style={{ border: '1px solid #e2e8f0', borderRadius: '16px', padding: '16px', background: '#fff', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)' }}>
-                            <div style={{ fontSize: '22px', fontWeight: 900, color: '#0891b2', marginBottom: '4px' }}>{new Intl.NumberFormat().format(Math.round(realCapH * 3.5))} L/h</div>
+                            <div style={{ fontSize: '22px', fontWeight: 900, color: '#0891b2', marginBottom: '4px' }}>{new Intl.NumberFormat().format(Math.round(realWaterPerHr / (1 - (inputs.recirculacion_agua !== undefined ? inputs.recirculacion_agua : 85) / 100)))} L/h</div>
                             <div style={{ fontSize: '11px', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>Caudal de Lavado Interno</div>
-                            <div style={{ fontSize: '9px', color: '#64748b' }}>Volumen interno recirculado</div>
+                            <div style={{ fontSize: '9px', color: '#64748b' }}>Volumen interno calculado operando</div>
                           </div>
                           <div style={{ border: '1px solid #e2e8f0', borderRadius: '16px', padding: '16px', background: '#fff', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)' }}>
                             <div style={{ fontSize: '22px', fontWeight: 900, color: '#0891b2', marginBottom: '4px' }}>{new Intl.NumberFormat().format(Math.round(realWaterPerHr))} L/h</div>
@@ -6668,6 +6668,14 @@ export default function DHLAdvancedSimulator() {
                                   <div style={{ fontSize: '9px', color: '#64748b' }}>Frecuencia de purga e higienización total</div>
                                 </div>
                                 <div style={{ fontSize: '16px', fontWeight: 900, color: '#0891b2' }}>Cada {Math.round(6 / (inputs.waterChangesPerWeek || 1))} días</div>
+                              </div>
+
+                              <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '12px', borderBottom: '1px solid #f1f5f9', alignItems: 'center' }}>
+                                <div>
+                                  <div style={{ fontSize: '11px', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>Consumo Específico Hídrico (caja)</div>
+                                  <div style={{ fontSize: '9px', color: '#64748b' }}>Volumen por unidad lavada</div>
+                                </div>
+                                <div style={{ fontSize: '16px', fontWeight: 900, color: '#0891b2' }}>{(realWaterPerHr / realCapH).toFixed(2)} L/caja</div>
                               </div>
 
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
