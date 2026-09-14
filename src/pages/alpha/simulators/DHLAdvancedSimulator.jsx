@@ -1296,6 +1296,14 @@ export default function DHLAdvancedSimulator() {
     const flujoOperativoMensual = ingresoMensual - opexMensualMxn;
     const flujoOperativoAnual = flujoOperativoMensual * 12;
     const paybackMeses = flujoOperativoMensual > 0 ? (capexInstaladoMxn / flujoOperativoMensual) : Infinity;
+    const roiAnual = capexInstaladoMxn > 0 && flujoOperativoAnual > 0 ? (flujoOperativoAnual / capexInstaladoMxn) * 100 : 0;
+
+    let puntoEquilibrioTonMes = 0;
+    if (inputs.usarModoIngresoVenta && (inputs.precioVentaCajaMxn || 0) > 0) {
+      puntoEquilibrioTonMes = opexMensualMxn / inputs.precioVentaCajaMxn;
+    } else if (inputs.usarModoAhorroInterno && (inputs.ahorroPorCajaMxn || 0) > 0) {
+      puntoEquilibrioTonMes = opexMensualMxn / inputs.ahorroPorCajaMxn;
+    }
 
     // ESTADO OPERATIVO (DICTAMEN)
     let estadoOperativo = "NO CUMPLE";
@@ -1346,7 +1354,9 @@ export default function DHLAdvancedSimulator() {
       // OPEX
       manoObraMensualMxn, mantenimientoMensualMxn, opexMensualMxn, opexAnualMxn, opexPorCajaMxn, opexPor1000CajasMxn,
       // WATER
-      reposicionTotalLH, consumoPorCajaL, consumoDiarioOperacionL, consumoPorCambioTanqueLDia, consumoDiarioTotalL
+      reposicionTotalLH, consumoPorCajaL, consumoDiarioOperacionL, consumoPorCambioTanqueLDia, consumoDiarioTotalL,
+      // FINANCE
+      ingresoMensual, flujoOperativoMensual, flujoOperativoAnual, paybackMeses, roiAnual, puntoEquilibrioTonMes
     };
   }, [inputs, currentNominalCapacity]);
 
