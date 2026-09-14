@@ -2947,7 +2947,7 @@ export default function DHLAdvancedSimulator() {
 
                   <div className="mt-4">
                     <span className="text-3xl font-black text-slate-900">{new Intl.NumberFormat().format(results.realProductionPerHourBoxes.toFixed(0))}</span>
-                    <span className="text-xs font-bold text-slate-400 ml-1">cajas/h</span>
+                    <span className="text-xs font-bold text-slate-400 ml-1">{inputs.tipo_unidad === 'pallets' ? tf('p/h') : tf('c/h')}</span>
                   </div>
 
                   <div className="flex flex-col gap-1.5 mt-2">
@@ -2956,12 +2956,12 @@ export default function DHLAdvancedSimulator() {
                       <div className="flex items-center gap-1">
                         <input
                           type="number"
-                          value={inputs.capacidad_nominal_cajas_h !== undefined ? inputs.capacidad_nominal_cajas_h : currentNominalCapacity}
-                          onChange={(e) => setInputs(prev => ({ ...prev, capacidad_nominal_cajas_h: parseFloat(e.target.value) || 0 }))}
+                          value={inputs.capacidad_nominal_h !== undefined ? inputs.capacidad_nominal_h : currentNominalCapacity}
+                          onChange={(e) => setInputs(prev => ({ ...prev, capacidad_nominal_h: parseFloat(e.target.value) || 0 }))}
                           className="w-16 bg-transparent border-b border-dashed border-slate-400 focus:border-cyan-500 focus:outline-none text-slate-700 px-0.5 group-hover:text-cyan-700 font-black text-right text-sm"
                           step="10" min="1"
                         />
-                        <span className="text-slate-500 font-bold">cajas/h</span>
+                        <span className="text-slate-500 font-bold">{inputs.tipo_unidad === 'pallets' ? tf('p/h') : tf('c/h')}</span>
                       </div>
                     </div>
                     <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono">
