@@ -1821,8 +1821,8 @@ export default function DHLAdvancedSimulator() {
       [],
       ['Métrica', 'Conservador (70% OEE)', 'Normal (85% OEE)', 'Alto Rendimiento (95% OEE)'],
       ['Producción Horaria (cajas/h)', (currentNominalCapacity * 0.70).toFixed(0), (currentNominalCapacity * 0.85).toFixed(0), (currentNominalCapacity * 0.95).toFixed(0)],
-      ['Producción Diaria (cajas/día)', (scenarioResults.conservador.dailyProdTon * 1000).toFixed(0), (scenarioResults.normal.dailyProdTon * 1000).toFixed(0), (scenarioResults.alto.dailyProdTon * 1000).toFixed(0)],
-      ['Costo Energético por kCajas (MXN/kCajas)', scenarioResults.conservador.costPerTon.toFixed(2), scenarioResults.normal.costPerTon.toFixed(2), scenarioResults.alto.costPerTon.toFixed(2)],
+      ['Producción Diaria (cajas/día)', scenarioResults.conservador.dailyProd.toFixed(0), scenarioResults.normal.dailyProd.toFixed(0), scenarioResults.alto.dailyProd.toFixed(0)],
+      ['Costo Energético por kCajas (MXN/kCajas)', scenarioResults.conservador.costPer1000.toFixed(2), scenarioResults.normal.costPer1000.toFixed(2), scenarioResults.alto.costPer1000.toFixed(2)],
       ['Cobertura de Requerimiento (%)', scenarioResults.conservador.coverage.toFixed(1), scenarioResults.normal.coverage.toFixed(1), scenarioResults.alto.coverage.toFixed(1)],
       ['Utilización del Equipo (%)', (scenarioResults.conservador.utilization * 100).toFixed(1), (scenarioResults.normal.utilization * 100).toFixed(1), (scenarioResults.alto.utilization * 100).toFixed(1)],
     ];
@@ -4694,9 +4694,9 @@ export default function DHLAdvancedSimulator() {
                       <h4 className="text-lg font-black text-slate-800 uppercase mt-0.5">CONSERVADOR</h4>
                       <div className="mt-4 space-y-3 text-xs font-semibold text-slate-600">
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>OEE:</span><span className="text-slate-800 font-bold">70%</span></div>
-                        <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Producción:</span><span className="text-slate-800 font-bold">{(currentNominalCapacity * 0.7).toFixed(0)} cajas/h</span></div>
-                        <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Producción Diaria:</span><span className="text-slate-800 font-bold">{scenarioResults.conservador.dailyProdTon.toFixed(1)} ton</span></div>
-                        <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Costo por Ton:</span><span className="text-slate-800 font-bold">${scenarioResults.conservador.costPerTon.toFixed(1)} MXN</span></div>
+                        <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Producción:</span><span className="text-slate-800 font-bold">{(currentNominalCapacity * 0.7).toFixed(0)} {inputs.tipo_unidad === 'pallets' ? 'p/h' : 'c/h'}</span></div>
+                        <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Producción Diaria:</span><span className="text-slate-800 font-bold">{scenarioResults.conservador.dailyProd.toFixed(0)} {inputs.tipo_unidad === 'pallets' ? 'p/día' : 'c/día'}</span></div>
+                        <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Cost. Op (x1000U):</span><span className="text-slate-800 font-bold">${scenarioResults.conservador.costPer1000.toFixed(2)} MXN</span></div>
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Cobertura Meta:</span><span className="text-slate-800 font-bold">{scenarioResults.conservador.coverage.toFixed(1)}%</span></div>
 
                       </div>
@@ -4716,9 +4716,9 @@ export default function DHLAdvancedSimulator() {
                       <h4 className="text-lg font-black text-slate-800 uppercase mt-0.5">NORMAL</h4>
                       <div className="mt-4 space-y-3 text-xs font-semibold text-slate-600">
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>OEE:</span><span className="text-slate-800 font-bold">85%</span></div>
-                        <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Producción:</span><span className="text-slate-800 font-bold">{(currentNominalCapacity * 0.85).toFixed(0)} cajas/h</span></div>
-                        <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Producción Diaria:</span><span className="text-slate-800 font-bold">{scenarioResults.normal.dailyProdTon.toFixed(1)} ton</span></div>
-                        <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Costo por Ton:</span><span className="text-slate-800 font-bold">${scenarioResults.normal.costPerTon.toFixed(1)} MXN</span></div>
+                        <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Producción:</span><span className="text-slate-800 font-bold">{(currentNominalCapacity * 0.85).toFixed(0)} {inputs.tipo_unidad === 'pallets' ? 'p/h' : 'c/h'}</span></div>
+                        <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Producción Diaria:</span><span className="text-slate-800 font-bold">{scenarioResults.normal.dailyProd.toFixed(0)} {inputs.tipo_unidad === 'pallets' ? 'p/día' : 'c/día'}</span></div>
+                        <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Cost. Op (x1000U):</span><span className="text-slate-800 font-bold">${scenarioResults.normal.costPer1000.toFixed(2)} MXN</span></div>
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Cobertura Meta:</span><span className="text-slate-800 font-bold">{scenarioResults.normal.coverage.toFixed(1)}%</span></div>
 
                       </div>
@@ -4738,9 +4738,9 @@ export default function DHLAdvancedSimulator() {
                       <h4 className="text-lg font-black text-slate-800 uppercase mt-0.5">ALTO RENDIMIENTO</h4>
                       <div className="mt-4 space-y-3 text-xs font-semibold text-slate-600">
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>OEE:</span><span className="text-slate-800 font-bold">95%</span></div>
-                        <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Producción:</span><span className="text-slate-800 font-bold">{(currentNominalCapacity * 0.95).toFixed(0)} cajas/h</span></div>
-                        <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Producción Diaria:</span><span className="text-slate-800 font-bold">{scenarioResults.alto.dailyProdTon.toFixed(1)} ton</span></div>
-                        <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Costo por Ton:</span><span className="text-slate-800 font-bold">${scenarioResults.alto.costPerTon.toFixed(1)} MXN</span></div>
+                        <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Producción:</span><span className="text-slate-800 font-bold">{(currentNominalCapacity * 0.95).toFixed(0)} {inputs.tipo_unidad === 'pallets' ? 'p/h' : 'c/h'}</span></div>
+                        <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Producción Diaria:</span><span className="text-slate-800 font-bold">{scenarioResults.alto.dailyProd.toFixed(0)} {inputs.tipo_unidad === 'pallets' ? 'p/día' : 'c/día'}</span></div>
+                        <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Cost. Op (x1000U):</span><span className="text-slate-800 font-bold">${scenarioResults.alto.costPer1000.toFixed(2)} MXN</span></div>
                         <div className="flex justify-between border-b border-slate-100 pb-1.5"><span>Cobertura Meta:</span><span className="text-slate-800 font-bold">{scenarioResults.alto.coverage.toFixed(1)}%</span></div>
 
                       </div>
@@ -4765,19 +4765,19 @@ export default function DHLAdvancedSimulator() {
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
                         data={[
-                          { name: 'Conservador (70%)', produccion: scenarioResults.conservador.dailyProdTon, costo: scenarioResults.conservador.costPerTon },
-                          { name: 'Normal (85%)', produccion: scenarioResults.normal.dailyProdTon, costo: scenarioResults.normal.costPerTon },
-                          { name: 'Alto (95%)', produccion: scenarioResults.alto.dailyProdTon, costo: scenarioResults.alto.costPerTon }
+                          { name: 'Conservador (70%)', produccion: scenarioResults.conservador.dailyProd, costo: scenarioResults.conservador.costPer1000 },
+                          { name: 'Normal (85%)', produccion: scenarioResults.normal.dailyProd, costo: scenarioResults.normal.costPer1000 },
+                          { name: 'Alto (95%)', produccion: scenarioResults.alto.dailyProd, costo: scenarioResults.alto.costPer1000 }
                         ]}
                         margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                         <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} tickLine={false} fontWeight="bold" />
-                        <YAxis yAxisId="left" stroke="#94a3b8" fontSize={10} tickLine={false} label={{ value: 'Producción (cajas/día)', angle: -90, position: 'insideLeft', style: { fill: '#94a3b8', fontSize: 10, fontWeight: 'bold' } }} />
-                        <YAxis yAxisId="right" orientation="right" stroke="#94a3b8" fontSize={10} tickLine={false} label={{ value: 'Costo (MXN/kCajas)', angle: 90, position: 'insideRight', style: { fill: '#94a3b8', fontSize: 10, fontWeight: 'bold' } }} />
-                        <Tooltip cursor={{ fill: '#f8fafc' }} formatter={(value, name) => [name === 'produccion' ? `${value.toFixed(0)} cajas` : `$${value.toFixed(1)}`, name === 'produccion' ? 'Producción Diaria' : 'Costo Operativo/kCajas']} />
+                        <YAxis yAxisId="left" stroke="#94a3b8" fontSize={10} tickLine={false} label={{ value: inputs.tipo_unidad === 'pallets' ? 'Producción (pallets/día)' : 'Producción (cajas/día)', angle: -90, position: 'insideLeft', style: { fill: '#94a3b8', fontSize: 10, fontWeight: 'bold' } }} />
+                        <YAxis yAxisId="right" orientation="right" stroke="#94a3b8" fontSize={10} tickLine={false} label={{ value: inputs.tipo_unidad === 'pallets' ? 'Costo (MXN/kPallets)' : 'Costo (MXN/kCajas)', angle: 90, position: 'insideRight', style: { fill: '#94a3b8', fontSize: 10, fontWeight: 'bold' } }} />
+                        <Tooltip cursor={{ fill: '#f8fafc' }} formatter={(value, name) => [name === 'produccion' ? `${value.toFixed(0)} un.` : `$${value.toFixed(1)}`, name === 'produccion' ? 'Producción Diaria' : 'Costo Operativo/1000u']} />
                         <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px' }} />
-                        <Bar yAxisId="left" dataKey="produccion" name="Producción Diaria (cajas)" fill="#008299" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                        <Bar yAxisId="left" dataKey="produccion" name="Producción Diaria (uds)" fill="#008299" radius={[4, 4, 0, 0]} maxBarSize={50} />
                         <Bar yAxisId="right" dataKey="costo" name="Costo Operativo (MXN/kCajas)" fill="#f43f5e" radius={[4, 4, 0, 0]} maxBarSize={50} />
                       </BarChart>
                     </ResponsiveContainer>
@@ -6446,21 +6446,21 @@ export default function DHLAdvancedSimulator() {
                                   <Package size={18} color="#159b9a" />
                                   <div>
                                     <div style={{ fontWeight: 'bold', fontSize: '11.5px', color: '#334155' }}>Producción Diaria Proyectada</div>
-                                    <div style={{ fontSize: '9.5px', color: '#64748b' }}>(cajas/día)</div>
+                                    <div style={{ fontSize: '9.5px', color: '#64748b' }}>{inputs.tipo_unidad === 'pallets' ? '(pallets/día)' : '(cajas/día)'}</div>
                                   </div>
                                 </div>
                               </td>
                               <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
-                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#059ca0' }}>{new Intl.NumberFormat().format((scenarioResults.conservador.dailyProdTon * 1000).toFixed(0))}</div>
-                                <div style={{ fontSize: '9.5px', color: '#64748b' }}>cajas/día</div>
+                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#059ca0' }}>{new Intl.NumberFormat().format(scenarioResults.conservador.dailyProd.toFixed(0))}</div>
+                                <div style={{ fontSize: '9.5px', color: '#64748b' }}>{inputs.tipo_unidad === 'pallets' ? 'p/día' : 'c/día'}</div>
                               </td>
                               <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
-                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1b71b8' }}>{new Intl.NumberFormat().format((scenarioResults.normal.dailyProdTon * 1000).toFixed(0))}</div>
-                                <div style={{ fontSize: '9.5px', color: '#64748b' }}>cajas/día</div>
+                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1b71b8' }}>{new Intl.NumberFormat().format(scenarioResults.normal.dailyProd.toFixed(0))}</div>
+                                <div style={{ fontSize: '9.5px', color: '#64748b' }}>{inputs.tipo_unidad === 'pallets' ? 'p/día' : 'c/día'}</div>
                               </td>
                               <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
-                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#3bb565' }}>{new Intl.NumberFormat().format((scenarioResults.alto.dailyProdTon * 1000).toFixed(0))}</div>
-                                <div style={{ fontSize: '9.5px', color: '#64748b' }}>cajas/día</div>
+                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#3bb565' }}>{new Intl.NumberFormat().format(scenarioResults.alto.dailyProd.toFixed(0))}</div>
+                                <div style={{ fontSize: '9.5px', color: '#64748b' }}>{inputs.tipo_unidad === 'pallets' ? 'p/día' : 'c/día'}</div>
                               </td>
                             </tr>
                             <tr>
@@ -6468,21 +6468,21 @@ export default function DHLAdvancedSimulator() {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                   <Zap size={18} color="#159b9a" />
                                   <div>
-                                    <div style={{ fontWeight: 'bold', fontSize: '11.5px', color: '#334155' }}>Costo Operativo (Eléctrico)</div>
-                                    <div style={{ fontSize: '9.5px', color: '#64748b' }}>por caja</div>
+                                    <div style={{ fontWeight: 'bold', fontSize: '11.5px', color: '#334155' }}>CostOp (Electricidad/Agua)</div>
+                                    <div style={{ fontSize: '9.5px', color: '#64748b' }}>por 1000 un.</div>
                                   </div>
                                 </div>
                               </td>
                               <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
-                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#059ca0' }}>${new Intl.NumberFormat().format(scenarioResults.conservador.costPerTon.toFixed(2))}</div>
+                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#059ca0' }}>${new Intl.NumberFormat().format(scenarioResults.conservador.costPer1000.toFixed(2))}</div>
                                 <div style={{ fontSize: '9.5px', color: '#64748b' }}>MXN</div>
                               </td>
                               <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
-                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1b71b8' }}>${new Intl.NumberFormat().format(scenarioResults.normal.costPerTon.toFixed(2))}</div>
+                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1b71b8' }}>${new Intl.NumberFormat().format(scenarioResults.normal.costPer1000.toFixed(2))}</div>
                                 <div style={{ fontSize: '9.5px', color: '#64748b' }}>MXN</div>
                               </td>
                               <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
-                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#3bb565' }}>${new Intl.NumberFormat().format(scenarioResults.alto.costPerTon.toFixed(2))}</div>
+                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#3bb565' }}>${new Intl.NumberFormat().format(scenarioResults.alto.costPer1000.toFixed(2))}</div>
                                 <div style={{ fontSize: '9.5px', color: '#64748b' }}>MXN</div>
                               </td>
                             </tr>
@@ -6549,9 +6549,9 @@ export default function DHLAdvancedSimulator() {
                             <ResponsiveContainer width="100%" height="100%">
                               <ComposedChart
                                 data={[
-                                  { name: 'Conservador\n(70% OEE)', prod: scenarioResults.conservador.dailyProdTon * 1000, costo: scenarioResults.conservador.costPerTon },
-                                  { name: 'Normal\n(85% OEE)', prod: scenarioResults.normal.dailyProdTon * 1000, costo: scenarioResults.normal.costPerTon },
-                                  { name: 'Alto Rendimiento\n(95% OEE)', prod: scenarioResults.alto.dailyProdTon * 1000, costo: scenarioResults.alto.costPerTon }
+                                  { name: 'Conservador\n(70% OEE)', prod: scenarioResults.conservador.dailyProd, costo: scenarioResults.conservador.costPer1000 },
+                                  { name: 'Normal\n(85% OEE)', prod: scenarioResults.normal.dailyProd, costo: scenarioResults.normal.costPer1000 },
+                                  { name: 'Alto Rendimiento\n(95% OEE)', prod: scenarioResults.alto.dailyProd, costo: scenarioResults.alto.costPer1000 }
                                 ]}
                                 margin={{ top: 20, right: 10, bottom: 0, left: 10 }}
                               >
