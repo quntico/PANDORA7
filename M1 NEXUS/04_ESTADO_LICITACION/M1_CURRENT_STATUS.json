@@ -1,0 +1,22 @@
+{
+    "systemInfo": {
+        "auditStatus": "NOT_STARTED",
+        "submissionReadiness": "NOT_READY",
+        "lastUpdate": "2026-09-16T10:34:04-06:00"
+    },
+    "kpis": {
+        "totalRequirements": 34,
+        "totalScoringCriteria": 16,
+        "evaluatedRequirements": 0,
+        "missingDocuments": 34,
+        "expedientCompletionPercent": 0,
+        "officialTechnicalMaxPoints": 50,
+        "accreditedTechnicalPoints": 0,
+        "missingPointsForSolvency": 37.5,
+        "atRiskTechnicalPoints": 50,
+        "criticalRisks": 34,
+        "partialEvaluations": 0
+    },
+    "requirements": [],
+    "notes": "State is currently uninitialized pending Hydration or first manual Sync."
+}

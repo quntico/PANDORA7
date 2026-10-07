@@ -4068,7 +4068,7 @@ export default function WM500Simulator() {
                     </div>
 
                     <div style={{ marginTop: 0, background: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 16, padding: '8px 20px' }}>
-                      <span style={{ fontSize: 9, fontWeight: 900, color: '#008299', textTransform: 'uppercase', letterSpacing: 1, display: 'block', marginBottom: 2 }}>DISTRIBUCIÓN DE POTENCIA INSTALADA POR EQUIPO (kW)</span>
+                      <span style={{ fontSize: 10, fontWeight: 900, color: '#008299', textTransform: 'uppercase', letterSpacing: 1, display: 'block', marginBottom: 2 }}>DISTRIBUCIÓN DE POTENCIA INSTALADA POR EQUIPO (kW)</span>
                       <table style={{ width: '100%', borderCollapse: 'collapse', border: 'none', fontSize: 10, lineHeight: '1.2' }}>
                         <tbody>
                           {[
@@ -4099,7 +4099,7 @@ export default function WM500Simulator() {
                     </div>
 
                     <div style={{ marginTop: 0 }}>
-                      <span style={{ fontSize: 9, fontWeight: 900, color: '#0f766e', letterSpacing: 1.5, textTransform: 'uppercase', display: 'block', marginBottom: 2 }}>DICTAMEN TÉCNICO AUTOMÁTICO</span>
+                      <span style={{ fontSize: 10, fontWeight: 900, color: '#0f766e', letterSpacing: 1.5, textTransform: 'uppercase', display: 'block', marginBottom: 2 }}>DICTAMEN TÉCNICO AUTOMÁTICO</span>
                       <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 16, padding: '10px 20px', display: 'flex', flexDirection: 'column', gap: 6 }}>
                         {conclusions.map((c, i) => (
                           <div key={i} style={{ fontSize: 10, lineHeight: 1.35, fontWeight: 600, color: '#334155' }}>
@@ -4122,7 +4122,7 @@ export default function WM500Simulator() {
                     {renderPageHeader(`${++currentSectionIndex}. ${inputs.technicalSheetName}`, 'Desglose detallado de especificaciones, capacidades y componentes de fabricación')}
 
                     <div style={{ width: '100%', flex: 1 }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 9.5 }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10.5 }}>
                         <thead>
                           <tr>
                             <th style={{ ...REPORT_STYLES.th, padding: '5px 10px', background: '#edfbfd' }}>Componente / Característica</th>
@@ -4448,6 +4448,33 @@ export default function WM500Simulator() {
                           </div>
                         </div>
 
+                        {/* GRÁFICO OPEX INYECTADO */}
+                        <div style={{ marginTop: 12, border: '1px solid #e2e8f0', borderRadius: 12, padding: '12px 16px', background: '#fff', display: 'flex', alignItems: 'center', gap: 20 }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 10, fontWeight: 900, color: '#0f2038', textTransform: 'uppercase', marginBottom: 4 }}>Distribución de Costo Operativo (OPEX)</div>
+                            <div style={{ fontSize: 10, color: '#64748b', lineHeight: 1.4 }}>El gráfico circular detalla la proporción de gastos operativos mensuales. La optimización de la matriz energética y los mantenimientos preventivos son la clave para maximizar el flujo operativo y acelerar el retorno de inversión.</div>
+                          </div>
+                          <div style={{ width: 300, height: 140 }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                <Pie
+                                  data={[
+                                    { name: 'Energía', value: results.monthlyElectricityCostMxn, fill: '#0ea5e9' },
+                                    { name: 'Mano de Obra', value: results.manoObraMensualMxn, fill: '#8b5cf6' },
+                                    { name: 'Mantenimiento', value: results.mantenimientoMensualMxn, fill: '#f59e0b' },
+                                    { name: 'Consumibles', value: inputs.cuchillasMensualMxn + inputs.refaccionesMensualMxn + inputs.lubricacionMensualMxn, fill: '#10b981' }
+                                  ].filter(d => d.value > 0)}
+                                  cx="50%" cy="50%" innerRadius={40} outerRadius={65} paddingAngle={2} dataKey="value"
+                                >
+                                  {[{fill: '#0ea5e9'}, {fill: '#8b5cf6'}, {fill: '#f59e0b'}, {fill: '#10b981'}].map((e,i) => <Cell key={i} fill={e.fill} />)}
+                                </Pie>
+                                <Tooltip formatter={(value) => "$" + new Intl.NumberFormat().format(value.toFixed(0))} />
+                                <Legend layout="vertical" verticalAlign="middle" align="right" wrapperStyle={{ fontSize: 10 }} iconType="circle" iconSize={6} />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+
 
                       </div>
 
@@ -4472,7 +4499,7 @@ export default function WM500Simulator() {
                           </div>
 
                           <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 12, background: '#f8fafc' }}>
-                            <div style={{ fontSize: 10, fontWeight: 900, color: '#1e293b', textTransform: 'uppercase', marginBottom: 8, borderBottom: '1px solid #e2e8f0', paddingBottom: 4 }}>Ficha de Estructura de Bodega</div>
+                            <div style={{ fontSize: 10, fontWeight: 900, color: '#1e293b', textTransform: 'uppercase', marginBottom: 4, borderBottom: '1px solid #e2e8f0', paddingBottom: 4 }}>Ficha de Estructura de Bodega</div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 10.5, color: '#475569', fontWeight: 600 }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Acabado Superficial:</span><strong style={{ color: '#1e293b' }}>{inputs.civilAcabadoPiso || 'PULIDO ESPEJO CON ENDURECEDOR'}</strong></div>
                               <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Refuerzo Estructural:</span><strong style={{ color: '#1e293b' }}>{inputs.civilRefuerzoPiso || 'DOBLE PARRILLA DE VARILLA 3/8"'}</strong></div>
@@ -4485,7 +4512,7 @@ export default function WM500Simulator() {
                         {/* Panel derecho: Instalación y Anclaje */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                           <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 12, background: '#f8fafc' }}>
-                            <div style={{ fontSize: 10, fontWeight: 900, color: '#1e293b', textTransform: 'uppercase', marginBottom: 8, borderBottom: '1px solid #e2e8f0', paddingBottom: 4 }}>Instalación y Anclaje Mecánico</div>
+                            <div style={{ fontSize: 10, fontWeight: 900, color: '#1e293b', textTransform: 'uppercase', marginBottom: 4, borderBottom: '1px solid #e2e8f0', paddingBottom: 4 }}>Instalación y Anclaje Mecánico</div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 10.5, color: '#475569', fontWeight: 600 }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Sistema de Anclaje:</span><strong style={{ color: '#1e293b' }}>{inputs.civilAnclajeTornillos || 'HILTI HAS-E CON RESINA'}</strong></div>
                               <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Canalizaciones Subterráneas:</span><strong style={{ color: '#1e293b' }}>{inputs.civilCanalizacionesSubterraneas || '2 TUBOS PVC 4" + 1 TUBO 2"'}</strong></div>
@@ -4506,7 +4533,7 @@ export default function WM500Simulator() {
                       {/* Dimensiones y Diagrama conceptual */}
                       <div style={{ border: '1px solid #cbd5e1', borderRadius: 12, padding: 12, background: '#f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
-                          <div style={{ fontSize: 9, fontWeight: 900, color: '#475569', textTransform: 'uppercase' }}>Dimensiones de Planta y Peso del Equipo</div>
+                          <div style={{ fontSize: 10, fontWeight: 900, color: '#475569', textTransform: 'uppercase' }}>Dimensiones de Planta y Peso del Equipo</div>
                           <div style={{ fontSize: 13, fontWeight: 900, color: '#1e293b', marginTop: 2 }}>{inputs.machineLength || 14.5}m Largo × {inputs.machineWidth || 1.75}m Ancho × {inputs.machineHeight || 1.9}m Alto | Peso: {inputs.pesoKg ? new Intl.NumberFormat().format(inputs.pesoKg) : '13,000'} kg</div>
                         </div>
                         <div style={{ fontSize: 10, color: '#475569', fontWeight: 600 }}>

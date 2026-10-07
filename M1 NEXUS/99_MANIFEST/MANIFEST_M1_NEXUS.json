@@ -1,0 +1,165 @@
+{
+    "version": "M1-NEXUS-001",
+    "last_sync": "2026-09-16T10:34:04-06:00",
+    "project_version": "1.0.0",
+    "audit_version": "2.0.0",
+    "normative_model_version": "1.0",
+    "last_audit": "2026-09-16T10:34:00-06:00",
+    "last_code_update": "2026-09-16T10:34:00-06:00",
+    "files": [
+        {
+            "name": "PROJECT_SNAPSHOT_M1_AUDITOR.md",
+            "folder": "01_SNAPSHOT",
+            "type": "md",
+            "importance": "CRITICAL",
+            "status": "SYNCED"
+        },
+        {
+            "name": "M1Store.js",
+            "folder": "02_CODIGO_CLAVE",
+            "type": "js",
+            "importance": "CRITICAL",
+            "status": "SYNCED"
+        },
+        {
+            "name": "M1AuditEngine.js",
+            "folder": "02_CODIGO_CLAVE",
+            "type": "js",
+            "importance": "CRITICAL",
+            "status": "SYNCED"
+        },
+        {
+            "name": "M1AgentConsole.jsx",
+            "folder": "02_CODIGO_CLAVE",
+            "type": "jsx",
+            "importance": "HIGH",
+            "status": "SYNCED"
+        },
+        {
+            "name": "M1Page.jsx",
+            "folder": "02_CODIGO_CLAVE",
+            "type": "jsx",
+            "importance": "HIGH",
+            "status": "SYNCED"
+        },
+        {
+            "name": "M1DashboardView.jsx",
+            "folder": "02_CODIGO_CLAVE",
+            "type": "jsx",
+            "importance": "MEDIUM",
+            "status": "SYNCED"
+        },
+        {
+            "name": "M1ChecklistView.jsx",
+            "folder": "02_CODIGO_CLAVE",
+            "type": "jsx",
+            "importance": "HIGH",
+            "status": "SYNCED"
+        },
+        {
+            "name": "M1RiskView.jsx",
+            "folder": "02_CODIGO_CLAVE",
+            "type": "jsx",
+            "importance": "MEDIUM",
+            "status": "SYNCED"
+        },
+        {
+            "name": "M1DriveView.jsx",
+            "folder": "02_CODIGO_CLAVE",
+            "type": "jsx",
+            "importance": "HIGH",
+            "status": "SYNCED"
+        },
+        {
+            "name": "M1AgentStore.js",
+            "folder": "02_CODIGO_CLAVE",
+            "type": "js",
+            "importance": "CRITICAL",
+            "status": "SYNCED"
+        },
+        {
+            "name": "M1GlobalAgentSandbox.jsx",
+            "folder": "02_CODIGO_CLAVE",
+            "type": "jsx",
+            "importance": "HIGH",
+            "status": "SYNCED"
+        },
+        {
+            "name": "M1ApiService.js",
+            "folder": "02_CODIGO_CLAVE",
+            "type": "js",
+            "importance": "HIGH",
+            "status": "SYNCED"
+        },
+        {
+            "name": "M1AgentService.js",
+            "folder": "02_CODIGO_CLAVE",
+            "type": "js",
+            "importance": "CRITICAL",
+            "status": "SYNCED"
+        },
+        {
+            "name": "server.js",
+            "folder": "02_CODIGO_CLAVE",
+            "type": "js",
+            "importance": "CRITICAL",
+            "status": "SYNCED"
+        },
+        {
+            "name": "m1ActiveTender.js",
+            "folder": "03_MODELO_NORMATIVO",
+            "type": "js",
+            "importance": "CRITICAL",
+            "status": "SYNCED"
+        },
+        {
+            "name": "M1_NORMATIVE_MODEL.md",
+            "folder": "03_MODELO_NORMATIVO",
+            "type": "md",
+            "importance": "CRITICAL",
+            "status": "SYNCED"
+        },
+        {
+            "name": "M1_CURRENT_STATUS.json",
+            "folder": "04_ESTADO_LICITACION",
+            "type": "json",
+            "importance": "HIGH",
+            "status": "SYNCED"
+        },
+        {
+            "name": "M1_CURRENT_STATUS.md",
+            "folder": "04_ESTADO_LICITACION",
+            "type": "md",
+            "importance": "HIGH",
+            "status": "SYNCED"
+        },
+        {
+            "name": "AUDIT_M1_2026-09-16_10-34.md",
+            "folder": "05_AUDITORIAS",
+            "type": "md",
+            "importance": "HIGH",
+            "status": "SYNCED"
+        },
+        {
+            "name": "LATEST_AUDIT_M1.md",
+            "folder": "05_AUDITORIAS",
+            "type": "md",
+            "importance": "HIGH",
+            "status": "SYNCED"
+        },
+        {
+            "name": "DOCUMENT_INDEX_M1.md",
+            "folder": "06_DOCUMENTOS_REFERENCIA",
+            "type": "md",
+            "importance": "LOW",
+            "status": "SYNCED"
+        },
+        {
+            "name": "CHANGELOG_M1.md",
+            "folder": "07_LOG_CAMBIOS",
+            "type": "md",
+            "importance": "MEDIUM",
+            "status": "SYNCED"
+        }
+    ]
+}

@@ -17,6 +17,9 @@ import {
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import * as XLSX from 'xlsx';
+import { normalizeDHLInputs, calculateDHLResults, dhlTechnicalRows } from '@/utils/dhlTenderModel';
+import DHLReportPages, { DHLAnnualPanel } from '@/components/dhl/DHLReportPages';
+import { exportDHLReport } from '@/utils/exportDHLReport';
 
 import { useTranslation } from '@/context/LanguageContext';
 import { useBeta } from '@/context/BetaContext';
@@ -94,7 +97,8 @@ async function deleteModelFromIndexedDB(key) {
 export default function DHLAdvancedSimulator() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const simId = id || 'wm500';
+  const simId = id || 'wm500'; // Conservar identidad IndexedDB de las capturas existentes.
+  const isDhlTender = !id || id === 'dhl';
   const { t } = useTranslation();
   const { activeProject, updateProjectName } = useBeta();
   const reportRef = useRef(null);
@@ -150,7 +154,7 @@ export default function DHLAdvancedSimulator() {
         'Motor de Bomba de Agua: 15 hp': 'Water Pump Motor: 15 hp',
         'Motorización Auxiliar (Soplador)': 'Auxiliary Motorization (Blower)',
         'Motor Soplador: 10 hp | Banda: 0.5 hp': 'Blower Motor: 10 hp | Conveyor: 0.5 hp',
-        'Potencia Instalada Total': 'Total Installed Power',
+        'Potencia documentada (parcial)': 'Total Installed Power',
         'Temperaturas de Proceso': 'Process Temperatures',
         'Temperatura de Lavado: 60-80°C': 'Washing Temp: 60-80°C',
         'Presión de Aspersión': 'Spray Pressure',
@@ -233,9 +237,7 @@ export default function DHLAdvancedSimulator() {
         'Se recomienda encarecidamente añadir una segunda máquina lavadora y secadora WM-500 en paralelo, o bien ampliar el turno diario actual para lograr el requerimiento diario objetivo.': 'It is strongly recommended to add a second WM-500 washer and dryer in parallel, or to expand the current daily shift to achieve the daily target requirement.',
         'La cobertura actual es del': 'The current coverage is',
         'cumpliendo satisfactoriamente el requerimiento objetivo sin necesidad de unidades adicionales.': 'satisfactorily meeting the target requirement without the need for additional units.',
-        'CLIENTE': 'CLIENT',
         'FECHA': 'DATE',
-        'MÁQUINA': 'MACHINE',
         'lavadora INDUSTRIAL': 'INDUSTRIAL washer',
         'Análisis de capacidad, potencia instalada y viabilidad financiera para la línea de lavado, enjuague y secado de cajas plásticas con la': 'Capacity analysis, installed power and financial viability for the plastic crate washing, rinsing and drying line with the',
         'Nota Metodológica:': 'Methodological Note:',
@@ -254,13 +256,7 @@ export default function DHLAdvancedSimulator() {
         'evaluada bajo la perspectiva': 'evaluated under the perspective',
         'Las proporciones y el diseño representan el volumen real del equipo industrial proyectado en el software PANDORA 3.0.': 'The proportions and design represent the real volume of the industrial equipment projected in the PANDORA 3.0 software.',
         'Listado físico nominal con potencias individuales calculadas al factor de carga': 'Nominal physical list with individual powers calculated at the load factor',
-        'CONFIGURACIÓN DEL SISTEMA': 'SYSTEM CONFIGURATION',
-        'GEMELO DIGITAL 3D': '3D DIGITAL TWIN',
-        'PROYECCIÓN PARAMÉTRICA': 'PARAMETRIC PROJECTION',
-        'ANÁLISIS DE RENTABILIDAD': 'PROFITABILITY ANALYSIS',
-        'REQUERIMIENTOS ESTRUCTURALES': 'STRUCTURAL REQUIREMENTS',
-        'REQUERIMIENTOS OPERATIVOS': 'OPERATIONAL REQUIREMENTS',
-        'FICHA TÉCNICA Y COMPONENTES': 'TECHNICAL SHEET & COMPONENTS',
+
         'INFORME EJECUTIVO': 'EXECUTIVE REPORT',
         'Análisis Financiero de Inversión': 'Financial Investment Analysis',
         'Resumen Ejecutivo de CAPEX y Gasto Operativo Mensual': 'CAPEX Executive Summary and Monthly Operational Expense',
@@ -310,14 +306,14 @@ export default function DHLAdvancedSimulator() {
   // --- 1. ESTADO DE ENTRADAS ---
   const defaultInputs = {
     // Metadatos
-    companyName: 'SOLIWASTE',
-    clientName: 'FRANCISCO LOUVIER',
-    machineName: 'PLD-120 (Config. 300 cajas/h)',
-    projectName: 'PROYECTO LAVADO DE CAJAS',
-    evaluationDate: '17/7/2026',
-    materialType: 'CAJAS DE PLÁSTICO',
-    evaluationName: 'Lavadora y Secadora Industrial PLD-120 (Configuración 300 cajas/h)',
-    technicalSheetName: 'FICHA TÉCNICA DE LAVADORA Y SECADORA INDUSTRIAL PLD-120 - Configuración 300 Cajas/h',
+    companyName: 'DHL Supply Chain',
+    clientName: 'Francisco Louvier',
+    machineName: 'BWD-350 + BA + SWM-1000',
+    projectName: 'Volvo Washing Machine DSC — Simulación de capacidad 2028',
+    evaluationDate: '06/10/2026',
+    materialType: 'CONTENEDORES Y SEPARADORES PLÁSTICOS',
+    evaluationName: 'Lavadora Industrial BWD-350 + BA + SWM-1000',
+    technicalSheetName: 'FICHA TÉCNICA DE LAVADORA INDUSTRIAL BWD-350 + BA + SWM-1000',
     garantia_estandar_meses: 12,
     garantia_extendida_meses: 24,
     alcance_garantia: 'Defectos de fabricación y vicios ocultos',
@@ -348,36 +344,38 @@ export default function DHLAdvancedSimulator() {
     civilVentilacion: 'Campana extractora opcional',
 
     // Operación
-    capacidad_nominal_h: 300, // Configuración maestra de 300 cajas/h
+    capacidad_nominal_h: 350, // Ajustada a BDW-350 / Licitacion DHL
     tipo_unidad: 'cajas',
     utilization: 207.4,
     oee: 95,
     loadFactor: 85,
-    hoursPerDay: 9,
+    hoursPerDay: 8.5,
     shiftsPerDay: 1,
-    daysPerMonth: 24,
-    meta_diaria_cajas: 2128,
+    daysPerMonth: 20.67, // 248 days per year
+    meta_diaria_cajas: 2819, // Total max for 2028
     cajas: [
-      { id: '1', nombre: 'Charola CLIENTE Ford i3 Retornable', tipo: 'Caja', largoCm: 61, anchoCm: 38, altoCm: 10, piezasDia2028: 320, reqCajasH: 35.5, pesoKg: 2.70, suciedad: 'Alta', cajasPorPallet: 48, color: '#16a34a' },
-      { id: '2', nombre: 'Charola WIP Tubos i3', tipo: 'Caja', largoCm: 60, anchoCm: 50, altoCm: 9, piezasDia2028: 134, reqCajasH: 14.8, pesoKg: 2.50, suciedad: 'Medium', cajasPorPallet: 40, color: '#22c55e' },
-      { id: '3', nombre: 'Charola WIP leva LPG', tipo: 'Caja', largoCm: 60, anchoCm: 39, altoCm: 5, piezasDia2028: 133, reqCajasH: 14.7, pesoKg: 1.40, suciedad: 'Medium', cajasPorPallet: 48, color: '#4ade80' },
-      { id: '4', nombre: 'Charola WIP Leva i3 LPG', tipo: 'Caja', largoCm: 60, anchoCm: 49, altoCm: 5, piezasDia2028: 133, reqCajasH: 14.7, pesoKg: 1.30, suciedad: 'Medium', cajasPorPallet: 48, color: '#86efac' },
-      { id: '5', nombre: 'Charola WIP y CLIENTE Módulos VW', tipo: 'Caja', largoCm: 123, anchoCm: 58, altoCm: 16, piezasDia2028: 250, reqCajasH: 27.7, pesoKg: 7.00, suciedad: 'Medium', cajasPorPallet: 10, color: '#bbf7d0' },
-      { id: '6', nombre: 'Charola PT STELLANTIS Cliente Retornable CS', tipo: 'Caja', largoCm: 75, anchoCm: 40, altoCm: 10, piezasDia2028: 960, reqCajasH: 106.6, pesoKg: 2.70, suciedad: 'Medium', cajasPorPallet: 72, color: '#3b82f6' },
-      { id: '7', nombre: 'Charola PT STELLANTIS Cliente Retornable PS', tipo: 'Caja', largoCm: 61, anchoCm: 38, altoCm: 8.5, piezasDia2028: 198, reqCajasH: 22.0, pesoKg: 1.90, suciedad: 'Medium', cajasPorPallet: 54, color: '#60a5fa' }
+      { id: '1', nombre: 'Packaging 460 (blue box + lid)', tipo: 'Plastic box', largoCm: 60, anchoCm: 40, altoCm: 20, piezasDia2028: 20, reqCajasH: 2.35, pesoKg: 2.50, suciedad: 'Medium', cajasPorPallet: 40, color: '#3b82f6' },
+      { id: '2', nombre: 'Packaging 500 (blue box)', tipo: 'Plastic box', largoCm: 30, anchoCm: 20, altoCm: 15, piezasDia2028: 352, reqCajasH: 41.41, pesoKg: 1.50, suciedad: 'Medium', cajasPorPallet: 88, color: '#3b82f6' },
+      { id: '3', nombre: 'Packaging 600 (blue box)', tipo: 'Plastic box', largoCm: 60, anchoCm: 20, altoCm: 15, piezasDia2028: 29, reqCajasH: 3.41, pesoKg: 2.00, suciedad: 'Medium', cajasPorPallet: 44, color: '#3b82f6' },
+      { id: '4', nombre: 'Packaging 750 (blue box + lid)', tipo: 'Plastic box', largoCm: 60, anchoCm: 40, altoCm: 20, piezasDia2028: 861, reqCajasH: 101.29, pesoKg: 2.50, suciedad: 'Medium', cajasPorPallet: 80, color: '#1d4ed8' },
+      { id: '5', nombre: 'Packaging 757 (blue box + lid)', tipo: 'Plastic box', largoCm: 40, anchoCm: 30, altoCm: 9.86, piezasDia2028: 13, reqCajasH: 1.53, pesoKg: 1.20, suciedad: 'Medium', cajasPorPallet: 80, color: '#1e40af' },
+      { id: '6', nombre: 'Packaging 780 (blue box + lid)', tipo: 'Plastic box', largoCm: 60, anchoCm: 40, altoCm: 20, piezasDia2028: 955, reqCajasH: 112.35, pesoKg: 2.50, suciedad: 'Medium', cajasPorPallet: 40, color: '#0ea5e9' },
+      { id: '7', nombre: 'Packaging 787 (blue box + lid)', tipo: 'Plastic box', largoCm: 60, anchoCm: 40, altoCm: 9.86, piezasDia2028: 18, reqCajasH: 2.12, pesoKg: 1.80, suciedad: 'Medium', cajasPorPallet: 40, color: '#0284c7' },
+      { id: '8', nombre: 'Packaging 800 (blue box + lid)', tipo: 'Plastic box', largoCm: 80, anchoCm: 30, altoCm: 20, piezasDia2028: 62, reqCajasH: 7.29, pesoKg: 2.80, suciedad: 'Medium', cajasPorPallet: 40, color: '#0369a1' },
+      { id: '9', nombre: 'Packaging 840 (blue box + lid)', tipo: 'Plastic box', largoCm: 80, anchoCm: 60, altoCm: 20, piezasDia2028: 389, reqCajasH: 45.76, pesoKg: 3.50, suciedad: 'Medium', cajasPorPallet: 20, color: '#075985' },
+      { id: '10', nombre: 'Packaging 81 (spacer of plastic)', tipo: 'Plastic spacer', largoCm: 116, anchoCm: 76, altoCm: 0.4, piezasDia2028: 92, reqCajasH: 10.82, pesoKg: 1.00, suciedad: 'Medium', cajasPorPallet: 135, color: '#64748b' },
+      { id: '11', nombre: 'Packaging 82 (spacer of plastic)', tipo: 'Plastic spacer', largoCm: 76, anchoCm: 56, altoCm: 0.4, piezasDia2028: 28, reqCajasH: 3.29, pesoKg: 0.70, suciedad: 'Medium', cajasPorPallet: 90, color: '#475569' }
     ],
 
-
-
     // Energía y Motor
-    motorBombaAguaHp: 7.5,
-    motorSopladorHp: 0,
-    motorBandaHp: 0.5,
-    calentamientoElectricoKw: 15.00,
+    motorBombaAguaHp: 20,
+    motorSopladorHp: 25,
+    motorBandaHp: 1.0,
+    calentamientoElectricoKw: 20.00,
     secadoresIncluidosEnSoplador: 'No',
-    potenciaSecadoresAdicionalKw: 2.2,
-    customInstalledPowerKw: 23.17,
-    potenciaActivaKw: 19.69,
+    potenciaSecadoresAdicionalKw: 0,
+    customInstalledPowerKw: 61.25,
+    potenciaActivaKw: 52.06,
     electricityRate: 2.50,
     volumen_tanque_l: 1200,
     caudal_lavado_lh: 865,
@@ -386,20 +384,20 @@ export default function DHLAdvancedSimulator() {
     waterCostM3: 35.0,
 
     // Especificaciones Técnicas
-    machineLength: 7.00,
+    machineLength: 12.50,
     machineWidth: 1.80,
-    machineHeight: 1.70,
-    pesoOperativoKg: 950,
-    pesoSecoKg: 880,
+    machineHeight: 1.75,
+    pesoOperativoKg: 3000,
+    pesoSecoKg: 1800,
     longitudSecadoExternoM: 5.0,
-    volumenAguaOperativoL: 800,
-    bocaAlimentacion: 'Temperatura Ideal: 60-80°C',
+    volumenAguaOperativoL: 1200,
+    bocaAlimentacion: '600 x 400 mm',
     presionLavadoBar: 5,
-    particulaFinal: 'Presión: 5.0 bar',
-    ruidoDb: 75,
-    separadorMagnetico: 'Eficiencia: 90-95%',
+    particulaFinal: 'NEMA 4X / IP65',
+    ruidoDb: 65,
+    separadorMagnetico: 'Filtro rotativo autolimpiante',
     componentesElectricos: 'Schneider / Siemens',
-    motorMarca: '15 hp (Bomba) | 10 hp (Soplador)',
+    motorMarca: 'Siemens / SEW',
 
     // CAPEX
     precioEquipoUsd: 26000,
@@ -426,9 +424,10 @@ export default function DHLAdvancedSimulator() {
     refaccionesMensualMxn: 6000,
     lubricacionMensualMxn: 0,
     limpiezaMensualMxn: 0,
-    quimicosMensualMxn: 7000.20, // Añadido
+    quimicosMensualMxn: 7000.20,
     consumiblesMensualMxn: 8000,
     otrosOpexMensualMxn: 0,
+    suavizadorKw: 7.0,
 
     // Financiero
     precioVentaTonMxn: 5,
@@ -469,28 +468,21 @@ export default function DHLAdvancedSimulator() {
     bocaAlimentacionDetalle: 'Presión de Agua: 5.0 bar',
     presionLavadoBarDetalle: 'Inversor: Incluido',
     particulaFinalDetalle: 'Contactores: SCHNEIDER | Relays: CHINT',
-    separadorMagneticoDetalle: 'Voltaje: 220/440V',
+    separadorMagneticoDetalle: '480 VAC / 3 fases / 60 Hz',
     pesoKgDetalle: 'Peso del Equipo: 880 kg',
     componentesElectricosDetalle: 'Inversor de Frecuencia: DELTA',
     ruidoDbDetalle: 'Diseño estructural avanzado (PLD-120)',
   };
 
   const [inputs, setInputs] = useState(() => {
-    const saved = localStorage.getItem('sim_dhl_v2_inputs');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        const hasOldBoxes = parsed.cajas && parsed.cajas.some(c => c.nombre && c.nombre.includes('Packaging'));
-
-        return {
-          ...defaultInputs,
-          ...parsed,
-          meta_diaria_cajas: hasOldBoxes ? defaultInputs.meta_diaria_cajas : (parsed.meta_diaria_cajas || defaultInputs.meta_diaria_cajas),
-          cajas: hasOldBoxes ? defaultInputs.cajas : ((parsed.cajas && parsed.cajas.length > 0) ? parsed.cajas : defaultInputs.cajas)
-        };
-      } catch (e) { }
-    }
-    return defaultInputs;
+    let parsed = {};
+    try {
+      parsed = JSON.parse(localStorage.getItem('sim_dhl_v2_inputs') || '{}');
+      if (isDhlTender && !parsed.dhlModelVersion && Object.keys(parsed).length) {
+        localStorage.setItem('sim_dhl_v2_inputs_before_dhl_revision', JSON.stringify(parsed));
+      }
+    } catch (e) { console.warn('No se pudo recuperar el estado local del simulador.', e); }
+    return isDhlTender ? normalizeDHLInputs(parsed, defaultInputs) : { ...defaultInputs, ...parsed };
   });
 
   const defaultProcessFlags = [
@@ -551,55 +543,12 @@ export default function DHLAdvancedSimulator() {
     }
   }, [inputs]);
 
-  // Migración automática para forzar valores de lavado si provienen de caché vieja
-  useEffect(() => {
-    setInputs(prev => {
-      let changed = false;
-      let newInputs = { ...prev };
-      if (newInputs.machineName === 'BWS-250' || newInputs.machineName === 'BWD-200 + BA' || newInputs.machineName === 'BWD-250' || (newInputs.evaluationName && (newInputs.evaluationName.includes('BWS-250') || newInputs.evaluationName.includes('BWD-250')))) {
-        newInputs.machineName = 'PLD-120\n(Config. 300 cajas/h)';
-        newInputs.evaluationName = 'Lavadora y Secadora Industrial PLD-120 (Configuración 300 cajas/h)';
-        newInputs.technicalSheetName = 'FICHA TÉCNICA DE LAVADORA Y SECADORA INDUSTRIAL PLD-120 - Configuración 300 Cajas/h';
-        newInputs.customInstalledPowerKw = 57.00;
-        changed = true;
-      }
-
-      // Force update boxes and capabilities if missing modern parametric identifiers
-      if (!newInputs.tipo_unidad || newInputs.meta_diaria_cajas === 3000 || newInputs.machineName?.includes('BWD') || newInputs.capacidad_nominal_h === 240 || newInputs.capacidad_nominal_h === 120) {
-        newInputs.machineName = 'PLD-120\n(Config. 300 cajas/h)';
-        newInputs.evaluationName = 'Lavadora y Secadora Industrial PLD-120 (Configuración 300 cajas/h)';
-        newInputs.technicalSheetName = 'FICHA TÉCNICA DE LAVADORA Y SECADORA INDUSTRIAL PLD-120 - Configuración 300 Cajas/h';
-        newInputs.meta_diaria_cajas = 2128;
-        newInputs.capacidad_nominal_h = 300;
-        newInputs.tipo_unidad = 'cajas';
-        newInputs.hoursPerDay = 9;
-        newInputs.shiftsPerDay = 1;
-        newInputs.customInstalledPowerKw = 57.00;
-
-        // Ajuste breakdown de motores para sumar exactamente 57 kW:
-        // 57 kW = (20 HP -> 14.91) + (25 HP -> 18.64) + (1 HP -> 0.75) + 20kW termico + 2.70kW estático.
-        newInputs.motorBombaAguaHp = 20;
-        newInputs.motorSopladorHp = 25;
-        newInputs.motorBandaHp = 1;
-        newInputs.calentamientoElectricoKw = 20.0;
-        newInputs.potenciaSecadoresAdicionalKw = 2.70;
-
-        newInputs.precioEquipoUsd = 26000;
-        newInputs.cajas = defaultInputs.cajas;
-        changed = true;
-      }
-
-      if (newInputs.manoObraMensualMxn === 48000) {
-        delete newInputs.manoObraMensualMxn;
-        changed = true;
-      }
-      return changed ? newInputs : prev;
-    });
-  }, []);
+  // La misma normalización se utiliza para estado inicial, nube y proyectos.
+  // No borrar layouts, imágenes ni archivos del usuario.
 
   // Sync project names
   useEffect(() => {
-    if (activeProject?.name) {
+    if (!isDhlTender && activeProject?.name) {
       setInputs(prev => ({ ...prev, projectName: activeProject.name }));
     }
   }, [activeProject?.name]);
@@ -766,7 +715,9 @@ export default function DHLAdvancedSimulator() {
     localStorage.setItem('sim_dhl_v2_pdf_config', JSON.stringify(pdfConfig));
   }, [pdfConfig]);
 
-  const renderPdfToggleButton = (tabId, label) => (
+  const renderPdfToggleButton = (tabId, label) => isDhlTender ? (
+    <span className="text-[9px] font-bold text-cyan-700" title="El informe DHL conserva las 13 páginas requeridas">PDF: informe completo</span>
+  ) : (
     <button
       onClick={() => setPdfConfig(p => ({ ...p, [tabId]: !p[tabId] }))}
       className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider transition-all border ${pdfConfig[tabId]
@@ -810,10 +761,10 @@ export default function DHLAdvancedSimulator() {
   }, [simId]);
 
   // Save to IndexedDB on change
-  useEffect(() => { if (twinSnapshot) saveModelToIndexedDB(`sim_${simId}_snapshot_libre`, twinSnapshot, 'snap', 'img'); else deleteModelFromIndexedDB(`sim_${simId}_snapshot_libre`); }, [twinSnapshot, simId]);
-  useEffect(() => { if (twinSnapshotLateral) saveModelToIndexedDB(`sim_${simId}_snapshot_lateral`, twinSnapshotLateral, 'snap', 'img'); else deleteModelFromIndexedDB(`sim_${simId}_snapshot_lateral`); }, [twinSnapshotLateral, simId]);
-  useEffect(() => { if (twinSnapshotSuperior) saveModelToIndexedDB(`sim_${simId}_snapshot_superior`, twinSnapshotSuperior, 'snap', 'img'); else deleteModelFromIndexedDB(`sim_${simId}_snapshot_superior`); }, [twinSnapshotSuperior, simId]);
-  useEffect(() => { if (twinSnapshotIsométrica) saveModelToIndexedDB(`sim_${simId}_snapshot_isometrica`, twinSnapshotIsométrica, 'snap', 'img'); else deleteModelFromIndexedDB(`sim_${simId}_snapshot_isometrica`); }, [twinSnapshotIsométrica, simId]);
+  useEffect(() => { if (twinSnapshot) saveModelToIndexedDB(`sim_${simId}_snapshot_libre`, twinSnapshot, 'snap', 'img'); }, [twinSnapshot, simId]);
+  useEffect(() => { if (twinSnapshotLateral) saveModelToIndexedDB(`sim_${simId}_snapshot_lateral`, twinSnapshotLateral, 'snap', 'img'); }, [twinSnapshotLateral, simId]);
+  useEffect(() => { if (twinSnapshotSuperior) saveModelToIndexedDB(`sim_${simId}_snapshot_superior`, twinSnapshotSuperior, 'snap', 'img'); }, [twinSnapshotSuperior, simId]);
+  useEffect(() => { if (twinSnapshotIsométrica) saveModelToIndexedDB(`sim_${simId}_snapshot_isometrica`, twinSnapshotIsométrica, 'snap', 'img'); }, [twinSnapshotIsométrica, simId]);
 
   const [isDesignsLibraryOpen, setIsDesignsLibraryOpen] = useState(false);
   const [isTwinEditMode, setIsTwinEditMode] = useState(false);
@@ -1004,7 +955,7 @@ export default function DHLAdvancedSimulator() {
             if (migratedInputs.technicalSheetName === 'Ficha Técnica de Homologación BWD-250') {
               migratedInputs.technicalSheetName = 'Ficha Técnica de Máquina de Lavado BWD-250';
             }
-            setInputs(prev => ({ ...prev, ...migratedInputs }));
+            setInputs(prev => isDhlTender ? normalizeDHLInputs(migratedInputs, defaultInputs) : ({ ...prev, ...migratedInputs }));
           }
 
           // Re-hidratar diseño 3D
@@ -1179,24 +1130,25 @@ export default function DHLAdvancedSimulator() {
   const conveyorSpeedCmH = conveyorSpeedMH * 100;
   const espacioPorCajaCm = activeBox.largoCm + (inputs.boxGapCm !== undefined ? inputs.boxGapCm : 15);
   const capacidadGeometrica = espacioPorCajaCm > 0 ? Math.floor(conveyorSpeedCmH / espacioPorCajaCm) : 0;
-  const currentNominalCapacity = inputs.capacidad_nominal_h || 240;
+  const currentNominalCapacity = inputs.capacidad_nominal_h ?? 350;
 
   // --- 2. CÁLCULO DE MÉTRICAS AUTOMÁTICAS ---
   const results = useMemo(() => {
+    if (isDhlTender) return calculateDHLResults(inputs);
     // 1. DIMENSIONES Y CAPACIDAD
     const footprintM2 = (inputs.machineLength || 7.00) * (inputs.machineWidth || 1.80);
 
     const capacidadNominalCajasH = currentNominalCapacity;
     const realProductionPerHourBoxes = capacidadNominalCajasH * ((inputs.oee || 95) / 100);
 
-    const dailyProductionBoxes = realProductionPerHourBoxes * (inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1);
-    const weeklyProductionBoxes = dailyProductionBoxes * (inputs.daysPerWeek || 6);
-    const monthlyProductionBoxes = dailyProductionBoxes * (inputs.daysPerMonth || 24);
+    const dailyProductionBoxes = realProductionPerHourBoxes * (inputs.hoursPerDay || 8.5) * (inputs.shiftsPerDay || 1);
+    const weeklyProductionBoxes = dailyProductionBoxes * (inputs.daysPerWeek ?? 5);
+    const monthlyProductionBoxes = dailyProductionBoxes * (inputs.daysPerMonth ?? (248 / 12));
     const annualProductionBoxes = monthlyProductionBoxes * 12;
 
-    const dailyGoalBoxes = inputs.meta_diaria_cajas || 2128;
+    const dailyGoalBoxes = isDhlTender ? results.dailyGoalBoxes : (inputs.meta_diaria_cajas || 2128);
     const requirementCoverage = dailyGoalBoxes > 0 ? (dailyProductionBoxes / dailyGoalBoxes) * 100 : 0;
-    const capacidadRequeridaH = dailyGoalBoxes / (inputs.hoursPerDay || 9);
+    const capacidadRequeridaH = dailyGoalBoxes / (inputs.hoursPerDay || 8.5);
     const systemUtilization = realProductionPerHourBoxes > 0 ? (capacidadRequeridaH / realProductionPerHourBoxes) * 100 : 0;
     const operationalReserve = dailyProductionBoxes - dailyGoalBoxes;
     const hoursRequired = capacidadRequeridaH;
@@ -1207,32 +1159,33 @@ export default function DHLAdvancedSimulator() {
     const motorBandaKw = (inputs.motorBandaHp || 0.5) * 0.7457;
     const calentamientoKw = inputs.calentamientoElectricoKw || 15.0;
 
+    let suavizadorKw = inputs.suavizadorKw || 0.0;
     let potenciaSecadoresAdicionalKw = inputs.potenciaSecadoresAdicionalKw || 2.2;
 
-    const baseSumPowerKw = motorBombaAguaKw + motorSopladorKw + motorBandaKw + calentamientoKw + potenciaSecadoresAdicionalKw;
+    const baseSumPowerKw = motorBombaAguaKw + motorSopladorKw + motorBandaKw + calentamientoKw + potenciaSecadoresAdicionalKw + suavizadorKw;
     const installedPowerKw = inputs.customInstalledPowerKw !== undefined ? inputs.customInstalledPowerKw : baseSumPowerKw;
     const averageHourlyConsumptionKw = installedPowerKw * ((inputs.loadFactor || 85) / 100);
     const hourlyElectricityCostMxn = averageHourlyConsumptionKw * (inputs.electricityRate || 2.50);
-    const dailyElectricityCostMxn = hourlyElectricityCostMxn * (inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1);
-    const monthlyElectricityCostMxn = dailyElectricityCostMxn * (inputs.daysPerMonth || 24);
+    const dailyElectricityCostMxn = hourlyElectricityCostMxn * (inputs.hoursPerDay || 8.5) * (inputs.shiftsPerDay || 1);
+    const monthlyElectricityCostMxn = dailyElectricityCostMxn * (inputs.daysPerMonth ?? (248 / 12));
     const annualElectricityCostMxn = monthlyElectricityCostMxn * 12;
 
     const kwhPer1000Boxes = realProductionPerHourBoxes > 0 ? (averageHourlyConsumptionKw / realProductionPerHourBoxes) * 1000 : 0;
     const electricityCostPer1000BoxesMxn = kwhPer1000Boxes * (inputs.electricityRate || 2.50);
 
-    // 3.5. AGUA E HÍDRICO
-    const recirculacion = inputs.recirculacion_agua !== undefined ? inputs.recirculacion_agua : 85;
-    const reposicionTotalLH = inputs.waterReplenishmentLH || 130;  // 130 L/h
-    const caudalLavado = reposicionTotalLH / (1 - (recirculacion / 100));
-    const consumoPorCajaL = realProductionPerHourBoxes > 0 ? (reposicionTotalLH / realProductionPerHourBoxes) : 0;
+    // 3.5. AGUA E HÍDRICO (Directo del Anexo Técnico DHL 2028)
+    const reposicionTotalLH = inputs.waterReplenishmentLH || 164;  // 164 L/h reposición
+    const caudalLavado = 1230; // 1,230 L/h flujo interno
+    const recirculacion = ((caudalLavado - reposicionTotalLH) / caudalLavado) * 100; // ~86.66%
+    const consumoPorCajaL = realProductionPerHourBoxes > 0 ? (reposicionTotalLH / capacidadNominalCajasH) : 0.468; // Base Nominal 350 u/h = ~0.47
 
     // Consumo Diario L/día
-    const consumoDiarioOperacionL = reposicionTotalLH * (inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1);
+    const consumoDiarioOperacionL = reposicionTotalLH * (inputs.hoursPerDay || 8.5) * (inputs.shiftsPerDay || 1);
 
     // El costo incluye la operación base del mes sin agregar de forma secundaria lo del tanque (según nuevo requerimiento)
     const consumoPorCambioTanqueLDia = 0;
     const consumoDiarioTotalL = consumoDiarioOperacionL;
-    const totalWaterMonthlyLiters = consumoDiarioTotalL * (inputs.daysPerMonth || 24);
+    const totalWaterMonthlyLiters = consumoDiarioTotalL * (inputs.daysPerMonth ?? (248 / 12));
     const waterCostMonthlyMxn = (totalWaterMonthlyLiters / 1000) * (inputs.waterCostM3 || 35.0);
 
     // 3.6 ESCENARIOS
@@ -1242,7 +1195,7 @@ export default function DHLAdvancedSimulator() {
       { name: 'Alto Rendimiento', oee: 95 }
     ].map(esc => {
       const escCapH = capacidadNominalCajasH * (esc.oee / 100);
-      const escCapDia = escCapH * (inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1);
+      const escCapDia = escCapH * (inputs.hoursPerDay || 8.5) * (inputs.shiftsPerDay || 1);
       const escHorasReq = escCapH > 0 ? (dailyGoalBoxes / escCapH) : 0;
       const escCob = dailyGoalBoxes > 0 ? (escCapDia / dailyGoalBoxes) * 100 : 0;
       const escMargen = escCapDia - dailyGoalBoxes;
@@ -1313,22 +1266,22 @@ export default function DHLAdvancedSimulator() {
     }
 
     // ESTADO OPERATIVO (DICTAMEN)
-    let estadoOperativo = "NO VIABLE";
+    let estadoOperativo = "DÉFICIT DETECTADO";
     let estadoColor = "text-red-700 bg-red-50 border-red-200";
 
     // Calcular tiempo extra requerido
-    const diffHours = (dailyGoalBoxes / (realProductionPerHourBoxes || 1)) - (inputs.hoursPerDay || 9);
-    const diffMinutes = Math.ceil(diffHours * 60);
-    let dictamenTexto = `NO VIABLE. El déficit es crítico. Faltan aproximadamente ${Math.ceil(diffHours)} horas efectivas.`;
+    const diffHours = (dailyGoalBoxes / (realProductionPerHourBoxes || 1)) - (inputs.hoursPerDay || 8.5);
+    const diffMinutes = diffHours * 60;
+    let dictamenTexto = `DÉFICIT DETECTADO. El escenario presenta un déficit operativo. Faltan aproximadamente ${diffMinutes.toFixed(2)} minutos efectivos a tasa neta para cubrir la meta.`;
 
     if (dailyProductionBoxes >= dailyGoalBoxes) {
-      estadoOperativo = "VIABLE";
+      estadoOperativo = "SUFICIENCIA CONDICIONADA";
       estadoColor = "text-emerald-600 bg-emerald-50 border-emerald-200";
-      dictamenTexto = "VIABLE. La línea cubre la meta diaria bajo el escenario seleccionado de forma holgada.";
+      dictamenTexto = `El balance agregado cubre 2028 bajo el supuesto de ${capacidadNominalCajasH} u/h nominales y OEE del ${inputs.oee || 95}%, con margen de ${operationalReserve.toFixed(2)} unidades/día. La suficiencia operativa depende de validar mezcla, cambios de formato (no descontados doblemente en el 95% OEE), logística de cajas/tapas y disponibilidad de agua. La simulación no sustituye las pruebas FAT/SAT.`;
     } else if (diffMinutes <= 120) {
       estadoOperativo = "CAPACIDAD CERCANA A META";
       estadoColor = "text-amber-700 bg-amber-50 border-amber-200";
-      dictamenTexto = `NO VIABLE. Capacidad cercana a meta: Requiere aproximadamente +${diffMinutes} min/día efectivos.`;
+      dictamenTexto = `DÉFICIT DETECTADO. Capacidad cercana a meta: Requiere adicionalmente +${diffMinutes.toFixed(2)} min/día efectivos.`;
     }
 
     return {
@@ -1367,14 +1320,14 @@ export default function DHLAdvancedSimulator() {
       // FINANCE
       ingresoMensual, flujoOperativoMensual, flujoOperativoAnual, paybackMeses, roiAnual, puntoEquilibrioTonMes
     };
-  }, [inputs, currentNominalCapacity]);
+  }, [inputs, currentNominalCapacity, isDhlTender]);
 
   // --- 4. ESCENARIOS FINANCIEROS (OEE) ---
   const scenarioResults = useMemo(() => {
     if (!results) return null;
 
     const nominalCapacity = currentNominalCapacity;
-    const dailyGoalBoxes = inputs.meta_diaria_cajas || 2128;
+    const dailyGoalBoxes = isDhlTender ? results.dailyGoalBoxes : (inputs.meta_diaria_cajas || 2128);
     const calcScenario = (params) => {
       const { oee, factorCarga, horasDia, diasMes } = params;
       const capacidadRealH = nominalCapacity * (oee / 100);
@@ -1402,10 +1355,10 @@ export default function DHLAdvancedSimulator() {
       const coberturaMeta = dailyGoalBoxes > 0 ? (produccionDiaria / dailyGoalBoxes) * 100 : 0;
       const margenDiario = produccionDiaria - dailyGoalBoxes;
 
-      let estado = "NO VIABLE";
+      let estado = "DÉFICIT DETECTADO";
       let estadoColor = "text-red-700 bg-red-50 border-red-200";
       if (produccionDiaria >= dailyGoalBoxes) {
-        estado = "VIABLE";
+        estado = "SUFICIENCIA CONDICIONADA";
         estadoColor = "text-emerald-600 bg-emerald-50 border-emerald-200";
       }
 
@@ -1428,9 +1381,9 @@ export default function DHLAdvancedSimulator() {
     };
 
     return {
-      conservador: calcScenario({ oee: 70, factorCarga: inputs.loadFactor || 85, horasDia: (inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1), diasMes: inputs.daysPerMonth || 24 }),
-      normal: calcScenario({ oee: 85, factorCarga: inputs.loadFactor || 85, horasDia: (inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1), diasMes: inputs.daysPerMonth || 24 }),
-      alto: calcScenario({ oee: 95, factorCarga: inputs.loadFactor || 85, horasDia: (inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1), diasMes: inputs.daysPerMonth || 24 })
+      conservador: calcScenario({ oee: 70, factorCarga: inputs.loadFactor || 85, horasDia: (inputs.hoursPerDay || 8.5) * (inputs.shiftsPerDay || 1), diasMes: inputs.daysPerMonth ?? (248 / 12) }),
+      normal: calcScenario({ oee: 85, factorCarga: inputs.loadFactor || 85, horasDia: (inputs.hoursPerDay || 8.5) * (inputs.shiftsPerDay || 1), diasMes: inputs.daysPerMonth ?? (248 / 12) }),
+      alto: calcScenario({ oee: 95, factorCarga: inputs.loadFactor || 85, horasDia: (inputs.hoursPerDay || 8.5) * (inputs.shiftsPerDay || 1), diasMes: inputs.daysPerMonth ?? (248 / 12) })
     };
   }, [inputs, results, currentNominalCapacity]);
 
@@ -1496,7 +1449,7 @@ export default function DHLAdvancedSimulator() {
 
   const handleResetInputs = () => {
     if (window.confirm('¿Deseas restablecer todos los parámetros del simulador a los datos base originales?')) {
-      setInputs(defaultInputs);
+      setInputs(isDhlTender ? normalizeDHLInputs({}, defaultInputs) : defaultInputs);
       setToastMessage('Parámetros restablecidos a valores por defecto.');
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
@@ -1712,7 +1665,7 @@ export default function DHLAdvancedSimulator() {
   };
 
   const printReport = async () => {
-    const defaultName = `Proyeccion_Industrial_${(inputs.clientName || 'Cliente').replace(/\s+/g, '_')}_WM500`;
+    const defaultName = isDhlTender ? 'DHL_PROPUESTA_TECNICA_FINAL.pdf' : `Proyeccion_Industrial_${(inputs.clientName || 'Cliente').replace(/\s+/g, '_')}`;
     const finalFileName = window.prompt("Ingresa el nombre del archivo PDF a exportar:", defaultName);
 
     if (!finalFileName) return; // User cancelled or left empty
@@ -1744,12 +1697,18 @@ export default function DHLAdvancedSimulator() {
       await new Promise(resolve => setTimeout(resolve, 300));
 
       const element = reportRef.current;
-      if (element) {
+      if (element && !isDhlTender) {
         await waitForImages(element);
       }
 
       // Espera de estabilidad del motor de pintado del navegador
       await new Promise(resolve => setTimeout(resolve, 300));
+
+      if (isDhlTender) {
+        const doc = await exportDHLReport(element, { progress: setPdfProgress });
+        doc.save(finalFileName.endsWith('.pdf') ? finalFileName : `${finalFileName}.pdf`);
+        return;
+      }
 
       const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4', compress: true });
       const width = doc.internal.pageSize.getWidth();
@@ -1803,10 +1762,10 @@ export default function DHLAdvancedSimulator() {
       ['Humedad del material', inputs.materialHumidity, '%'],
       [],
       ['RESULTADOS DE CAPACIDAD Y ENERGÍA', 'Valor', 'Unidad'],
-      ['Potencia instalada total', results.installedPowerKw.toFixed(2), 'kW'],
+      ['Potencia documentada (parcial)', results.installedPowerKw.toFixed(2), 'kW'],
       ['Consumo promedio por hora', results.averageHourlyConsumptionKw.toFixed(2), 'kW'],
       ['Producción real por hora', results.realProductionPerHourBoxes.toFixed(2), 'cajas/h'],
-      ['Producción diaria real', results.dailyProductionBoxes.toFixed(0), 'cajas/día'],
+      ['Producción diaria real', results.dailyProductionBoxes.toFixed(2), 'cajas/día'],
       ['Producción semanal real', (results.weeklyProductionBoxes || 0).toFixed(0), 'cajas/sem'],
       ['Producción mensual real', (results.monthlyProductionBoxes || 0).toFixed(0), 'cajas/mes'],
       ['Producción anual real', (results.annualProductionBoxes || 0).toFixed(0), 'cajas/año'],
@@ -2278,7 +2237,7 @@ export default function DHLAdvancedSimulator() {
                           const spaceCm = targetBox.largoCm + gap;
                           const speedMH = inputs.conveyorSpeedMH !== undefined ? inputs.conveyorSpeedMH : 160;
                           const newCap = spaceCm > 0 ? Math.floor((speedMH * 100) / spaceCm) : 0;
-                          setInputs(p => ({ ...p, activeBoxId: newBoxId, capacidad_nominal_h: newCap }));
+                          setInputs(p => ({ ...p, activeBoxId: newBoxId, ...(isDhlTender ? {} : { capacidad_nominal_h: newCap }) }));
                         }}
                         className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none truncate"
                       >
@@ -2292,11 +2251,12 @@ export default function DHLAdvancedSimulator() {
                         <span className="block text-[9px] font-bold text-slate-500 uppercase">{tf('Capacidad Nominal')} {inputs.tipo_unidad === 'pallets' ? `(${tf('p/h')})` : `(${tf('c/h')})`}</span>
                         <button
                           type="button"
+                          disabled={isDhlTender}
                           onClick={() => setInputs(p => ({ ...p, capacidad_nominal_h: capacidadGeometrica || 300 }))}
                           className="text-[8px] font-black text-cyan-600 hover:underline uppercase"
                           title={`Calcular automáticamente por geometría (${capacidadGeometrica})`}
                         >
-                          Auto ({capacidadGeometrica})
+                          {isDhlTender ? 'Receta por validar' : `Auto (${capacidadGeometrica})`}
                         </button>
                       </div>
                       <input
@@ -2321,7 +2281,7 @@ export default function DHLAdvancedSimulator() {
                         onChange={e => {
                           const newSpeed = parseFloat(e.target.value) || 0;
                           const newCap = espacioPorCajaCm > 0 ? Math.floor((newSpeed * 100) / espacioPorCajaCm) : 0;
-                          setInputs(p => ({ ...p, conveyorSpeedMH: newSpeed, capacidad_nominal_cajas_h: newCap }));
+                          setInputs(p => ({ ...p, conveyorSpeedMH: newSpeed, ...(isDhlTender ? {} : { capacidad_nominal_cajas_h: newCap }) }));
                         }}
                         className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none"
                       />
@@ -2337,14 +2297,14 @@ export default function DHLAdvancedSimulator() {
                           const spaceCm = activeBox.largoCm + newGap;
                           const speedMH = inputs.conveyorSpeedMH !== undefined ? inputs.conveyorSpeedMH : 160;
                           const newCap = spaceCm > 0 ? Math.floor((speedMH * 100) / spaceCm) : 0;
-                          setInputs(p => ({ ...p, boxGapCm: newGap, capacidad_nominal_cajas_h: newCap }));
+                          setInputs(p => ({ ...p, boxGapCm: newGap, ...(isDhlTender ? {} : { capacidad_nominal_cajas_h: newCap }) }));
                         }}
                         className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none"
                       />
                     </div>
                     <div className="col-span-2">
                       <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Meta Diaria (cajas)</span>
-                      <input type="number" step="100" min="1" value={inputs.meta_diaria_cajas !== undefined ? inputs.meta_diaria_cajas : 3000} onChange={e => setInputs(p => ({ ...p, meta_diaria_cajas: parseFloat(e.target.value) || 0, dailyGoalKg: parseFloat(e.target.value) || 0 }))} className="w-full bg-white border border-cyan-500/50 rounded-lg px-2 py-1.5 text-xs font-black text-cyan-700 focus:border-cyan-500 focus:outline-none" />
+                      <input type="number" step="100" min="1" readOnly={isDhlTender} value={isDhlTender ? results.dailyGoalBoxes : (inputs.meta_diaria_cajas ?? 3000)} onChange={e => setInputs(p => ({ ...p, meta_diaria_cajas: parseFloat(e.target.value) || 0, dailyGoalKg: parseFloat(e.target.value) || 0 }))} className="w-full bg-white border border-cyan-500/50 rounded-lg px-2 py-1.5 text-xs font-black text-cyan-700 focus:border-cyan-500 focus:outline-none" />
                     </div>
                   </div>
 
@@ -2374,7 +2334,7 @@ export default function DHLAdvancedSimulator() {
                     </div>
                     <div>
                       <span className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Días/Mes</span>
-                      <input type="number" step="1" value={inputs.daysPerMonth || 0} onChange={e => setInputs(p => ({ ...p, daysPerMonth: parseInt(e.target.value) || 0 }))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 text-center focus:border-cyan-500 focus:outline-none" />
+                      <input type="number" step="1" readOnly={isDhlTender} value={isDhlTender ? results.daysPerMonth : (inputs.daysPerMonth || 0)} onChange={e => setInputs(p => ({ ...p, daysPerMonth: parseInt(e.target.value) || 0 }))} className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 text-center focus:border-cyan-500 focus:outline-none" />
                     </div>
                   </div>
 
@@ -2467,7 +2427,7 @@ export default function DHLAdvancedSimulator() {
                                 const newCajas = [...inputs.cajas];
                                 const pDia = parseFloat(e.target.value) || 0;
                                 newCajas[index].piezasDia2028 = pDia;
-                                newCajas[index].reqCajasH = Number((pDia / (inputs.hoursPerDay || 9)).toFixed(1));
+                                newCajas[index].reqCajasH = Number((pDia / (inputs.hoursPerDay || 8.5)).toFixed(1));
                                 const totalPiezas = newCajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0);
                                 setInputs(p => ({ ...p, cajas: newCajas, meta_diaria_cajas: totalPiezas > 0 ? totalPiezas : p.meta_diaria_cajas }));
                               }} className="w-full text-[9px] font-mono font-black text-cyan-800 bg-cyan-50 border border-cyan-200 rounded px-1 py-0.5 text-center focus:outline-none focus:border-cyan-500" />
@@ -2974,7 +2934,7 @@ export default function DHLAdvancedSimulator() {
                       </div>
                     </div>
                     <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono">
-                      <span>Factor (OEE):</span>
+                      <span>Factor (OEE supuesto):</span>
                       <div>
                         <input
                           type="number"
@@ -2995,21 +2955,21 @@ export default function DHLAdvancedSimulator() {
                     Producción Diaria
                   </span>
                   <div className="mt-4">
-                    <span className="text-3xl font-black text-slate-900">{new Intl.NumberFormat().format(results.dailyProductionBoxes.toFixed(0))}</span>
+                    <span className="text-3xl font-black text-slate-900">{new Intl.NumberFormat().format(results.dailyProductionBoxes.toFixed(2))}</span>
                     <span className="text-xs font-bold text-slate-400 ml-1">cajas/día</span>
                   </div>
-                  <span className="text-[9px] text-slate-500 font-mono mt-1">Horas operando: {(inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 2)}h/día</span>
+                  <span className="text-[9px] text-slate-500 font-mono mt-1">Horas operando: {(inputs.hoursPerDay ?? 8.5) * (inputs.shiftsPerDay ?? 1)}h/día</span>
                 </div>
 
                 {/* Consumo promedio */}
                 <div className="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col justify-between shadow-sm">
                   <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                     <Zap className="w-3.5 h-3.5 text-cyan-600" />
-                    Consumo Promedio
+                    Potencia media estimada
                   </span>
                   <div className="mt-4">
                     <span className="text-3xl font-black text-slate-900">{results.averageHourlyConsumptionKw.toFixed(1)}</span>
-                    <span className="text-xs font-bold text-slate-400 ml-1">kWh</span>
+                    <span className="text-xs font-bold text-slate-400 ml-1">kW</span>
                   </div>
                   <span className="text-[9px] text-slate-500 font-mono mt-1">Potencia: {results.installedPowerKw.toFixed(1)} kW inst.</span>
                 </div>
@@ -3113,7 +3073,7 @@ export default function DHLAdvancedSimulator() {
                     { num: '01', title: 'ALIMENTACIÓN', desc: 'Carga continua de cajas plásticas en la banda de entrada para su procesamiento automático.', hex: '#14b8a6' },
                     { num: '02', title: 'INGRESO AL TÚNEL', desc: 'La banda transportadora conduce las cajas al área de lavado de manera estable y controlada.', hex: '#3b82f6' },
                     { num: '03', title: 'LAVADO POR ASPERSIÓN', desc: 'Sistema de limpieza con agua caliente a 60-80 °C y presión de 5.0 bar para remover suciedad, polvo, aceites y líquidos.', hex: '#f59e0b' },
-                    { num: '04', title: 'RECIRCULACIÓN DE AGUA', desc: 'El sistema reutiliza hasta el 85% del agua mediante filtración, trampas y recirculación interna.', hex: '#8b5cf6' },
+                    { num: '04', title: 'RECIRCULACIÓN DE AGUA', desc: 'Recirculación de referencia del anexo: 85%. No demuestra recuperación semanal; balance completo y medición pendientes.', hex: '#8b5cf6' },
                     { num: '05', title: 'SECADO', desc: 'Secado por soplado de aire en banda externa de 5 metros con 4 secadores de alta velocidad.', hex: '#10b981' },
                     { num: '06', title: 'DESCARGA FINAL', desc: 'Salida continua de cajas limpias con eficiencia de lavado de 90-95% y secado de 80-90%.', hex: '#ef4444' }
                   ].map((step, idx) => (
@@ -3188,7 +3148,7 @@ export default function DHLAdvancedSimulator() {
                     <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 shadow-sm">
                       <span className="block text-[10px] font-black text-amber-600 uppercase tracking-wider">REQUERIDO PROMEDIO</span>
                       <div className="text-2xl font-black text-amber-950 mt-1">
-                        {(((inputs.cajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) || inputs.meta_diaria_cajas || 2819) / (inputs.hoursPerDay || 9))).toFixed(1)}
+                        {(((inputs.cajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) || inputs.meta_diaria_cajas || 2819) / (inputs.hoursPerDay || 8.5))).toFixed(1)}
                       </div>
                       <span className="text-[10px] font-bold text-amber-500">cajas/hora</span>
                     </div>
@@ -3204,15 +3164,15 @@ export default function DHLAdvancedSimulator() {
                     <div className="bg-teal-50 border border-teal-200 rounded-2xl p-4 shadow-sm">
                       <span className="block text-[10px] font-black text-teal-600 uppercase tracking-wider">MARGEN DIARIO</span>
                       <div className="text-2xl font-black text-teal-950 mt-1">
-                        {new Intl.NumberFormat().format(((inputs.capacidad_nominal_cajas_h || 350) * (inputs.hoursPerDay || 9)) - (inputs.cajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) || inputs.meta_diaria_cajas || 2819))}
+                        {new Intl.NumberFormat().format(((inputs.capacidad_nominal_cajas_h || 350) * (inputs.hoursPerDay || 8.5)) - (inputs.cajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) || inputs.meta_diaria_cajas || 2819))}
                       </div>
                       <span className="text-[10px] font-bold text-teal-500">cajas/día</span>
                     </div>
                   </div>
 
                   <div className="bg-slate-900 rounded-2xl p-4 text-white text-xs font-bold flex flex-col md:flex-row items-center justify-between gap-2 shadow-md border border-slate-800">
-                    <span>Con {inputs.capacidad_nominal_cajas_h || 350} cajas/h durante {inputs.hoursPerDay || 9} horas, la máquina puede lavar {new Intl.NumberFormat().format((inputs.capacidad_nominal_cajas_h || 350) * (inputs.hoursPerDay || 9))} cajas/día.</span>
-                    <span className="text-cyan-400 shrink-0 font-black">Uso estimado: {(((inputs.cajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) || inputs.meta_diaria_cajas || 2819) / ((inputs.capacidad_nominal_cajas_h || 350) * (inputs.hoursPerDay || 9))) * 100).toFixed(1)}% | Holgura: {new Intl.NumberFormat().format(((inputs.capacidad_nominal_cajas_h || 350) * (inputs.hoursPerDay || 9)) - (inputs.cajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) || inputs.meta_diaria_cajas || 2819))} cajas/día.</span>
+                    <span>Con {inputs.capacidad_nominal_cajas_h || 350} cajas/h durante {inputs.hoursPerDay ?? 8.5} horas, la máquina puede lavar {new Intl.NumberFormat().format((inputs.capacidad_nominal_cajas_h || 350) * (inputs.hoursPerDay || 8.5))} cajas/día.</span>
+                    <span className="text-cyan-400 shrink-0 font-black">Uso estimado: {(((inputs.cajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) || inputs.meta_diaria_cajas || 2819) / ((inputs.capacidad_nominal_cajas_h || 350) * (inputs.hoursPerDay || 8.5))) * 100).toFixed(1)}% | Holgura: {new Intl.NumberFormat().format(((inputs.capacidad_nominal_cajas_h || 350) * (inputs.hoursPerDay || 8.5)) - (inputs.cajas.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) || inputs.meta_diaria_cajas || 2819))} cajas/día.</span>
                   </div>
 
                   <div className="flex items-center justify-between pt-2">
@@ -3247,14 +3207,14 @@ export default function DHLAdvancedSimulator() {
                       <tbody className="divide-y divide-slate-200">
                         {inputs.cajas.map((caja, idx) => {
                           const pDia = caja.piezasDia2028 !== undefined ? caja.piezasDia2028 : 0;
-                          const reqH = caja.reqCajasH !== undefined ? caja.reqCajasH : (pDia / (inputs.hoursPerDay || 9));
-                          const pSemana = pDia * (inputs.diasPorSemana || 6);
+                          const reqH = pDia / (inputs.hoursPerDay || 8.5);
+                          const pSemana = pDia * (inputs.diasPorSemana ?? 5);
 
                           return (
                             <tr key={idx} className={`transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'} ${caja.includeInPdf === false ? 'opacity-40 grayscale' : 'hover:bg-cyan-50'}`}>
                               <td className="py-1.5 px-2 text-center text-slate-800 font-medium border-r border-slate-200">
                                 <div className="flex items-center justify-center gap-1.5">
-                                  <input type="checkbox" checked={caja.includeInPdf !== false} onChange={(e) => { const n = [...inputs.cajas]; n[idx].includeInPdf = e.target.checked; setInputs(p => ({ ...p, cajas: n })); }} className="w-3.5 h-3.5 rounded outline-none border-gray-300 text-cyan-600 focus:ring-cyan-500 cursor-pointer" title="Incluir / Omitir de simulación" />
+                                  <input type="checkbox" disabled={isDhlTender} checked={isDhlTender || caja.includeInPdf !== false} onChange={(e) => { const n = [...inputs.cajas]; n[idx].includeInPdf = e.target.checked; setInputs(p => ({ ...p, cajas: n })); }} className="w-3.5 h-3.5 rounded outline-none border-gray-300 text-cyan-600 focus:ring-cyan-500 cursor-pointer" title={isDhlTender ? "Las 11 referencias forman parte del alcance DHL" : "Incluir / Omitir de simulación"} />
                                   <span className="text-cyan-800 font-black">{idx + 1}</span>
                                 </div>
                               </td>
@@ -3281,7 +3241,7 @@ export default function DHLAdvancedSimulator() {
                               </td>
                               <td className="py-1.5 px-2 border-r border-slate-200 text-center text-cyan-800 font-bold bg-slate-50/50">{reqH.toFixed(1)}</td>
                               <td className="py-1.5 px-2 border-r border-slate-200 text-center">
-                                <input type="number" value={pDia} onChange={(e) => { const val = parseFloat(e.target.value) || 0; const n = [...inputs.cajas]; n[idx].piezasDia2028 = val; n[idx].reqCajasH = Number((val / (inputs.hoursPerDay || 9)).toFixed(1)); const pt = n.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0); setInputs(p => ({ ...p, cajas: n, meta_diaria_cajas: pt > 0 ? pt : p.meta_diaria_cajas })); }} className="w-14 bg-white border border-slate-200 text-center text-slate-800 font-bold focus:bg-white focus:outline-none focus:ring-1 focus:ring-cyan-500 rounded" />
+                                <input type="number" value={pDia} onChange={(e) => { const val = parseFloat(e.target.value) || 0; const n = [...inputs.cajas]; n[idx].piezasDia2028 = val; n[idx].reqCajasH = Number((val / (inputs.hoursPerDay || 8.5)).toFixed(1)); const pt = n.reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0); setInputs(p => ({ ...p, cajas: n, meta_diaria_cajas: pt > 0 ? pt : p.meta_diaria_cajas })); }} className="w-14 bg-white border border-slate-200 text-center text-slate-800 font-bold focus:bg-white focus:outline-none focus:ring-1 focus:ring-cyan-500 rounded" />
                               </td>
                               <td className="py-1.5 px-2 border-r border-slate-200 text-center text-slate-600 font-bold bg-slate-50/50">{new Intl.NumberFormat().format(pSemana.toFixed(0))}</td>
                               <td className="py-1.5 px-2 border-r border-slate-200 text-center">
@@ -3313,7 +3273,7 @@ export default function DHLAdvancedSimulator() {
                             {new Intl.NumberFormat().format(inputs.cajas.filter(c => c.includeInPdf !== false).reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0))}
                           </td>
                           <td className="py-2.5 px-2 text-center font-mono text-[13px] text-slate-700">
-                            {new Intl.NumberFormat().format(inputs.cajas.filter(c => c.includeInPdf !== false).reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) * (inputs.diasPorSemana || 6))}
+                            {new Intl.NumberFormat().format(inputs.cajas.filter(c => c.includeInPdf !== false).reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) * (inputs.diasPorSemana ?? 5))}
                           </td>
                           <td colSpan={4} className="py-2.5 px-2"></td>
                         </tr>
@@ -3371,10 +3331,10 @@ export default function DHLAdvancedSimulator() {
                           const spaceCm = caja.largoCm + gapCm;
                           const boxPerMin = speedCmMin / spaceCm;
                           const capCH = boxPerMin * 60 * ((inputs.oee || 85) / 100);
-                          const capDia = capCH * ((inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1));
+                          const capDia = capCH * ((inputs.hoursPerDay || 8.5) * (inputs.shiftsPerDay || 1));
                           const reqDia = inputs.meta_diaria_cajas || 2819;
                           const hrsReq = reqDia / capCH;
-                          const isViable = hrsReq <= (((inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1)) + 0.5);
+                          const isViable = hrsReq <= (((inputs.hoursPerDay || 8.5) * (inputs.shiftsPerDay || 1)) + 0.5);
 
                           return (
                             <tr key={idx} className="hover:bg-slate-50 transition-colors">
@@ -3424,7 +3384,7 @@ export default function DHLAdvancedSimulator() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
                     <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
                       <span className="text-[10px] font-black text-slate-700 uppercase flex items-center gap-1.5 mb-1"><Activity className="w-3.5 h-3.5" /> Criterios de Viabilidad</span>
-                      <p className="text-[9px] text-slate-500 leading-relaxed">Las cajas que requieren más horas operativas de las disponibles por día ({(inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1)}h) se marcan como EXCEDE en rojo para indicar sobrecarga en la línea.</p>
+                      <p className="text-[9px] text-slate-500 leading-relaxed">Las cajas que requieren más horas operativas de las disponibles por día ({(inputs.hoursPerDay || 8.5) * (inputs.shiftsPerDay || 1)}h) se marcan como EXCEDE en rojo para indicar sobrecarga en la línea.</p>
                     </div>
                     <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
                       <span className="text-[10px] font-black text-slate-700 uppercase flex items-center gap-1.5 mb-1"><AlertCircle className="w-3.5 h-3.5" /> Ajuste por Suciedad</span>
@@ -3452,114 +3412,45 @@ export default function DHLAdvancedSimulator() {
                   {renderPdfToggleButton('analisis', 'Análisis de la Línea')}
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 gap-8">
                   {/* CHART PANEL */}
                   <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
-                    <h4 className="text-xs font-black text-slate-800 mb-6">Capacidad vs Requerimiento por Modelo</h4>
+                    <h4 className="text-xs font-black text-slate-800 mb-6">Demanda 2028 vs. Mezcla de Productos</h4>
                     <div className="h-64">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart
-                          data={[{
-                            name: activeBox.nombre,
-                            CapDia: ((((inputs.conveyorSpeedMH !== undefined ? inputs.conveyorSpeedMH : 160) / 60) * 100) / (activeBox.largoCm + (inputs.boxGapCm || 15))) * 60 * ((inputs.oee || 85) / 100) * (inputs.hoursPerDay || 9),
-                            ReqDia: inputs.meta_diaria_cajas || 2819
-                          }]}
+                          data={inputs.cajas.filter(c => c.includeInPdf !== false).map(c => ({
+                            name: c.nombre,
+                            ReqDia: c.piezasDia2028 !== undefined ? c.piezasDia2028 : 0
+                          }))}
                           margin={{ top: 10, right: 10, left: 0, bottom: 20 }}
                         >
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                          <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                          <XAxis dataKey="name" tick={{ fontSize: 9, fontWeight: 700, fill: '#64748b' }} axisLine={false} tickLine={false} />
                           <YAxis tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} axisLine={false} tickLine={false} />
                           <Tooltip
                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                             itemStyle={{ fontSize: '11px', fontWeight: 700 }}
-                            formatter={(value) => new Intl.NumberFormat().format(value.toFixed(0))}
+                            formatter={(value) => new Intl.NumberFormat().format(value)}
                           />
                           <Legend wrapperStyle={{ fontSize: '10px', fontWeight: 700, paddingTop: '20px' }} />
-                          <Bar dataKey="CapDia" name="Cap/Día" fill="#14b8a6" radius={[4, 4, 0, 0]} barSize={60} />
-                          <Bar dataKey="ReqDia" name="Req/Día" fill="#0f172a" radius={[4, 4, 0, 0]} barSize={60} />
+                          <Bar dataKey="ReqDia" name="Cajas Requeridas por Día (2028)" fill="#0284c7" radius={[4, 4, 0, 0]} barSize={40} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
                   </div>
 
-                  {/* TABLE PANEL */}
-                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
-                    <h4 className="text-xs font-black text-slate-800 mb-2">Lavado y Secado — Parámetros Y1–Y5</h4>
-                    <span className="text-[10px] font-bold text-slate-500 mb-6 block">Ref: {activeBox.nombre} · Rate base: {new Intl.NumberFormat().format(inputs.meta_diaria_cajas || 2819)} cajas/día</span>
 
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-[10px] font-bold text-slate-700 whitespace-nowrap">
-                        <thead>
-                          <tr className="border-b border-slate-200 uppercase tracking-wider text-slate-500">
-                            <th className="py-2 px-2">AÑO</th>
-                            <th className="py-2 px-2 text-center">HRS B</th>
-                            <th className="py-2 px-2 text-center">EF/T</th>
-                            <th className="py-2 px-2 text-center">TURN</th>
-                            <th className="py-2 px-2 text-center">T.DISP</th>
-                            <th className="py-2 px-2 text-right">REQ/H</th>
-                            <th className="py-2 px-2 text-right">CAP/H</th>
-                            <th className="py-2 px-2 text-right">BAL.</th>
-                            <th className="py-2 px-2 text-right">COB.</th>
-                            <th className="py-2 px-2 text-center">LÍNEAS</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {Array.from({ length: 5 }).map((_, i) => {
-                            const reqDia = inputs.meta_diaria_cajas || 2819;
-                            const baseHoursPerDay = inputs.hoursPerDay || 9;
-                            const daysPerWeek = inputs.daysPerWeek || 6;
-
-                            const capHNominal = currentNominalCapacity || 350;
-                            const yearOEE = Math.min(0.99, ((inputs.oee || 95) / 100) + (i * 0.005));
-                            const capH = capHNominal;
-
-                            let turn = inputs.shiftsPerDay || 1;
-                            let hrsPerShiftDay = baseHoursPerDay;
-                            let efT = hrsPerShiftDay * yearOEE;
-                            let tDisp = efT * turn;
-                            let reqH = reqDia / tDisp;
-
-                            if (reqH > capH * yearOEE) {
-                              turn = Math.max(turn, Math.ceil(reqDia / (capH * yearOEE * efT)));
-                              tDisp = efT * turn;
-                              reqH = reqDia / tDisp;
-                            }
-
-                            const hrsB = baseHoursPerDay * daysPerWeek * turn;
-                            const bal = capH - reqH;
-                            const cob = (capH / reqH) * 100;
-
-                            return (
-                              <tr key={i} className="hover:bg-white transition-colors">
-                                <td className="py-2.5 px-2 text-cyan-600 font-bold">Y{i + 1}</td>
-                                <td className="py-2.5 px-2 text-center">{hrsB}</td>
-                                <td className="py-2.5 px-2 text-center">{efT.toFixed(2)}</td>
-                                <td className="py-2.5 px-2 text-center">{turn}</td>
-                                <td className="py-2.5 px-2 text-center">{tDisp.toFixed(2)}</td>
-                                <td className="py-2.5 px-2 text-right">{reqH.toFixed(1)}</td>
-                                <td className="py-2.5 px-2 text-right">{capH.toFixed(1)}</td>
-                                <td className={`py-2.5 px-2 text-right font-bold ${bal >= 0 ? 'text-green-600' : 'text-red-500'}`}>{bal >= 0 ? '+' : ''}{bal.toFixed(1)}</td>
-                                <td className={`py-2.5 px-2 text-right font-bold ${cob >= 100 ? 'text-green-600' : 'text-orange-500'}`}>{cob.toFixed(1)}%</td>
-                                <td className="py-2.5 px-2 text-center text-slate-500 font-normal">1 maq.</td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-
-                      {/* --- INYECCIÓN HÍDRICA DIRECTA --- */}
-                      <div style={{ marginTop: '20px', padding: '16px', backgroundColor: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '12px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                          <h3 style={{ fontSize: '11px', fontWeight: '900', color: '#0284c7', textTransform: 'uppercase' }}>Resumen Hídrico Operativo</h3>
-                          {renderPdfToggleButton('hidrico', 'Sustentabilidad')}
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#0f172a', fontWeight: '600' }}>
-                          <div><strong>Recambios Mensuales:</strong> {new Intl.NumberFormat().format(((inputs.waterTankLiters || 1200) * (inputs.waterChangesPerWeek || 1) * 4))} L</div>
-                          <div><strong>Pérdida por Arrastre/Evap:</strong> {new Intl.NumberFormat().format((results.totalWaterMonthlyLiters || 0) - ((inputs.waterTankLiters || 1200) * (inputs.waterChangesPerWeek || 1) * 4))} L</div>
-                          <div style={{ color: '#059669' }}><strong>Impacto OPEX:</strong> ${new Intl.NumberFormat().format(results.waterCostMonthlyMxn || 0)} MXN/mes</div>
-                        </div>
-                      </div>
-
+                  {/* --- INYECCIÓN HÍDRICA DIRECTA --- */}
+                  <div style={{ marginTop: '20px', padding: '16px', backgroundColor: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <h3 style={{ fontSize: '11px', fontWeight: '900', color: '#0284c7', textTransform: 'uppercase' }}>Resumen Hídrico Operativo</h3>
+                      {renderPdfToggleButton('hidrico', 'Sustentabilidad')}
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#0f172a', fontWeight: '600' }}>
+                      <div title="Estimación teórica de flujo sin validación diferencial"><strong>Caudal Interno:</strong> {new Intl.NumberFormat().format(1230)} L/h</div>
+                      <div title="Flujo dictaminado por anexo (faltan pérdidas reales, purgas y arrastre)"><strong>Reposición (anexo):</strong> {new Intl.NumberFormat().format(inputs.waterReplenishmentLH || 164)} L/h (~{(((1230 - (inputs.waterReplenishmentLH || 164)) / 1230) * 100).toFixed(1)}%)</div>
+                      <div style={{ color: '#059669' }}><strong>Impacto OPEX:</strong> ${new Intl.NumberFormat().format(results.waterCostMonthlyMxn || 0)} MXN/mes</div>
                     </div>
                   </div>
                 </div>
@@ -3591,7 +3482,7 @@ export default function DHLAdvancedSimulator() {
                         }`} />
                       <h3 className={`text-sm font-black uppercase tracking-wider ${twinTheme === 'toxic' ? 'text-[#84cc16]' : twinTheme === 'blueprint' ? 'text-slate-900' : 'text-white'
                         }`}>
-                        {`Twin Digital 3D de la Línea (WM-500) ${twinLayout?.name ? `- [${twinLayout.name.toUpperCase()}]` : ''}`}
+                        {`Twin Digital 3D de la Línea (BWD-350 + BA) ${twinLayout?.name ? `- [${twinLayout.name.toUpperCase()}]` : ''}`}
                       </h3>
                       {renderPdfToggleButton('twin', 'Twin 3D')}
                       {isProcessingModel && <Loader2 className={`w-3.5 h-3.5 animate-spin ${twinTheme === 'toxic' ? 'text-[#84cc16]' : twinTheme === 'blueprint' ? 'text-cyan-600' : 'text-[#00F0FF]'
@@ -4096,325 +3987,11 @@ export default function DHLAdvancedSimulator() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {[
-                        {
-                          comp: 'Modelo del Equipo',
-                          renderSpec: () => (
-                            <input
-                              type="text"
-                              value={inputs.machineName || ''}
-                              onChange={e => setInputs(prev => ({ ...prev, machineName: e.target.value }))}
-                              className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none"
-                            />
-                          ),
-                          renderDetail: () => (
-                            <input
-                              type="text"
-                              value={inputs.machineNameDetalle !== undefined ? inputs.machineNameDetalle : 'Lavadora y Secadora Industrial de Madera'}
-                              onChange={e => setInputs(prev => ({ ...prev, machineNameDetalle: e.target.value }))}
-                              className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
-                            />
-                          )
-                        },
-                        {
-                          comp: 'Aplicación Operativa',
-                          renderSpec: () => (
-                            <input
-                              type="text"
-                              value={inputs.aplicacionOperativa !== undefined ? inputs.aplicacionOperativa : 'Madera, tarimas, clavos, grapas, tornillos'}
-                              onChange={e => setInputs(prev => ({ ...prev, aplicacionOperativa: e.target.value }))}
-                              className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none"
-                            />
-                          ),
-                          renderDetail: () => (
-                            <input
-                              type="text"
-                              value={inputs.aplicacionDetalle !== undefined ? inputs.aplicacionDetalle : 'Separación magnética automática'}
-                              onChange={e => setInputs(prev => ({ ...prev, aplicacionDetalle: e.target.value }))}
-                              className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
-                            />
-                          )
-                        },
-                        {
-                          comp: 'Capacidad Nominal',
-                          renderSpec: () => (
-                            <div className="flex items-center gap-1.5 w-full justify-end pr-2">
-                              <span className="text-xs font-black text-slate-800">{new Intl.NumberFormat().format(currentNominalCapacity)}</span>
-                              <span className="text-xs font-bold text-slate-500 shrink-0">cajas/h</span>
-                            </div>
-                          ),
-                          renderDetail: () => (
-                            <input
-                              type="text"
-                              value={inputs.capacidadNominalDetalle !== undefined ? inputs.capacidadNominalDetalle : 'Sujeta a OEE y factor de reducción'}
-                              onChange={e => setInputs(prev => ({ ...prev, capacidadNominalDetalle: e.target.value }))}
-                              className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
-                            />
-                          )
-                        },
-                        {
-                          comp: 'Motorización Principal',
-                          renderSpec: () => (
-                            <div className="flex items-center gap-1.5 w-full">
-                              <input
-                                type="number"
-                                value={inputs.motorBombaAguaHp || 0}
-                                onChange={e => setInputs(prev => ({ ...prev, motorPrincipalHp: parseFloat(e.target.value) || 0 }))}
-                                className="w-16 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
-                              />
-                              <span className="text-xs font-bold text-slate-500 shrink-0">hp</span>
-                              <input
-                                type="text"
-                                value={inputs.motorMarca || ''}
-                                onChange={e => setInputs(prev => ({ ...prev, motorMarca: e.target.value }))}
-                                className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none"
-                              />
-                            </div>
-                          ),
-                          renderDetail: () => (
-                            <input
-                              type="text"
-                              value={inputs.motorPrincipalDetalle !== undefined ? inputs.motorPrincipalDetalle : 'Alta eficiencia clase IE3'}
-                              onChange={e => setInputs(prev => ({ ...prev, motorPrincipalDetalle: e.target.value }))}
-                              className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
-                            />
-                          )
-                        },
-                        {
-                          comp: 'Motorización Auxiliar',
-                          renderSpec: () => (
-                            <div className="flex items-center gap-1.5 w-full">
-                              <input
-                                type="number"
-                                value={inputs.motorSopladorHp || 0}
-                                onChange={e => setInputs(prev => ({ ...prev, motorAuxiliarHp: parseFloat(e.target.value) || 0 }))}
-                                className="w-16 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
-                              />
-                              <span className="text-xs font-bold text-slate-500 shrink-0">hp</span>
-                              <input
-                                type="text"
-                                value={inputs.motorMarca || ''}
-                                onChange={e => setInputs(prev => ({ ...prev, motorMarca: e.target.value }))}
-                                className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none"
-                              />
-                            </div>
-                          ),
-                          renderDetail: () => (
-                            <input
-                              type="text"
-                              value={inputs.motorAuxiliarDetalle !== undefined ? inputs.motorAuxiliarDetalle : 'Sistemas auxiliares e hidráulicos'}
-                              onChange={e => setInputs(prev => ({ ...prev, motorAuxiliarDetalle: e.target.value }))}
-                              className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
-                            />
-                          )
-                        },
-                        {
-                          comp: 'Potencia Instalada Total',
-                          renderSpec: () => (
-                            <span className="text-slate-700 font-bold px-2 py-1">{results.totalHp} hp</span>
-                          ),
-                          renderDetail: () => (
-                            <span className="text-slate-500 font-mono text-[11px] px-2 py-1 block text-right">{results.installedPowerKw.toFixed(2)} kW</span>
-                          )
-                        },
-                        {
-                          comp: 'Dimensiones Bandas',
-                          renderSpec: () => (
-                            <input
-                              type="text"
-                              value={inputs.dimensionesBandas !== undefined ? inputs.dimensionesBandas : 'Entrada: 4,000 mm | Salida: 3,000 mm'}
-                              onChange={e => setInputs(prev => ({ ...prev, dimensionesBandas: e.target.value }))}
-                              className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none"
-                            />
-                          ),
-                          renderDetail: () => (
-                            <input
-                              type="text"
-                              value={inputs.dimensionesBandasDetalle !== undefined ? inputs.dimensionesBandasDetalle : 'Diseño continuo de banda reforzada'}
-                              onChange={e => setInputs(prev => ({ ...prev, dimensionesBandasDetalle: e.target.value }))}
-                              className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
-                            />
-                          )
-                        },
-                        {
-                          comp: 'Boca de Alimentación',
-                          renderSpec: () => (
-                            <input
-                              type="text"
-                              value={inputs.bocaAlimentacion || ''}
-                              onChange={e => setInputs(prev => ({ ...prev, bocaAlimentacion: e.target.value }))}
-                              className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none"
-                            />
-                          ),
-                          renderDetail: () => (
-                            <input
-                              type="text"
-                              value={inputs.bocaAlimentacionDetalle !== undefined ? inputs.bocaAlimentacionDetalle : 'Apertura de seguridad'}
-                              onChange={e => setInputs(prev => ({ ...prev, bocaAlimentacionDetalle: e.target.value }))}
-                              className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
-                            />
-                          )
-                        },
-                        {
-                          comp: 'Rotación del Sistema de lavado',
-                          renderSpec: () => (
-                            <div className="flex items-center gap-1.5 w-full">
-                              <input
-                                type="number"
-                                value={inputs.presionLavadoBar || 0}
-                                onChange={e => setInputs(prev => ({ ...prev, presionLavadoBar: parseFloat(e.target.value) || 0 }))}
-                                className="w-full max-w-[120px] bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
-                              />
-                              <span className="text-xs font-bold text-slate-500 shrink-0">rpm</span>
-                            </div>
-                          ),
-                          renderDetail: () => (
-                            <input
-                              type="text"
-                              value={inputs.presionLavadoBarDetalle !== undefined ? inputs.presionLavadoBarDetalle : 'Eje balanceado dinámicamente'}
-                              onChange={e => setInputs(prev => ({ ...prev, presionLavadoBarDetalle: e.target.value }))}
-                              className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
-                            />
-                          )
-                        },
-                        {
-                          comp: 'Tamaño de Partícula Final',
-                          renderSpec: () => (
-                            <input
-                              type="text"
-                              value={inputs.particulaFinal || ''}
-                              onChange={e => setInputs(prev => ({ ...prev, particulaFinal: e.target.value }))}
-                              className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none"
-                            />
-                          ),
-                          renderDetail: () => (
-                            <input
-                              type="text"
-                              value={inputs.particulaFinalDetalle !== undefined ? inputs.particulaFinalDetalle : 'Ideal para reciclaje o briquetas'}
-                              onChange={e => setInputs(prev => ({ ...prev, particulaFinalDetalle: e.target.value }))}
-                              className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
-                            />
-                          )
-                        },
-                        {
-                          comp: 'Separación Metálica',
-                          renderSpec: () => (
-                            <input
-                              type="text"
-                              value={inputs.separadorMagnetico || ''}
-                              onChange={e => setInputs(prev => ({ ...prev, separadorMagnetico: e.target.value }))}
-                              className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none"
-                            />
-                          ),
-                          renderDetail: () => (
-                            <input
-                              type="text"
-                              value={inputs.separadorMagneticoDetalle !== undefined ? inputs.separadorMagneticoDetalle : 'Imán sobrebanda autolimpiable'}
-                              onChange={e => setInputs(prev => ({ ...prev, separadorMagneticoDetalle: e.target.value }))}
-                              className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
-                            />
-                          )
-                        },
-                        {
-                          comp: 'Dimensiones Físicas',
-                          renderSpec: () => (
-                            <div className="flex items-center gap-1 w-full overflow-hidden">
-                              <span className="text-[9px] font-bold text-slate-400 shrink-0">L:</span>
-                              <input
-                                type="number" step="0.05"
-                                value={inputs.machineLength || 0}
-                                onChange={e => setInputs(prev => ({ ...prev, machineLength: parseFloat(e.target.value) || 0 }))}
-                                className="w-14 bg-white border border-slate-200 rounded-lg px-1.5 py-1 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-center"
-                              />
-                              <span className="text-[9px] font-bold text-slate-400 shrink-0">W:</span>
-                              <input
-                                type="number" step="0.05"
-                                value={inputs.machineWidth || 0}
-                                onChange={e => setInputs(prev => ({ ...prev, machineWidth: parseFloat(e.target.value) || 0 }))}
-                                className="w-14 bg-white border border-slate-200 rounded-lg px-1.5 py-1 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-center"
-                              />
-                              <span className="text-[9px] font-bold text-slate-400 shrink-0">H:</span>
-                              <input
-                                type="number" step="0.05"
-                                value={inputs.machineHeight || 0}
-                                onChange={e => setInputs(prev => ({ ...prev, machineHeight: parseFloat(e.target.value) || 0 }))}
-                                className="w-14 bg-white border border-slate-200 rounded-lg px-1.5 py-1 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-center"
-                              />
-                              <span className="text-xs font-bold text-slate-500 shrink-0">m</span>
-                            </div>
-                          ),
-                          renderDetail: () => (
-                            <span className="text-slate-500 font-mono text-[11px] px-2 py-1 block text-right">Footprint: {(inputs.machineLength * inputs.machineWidth).toFixed(2)} m²</span>
-                          )
-                        },
-                        {
-                          comp: 'Peso Total Equipo',
-                          renderSpec: () => (
-                            <div className="flex items-center gap-1.5 w-full">
-                              <input
-                                type="number"
-                                value={inputs.pesoOperativoKg || 0}
-                                onChange={e => setInputs(prev => ({ ...prev, pesoKg: parseFloat(e.target.value) || 0 }))}
-                                className="w-full max-w-[120px] bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
-                              />
-                              <span className="text-xs font-bold text-slate-500 shrink-0">kg</span>
-                            </div>
-                          ),
-                          renderDetail: () => (
-                            <input
-                              type="text"
-                              value={inputs.pesoOperativoKgDetalle !== undefined ? inputs.pesoOperativoKgDetalle : 'Anclaje antivibraciones'}
-                              onChange={e => setInputs(prev => ({ ...prev, pesoKgDetalle: e.target.value }))}
-                              className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
-                            />
-                          )
-                        },
-                        {
-                          comp: 'Componentes Eléctricos',
-                          renderSpec: () => (
-                            <input
-                              type="text"
-                              value={inputs.componentesElectricos || ''}
-                              onChange={e => setInputs(prev => ({ ...prev, componentesElectricos: e.target.value }))}
-                              className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none"
-                            />
-                          ),
-                          renderDetail: () => (
-                            <input
-                              type="text"
-                              value={inputs.componentesElectricosDetalle !== undefined ? inputs.componentesElectricosDetalle : 'Gabinete de control integrado'}
-                              onChange={e => setInputs(prev => ({ ...prev, componentesElectricosDetalle: e.target.value }))}
-                              className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
-                            />
-                          )
-                        },
-                        {
-                          comp: 'Nivel de Ruido',
-                          renderSpec: () => (
-                            <div className="flex items-center gap-1.5 w-full">
-                              <input
-                                type="number"
-                                value={inputs.ruidoDb || 0}
-                                onChange={e => setInputs(prev => ({ ...prev, ruidoDb: parseFloat(e.target.value) || 0 }))}
-                                className="w-full max-w-[120px] bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
-                              />
-                              <span className="text-xs font-bold text-slate-500 shrink-0">dB</span>
-                            </div>
-                          ),
-                          renderDetail: () => (
-                            <input
-                              type="text"
-                              value={inputs.ruidoDbDetalle !== undefined ? inputs.ruidoDbDetalle : 'Diseño aislante de vibraciones'}
-                              onChange={e => setInputs(prev => ({ ...prev, ruidoDbDetalle: e.target.value }))}
-                              className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:border-cyan-500 focus:outline-none text-right"
-                            />
-                          )
-                        },
-                      ].map((t, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="py-2 px-4 font-black text-slate-800 align-middle w-1/4 min-w-[150px]">{t.comp}</td>
-                          <td className="py-2 px-4 text-slate-600 font-bold align-middle w-1/3 min-w-[200px]">{t.renderSpec()}</td>
-                          <td className="py-2 px-4 text-right text-slate-500 font-mono text-[11px] align-middle w-1/3 min-w-[200px]">{t.renderDetail()}</td>
+                      {dhlTechnicalRows(inputs, results).map(([name, value, source]) => (
+                        <tr key={name} className="hover:bg-slate-50/80">
+                          <td className="py-2 px-4 font-black text-slate-800">{name}</td>
+                          <td className="py-2 px-4 text-slate-700 font-bold">{value}</td>
+                          <td className="py-2 px-4 text-slate-500">{source}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -4461,23 +4038,24 @@ export default function DHLAdvancedSimulator() {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mb-6">
                   <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 transition-all hover:border-cyan-300 group">
                     <span className="block text-[9px] font-bold text-slate-400 uppercase flex items-center gap-1 group-hover:text-cyan-600">
-                      Potencia Instalada Total <Edit2 className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      Potencia documentada (parcial) <Edit2 className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </span>
                     <div className="flex items-baseline gap-1 mt-1">
                       <input
                         type="number"
-                        value={inputs.calentamientoElectricoKw === undefined || inputs.calentamientoElectricoKw === 96.98 ? results.installedPowerKw.toFixed(2) : inputs.calentamientoElectricoKw}
+                        value={isDhlTender ? results.installedPowerKw.toFixed(2) : (inputs.customInstalledPowerKw ?? results.installedPowerKw.toFixed(2))}
+                        readOnly={isDhlTender}
                         onChange={(e) => setInputs(prev => ({ ...prev, customInstalledPowerKw: parseFloat(e.target.value) || 0 }))}
                         className="w-20 bg-transparent border-b border-dashed border-slate-300 focus:border-cyan-500 focus:outline-none text-xl font-black text-slate-800"
                         step="0.01"
                       />
                       <span className="text-xl font-black text-slate-800">kW</span>
                     </div>
-                    <span className="block text-[9px] text-slate-400 mt-1 font-mono">{results.totalHp} hp total equivalente</span>
+                    <span className="block text-[9px] text-slate-400 mt-1 font-mono">{results.totalHp} HP motores documentados; BA por conciliar</span>
                   </div>
                   <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
-                    <span className="block text-[9px] font-bold text-slate-400 uppercase">Consumo Promedio Hora</span>
-                    <span className="text-xl font-black text-cyan-700">{results.averageHourlyConsumptionKw.toFixed(2)} kWh</span>
+                    <span className="block text-[9px] font-bold text-slate-400 uppercase">Potencia media estimada</span>
+                    <span className="text-xl font-black text-cyan-700">{results.averageHourlyConsumptionKw.toFixed(2)} kW</span>
                     <span className="block text-[9px] text-cyan-600 font-mono mt-1">Factor de Carga: {inputs.loadFactor}%</span>
                   </div>
                   <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 transition-all hover:border-cyan-300 group">
@@ -4595,9 +4173,9 @@ export default function DHLAdvancedSimulator() {
                     <tbody className="divide-y divide-slate-100">
                       {[
                         { period: 'Por Hora', prod: results.realProductionPerHourBoxes || 0, cons: results.averageHourlyConsumptionKw || 0 },
-                        { period: 'Por Día', prod: results.dailyProductionBoxes || 0, cons: (results.averageHourlyConsumptionKw || 0) * ((inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1)) },
-                        { period: 'Por Semana', prod: (results.dailyProductionBoxes || 0) * 7, cons: (results.averageHourlyConsumptionKw || 0) * ((inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1)) * 7 },
-                        { period: 'Por Mes', prod: (results.dailyProductionBoxes || 0) * (inputs.daysPerMonth || 24), cons: (results.averageHourlyConsumptionKw || 0) * ((inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1)) * (inputs.daysPerMonth || 24) }
+                        { period: 'Por Día', prod: results.dailyProductionBoxes || 0, cons: (results.averageHourlyConsumptionKw || 0) * ((inputs.hoursPerDay || 8.5) * (inputs.shiftsPerDay || 1)) },
+                        { period: 'Por Semana (5 días)', prod: (results.dailyProductionBoxes || 0) * 5, cons: (results.averageHourlyConsumptionKw || 0) * ((inputs.hoursPerDay || 8.5) * (inputs.shiftsPerDay || 1)) * 5 },
+                        { period: 'Por Mes', prod: (results.dailyProductionBoxes || 0) * (inputs.daysPerMonth ?? (248 / 12)), cons: (results.averageHourlyConsumptionKw || 0) * ((inputs.hoursPerDay || 8.5) * (inputs.shiftsPerDay || 1)) * (inputs.daysPerMonth ?? (248 / 12)) }
                       ].map((row, idx) => (
                         <tr key={idx} className="hover:bg-slate-50 transition-colors">
                           <td className="px-4 py-3 font-bold text-slate-700">{row.period}</td>
@@ -4611,67 +4189,15 @@ export default function DHLAdvancedSimulator() {
                   <div className="mt-4 p-3 bg-indigo-50/50 rounded-xl border border-indigo-100 flex items-start gap-3">
                     <Info className="w-4 h-4 text-indigo-500 mt-0.5 flex-shrink-0" />
                     <p className="text-[11px] text-indigo-800 font-medium leading-relaxed">
-                      El <strong>Consumo Específico (Ratio)</strong> indica la cantidad exacta de kilowatts requeridos para procesar 1,000 cajas. Un ratio bajo asegura la alta rentabilidad energética de la línea industrial.
+                      El <strong>Consumo Específico (Ratio)</strong> estima los kWh por 1,000 unidades producidas. En DHL es parcial: falta conciliar la potencia incremental del BA y validar el factor de carga.
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* ANÁLISIS A 5 AÑOS (Y1-Y5) Y AGUA */}
-              <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
-                <div className="flex items-center gap-2 border-b border-slate-100 pb-4 mb-4">
-                  <Activity className="w-5 h-5 text-emerald-600" />
-                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">Proyección de Viabilidad a 5 Años (Y1-Y5)</h3>
-                </div>
-
-                <div className="overflow-x-auto mb-6">
-                  <table className="w-full text-left text-sm whitespace-nowrap">
-                    <thead className="bg-slate-50 border-y border-slate-200">
-                      <tr>
-                        <th className="px-4 py-3 font-black text-slate-800 uppercase tracking-wider text-[10px]">Año</th>
-                        <th className="px-4 py-3 font-black text-slate-800 uppercase tracking-wider text-[10px] text-center">Hrs B</th>
-                        <th className="px-4 py-3 font-black text-slate-800 uppercase tracking-wider text-[10px] text-center">EF/T</th>
-                        <th className="px-4 py-3 font-black text-slate-800 uppercase tracking-wider text-[10px] text-center">Turn</th>
-                        <th className="px-4 py-3 font-black text-indigo-800 uppercase tracking-wider text-[10px] text-center">T.Disp</th>
-                        <th className="px-4 py-3 font-black text-amber-600 uppercase tracking-wider text-[10px] text-right">Req/H</th>
-                        <th className="px-4 py-3 font-black text-emerald-800 uppercase tracking-wider text-[10px] text-right">Cap/H</th>
-                        <th className="px-4 py-3 font-black text-emerald-800 uppercase tracking-wider text-[10px] text-right">Bal.</th>
-                        <th className="px-4 py-3 font-black text-emerald-800 uppercase tracking-wider text-[10px] text-right">Cob.</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {results.projectionY5?.map((row, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                          <td className="px-4 py-3 font-bold text-sky-600">{row.year}</td>
-                          <td className="px-4 py-3 font-bold text-slate-600 text-center">{row.hrsB}</td>
-                          <td className="px-4 py-3 font-bold text-slate-600 text-center">{row.efT.toFixed(2)}</td>
-                          <td className="px-4 py-3 font-bold text-slate-600 text-center">{row.turn}</td>
-                          <td className="px-4 py-3 font-black text-indigo-600 text-center">{row.tDisp.toFixed(2)}</td>
-                          <td className="px-4 py-3 font-black text-amber-600 text-right">{row.reqH.toFixed(1)}</td>
-                          <td className="px-4 py-3 font-black text-emerald-600 text-right">{row.capH.toFixed(1)}</td>
-                          <td className="px-4 py-3 font-black text-emerald-600 text-right">+{row.bal.toFixed(1)}</td>
-                          <td className="px-4 py-3 font-black text-emerald-600 text-right">{row.cob.toFixed(1)}%</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-sky-50 border border-sky-100 rounded-xl p-4">
-                    <span className="text-[10px] font-black text-sky-700 uppercase flex items-center gap-1.5 mb-1"><Droplet className="w-3.5 h-3.5" /> Consumo Hídrico Mensual</span>
-                    <div className="text-xl font-black text-sky-900 mt-1">{new Intl.NumberFormat().format(results.totalWaterMonthlyLiters || 0)} L</div>
-                  </div>
-                  <div className="bg-sky-50 border border-sky-100 rounded-xl p-4">
-                    <span className="text-[10px] font-black text-sky-700 uppercase flex items-center gap-1.5 mb-1"><AlertCircle className="w-3.5 h-3.5" /> Recambios + Evaporación</span>
-                    <div className="text-sm font-bold text-sky-800 mt-1">Tanque: {inputs.waterTankLiters}L / {inputs.waterDragOutPercent}% Arrastre</div>
-                  </div>
-                  <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4">
-                    <span className="text-[10px] font-black text-emerald-700 uppercase flex items-center gap-1.5 mb-1"><Activity className="w-3.5 h-3.5" /> Impacto OPEX Hídrico</span>
-                    <div className="text-xl font-black text-emerald-900 mt-1">${new Intl.NumberFormat().format(results.waterCostMonthlyMxn || 0)} MXN</div>
-                  </div>
-                </div>
-              </div>
+              {isDhlTender && <DHLAnnualPanel inputs={inputs} results={results} onChange={(year, key, value) => {
+                setInputs(prev => ({ ...prev, annualScenarios: prev.annualScenarios.map(row => row.year === year ? { ...row, [key]: value } : row) }));
+              }} />}
 
             </div>
           )}
@@ -5029,7 +4555,16 @@ export default function DHLAdvancedSimulator() {
           )}
 
           {/* TAB 9: REQUERIMIENTOS DE OBRA CIVIL Y PISO */}
-          {activeTab === 'civil' && (
+          {activeTab === 'civil' && (isDhlTender ? (
+            <div className="bg-white text-slate-800 rounded-2xl p-6 border border-slate-200 space-y-4">
+              <h3 className="font-bold text-cyan-700">Implantación y obra civil: ingeniería pendiente</h3>
+              <p>BWD-350 + BA: 12.50 × 1.80 × 1.75 m. SWM-1000 separado: 2.00 × 1.10 × 2.00 m. Confirmar envolvente conjunta con la RO lateral.</p>
+              <p>Peso indicado en oferta A: 1,200 kg, sin separar masa seca y operativa. El tanque de 1,200 L no autoriza una masa final sin conciliar la base del peso.</p>
+              <p>Espesor de losa, carga admisible, anclajes, cimentación y área de maniobras requieren cálculo de ingeniería. No se prescriben automáticamente.</p>
+              <p>Alimentación: 480 VAC / 3 fases / 60 Hz. Potencia total integral pendiente de conciliación del BA.</p>
+              <p>DHL exige descarga, maniobras, grúa o montacargas, posicionamiento y montaje incluidos en alcance y precio final de SOLIMAQ. Conciliar la oferta anterior y el contrato.</p>
+            </div>
+          ) : (
             <div className="space-y-6">
 
               {/* ENCABEZADO DE SECCIÓN CON CONTROL PDF */}
@@ -5198,1812 +4733,1775 @@ export default function DHLAdvancedSimulator() {
 
               </div>
             </div>
-          )}
+          ))}
 
         </div>
-      </div>
+      </div >
 
       {/* RENDERIZADO DEL INFORME COMPLETO EN LANDSCAPE */}
-      {isReportModalOpen && (currentSectionIndex = 1, true) && (
-        <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex flex-col items-center justify-start p-4 overflow-y-auto overflow-x-hidden">
-          <div className="bg-white border border-slate-300 rounded-3xl p-6 w-full max-w-[1600px] shadow-2xl relative text-slate-900 mt-10 mb-10 shrink-0">
-            <button
-              onClick={() => {
-                setIsReportModalOpen(false);
-                setIsPreviewMode(false);
-              }}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-650"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            <div className="flex items-center justify-between mb-6 border-b border-slate-100 pb-4">
-              <div className="flex items-center gap-3">
-                {!isPreviewMode && <span className="animate-spin text-cyan-600">⏳</span>}
-                <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">
-                  {isPreviewMode ? 'Vista Previa del Reporte' : 'Generando Reporte PDF WM-500...'}
-                </h3>
-              </div>
-              {isPreviewMode && (
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center bg-slate-100 rounded-xl p-1 shadow-sm mr-3">
-                    <button
-                      onClick={() => setPdfLang('es')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all uppercase ${pdfLang === 'es' ? 'bg-white shadow-sm text-cyan-600' : 'text-slate-500 hover:text-slate-700'}`}
-                    >
-                      ESP (Español)
-                    </button>
-                    <button
-                      onClick={() => setPdfLang('en')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all uppercase ${pdfLang === 'en' ? 'bg-white shadow-sm text-cyan-600' : 'text-slate-500 hover:text-slate-700'}`}
-                    >
-                      BILINGÜE (ESP/ENG)
-                    </button>
-                  </div>
-                  <label className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all uppercase tracking-wider shadow-sm">
-                    <Upload className="w-4 h-4" />
-                    Subir Diagrama
-                    <input type="file" accept="image/*" className="hidden" onChange={handleCustomProcessImageUpload} />
-                  </label>
-                  <label className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all uppercase tracking-wider shadow-sm">
-                    <Upload className="w-4 h-4" />
-                    Subir Logo
-                    <input type="file" accept="image/*" className="hidden" onChange={handleCustomClientLogoUpload} />
-                  </label>
-                  <button
-                    onClick={printReport}
-                    disabled={isGeneratingPdf}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-red-500 hover:bg-red-600 text-white transition-all uppercase tracking-wider shadow-sm"
-                  >
-                    <Printer className="w-4 h-4" />
-                    Descargar PDF
-                  </button>
+      {
+        isReportModalOpen && (
+          <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex flex-col items-center justify-start p-4 overflow-y-auto overflow-x-hidden">
+            <div className="bg-white border border-slate-300 rounded-3xl p-6 w-full max-w-[1600px] shadow-2xl relative text-slate-900 mt-10 mb-10 shrink-0">
+              <button
+                onClick={() => {
+                  setIsReportModalOpen(false);
+                  setIsPreviewMode(false);
+                }}
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-650"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              {(() => { currentSectionIndex = 1; return null; })()}
+              <div className="flex items-center justify-between mb-6 border-b border-slate-100 pb-4">
+                <div className="flex items-center gap-3">
+                  {!isPreviewMode && <span className="animate-spin text-cyan-600">⏳</span>}
+                  <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">
+                    {isPreviewMode ? 'Vista Previa del Reporte' : 'Generando Reporte PDF BWD-350 + BA + SWM-1000...'}
+                  </h3>
                 </div>
-              )}
-            </div>
-
-            {/* VISTA PREVIA DEL INFORME (A4 LANDSCAPE) */}
-            <div className="max-h-[700px] w-full overflow-y-auto overflow-x-auto border border-slate-200 rounded-xl bg-slate-50 p-4 shadow-inner flex flex-col items-center">
-              <div ref={reportRef} className="flex flex-col gap-8" style={{ width: '1120px' }}>
-
-                {/* PÁGINA 1: PORTADA EJECUTIVA */}
-                {pdfConfig.resumen && (
-                  <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
-                    {/* ENCABEZADO SUPERIOR LIMPIO */}
-                    <div style={{ height: '70px', padding: '0 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        {inputs.customClientLogo ? (
-                          <img src={inputs.customClientLogo} alt="Logo" style={{ maxHeight: '45px', maxWidth: '200px', objectFit: 'contain' }} />
-                        ) : (
-                          <span style={{ color: '#008299', fontWeight: 900, fontSize: 32, letterSpacing: -1, textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{inputs.companyName || 'CENTERS'}</span>
-                        )}
-                      </div>
-                      <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <span style={{ fontSize: 11, color: '#0f2038', fontWeight: 800, letterSpacing: 0.5, textTransform: 'uppercase' }}>{tf('lavadora INDUSTRIAL')}</span>
-                        <span style={{ fontSize: 9, color: '#64748b', fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase' }}>ENGINEERING A CLEANER TOMORROW</span>
-                      </div>
+                {isPreviewMode && (
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center bg-slate-100 rounded-xl p-1 shadow-sm mr-3">
+                      <button
+                        onClick={() => setPdfLang('es')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all uppercase ${pdfLang === 'es' ? 'bg-white shadow-sm text-cyan-600' : 'text-slate-500 hover:text-slate-700'}`}
+                      >
+                        ESP (Español)
+                      </button>
+                      <button
+                        onClick={() => setPdfLang('en')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all uppercase ${pdfLang === 'en' ? 'bg-white shadow-sm text-cyan-600' : 'text-slate-500 hover:text-slate-700'}`}
+                      >
+                        BILINGÜE (ESP/ENG)
+                      </button>
                     </div>
-
-                    {/* CUERPO PRINCIPAL (2 COLUMNAS) */}
-                    <div style={{ ...S.inner, height: 'auto', display: 'grid', gridTemplateColumns: '1fr 1.05fr', gap: 32, flex: 1, paddingTop: 24, paddingBottom: 16 }}>
-
-                      {/* COLUMNA IZQUIERDA (TEXTOS Y PARÁMETROS) */}
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-
-                        {/* TÍTULO PRINCIPAL */}
-                        <div style={{ marginBottom: 20 }}>
-                          <div style={{ fontSize: 9.5, fontWeight: 900, color: '#008299', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>{tf('INFORME PARAMÉTRICO DE SIMULACIÓN')}</div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            <div style={{ fontSize: 40, fontWeight: 900, color: '#0f2038', letterSpacing: -1, lineHeight: 1.0, fontFamily: 'sans-serif' }}>{tf('SIMULACIÓN')}</div>
-                            <div style={{ fontSize: 40, fontWeight: 900, color: '#00c2cb', letterSpacing: -1, lineHeight: 1.0, fontFamily: 'sans-serif' }}>{tf('DE LÍNEA')}</div>
-                          </div>
-                        </div>
-
-                        {/* CLIENTE */}
-                        <div style={{ marginBottom: 16 }}>
-                          <div style={{ fontSize: 9.5, fontWeight: 900, color: '#00c2cb', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 2 }}>{tf('CLIENTE')}</div>
-                          <div style={{ fontSize: 26, fontWeight: 900, color: '#0f2038', letterSpacing: -0.5 }}>{inputs.clientName.toUpperCase()}</div>
-                        </div>
-
-                        {/* PILL DE EVALUACIÓN */}
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, width: 'fit-content', background: '#edfbfd', border: '1px solid #cffafe', borderRadius: 20, padding: '5px 14px', marginBottom: 14 }}>
-                          <Activity size={14} color="#008299" />
-                          <span style={{ fontSize: 10, color: '#008299', fontWeight: 800 }}>{tf('Evaluación de Capacidad y Eficiencia')}</span>
-                        </div>
-
-                        {/* PARRAFO Y NOTA METODOLOGICA */}
-                        <p style={{ color: '#475569', fontSize: 10.5, lineHeight: 1.5, margin: 0, marginBottom: 14 }}>
-                          {tf('Análisis de capacidad, potencia instalada y viabilidad financiera para la línea de lavado, enjuague y secado de cajas plásticas con la')} {inputs.machineName || 'PLD - 120'}.
-                        </p>
-
-                        <div style={{ display: 'flex', gap: 12, padding: '12px 14px', backgroundColor: "#f8fafc", borderLeft: "4px solid #00c2cb", borderRadius: '0 8px 8px 0', marginBottom: 24, border: '1px solid #f1f5f9', borderLeftWidth: 4 }}>
-                          <FileSpreadsheet size={18} color="#008299" style={{ flexShrink: 0, marginTop: 2 }} />
-                          <div style={{ fontSize: 9.5, color: "#475569", lineHeight: 1.4 }}>
-                            <strong style={{ color: '#0f2038' }}>{tf('Nota Metodológica:')}</strong> {tf('La capacidad por modelo se calcula en función de la velocidad lineal de la banda, dimensión de caja y separación. Limitado a 350 cajas/h máximo.')}
-                          </div>
-                        </div>
-
-                        {/* CAJAS INFERIORES MODULARES */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 'auto' }}>
-
-                          {/* CAJA 1: INFORMACION PROYECTO */}
-                          <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 14, background: '#f8fafc' }}>
-                            <div style={{ fontSize: 9.5, fontWeight: 900, color: '#008299', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>{tf('INFORMACIÓN DEL PROYECTO')}</div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 10, color: '#475569' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Building2 size={13} color="#008299" /> <span style={{ fontWeight: 700, color: '#008299' }}>{tf('Empresa')}</span></div>
-                                <strong style={{ color: '#1e293b' }}>{inputs.companyName || 'SEEMIC'}</strong>
-                              </div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Users size={13} color="#008299" /> <span style={{ fontWeight: 700, color: '#008299' }}>{tf('Cliente')}</span></div>
-                                <strong style={{ color: '#1e293b' }}>{inputs.clientName}</strong>
-                              </div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Settings size={13} color="#008299" /> <span style={{ fontWeight: 700, color: '#008299' }}>{tf('Máquina')}</span></div>
-                                <strong style={{ color: '#1e293b' }}>{inputs.machineName || 'PLD - 120'}</strong>
-                              </div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><FolderOpen size={13} color="#008299" /> <span style={{ fontWeight: 700, color: '#008299' }}>{tf('Proyecto')}</span></div>
-                                <strong style={{ color: '#1e293b' }}>{inputs.projectName}</strong>
-                              </div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Clock size={13} color="#008299" /> <span style={{ fontWeight: 700, color: '#008299' }}>{tf('Fecha')}</span></div>
-                                <strong style={{ color: '#1e293b' }}>{new Date().toLocaleDateString()}</strong>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* CAJA 2: MATERIAL SIMULADO */}
-                          <div style={{ border: '1px solid #cffafe', borderRadius: 12, padding: 14, background: '#f0fdfa' }}>
-                            <div style={{ fontSize: 9.5, fontWeight: 900, color: '#0f766e', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>{tf('PARÁMETROS DEL MATERIAL SIMULADO')}</div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 10, color: '#475569' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Package size={14} color="#0f766e" /> <span style={{ fontWeight: 700, color: '#0f766e' }}>{tf('Material Evaluado')}</span></div>
-                                <strong style={{ color: '#0f172a' }}>{inputs.materialType.replace('_', ' ').toUpperCase()}</strong>
-                              </div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Clock size={14} color="#0f766e" /> <span style={{ fontWeight: 700, color: '#0f766e' }}>{tf('Régimen Diario')}</span></div>
-                                <strong style={{ color: '#0f172a' }}>{results.hoursPerDay} {tf('horas')} <br /><span style={{ fontSize: 9, fontWeight: 600 }}>({inputs.shiftsPerDay} {tf('turnos')})</span></strong>
-                              </div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Target size={14} color="#0f766e" /> <span style={{ fontWeight: 700, color: '#0f766e' }}>{tf('Meta Objetivo Diaria')}</span></div>
-                                <strong style={{ color: '#0f172a' }}>{new Intl.NumberFormat().format(inputs.meta_diaria_cajas)} {tf('cajas/día')}</strong>
-                              </div>
-                            </div>
-                          </div>
-
-                        </div>
-                      </div>
-
-                      {/* COLUMNA DERECHA (RESULTADOS PREVIEW CAJAS) */}
-                      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#f8fafc', borderRadius: 16, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-
-                        {/* HEADER CYAN */}
-                        <div style={{ background: '#008299', padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <BarChart3 size={18} color="#fff" />
-                          <div style={{ fontSize: 11, fontWeight: 900, color: '#fff', letterSpacing: 1.5, textTransform: 'uppercase' }}>
-                            {tf('VISTA PREVIA DE RESULTADOS')}
-                          </div>
-                        </div>
-
-                        {/* INTERNAL CARDS CONTAINER */}
-                        <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 12, flex: 1, justifyContent: 'center' }}>
-
-                          {/* CARD 1: CAPACIDAD */}
-                          <div style={{ background: '#fff', border: '1px solid #cbd5e1', borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-                            <div style={{ background: '#edfbfd', padding: 10, borderRadius: '50%', border: '1px solid #cffafe', marginRight: 14 }}>
-                              <Package size={20} color="#008299" strokeWidth={1.5} />
-                            </div>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: 11.5, fontWeight: 900, color: '#0f2038' }}>{tf('Capacidad Nominal vs Real')}</div>
-                              <div style={{ fontSize: 9.5, color: '#64748b', marginTop: 3 }}>Nominal: {currentNominalCapacity} {inputs.tipo_unidad === 'pallets' ? 'p/h' : 'c/h'} <br /> Real (OEE {inputs.oee}%): {results.realProductionPerHourBoxes.toFixed(0)} {inputs.tipo_unidad === 'pallets' ? 'p/h' : 'c/h'}</div>
-                            </div>
-                            <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' }}>
-                              <span style={{ fontSize: 26, fontWeight: 900, color: '#008299', lineHeight: 1 }}>{results.realProductionPerHourBoxes.toFixed(0)}</span>
-                              <span style={{ fontSize: 12, fontWeight: 900, color: '#008299' }}>{inputs.tipo_unidad === 'pallets' ? tf('p/h') : tf('c/h')}</span>
-                              <span style={{ fontSize: 9, color: '#0f766e', fontWeight: 800, marginTop: 4 }}>Nom: {currentNominalCapacity} {inputs.tipo_unidad === 'pallets' ? tf('p/h') : tf('c/h')}</span>
-                            </div>
-                          </div>
-
-                          {/* CARD 2: MARGEN */}
-                          <div style={{ background: '#fff', border: '1px solid #cbd5e1', borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-                            <div style={{ background: '#edfbfd', padding: 10, borderRadius: '50%', border: '1px solid #cffafe', marginRight: 14 }}>
-                              <Settings size={20} color="#008299" strokeWidth={1.5} />
-                            </div>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: 11.5, fontWeight: 900, color: '#0f2038' }}>{tf('Margen Diario Operativo')}</div>
-                              <div style={{ fontSize: 9.5, color: '#64748b', marginTop: 3 }}>Nominal: {((currentNominalCapacity * (inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1)) - (inputs.meta_diaria_cajas || 2128)) > 0 ? '+' : ''}{((currentNominalCapacity * (inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1)) - (inputs.meta_diaria_cajas || 2128)).toFixed(0)} {inputs.tipo_unidad === 'pallets' ? 'p/día' : 'c/día'} <br /> Real (OEE {inputs.oee}%): {(results.dailyProductionBoxes - (inputs.meta_diaria_cajas || 2128)) > 0 ? '+' : ''}{(results.dailyProductionBoxes - (inputs.meta_diaria_cajas || 2128)).toFixed(0)} {inputs.tipo_unidad === 'pallets' ? 'p/día' : 'c/día'}</div>
-                            </div>
-                            <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' }}>
-                              <span style={{ fontSize: 26, fontWeight: 900, color: (results.dailyProductionBoxes - (inputs.meta_diaria_cajas || 2128)) < 0 ? '#ef4444' : '#008299', lineHeight: 1 }}>{(results.dailyProductionBoxes - (inputs.meta_diaria_cajas || 2128)) > 0 ? '+' : ''}{(results.dailyProductionBoxes - (inputs.meta_diaria_cajas || 2128)).toFixed(0)}</span>
-                              <span style={{ fontSize: 12, fontWeight: 900, color: (results.dailyProductionBoxes - (inputs.meta_diaria_cajas || 2128)) < 0 ? '#ef4444' : '#008299' }}>{inputs.tipo_unidad === 'pallets' ? tf('p/día') : tf('c/día')}</span>
-                              <span style={{ fontSize: 9, color: (results.dailyProductionBoxes - (inputs.meta_diaria_cajas || 2128)) < 0 ? '#ef4444' : '#0f766e', fontWeight: 800, marginTop: 4 }}>Nom: {((currentNominalCapacity * (inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1)) - (inputs.meta_diaria_cajas || 2128)) > 0 ? '+' : ''}{((currentNominalCapacity * (inputs.hoursPerDay || 9) * (inputs.shiftsPerDay || 1)) - (inputs.meta_diaria_cajas || 2128)).toFixed(0)} {inputs.tipo_unidad === 'pallets' ? tf('p/día') : tf('c/día')}</span>
-                            </div>
-                          </div>
-
-                          {/* CARD 3: OPEX */}
-                          <div style={{ background: '#fff', border: '1px solid #cbd5e1', borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-                            <div style={{ background: '#edfbfd', padding: 10, borderRadius: '50%', border: '1px solid #cffafe', marginRight: 14 }}>
-                              <DollarSign size={20} color="#008299" strokeWidth={1.5} />
-                            </div>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: 11.5, fontWeight: 900, color: '#0f2038' }}>{tf('Costo Operativo (OPEX)')}</div>
-                              <div style={{ fontSize: 9.5, color: '#64748b', marginTop: 3 }}>Por 1,000 cajas <br /> (${(results.opexPor1000CajasMxn / 1000).toFixed(2)} MXN/caja)</div>
-                            </div>
-                            <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' }}>
-                              <span style={{ fontSize: 24, fontWeight: 900, color: '#008299', lineHeight: 1 }}>${results.opexPor1000CajasMxn.toFixed(1)}</span>
-                              <span style={{ fontSize: 11, fontWeight: 900, color: '#008299', marginTop: 2 }}>MXN / 1k {tf('cajas')}</span>
-                            </div>
-                          </div>
-
-                          {/* CARD 4: VIABILIDAD */}
-                          <div style={{ background: '#fff', border: '1px solid #cbd5e1', borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-                            <div style={{ background: '#edfbfd', padding: 10, borderRadius: '50%', border: '1px solid #cffafe', marginRight: 14 }}>
-                              <Check size={20} color="#008299" strokeWidth={1.5} />
-                            </div>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: 13, fontWeight: 900, color: '#0f2038' }}>{tf('Viabilidad Proyectada')}</div>
-                              <div style={{ fontSize: 9.5, color: '#64748b', marginTop: 3 }}>Utilización Real: {(inputs.meta_diaria_cajas / (results.dailyProductionBoxes || 1) * 100).toFixed(1)}% <br /> Cobertura: {results.requirementCoverage.toFixed(1)}%</div>
-                            </div>
-                            <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' }}>
-                              <span style={{ fontSize: 22, fontWeight: 900, color: '#008299', textTransform: 'uppercase', letterSpacing: 0.5 }}>{tf(results.viabilityState || 'VIABLE')}</span>
-                            </div>
-                          </div>
-
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* FOOOOTER (Línea Inferior similar al diseño) */}
-                    <div style={{ borderTop: '2px solid #f1f5f9', marginTop: 'auto', padding: '12px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ fontSize: 9, fontWeight: 800, color: '#94a3b8', letterSpacing: 1.5, textTransform: 'uppercase' }}>{inputs.clientName} // MÁQUINA: {inputs.machineName?.toUpperCase() || 'WM-500'}</div>
-                      <div style={{ fontSize: 9, fontWeight: 800, color: '#94a3b8', letterSpacing: 1.5, textTransform: 'uppercase' }}>PÁGINA {++pdfPageIndex} DE {totalPdfPages}</div>
-                    </div>
+                    <label className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all uppercase tracking-wider shadow-sm">
+                      <Upload className="w-4 h-4" />
+                      Subir Diagrama
+                      <input type="file" accept="image/*" className="hidden" onChange={handleCustomProcessImageUpload} />
+                    </label>
+                    <label className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all uppercase tracking-wider shadow-sm">
+                      <Upload className="w-4 h-4" />
+                      Subir Logo
+                      <input type="file" accept="image/*" className="hidden" onChange={handleCustomClientLogoUpload} />
+                    </label>
+                    <button
+                      onClick={printReport}
+                      disabled={isGeneratingPdf}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-red-500 hover:bg-red-600 text-white transition-all uppercase tracking-wider shadow-sm"
+                    >
+                      <Printer className="w-4 h-4" />
+                      Descargar PDF
+                    </button>
                   </div>
                 )}
+              </div>
 
-                {/* PÁGINA 2+: GEMELO DIGITAL 3D */}
-                {pdfConfig.twin && snapshotPages.length > 0 && (() => {
-                  const pageSecNum = ++currentSectionIndex;
-                  return snapshotPages.map((page, index) => (
-                    <div key={index} className="flex flex-col items-center relative mb-12">
-                      <div className="pdf-page bg-white relative flex flex-col mx-auto" style={{ ...S.page, flexShrink: 0 }}>
-                        <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 20 }}>
-                          {renderPageHeader(`${pageSecNum}. Vista ${page.type.charAt(0).toUpperCase() + page.type.slice(1)}`, tf('Renderizado CAD de alta resolución del equipo en configuración de planta'))}
+              {/* VISTA PREVIA DEL INFORME (A4 LANDSCAPE) */}
+              <div className="max-h-[700px] w-full overflow-y-auto overflow-x-auto border border-slate-200 rounded-xl bg-slate-50 p-4 shadow-inner flex flex-col items-center">
+                <div ref={reportRef} className="flex flex-col gap-8" style={{ width: '1120px' }}>
 
-                          <div style={{ flex: 1, border: '1px solid #e2e8f0', borderRadius: 16, background: '#edf4f9', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                            <div style={{ width: '100%', height: '100%', backgroundImage: `url(${page.src})`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }} />
-                            {(page.type || '').toLowerCase() === 'lateral' && processFlags.map((step, i) => (
-                              <div
-                                key={i}
-                                id={`flag-wrapper-${i}`}
-                                style={{ position: 'absolute', top: step.top, left: step.left, width: 0, height: 0, zIndex: 10 }}
-                              >
-                                {/* DOT: ANCHOR MANIPULATOR */}
-                                <div
-                                  style={{ position: 'absolute', width: '12px', height: '12px', borderRadius: '50%', background: step.hex, top: '-6px', left: '-6px', cursor: draggedFlagIndex === `${i}-dot` ? 'grabbing' : 'grab', zIndex: 3, boxShadow: '0 0 0 2px white' }}
-                                  onPointerDown={(e) => {
-                                    e.stopPropagation();
-                                    e.currentTarget.setPointerCapture(e.pointerId);
-                                    e.currentTarget.dataset.dragging = 'dot';
-                                    setDraggedFlagIndex(`${i}-dot`);
-                                  }}
-                                  onPointerMove={(e) => {
-                                    if (e.currentTarget.dataset.dragging === 'dot') {
-                                      e.stopPropagation();
-                                      const parent = e.currentTarget.parentElement.parentElement;
-                                      const rect = parent.getBoundingClientRect();
-                                      let newLeft = ((e.clientX - rect.left) / rect.width) * 100;
-                                      let newTop = ((e.clientY - rect.top) / rect.height) * 100;
-                                      newLeft = Math.max(0, Math.min(100, newLeft));
-                                      newTop = Math.max(0, Math.min(100, newTop));
-                                      e.currentTarget.parentElement.style.left = `${newLeft}%`;
-                                      e.currentTarget.parentElement.style.top = `${newTop}%`;
-                                    }
-                                  }}
-                                  onPointerUp={(e) => {
-                                    if (e.currentTarget.dataset.dragging === 'dot') {
-                                      e.stopPropagation();
-                                      e.currentTarget.releasePointerCapture(e.pointerId);
-                                      e.currentTarget.dataset.dragging = 'false';
-                                      setDraggedFlagIndex(null);
-                                      const finalLeft = e.currentTarget.parentElement.style.left;
-                                      const finalTop = e.currentTarget.parentElement.style.top;
-                                      setProcessFlags(prev => {
-                                        const copy = [...prev];
-                                        copy[i] = { ...copy[i], left: finalLeft, top: finalTop };
-                                        return copy;
-                                      });
-                                    }
-                                  }}
-                                />
-
-                                {/* LINE */}
-                                <div
-                                  id={`flag-line-${i}`}
-                                  style={{
-                                    position: 'absolute',
-                                    width: '2px',
-                                    background: step.hex,
-                                    left: '-1px',
-                                    height: `${step.lineHeight}px`,
-                                    top: step.isBottom ? '6px' : `-${step.lineHeight + 6}px`,
-                                    zIndex: 1
-                                  }}
-                                />
-
-                                {/* BOX: HEIGHT & REVERSE MANIPULATOR */}
-                                <div
-                                  id={`flag-box-${i}`}
-                                  style={{
-                                    position: 'absolute',
-                                    left: 0,
-                                    transform: 'translateX(-50%)',
-                                    top: step.isBottom ? `${step.lineHeight + 6}px` : `-${step.lineHeight + 6 + 36}px`,
-                                    background: '#fff', border: `2px solid ${step.hex}`, borderRadius: '8px', padding: '6px 10px', display: 'flex', gap: '8px', alignItems: 'center', zIndex: 2, boxShadow: '0 4px 6px rgba(0,0,0,0.05)', whiteSpace: 'nowrap',
-                                    cursor: draggedFlagIndex === `${i}-box` ? 'row-resize' : 'ns-resize'
-                                  }}
-                                  onPointerDown={(e) => {
-                                    e.stopPropagation();
-                                    e.currentTarget.setPointerCapture(e.pointerId);
-                                    e.currentTarget.dataset.dragging = 'box';
-                                    setDraggedFlagIndex(`${i}-box`);
-                                  }}
-                                  onPointerMove={(e) => {
-                                    if (e.currentTarget.dataset.dragging === 'box') {
-                                      e.stopPropagation();
-                                      const parent = e.currentTarget.parentElement.parentElement;
-                                      const rect = parent.getBoundingClientRect();
-                                      const anchorTopPercent = parseFloat(e.currentTarget.parentElement.style.top || step.top);
-                                      const anchorY = rect.top + (anchorTopPercent / 100) * rect.height;
-                                      let dy = e.clientY - anchorY;
-
-                                      const line = document.getElementById(`flag-line-${i}`);
-                                      const box = e.currentTarget;
-
-                                      if (dy > 0) {
-                                        let h = Math.max(10, dy - 20);
-                                        line.style.top = '6px';
-                                        line.style.height = `${h}px`;
-                                        box.style.top = `${h + 6}px`;
-                                        box.dataset.tempBottom = 'true';
-                                        box.dataset.tempHeight = h.toString();
-                                      } else {
-                                        let h = Math.max(10, Math.abs(dy) - 20);
-                                        line.style.top = `-${h + 6}px`;
-                                        line.style.height = `${h}px`;
-                                        box.style.top = `-${h + 6 + 36}px`;
-                                        box.dataset.tempBottom = 'false';
-                                        box.dataset.tempHeight = h.toString();
-                                      }
-                                    }
-                                  }}
-                                  onPointerUp={(e) => {
-                                    if (e.currentTarget.dataset.dragging === 'box') {
-                                      e.stopPropagation();
-                                      e.currentTarget.releasePointerCapture(e.pointerId);
-                                      e.currentTarget.dataset.dragging = 'false';
-                                      setDraggedFlagIndex(null);
-
-                                      const finalHeight = parseInt(e.currentTarget.dataset.tempHeight || step.lineHeight, 10);
-                                      const finalBottom = e.currentTarget.dataset.tempBottom ? e.currentTarget.dataset.tempBottom === 'true' : step.isBottom;
-
-                                      setProcessFlags(prev => {
-                                        const copy = [...prev];
-                                        copy[i] = { ...copy[i], lineHeight: finalHeight, isBottom: finalBottom };
-                                        return copy;
-                                      });
-                                    }
-                                  }}
-                                >
-                                  <div style={{ background: step.hex, width: '34px', height: '34px', borderRadius: '6px', display: 'table', flexShrink: 0 }}>
-                                    <div
-                                      contentEditable
-                                      suppressContentEditableWarning
-                                      style={{ display: 'table-cell', verticalAlign: 'middle', textAlign: 'center', color: '#fff', fontWeight: 900, fontSize: '15px', border: 'none', outline: 'none', paddingBottom: '3px' }}
-                                      onPointerDown={e => e.stopPropagation()}
-                                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
-                                      onBlur={(e) => {
-                                        const newText = e.currentTarget.innerText;
-                                        setProcessFlags(p => {
-                                          const copy = [...p];
-                                          copy[i].num = newText;
-                                          return copy;
-                                        });
-                                      }}
-                                    >
-                                      {step.num}
-                                    </div>
-                                  </div>
-                                  <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', justifyContent: 'center', gap: '2px' }}>
-                                    <div
-                                      contentEditable
-                                      suppressContentEditableWarning
-                                      style={{ fontSize: '8px', color: step.hex, fontWeight: 900, letterSpacing: '0.5px', background: 'transparent', border: 'none', outline: 'none', margin: 0, padding: 0, lineHeight: '10px', minHeight: '10px' }}
-                                      onPointerDown={e => e.stopPropagation()}
-                                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
-                                      onBlur={(e) => {
-                                        const newText = e.currentTarget.innerText;
-                                        setProcessFlags(p => {
-                                          const copy = [...p];
-                                          copy[i].step = newText;
-                                          return copy;
-                                        });
-                                      }}
-                                    >
-                                      {step.step}
-                                    </div>
-                                    <div
-                                      contentEditable
-                                      suppressContentEditableWarning
-                                      style={{ fontSize: '10px', color: '#1e293b', fontWeight: 900, background: 'transparent', border: 'none', outline: 'none', margin: 0, padding: 0, lineHeight: '12px', minHeight: '12px' }}
-                                      onPointerDown={e => e.stopPropagation()}
-                                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
-                                      onBlur={(e) => {
-                                        const newText = e.currentTarget.innerText;
-                                        setProcessFlags(p => {
-                                          const copy = [...p];
-                                          copy[i].title = newText;
-                                          return copy;
-                                        });
-                                      }}
-                                    >
-                                      {step.title}
-                                    </div>
-                                    <div
-                                      contentEditable
-                                      suppressContentEditableWarning
-                                      style={{ fontSize: '7px', color: '#94a3b8', fontWeight: 700, background: 'transparent', border: 'none', outline: 'none', margin: 0, padding: 0, lineHeight: '8px', minHeight: '8px' }}
-                                      onPointerDown={e => e.stopPropagation()}
-                                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
-                                      onBlur={(e) => {
-                                        const newText = e.currentTarget.innerText;
-                                        setProcessFlags(p => {
-                                          const copy = [...p];
-                                          copy[i].sub = newText;
-                                          return copy;
-                                        });
-                                      }}
-                                    >
-                                      {step.sub}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-
-
-                            {/* === MOTOR DE FLECHAS DE FLUJO EN 360 GRADOS === */}
-                            {(page.type || '').toLowerCase() === 'lateral' && processArrows.map((arrow, i) => {
-                              const dx = typeof arrow.headDx !== 'undefined' ? arrow.headDx : 80;
-                              const dy = typeof arrow.headDy !== 'undefined' ? arrow.headDy : 0;
-                              const length = Math.sqrt(dx * dx + dy * dy);
-                              const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-
-                              return (
-                                <div
-                                  key={i}
-                                  id={`arrow-wrapper-${i}`}
-                                  style={{ position: 'absolute', top: arrow.top, left: arrow.left, width: 0, height: 0, zIndex: 9 }}
-                                >
-                                  {/* DOT: ANCLAJE (COLA DE LA FLECHA) */}
-                                  <div
-                                    style={{ position: 'absolute', width: '12px', height: '12px', borderRadius: '50%', background: arrow.hex, top: '-6px', left: '-6px', cursor: draggedFlagIndex === `arrow-${i}-dot` ? 'grabbing' : 'grab', zIndex: 3, boxShadow: '0 0 0 2px white' }}
-                                    onPointerDown={(e) => {
-                                      e.stopPropagation();
-                                      e.currentTarget.setPointerCapture(e.pointerId);
-                                      e.currentTarget.dataset.dragging = 'dot';
-                                      setDraggedFlagIndex(`arrow-${i}-dot`);
-                                    }}
-                                    onPointerMove={(e) => {
-                                      if (e.currentTarget.dataset.dragging === 'dot') {
-                                        e.stopPropagation();
-                                        const parent = e.currentTarget.parentElement.parentElement;
-                                        const rect = parent.getBoundingClientRect();
-                                        let newLeft = ((e.clientX - rect.left) / rect.width) * 100;
-                                        let newTop = ((e.clientY - rect.top) / rect.height) * 100;
-                                        newLeft = Math.max(0, Math.min(100, newLeft));
-                                        newTop = Math.max(0, Math.min(100, newTop));
-                                        e.currentTarget.parentElement.style.left = `${newLeft}%`;
-                                        e.currentTarget.parentElement.style.top = `${newTop}%`;
-                                      }
-                                    }}
-                                    onPointerUp={(e) => {
-                                      if (e.currentTarget.dataset.dragging === 'dot') {
-                                        e.stopPropagation();
-                                        e.currentTarget.releasePointerCapture(e.pointerId);
-                                        e.currentTarget.dataset.dragging = 'false';
-                                        setDraggedFlagIndex(null);
-                                        const finalLeft = e.currentTarget.parentElement.style.left;
-                                        const finalTop = e.currentTarget.parentElement.style.top;
-                                        setProcessArrows(prev => {
-                                          const copy = [...prev];
-                                          copy[i] = { ...copy[i], left: finalLeft, top: finalTop };
-                                          return copy;
-                                        });
-                                      }
-                                    }}
-                                  />
-
-                                  {/* LÍNEA DE LA FLECHA */}
-                                  <div
-                                    id={`arrow-line-${i}`}
-                                    style={{
-                                      position: 'absolute', height: '3px', background: arrow.hex, left: '0px', top: '-1.5px', width: `${length}px`, transformOrigin: '0 50%', transform: `rotate(${angle}deg)`, zIndex: 1
-                                    }}
-                                  >
-                                    <div style={{ position: 'absolute', right: '-2px', top: '50%', transform: 'translateY(-50%)', borderTop: '8px solid transparent', borderBottom: '8px solid transparent', borderLeft: `12px solid ${arrow.hex}` }} />
-                                  </div>
-
-                                  {/* DOT VIRTUAL: CABEZA DE LA FLECHA (MANIPULADOR DE DIRECCIÓN) */}
-                                  <div
-                                    id={`arrow-head-${i}`}
-                                    style={{
-                                      position: 'absolute', width: '20px', height: '20px', borderRadius: '50%', background: 'transparent', left: `${dx}px`, top: `${dy}px`, transform: 'translate(-50%, -50%)', cursor: draggedFlagIndex === `arrow-${i}-head` ? 'grabbing' : 'crosshair', zIndex: 4
-                                    }}
-                                    onPointerDown={(e) => {
-                                      e.stopPropagation();
-                                      e.currentTarget.setPointerCapture(e.pointerId);
-                                      e.currentTarget.dataset.dragging = 'head';
-                                      setDraggedFlagIndex(`arrow-${i}-head`);
-                                    }}
-                                    onPointerMove={(e) => {
-                                      if (e.currentTarget.dataset.dragging === 'head') {
-                                        e.stopPropagation();
-                                        const parent = e.currentTarget.parentElement.parentElement;
-                                        const rect = parent.getBoundingClientRect();
-                                        const anchorTopPercent = parseFloat(e.currentTarget.parentElement.style.top || arrow.top);
-                                        const anchorLeftPercent = parseFloat(e.currentTarget.parentElement.style.left || arrow.left);
-
-                                        const anchorY = rect.top + (anchorTopPercent / 100) * rect.height;
-                                        const anchorX = rect.left + (anchorLeftPercent / 100) * rect.width;
-
-                                        const newDx = e.clientX - anchorX;
-                                        const newDy = e.clientY - anchorY;
-
-                                        const line = document.getElementById(`arrow-line-${i}`);
-                                        const head = e.currentTarget;
-
-                                        const len = Math.sqrt(newDx * newDx + newDy * newDy);
-                                        const ang = Math.atan2(newDy, newDx) * (180 / Math.PI);
-
-                                        line.style.width = `${len}px`;
-                                        line.style.transform = `rotate(${ang}deg)`;
-
-                                        head.style.left = `${newDx}px`;
-                                        head.style.top = `${newDy}px`;
-
-                                        head.dataset.tempDx = newDx.toString();
-                                        head.dataset.tempDy = newDy.toString();
-                                      }
-                                    }}
-                                    onPointerUp={(e) => {
-                                      if (e.currentTarget.dataset.dragging === 'head') {
-                                        e.stopPropagation();
-                                        e.currentTarget.releasePointerCapture(e.pointerId);
-                                        e.currentTarget.dataset.dragging = 'false';
-                                        setDraggedFlagIndex(null);
-
-                                        const tempDx = e.currentTarget.dataset.tempDx !== undefined ? parseFloat(e.currentTarget.dataset.tempDx) : dx;
-                                        const tempDy = e.currentTarget.dataset.tempDy !== undefined ? parseFloat(e.currentTarget.dataset.tempDy) : dy;
-
-                                        setProcessArrows(prev => {
-                                          const copy = [...prev];
-                                          copy[i] = { ...copy[i], headDx: tempDx, headDy: tempDy };
-                                          return copy;
-                                        });
-                                      }
-                                    }}
-                                  />
-                                </div>
-                              );
-                            })}
+                  {isDhlTender ? (
+                    <DHLReportPages inputs={inputs} results={results} snapshots={{
+                      isometrica: twinSnapshotIsométrica,
+                      superior: twinSnapshotSuperior,
+                      lateral: twinSnapshotLateral,
+                    }} />
+                  ) : (<>
+                    {/* PÁGINA 1: PORTADA EJECUTIVA */}
+                    {pdfConfig.resumen && (
+                      <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
+                        {/* ENCABEZADO SUPERIOR LIMPIO */}
+                        <div style={{ height: '70px', padding: '0 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            {inputs.customClientLogo ? (
+                              <img src={inputs.customClientLogo} alt="Logo" style={{ maxHeight: '45px', maxWidth: '200px', objectFit: 'contain' }} />
+                            ) : (
+                              <span style={{ color: '#008299', fontWeight: 900, fontSize: 32, letterSpacing: -1, textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{inputs.companyName || 'CENTERS'}</span>
+                            )}
                           </div>
-
-                          <div style={{ background: '#f0fdfa', border: '1px solid #ccfbf1', borderRadius: 12, padding: 16, fontSize: 10, lineHeight: 1.5, color: '#334155', fontWeight: 600 }}>
-                            <span style={{ color: '#0f766e', fontWeight: 900, textTransform: 'uppercase', marginRight: 6 }}>{tf('Nota de Escala Visual')} ({tf(page.type.charAt(0).toUpperCase() + page.type.slice(1))}): </span>
-                            {tf('Esta proyección tridimensional corresponde a la captura exacta de la Lavadora')} {inputs.machineName || 'BWD-250'} {tf('evaluada bajo la perspectiva')} {tf(page.type.charAt(0).toUpperCase() + page.type.slice(1))}. {tf('Las proporciones y el diseño representan el volumen real del equipo industrial proyectado en el software PANDORA 3.0.')}
+                          <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <span style={{ fontSize: 11, color: '#0f2038', fontWeight: 800, letterSpacing: 0.5, textTransform: 'uppercase' }}>{tf('lavadora INDUSTRIAL')}</span>
+                            <span style={{ fontSize: 9, color: '#64748b', fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase' }}>ENGINEERING A CLEANER TOMORROW</span>
                           </div>
-                          {renderPageFooter(++pdfPageIndex, totalPdfPages)}
                         </div>
-                      </div>
-                      {/* NOTIFICACIÓN FLOTANTE GUARDADO */}
-                      {toastMessage && (
-                        <div style={{ position: 'fixed', top: '24px', left: '50%', transform: 'translateX(-50%)', zIndex: 999999, background: '#059669', color: 'white', padding: '12px 24px', borderRadius: '12px', fontWeight: 900, boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}>
-                          {toastMessage}
-                        </div>
-                      )}
 
-                      {/* TOOLBOX LATERAL (SÓLO VISTA PREVIA) */}
-                      {(page.type || '').toLowerCase() === 'lateral' && (
-                        <div
-                          id="toolbox-panel"
-                          style={{ position: 'fixed', top: typeof toolboxPos.top !== 'undefined' ? `${toolboxPos.top}px` : '96px', left: typeof toolboxPos.left !== 'undefined' ? `${toolboxPos.left}px` : 'auto', right: (typeof toolboxPos.right !== 'undefined' && typeof toolboxPos.left === 'undefined') ? `${toolboxPos.right}px` : 'auto', zIndex: 99999, width: isToolboxOpen ? '320px' : 'auto' }} className="bg-white rounded-3xl shadow-2xl border border-slate-200 p-4" data-html2canvas-ignore="true">
+                        {/* CUERPO PRINCIPAL (2 COLUMNAS) */}
+                        <div style={{ ...S.inner, height: 'auto', display: 'grid', gridTemplateColumns: '1fr 1.05fr', gap: 32, flex: 1, paddingTop: 24, paddingBottom: 16 }}>
 
-                          <div className="flex items-center justify-between mb-1 relative">
-                            {/* ZONA DE ARRASTRE */}
-                            <div className="flex items-center gap-2 cursor-grab w-full active:cursor-grabbing"
-                              onPointerDown={(e) => {
-                                if (e.target.closest('button')) return; // ignorar clics en botones internos
-                                e.stopPropagation();
-                                e.currentTarget.setPointerCapture(e.pointerId);
-                                e.currentTarget.dataset.dragging = 'toolbox';
-                                e.currentTarget.dataset.startX = e.clientX.toString();
-                                e.currentTarget.dataset.startY = e.clientY.toString();
-                                const tb = document.getElementById('toolbox-panel');
+                          {/* COLUMNA IZQUIERDA (TEXTOS Y PARÁMETROS) */}
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
 
-                                // Si está anclado a la derecha, convertir a valor izquierdo explícito para matemáticas fáciles
-                                if (!tb.style.left || tb.style.left === 'auto') {
-                                  const rect = tb.getBoundingClientRect();
-                                  tb.style.left = `${rect.left}px`;
-                                  tb.style.right = 'auto';
-                                }
-
-                                e.currentTarget.dataset.startLeft = parseFloat(tb.style.left);
-                                e.currentTarget.dataset.startTop = parseFloat(tb.style.top);
-                                setDraggedFlagIndex('toolbox');
-                              }}
-                              onPointerMove={(e) => {
-                                if (e.currentTarget.dataset.dragging === 'toolbox') {
-                                  e.stopPropagation();
-                                  const dx = e.clientX - parseFloat(e.currentTarget.dataset.startX);
-                                  const dy = e.clientY - parseFloat(e.currentTarget.dataset.startY);
-                                  const tb = document.getElementById('toolbox-panel');
-                                  tb.style.left = `${parseFloat(e.currentTarget.dataset.startLeft) + dx}px`;
-                                  tb.style.top = `${parseFloat(e.currentTarget.dataset.startTop) + dy}px`;
-                                }
-                              }}
-                              onPointerUp={(e) => {
-                                if (e.currentTarget.dataset.dragging === 'toolbox') {
-                                  e.stopPropagation();
-                                  e.currentTarget.releasePointerCapture(e.pointerId);
-                                  e.currentTarget.dataset.dragging = 'false';
-                                  setDraggedFlagIndex(null);
-                                  const tb = document.getElementById('toolbox-panel');
-                                  setToolboxPos({
-                                    left: parseFloat(tb.style.left),
-                                    top: parseFloat(tb.style.top)
-                                  });
-                                }
-                              }}
-                            >
-                              <div onClick={() => setIsToolboxOpen(!isToolboxOpen)} className="flex items-center gap-2 pointer-events-auto">
-                                {isToolboxOpen && <Settings className="w-5 h-5 text-emerald-600 pointer-events-none" />}
-                                <h3 className="font-black text-xs text-slate-800 uppercase tracking-wide pointer-events-none select-none">
-                                  {isToolboxOpen ? 'Banderas de Proceso' : 'Banderas'}
-                                </h3>
+                            {/* TÍTULO PRINCIPAL */}
+                            <div style={{ marginBottom: 20 }}>
+                              <div style={{ fontSize: 9.5, fontWeight: 900, color: '#008299', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>{tf('INFORME PARAMÉTRICO DE SIMULACIÓN')}</div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                <div style={{ fontSize: 40, fontWeight: 900, color: '#0f2038', letterSpacing: -1, lineHeight: 1.0, fontFamily: 'sans-serif' }}>{tf('SIMULACIÓN')}</div>
+                                <div style={{ fontSize: 40, fontWeight: 900, color: '#00c2cb', letterSpacing: -1, lineHeight: 1.0, fontFamily: 'sans-serif' }}>{tf('DE LÍNEA')}</div>
                               </div>
                             </div>
 
-                            <button onClick={() => setIsToolboxOpen(!isToolboxOpen)} className="absolute right-0 top-0 text-slate-400 hover:text-emerald-600 p-1.5 bg-slate-50 hover:bg-emerald-50 rounded-xl transition-colors shrink-0 z-10">
-                              {isToolboxOpen ? <X className="w-4 h-4" /> : <Settings className="w-4 h-4" />}
-                            </button>
+                            {/* CLIENTE */}
+                            <div style={{ marginBottom: 16 }}>
+                              <div style={{ fontSize: 9.5, fontWeight: 900, color: '#00c2cb', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 2 }}>{tf('CLIENTE')}</div>
+                              <div style={{ fontSize: 26, fontWeight: 900, color: '#0f2038', letterSpacing: -0.5 }}>{inputs.clientName.toUpperCase()}</div>
+                            </div>
+
+                            {/* PILL DE EVALUACIÓN */}
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, width: 'fit-content', background: '#edfbfd', border: '1px solid #cffafe', borderRadius: 20, padding: '5px 14px', marginBottom: 14 }}>
+                              <Activity size={14} color="#008299" />
+                              <span style={{ fontSize: 10, color: '#008299', fontWeight: 800 }}>{tf('Evaluación de Capacidad y Eficiencia')}</span>
+                            </div>
+
+                            {/* PARRAFO Y NOTA METODOLOGICA */}
+                            <p style={{ color: '#475569', fontSize: 10.5, lineHeight: 1.5, margin: 0, marginBottom: 14 }}>
+                              {tf('Análisis de capacidad, potencia instalada y viabilidad financiera para la línea de lavado, enjuague y secado de cajas plásticas con la')} {inputs.machineName || 'PLD - 120'}.
+                            </p>
+
+                            <div style={{ display: 'flex', gap: 12, padding: '12px 14px', backgroundColor: "#f8fafc", borderLeft: "4px solid #00c2cb", borderRadius: '0 8px 8px 0', marginBottom: 24, border: '1px solid #f1f5f9', borderLeftWidth: 4 }}>
+                              <FileSpreadsheet size={18} color="#008299" style={{ flexShrink: 0, marginTop: 2 }} />
+                              <div style={{ fontSize: 9.5, color: "#475569", lineHeight: 1.4 }}>
+                                <strong style={{ color: '#0f2038' }}>{tf('Nota Metodológica:')}</strong> {tf('La capacidad por modelo se calcula en función de la velocidad lineal de la banda, dimensión de caja y separación. Limitado a 350 cajas/h máximo.')}
+                              </div>
+                            </div>
+
+                            {/* CAJAS INFERIORES MODULARES */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 'auto' }}>
+
+                              {/* CAJA 1: INFORMACION PROYECTO */}
+                              <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 14, background: '#f8fafc' }}>
+                                <div style={{ fontSize: 9.5, fontWeight: 900, color: '#008299', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>{tf('INFORMACIÓN DEL PROYECTO')}</div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 10, color: '#475569' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Building2 size={13} color="#008299" /> <span style={{ fontWeight: 700, color: '#008299' }}>{tf('Empresa')}</span></div>
+                                    <strong style={{ color: '#1e293b' }}>{inputs.companyName || 'SEEMIC'}</strong>
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Users size={13} color="#008299" /> <span style={{ fontWeight: 700, color: '#008299' }}>{tf('Cliente')}</span></div>
+                                    <strong style={{ color: '#1e293b' }}>{inputs.clientName}</strong>
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Settings size={13} color="#008299" /> <span style={{ fontWeight: 700, color: '#008299' }}>{tf('Máquina')}</span></div>
+                                    <strong style={{ color: '#1e293b' }}>{inputs.machineName || 'PLD - 120'}</strong>
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><FolderOpen size={13} color="#008299" /> <span style={{ fontWeight: 700, color: '#008299' }}>{tf('Proyecto')}</span></div>
+                                    <strong style={{ color: '#1e293b' }}>{inputs.projectName}</strong>
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Clock size={13} color="#008299" /> <span style={{ fontWeight: 700, color: '#008299' }}>{tf('Fecha')}</span></div>
+                                    <strong style={{ color: '#1e293b' }}>{new Date().toLocaleDateString()}</strong>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* CAJA 2: MATERIAL SIMULADO */}
+                              <div style={{ border: '1px solid #cffafe', borderRadius: 12, padding: 14, background: '#f0fdfa' }}>
+                                <div style={{ fontSize: 9.5, fontWeight: 900, color: '#0f766e', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>{tf('PARÁMETROS DEL MATERIAL SIMULADO')}</div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 10, color: '#475569' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Package size={14} color="#0f766e" /> <span style={{ fontWeight: 700, color: '#0f766e' }}>{tf('Material Evaluado')}</span></div>
+                                    <strong style={{ color: '#0f172a' }}>{inputs.materialType.replace('_', ' ').toUpperCase()}</strong>
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Clock size={14} color="#0f766e" /> <span style={{ fontWeight: 700, color: '#0f766e' }}>{tf('Régimen Diario')}</span></div>
+                                    <strong style={{ color: '#0f172a' }}>{results.hoursPerDay} {tf('horas')} <br /><span style={{ fontSize: 9, fontWeight: 600 }}>({inputs.shiftsPerDay} {tf('turnos')})</span></strong>
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Target size={14} color="#0f766e" /> <span style={{ fontWeight: 700, color: '#0f766e' }}>{tf('Meta Objetivo Diaria')}</span></div>
+                                    <strong style={{ color: '#0f172a' }}>{new Intl.NumberFormat().format(inputs.meta_diaria_cajas)} {tf('cajas/día')}</strong>
+                                  </div>
+                                </div>
+                              </div>
+
+                            </div>
                           </div>
 
-                          {isToolboxOpen && (
-                            <>
-                              <div className="space-y-3 max-h-[420px] overflow-y-auto custom-scrollbar pr-2 mb-4 mt-4 border-t border-slate-100 pt-4">
-                                {processFlags.map((flag, idx) => (
-                                  <div key={idx} className="bg-slate-50 border border-slate-200 rounded-xl p-3 relative shadow-sm">
-                                    <div className="absolute top-2 right-2 flex gap-1">
-                                      <button onClick={() => setProcessFlags(p => p.filter((_, i) => i !== idx))} className="text-slate-400 hover:text-red-500 p-1"><Trash2 className="w-4 h-4" /></button>
-                                    </div>
-                                    <div className="flex items-center gap-2 mb-1 pr-8">
-                                      <input type="color" value={flag.hex} onChange={e => {
-                                        setProcessFlags(p => { const n = [...p]; n[idx].hex = e.target.value; return n; })
-                                      }} className="w-8 h-8 p-0 border-0 rounded-lg cursor-pointer flex-shrink-0 bg-transparent" />
-                                      <div className="flex flex-col w-full gap-1">
-                                        <input type="text" value={flag.title} onChange={e => {
-                                          setProcessFlags(p => { const n = [...p]; n[idx].title = e.target.value; return n; })
-                                        }} className="bg-white border border-slate-200 px-2 py-1 rounded-md text-[9px] font-black uppercase text-slate-700 w-full outline-none focus:border-emerald-500" placeholder="Título" />
+                          {/* COLUMNA DERECHA (RESULTADOS PREVIEW CAJAS) */}
+                          <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#f8fafc', borderRadius: 16, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+
+                            {/* HEADER CYAN */}
+                            <div style={{ background: '#008299', padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <BarChart3 size={18} color="#fff" />
+                              <div style={{ fontSize: 11, fontWeight: 900, color: '#fff', letterSpacing: 1.5, textTransform: 'uppercase' }}>
+                                {tf('VISTA PREVIA DE RESULTADOS')}
+                              </div>
+                            </div>
+
+                            {/* INTERNAL CARDS CONTAINER */}
+                            <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 12, flex: 1, justifyContent: 'center' }}>
+
+                              {/* CARD 1: CAPACIDAD */}
+                              <div style={{ background: '#fff', border: '1px solid #cbd5e1', borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                                <div style={{ background: '#edfbfd', padding: 10, borderRadius: '50%', border: '1px solid #cffafe', marginRight: 14 }}>
+                                  <Package size={20} color="#008299" strokeWidth={1.5} />
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontSize: 11.5, fontWeight: 900, color: '#0f2038' }}>{tf('Capacidad Nominal vs Real')}</div>
+                                  <div style={{ fontSize: 9.5, color: '#64748b', marginTop: 3 }}>Nominal: {currentNominalCapacity} {inputs.tipo_unidad === 'pallets' ? 'p/h' : 'c/h'} <br /> Real (OEE {inputs.oee}%): {results.realProductionPerHourBoxes.toFixed(0)} {inputs.tipo_unidad === 'pallets' ? 'p/h' : 'c/h'}</div>
+                                </div>
+                                <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' }}>
+                                  <span style={{ fontSize: 26, fontWeight: 900, color: '#008299', lineHeight: 1 }}>{results.realProductionPerHourBoxes.toFixed(0)}</span>
+                                  <span style={{ fontSize: 12, fontWeight: 900, color: '#008299' }}>{inputs.tipo_unidad === 'pallets' ? tf('p/h') : tf('c/h')}</span>
+                                  <span style={{ fontSize: 9, color: '#0f766e', fontWeight: 800, marginTop: 4 }}>Nom: {currentNominalCapacity} {inputs.tipo_unidad === 'pallets' ? tf('p/h') : tf('c/h')}</span>
+                                </div>
+                              </div>
+
+                              {/* CARD 2: MARGEN */}
+                              <div style={{ background: '#fff', border: '1px solid #cbd5e1', borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                                <div style={{ background: '#edfbfd', padding: 10, borderRadius: '50%', border: '1px solid #cffafe', marginRight: 14 }}>
+                                  <Settings size={20} color="#008299" strokeWidth={1.5} />
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontSize: 11.5, fontWeight: 900, color: '#0f2038' }}>{tf('Margen Diario Operativo')}</div>
+                                  <div style={{ fontSize: 9.5, color: '#64748b', marginTop: 3 }}>Nominal: {((currentNominalCapacity * (inputs.hoursPerDay || 8.5) * (inputs.shiftsPerDay || 1)) - (inputs.meta_diaria_cajas || 2128)) > 0 ? '+' : ''}{((currentNominalCapacity * (inputs.hoursPerDay || 8.5) * (inputs.shiftsPerDay || 1)) - (inputs.meta_diaria_cajas || 2128)).toFixed(0)} {inputs.tipo_unidad === 'pallets' ? 'p/día' : 'c/día'} <br /> Real (OEE {inputs.oee}%): {(results.dailyProductionBoxes - (inputs.meta_diaria_cajas || 2128)) > 0 ? '+' : ''}{(results.dailyProductionBoxes - (inputs.meta_diaria_cajas || 2128)).toFixed(0)} {inputs.tipo_unidad === 'pallets' ? 'p/día' : 'c/día'}</div>
+                                </div>
+                                <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' }}>
+                                  <span style={{ fontSize: 26, fontWeight: 900, color: (results.dailyProductionBoxes - (inputs.meta_diaria_cajas || 2128)) < 0 ? '#ef4444' : '#008299', lineHeight: 1 }}>{(results.dailyProductionBoxes - (inputs.meta_diaria_cajas || 2128)) > 0 ? '+' : ''}{(results.dailyProductionBoxes - (inputs.meta_diaria_cajas || 2128)).toFixed(0)}</span>
+                                  <span style={{ fontSize: 12, fontWeight: 900, color: (results.dailyProductionBoxes - (inputs.meta_diaria_cajas || 2128)) < 0 ? '#ef4444' : '#008299' }}>{inputs.tipo_unidad === 'pallets' ? tf('p/día') : tf('c/día')}</span>
+                                  <span style={{ fontSize: 9, color: (results.dailyProductionBoxes - (inputs.meta_diaria_cajas || 2128)) < 0 ? '#ef4444' : '#0f766e', fontWeight: 800, marginTop: 4 }}>Nom: {((currentNominalCapacity * (inputs.hoursPerDay || 8.5) * (inputs.shiftsPerDay || 1)) - (inputs.meta_diaria_cajas || 2128)) > 0 ? '+' : ''}{((currentNominalCapacity * (inputs.hoursPerDay || 8.5) * (inputs.shiftsPerDay || 1)) - (inputs.meta_diaria_cajas || 2128)).toFixed(0)} {inputs.tipo_unidad === 'pallets' ? tf('p/día') : tf('c/día')}</span>
+                                </div>
+                              </div>
+
+                              {/* CARD 3: OPEX */}
+                              <div style={{ background: '#fff', border: '1px solid #cbd5e1', borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                                <div style={{ background: '#edfbfd', padding: 10, borderRadius: '50%', border: '1px solid #cffafe', marginRight: 14 }}>
+                                  <DollarSign size={20} color="#008299" strokeWidth={1.5} />
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontSize: 11.5, fontWeight: 900, color: '#0f2038' }}>{tf('Costo Operativo (OPEX)')}</div>
+                                  <div style={{ fontSize: 9.5, color: '#64748b', marginTop: 3 }}>Por 1,000 cajas <br /> (${(results.opexPor1000CajasMxn / 1000).toFixed(2)} MXN/caja)</div>
+                                </div>
+                                <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' }}>
+                                  <span style={{ fontSize: 24, fontWeight: 900, color: '#008299', lineHeight: 1 }}>${results.opexPor1000CajasMxn.toFixed(1)}</span>
+                                  <span style={{ fontSize: 11, fontWeight: 900, color: '#008299', marginTop: 2 }}>MXN / 1k {tf('cajas')}</span>
+                                </div>
+                              </div>
+
+                              {/* CARD 4: VIABILIDAD */}
+                              <div style={{ background: '#fff', border: '1px solid #cbd5e1', borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                                <div style={{ background: '#edfbfd', padding: 10, borderRadius: '50%', border: '1px solid #cffafe', marginRight: 14 }}>
+                                  <Check size={20} color="#008299" strokeWidth={1.5} />
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontSize: 13, fontWeight: 900, color: '#0f2038' }}>{tf('Viabilidad Proyectada')}</div>
+                                  <div style={{ fontSize: 9.5, color: '#64748b', marginTop: 3 }}>Utilización Real: {(inputs.meta_diaria_cajas / (results.dailyProductionBoxes || 1) * 100).toFixed(1)}% <br /> Cobertura: {results.requirementCoverage.toFixed(1)}%</div>
+                                </div>
+                                <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' }}>
+                                  <span style={{ fontSize: 22, fontWeight: 900, color: '#008299', textTransform: 'uppercase', letterSpacing: 0.5 }}>{tf(results.viabilityState || 'VIABLE')}</span>
+                                </div>
+                              </div>
+
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* FOOOOTER (Línea Inferior similar al diseño) */}
+                        <div style={{ borderTop: '2px solid #f1f5f9', marginTop: 'auto', padding: '12px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ fontSize: 9, fontWeight: 800, color: '#94a3b8', letterSpacing: 1.5, textTransform: 'uppercase' }}>{inputs.clientName} // MÁQUINA: {inputs.machineName?.toUpperCase() || 'WM-500'}</div>
+                          <div style={{ fontSize: 9, fontWeight: 800, color: '#94a3b8', letterSpacing: 1.5, textTransform: 'uppercase' }}>PÁGINA {++pdfPageIndex} DE {totalPdfPages}</div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* PÁGINA 2+: GEMELO DIGITAL 3D */}
+                    {pdfConfig.twin && snapshotPages.length > 0 && (() => {
+                      const pageSecNum = ++currentSectionIndex;
+                      return snapshotPages.map((page, index) => (
+                        <div key={index} className="flex flex-col items-center relative mb-12">
+                          <div className="pdf-page bg-white relative flex flex-col mx-auto" style={{ ...S.page, flexShrink: 0 }}>
+                            <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                              {renderPageHeader(`${pageSecNum}. Vista ${page.type.charAt(0).toUpperCase() + page.type.slice(1)}`, tf('Renderizado CAD de alta resolución del equipo en configuración de planta'))}
+
+                              <div style={{ flex: 1, border: '1px solid #e2e8f0', borderRadius: 16, background: '#edf4f9', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                                <div style={{ width: '100%', height: '100%', backgroundImage: `url(${page.src})`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }} />
+                                {(page.type || '').toLowerCase() === 'lateral' && processFlags.map((step, i) => (
+                                  <div
+                                    key={i}
+                                    id={`flag-wrapper-${i}`}
+                                    style={{ position: 'absolute', top: step.top, left: step.left, width: 0, height: 0, zIndex: 10 }}
+                                  >
+                                    {/* DOT: ANCHOR MANIPULATOR */}
+                                    <div
+                                      style={{ position: 'absolute', width: '12px', height: '12px', borderRadius: '50%', background: step.hex, top: '-6px', left: '-6px', cursor: draggedFlagIndex === `${i}-dot` ? 'grabbing' : 'grab', zIndex: 3, boxShadow: '0 0 0 2px white' }}
+                                      onPointerDown={(e) => {
+                                        e.stopPropagation();
+                                        e.currentTarget.setPointerCapture(e.pointerId);
+                                        e.currentTarget.dataset.dragging = 'dot';
+                                        setDraggedFlagIndex(`${i}-dot`);
+                                      }}
+                                      onPointerMove={(e) => {
+                                        if (e.currentTarget.dataset.dragging === 'dot') {
+                                          e.stopPropagation();
+                                          const parent = e.currentTarget.parentElement.parentElement;
+                                          const rect = parent.getBoundingClientRect();
+                                          let newLeft = ((e.clientX - rect.left) / rect.width) * 100;
+                                          let newTop = ((e.clientY - rect.top) / rect.height) * 100;
+                                          newLeft = Math.max(0, Math.min(100, newLeft));
+                                          newTop = Math.max(0, Math.min(100, newTop));
+                                          e.currentTarget.parentElement.style.left = `${newLeft}%`;
+                                          e.currentTarget.parentElement.style.top = `${newTop}%`;
+                                        }
+                                      }}
+                                      onPointerUp={(e) => {
+                                        if (e.currentTarget.dataset.dragging === 'dot') {
+                                          e.stopPropagation();
+                                          e.currentTarget.releasePointerCapture(e.pointerId);
+                                          e.currentTarget.dataset.dragging = 'false';
+                                          setDraggedFlagIndex(null);
+                                          const finalLeft = e.currentTarget.parentElement.style.left;
+                                          const finalTop = e.currentTarget.parentElement.style.top;
+                                          setProcessFlags(prev => {
+                                            const copy = [...prev];
+                                            copy[i] = { ...copy[i], left: finalLeft, top: finalTop };
+                                            return copy;
+                                          });
+                                        }
+                                      }}
+                                    />
+
+                                    {/* LINE */}
+                                    <div
+                                      id={`flag-line-${i}`}
+                                      style={{
+                                        position: 'absolute',
+                                        width: '2px',
+                                        background: step.hex,
+                                        left: '-1px',
+                                        height: `${step.lineHeight}px`,
+                                        top: step.isBottom ? '6px' : `-${step.lineHeight + 6}px`,
+                                        zIndex: 1
+                                      }}
+                                    />
+
+                                    {/* BOX: HEIGHT & REVERSE MANIPULATOR */}
+                                    <div
+                                      id={`flag-box-${i}`}
+                                      style={{
+                                        position: 'absolute',
+                                        left: 0,
+                                        transform: 'translateX(-50%)',
+                                        top: step.isBottom ? `${step.lineHeight + 6}px` : `-${step.lineHeight + 6 + 36}px`,
+                                        background: '#fff', border: `2px solid ${step.hex}`, borderRadius: '8px', padding: '6px 10px', display: 'flex', gap: '8px', alignItems: 'center', zIndex: 2, boxShadow: '0 4px 6px rgba(0,0,0,0.05)', whiteSpace: 'nowrap',
+                                        cursor: draggedFlagIndex === `${i}-box` ? 'row-resize' : 'ns-resize'
+                                      }}
+                                      onPointerDown={(e) => {
+                                        e.stopPropagation();
+                                        e.currentTarget.setPointerCapture(e.pointerId);
+                                        e.currentTarget.dataset.dragging = 'box';
+                                        setDraggedFlagIndex(`${i}-box`);
+                                      }}
+                                      onPointerMove={(e) => {
+                                        if (e.currentTarget.dataset.dragging === 'box') {
+                                          e.stopPropagation();
+                                          const parent = e.currentTarget.parentElement.parentElement;
+                                          const rect = parent.getBoundingClientRect();
+                                          const anchorTopPercent = parseFloat(e.currentTarget.parentElement.style.top || step.top);
+                                          const anchorY = rect.top + (anchorTopPercent / 100) * rect.height;
+                                          let dy = e.clientY - anchorY;
+
+                                          const line = document.getElementById(`flag-line-${i}`);
+                                          const box = e.currentTarget;
+
+                                          if (dy > 0) {
+                                            let h = Math.max(10, dy - 20);
+                                            line.style.top = '6px';
+                                            line.style.height = `${h}px`;
+                                            box.style.top = `${h + 6}px`;
+                                            box.dataset.tempBottom = 'true';
+                                            box.dataset.tempHeight = h.toString();
+                                          } else {
+                                            let h = Math.max(10, Math.abs(dy) - 20);
+                                            line.style.top = `-${h + 6}px`;
+                                            line.style.height = `${h}px`;
+                                            box.style.top = `-${h + 6 + 36}px`;
+                                            box.dataset.tempBottom = 'false';
+                                            box.dataset.tempHeight = h.toString();
+                                          }
+                                        }
+                                      }}
+                                      onPointerUp={(e) => {
+                                        if (e.currentTarget.dataset.dragging === 'box') {
+                                          e.stopPropagation();
+                                          e.currentTarget.releasePointerCapture(e.pointerId);
+                                          e.currentTarget.dataset.dragging = 'false';
+                                          setDraggedFlagIndex(null);
+
+                                          const finalHeight = parseInt(e.currentTarget.dataset.tempHeight || step.lineHeight, 10);
+                                          const finalBottom = e.currentTarget.dataset.tempBottom ? e.currentTarget.dataset.tempBottom === 'true' : step.isBottom;
+
+                                          setProcessFlags(prev => {
+                                            const copy = [...prev];
+                                            copy[i] = { ...copy[i], lineHeight: finalHeight, isBottom: finalBottom };
+                                            return copy;
+                                          });
+                                        }
+                                      }}
+                                    >
+                                      <div style={{ background: step.hex, width: '34px', height: '34px', borderRadius: '6px', display: 'table', flexShrink: 0 }}>
+                                        <div
+                                          contentEditable
+                                          suppressContentEditableWarning
+                                          style={{ display: 'table-cell', verticalAlign: 'middle', textAlign: 'center', color: '#fff', fontWeight: 900, fontSize: '15px', border: 'none', outline: 'none', paddingBottom: '3px' }}
+                                          onPointerDown={e => e.stopPropagation()}
+                                          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
+                                          onBlur={(e) => {
+                                            const newText = e.currentTarget.innerText;
+                                            setProcessFlags(p => {
+                                              const copy = [...p];
+                                              copy[i].num = newText;
+                                              return copy;
+                                            });
+                                          }}
+                                        >
+                                          {step.num}
+                                        </div>
+                                      </div>
+                                      <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', justifyContent: 'center', gap: '2px' }}>
+                                        <div
+                                          contentEditable
+                                          suppressContentEditableWarning
+                                          style={{ fontSize: '8px', color: step.hex, fontWeight: 900, letterSpacing: '0.5px', background: 'transparent', border: 'none', outline: 'none', margin: 0, padding: 0, lineHeight: '10px', minHeight: '10px' }}
+                                          onPointerDown={e => e.stopPropagation()}
+                                          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
+                                          onBlur={(e) => {
+                                            const newText = e.currentTarget.innerText;
+                                            setProcessFlags(p => {
+                                              const copy = [...p];
+                                              copy[i].step = newText;
+                                              return copy;
+                                            });
+                                          }}
+                                        >
+                                          {step.step}
+                                        </div>
+                                        <div
+                                          contentEditable
+                                          suppressContentEditableWarning
+                                          style={{ fontSize: '10px', color: '#1e293b', fontWeight: 900, background: 'transparent', border: 'none', outline: 'none', margin: 0, padding: 0, lineHeight: '12px', minHeight: '12px' }}
+                                          onPointerDown={e => e.stopPropagation()}
+                                          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
+                                          onBlur={(e) => {
+                                            const newText = e.currentTarget.innerText;
+                                            setProcessFlags(p => {
+                                              const copy = [...p];
+                                              copy[i].title = newText;
+                                              return copy;
+                                            });
+                                          }}
+                                        >
+                                          {step.title}
+                                        </div>
+                                        <div
+                                          contentEditable
+                                          suppressContentEditableWarning
+                                          style={{ fontSize: '7px', color: '#94a3b8', fontWeight: 700, background: 'transparent', border: 'none', outline: 'none', margin: 0, padding: 0, lineHeight: '8px', minHeight: '8px' }}
+                                          onPointerDown={e => e.stopPropagation()}
+                                          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
+                                          onBlur={(e) => {
+                                            const newText = e.currentTarget.innerText;
+                                            setProcessFlags(p => {
+                                              const copy = [...p];
+                                              copy[i].sub = newText;
+                                              return copy;
+                                            });
+                                          }}
+                                        >
+                                          {step.sub}
+                                        </div>
                                       </div>
                                     </div>
                                   </div>
                                 ))}
-                                <div className="flex gap-2 mt-2">
-                                  <button onClick={() => setProcessFlags(p => {
-                                    const newLeft = 10 + (p.length % 5) * 15;
-                                    const newTop = 15 + Math.floor(p.length / 5) * 5;
-                                    return [...p, { num: String(p.length + 1).padStart(2, '0'), step: 'NUEVA', title: 'ETAPA DE PROCESO', sub: `ID_${p.length + 1}`, hex: '#10b981', top: `${newTop}%`, left: `${newLeft}%`, boxDx: 0, boxDy: 80 }];
-                                  })} className="w-full py-2 border-2 border-dashed border-slate-300 rounded-xl text-[10px] font-black text-slate-500 uppercase hover:border-emerald-500 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">
-                                    + Bandera
-                                  </button>
-                                  <button onClick={() => setProcessArrows(p => {
-                                    return [...p, { hex: '#ef4444', top: `50%`, left: `50%`, headDx: 60, headDy: 0 }];
-                                  })} className="w-full py-2 border-2 border-dashed border-slate-300 rounded-xl text-[10px] font-black text-slate-500 uppercase hover:border-orange-500 hover:bg-orange-50 hover:text-orange-600 transition-colors">
-                                    + Flecha
-                                  </button>
+
+
+                                {/* === MOTOR DE FLECHAS DE FLUJO EN 360 GRADOS === */}
+                                {(page.type || '').toLowerCase() === 'lateral' && processArrows.map((arrow, i) => {
+                                  const dx = typeof arrow.headDx !== 'undefined' ? arrow.headDx : 80;
+                                  const dy = typeof arrow.headDy !== 'undefined' ? arrow.headDy : 0;
+                                  const length = Math.sqrt(dx * dx + dy * dy);
+                                  const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+
+                                  return (
+                                    <div
+                                      key={i}
+                                      id={`arrow-wrapper-${i}`}
+                                      style={{ position: 'absolute', top: arrow.top, left: arrow.left, width: 0, height: 0, zIndex: 9 }}
+                                    >
+                                      {/* DOT: ANCLAJE (COLA DE LA FLECHA) */}
+                                      <div
+                                        style={{ position: 'absolute', width: '12px', height: '12px', borderRadius: '50%', background: arrow.hex, top: '-6px', left: '-6px', cursor: draggedFlagIndex === `arrow-${i}-dot` ? 'grabbing' : 'grab', zIndex: 3, boxShadow: '0 0 0 2px white' }}
+                                        onPointerDown={(e) => {
+                                          e.stopPropagation();
+                                          e.currentTarget.setPointerCapture(e.pointerId);
+                                          e.currentTarget.dataset.dragging = 'dot';
+                                          setDraggedFlagIndex(`arrow-${i}-dot`);
+                                        }}
+                                        onPointerMove={(e) => {
+                                          if (e.currentTarget.dataset.dragging === 'dot') {
+                                            e.stopPropagation();
+                                            const parent = e.currentTarget.parentElement.parentElement;
+                                            const rect = parent.getBoundingClientRect();
+                                            let newLeft = ((e.clientX - rect.left) / rect.width) * 100;
+                                            let newTop = ((e.clientY - rect.top) / rect.height) * 100;
+                                            newLeft = Math.max(0, Math.min(100, newLeft));
+                                            newTop = Math.max(0, Math.min(100, newTop));
+                                            e.currentTarget.parentElement.style.left = `${newLeft}%`;
+                                            e.currentTarget.parentElement.style.top = `${newTop}%`;
+                                          }
+                                        }}
+                                        onPointerUp={(e) => {
+                                          if (e.currentTarget.dataset.dragging === 'dot') {
+                                            e.stopPropagation();
+                                            e.currentTarget.releasePointerCapture(e.pointerId);
+                                            e.currentTarget.dataset.dragging = 'false';
+                                            setDraggedFlagIndex(null);
+                                            const finalLeft = e.currentTarget.parentElement.style.left;
+                                            const finalTop = e.currentTarget.parentElement.style.top;
+                                            setProcessArrows(prev => {
+                                              const copy = [...prev];
+                                              copy[i] = { ...copy[i], left: finalLeft, top: finalTop };
+                                              return copy;
+                                            });
+                                          }
+                                        }}
+                                      />
+
+                                      {/* LÍNEA DE LA FLECHA */}
+                                      <div
+                                        id={`arrow-line-${i}`}
+                                        style={{
+                                          position: 'absolute', height: '3px', background: arrow.hex, left: '0px', top: '-1.5px', width: `${length}px`, transformOrigin: '0 50%', transform: `rotate(${angle}deg)`, zIndex: 1
+                                        }}
+                                      >
+                                        <div style={{ position: 'absolute', right: '-2px', top: '50%', transform: 'translateY(-50%)', borderTop: '8px solid transparent', borderBottom: '8px solid transparent', borderLeft: `12px solid ${arrow.hex}` }} />
+                                      </div>
+
+                                      {/* DOT VIRTUAL: CABEZA DE LA FLECHA (MANIPULADOR DE DIRECCIÓN) */}
+                                      <div
+                                        id={`arrow-head-${i}`}
+                                        style={{
+                                          position: 'absolute', width: '20px', height: '20px', borderRadius: '50%', background: 'transparent', left: `${dx}px`, top: `${dy}px`, transform: 'translate(-50%, -50%)', cursor: draggedFlagIndex === `arrow-${i}-head` ? 'grabbing' : 'crosshair', zIndex: 4
+                                        }}
+                                        onPointerDown={(e) => {
+                                          e.stopPropagation();
+                                          e.currentTarget.setPointerCapture(e.pointerId);
+                                          e.currentTarget.dataset.dragging = 'head';
+                                          setDraggedFlagIndex(`arrow-${i}-head`);
+                                        }}
+                                        onPointerMove={(e) => {
+                                          if (e.currentTarget.dataset.dragging === 'head') {
+                                            e.stopPropagation();
+                                            const parent = e.currentTarget.parentElement.parentElement;
+                                            const rect = parent.getBoundingClientRect();
+                                            const anchorTopPercent = parseFloat(e.currentTarget.parentElement.style.top || arrow.top);
+                                            const anchorLeftPercent = parseFloat(e.currentTarget.parentElement.style.left || arrow.left);
+
+                                            const anchorY = rect.top + (anchorTopPercent / 100) * rect.height;
+                                            const anchorX = rect.left + (anchorLeftPercent / 100) * rect.width;
+
+                                            const newDx = e.clientX - anchorX;
+                                            const newDy = e.clientY - anchorY;
+
+                                            const line = document.getElementById(`arrow-line-${i}`);
+                                            const head = e.currentTarget;
+
+                                            const len = Math.sqrt(newDx * newDx + newDy * newDy);
+                                            const ang = Math.atan2(newDy, newDx) * (180 / Math.PI);
+
+                                            line.style.width = `${len}px`;
+                                            line.style.transform = `rotate(${ang}deg)`;
+
+                                            head.style.left = `${newDx}px`;
+                                            head.style.top = `${newDy}px`;
+
+                                            head.dataset.tempDx = newDx.toString();
+                                            head.dataset.tempDy = newDy.toString();
+                                          }
+                                        }}
+                                        onPointerUp={(e) => {
+                                          if (e.currentTarget.dataset.dragging === 'head') {
+                                            e.stopPropagation();
+                                            e.currentTarget.releasePointerCapture(e.pointerId);
+                                            e.currentTarget.dataset.dragging = 'false';
+                                            setDraggedFlagIndex(null);
+
+                                            const tempDx = e.currentTarget.dataset.tempDx !== undefined ? parseFloat(e.currentTarget.dataset.tempDx) : dx;
+                                            const tempDy = e.currentTarget.dataset.tempDy !== undefined ? parseFloat(e.currentTarget.dataset.tempDy) : dy;
+
+                                            setProcessArrows(prev => {
+                                              const copy = [...prev];
+                                              copy[i] = { ...copy[i], headDx: tempDx, headDy: tempDy };
+                                              return copy;
+                                            });
+                                          }
+                                        }}
+                                      />
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
+                              <div style={{ background: '#f0fdfa', border: '1px solid #ccfbf1', borderRadius: 12, padding: 16, fontSize: 10, lineHeight: 1.5, color: '#334155', fontWeight: 600 }}>
+                                <span style={{ color: '#0f766e', fontWeight: 900, textTransform: 'uppercase', marginRight: 6 }}>{tf('Nota de Escala Visual')} ({tf(page.type.charAt(0).toUpperCase() + page.type.slice(1))}): </span>
+                                {tf('Esta proyección tridimensional corresponde a la captura exacta de la Lavadora')} {inputs.machineName || 'BWD-250'} {tf('evaluada bajo la perspectiva')} {tf(page.type.charAt(0).toUpperCase() + page.type.slice(1))}. {tf('Las proporciones y el diseño representan el volumen real del equipo industrial proyectado en el software PANDORA 3.0.')}
+                              </div>
+                              {renderPageFooter(++pdfPageIndex, totalPdfPages)}
+                            </div>
+                          </div>
+                          {/* NOTIFICACIÓN FLOTANTE GUARDADO */}
+                          {toastMessage && (
+                            <div style={{ position: 'fixed', top: '24px', left: '50%', transform: 'translateX(-50%)', zIndex: 999999, background: '#059669', color: 'white', padding: '12px 24px', borderRadius: '12px', fontWeight: 900, boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}>
+                              {toastMessage}
+                            </div>
+                          )}
+
+                          {/* TOOLBOX LATERAL (SÓLO VISTA PREVIA) */}
+                          {(page.type || '').toLowerCase() === 'lateral' && (
+                            <div
+                              id="toolbox-panel"
+                              style={{ position: 'fixed', top: typeof toolboxPos.top !== 'undefined' ? `${toolboxPos.top}px` : '96px', left: typeof toolboxPos.left !== 'undefined' ? `${toolboxPos.left}px` : 'auto', right: (typeof toolboxPos.right !== 'undefined' && typeof toolboxPos.left === 'undefined') ? `${toolboxPos.right}px` : 'auto', zIndex: 99999, width: isToolboxOpen ? '320px' : 'auto' }} className="bg-white rounded-3xl shadow-2xl border border-slate-200 p-4" data-html2canvas-ignore="true">
+
+                              <div className="flex items-center justify-between mb-1 relative">
+                                {/* ZONA DE ARRASTRE */}
+                                <div className="flex items-center gap-2 cursor-grab w-full active:cursor-grabbing"
+                                  onPointerDown={(e) => {
+                                    if (e.target.closest('button')) return; // ignorar clics en botones internos
+                                    e.stopPropagation();
+                                    e.currentTarget.setPointerCapture(e.pointerId);
+                                    e.currentTarget.dataset.dragging = 'toolbox';
+                                    e.currentTarget.dataset.startX = e.clientX.toString();
+                                    e.currentTarget.dataset.startY = e.clientY.toString();
+                                    const tb = document.getElementById('toolbox-panel');
+
+                                    // Si está anclado a la derecha, convertir a valor izquierdo explícito para matemáticas fáciles
+                                    if (!tb.style.left || tb.style.left === 'auto') {
+                                      const rect = tb.getBoundingClientRect();
+                                      tb.style.left = `${rect.left}px`;
+                                      tb.style.right = 'auto';
+                                    }
+
+                                    e.currentTarget.dataset.startLeft = parseFloat(tb.style.left);
+                                    e.currentTarget.dataset.startTop = parseFloat(tb.style.top);
+                                    setDraggedFlagIndex('toolbox');
+                                  }}
+                                  onPointerMove={(e) => {
+                                    if (e.currentTarget.dataset.dragging === 'toolbox') {
+                                      e.stopPropagation();
+                                      const dx = e.clientX - parseFloat(e.currentTarget.dataset.startX);
+                                      const dy = e.clientY - parseFloat(e.currentTarget.dataset.startY);
+                                      const tb = document.getElementById('toolbox-panel');
+                                      tb.style.left = `${parseFloat(e.currentTarget.dataset.startLeft) + dx}px`;
+                                      tb.style.top = `${parseFloat(e.currentTarget.dataset.startTop) + dy}px`;
+                                    }
+                                  }}
+                                  onPointerUp={(e) => {
+                                    if (e.currentTarget.dataset.dragging === 'toolbox') {
+                                      e.stopPropagation();
+                                      e.currentTarget.releasePointerCapture(e.pointerId);
+                                      e.currentTarget.dataset.dragging = 'false';
+                                      setDraggedFlagIndex(null);
+                                      const tb = document.getElementById('toolbox-panel');
+                                      setToolboxPos({
+                                        left: parseFloat(tb.style.left),
+                                        top: parseFloat(tb.style.top)
+                                      });
+                                    }
+                                  }}
+                                >
+                                  <div onClick={() => setIsToolboxOpen(!isToolboxOpen)} className="flex items-center gap-2 pointer-events-auto">
+                                    {isToolboxOpen && <Settings className="w-5 h-5 text-emerald-600 pointer-events-none" />}
+                                    <h3 className="font-black text-xs text-slate-800 uppercase tracking-wide pointer-events-none select-none">
+                                      {isToolboxOpen ? 'Banderas de Proceso' : 'Banderas'}
+                                    </h3>
+                                  </div>
                                 </div>
 
-                                {processArrows.length > 0 && <div className="text-[9px] font-black uppercase text-slate-400 mt-4 mb-2">Flechas Direccionales</div>}
-                                {processArrows.map((arrow, idx) => (
-                                  <div key={`arr-${idx}`} className="bg-slate-50 border border-slate-200 rounded-xl p-2 relative shadow-sm mb-2 flex items-center gap-2">
-                                    <input type="color" value={arrow.hex} onChange={e => {
-                                      setProcessArrows(p => { const n = [...p]; n[idx].hex = e.target.value; return n; })
-                                    }} className="w-6 h-6 p-0 border-0 rounded-lg cursor-pointer flex-shrink-0 bg-transparent" />
-                                    <span className="text-[9px] font-black text-slate-600 uppercase flex-1">Flecha #{idx + 1} (Flujo)</span>
-                                    <button onClick={() => setProcessArrows(p => p.filter((_, i) => i !== idx))} className="text-slate-400 hover:text-red-500 p-1"><Trash2 className="w-4 h-4" /></button>
-                                  </div>
-                                ))}
-                              </div>
-
-                              <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 mb-4">
-                                <button onClick={() => {
-                                  localStorage.setItem('sim_dhl_v2_process_flags', JSON.stringify(processFlags));
-                                  localStorage.setItem('sim_dhl_v2_process_arrows', JSON.stringify(processArrows));
-                                  localStorage.setItem('sim_dhl_v2_toolbox_pos', JSON.stringify(toolboxPos));
-                                  setToastMessage('¡Diseño Guardado Correctamente!');
-                                  setTimeout(() => setToastMessage(null), 3000);
-                                }} className="w-full bg-emerald-600 text-white rounded-lg py-2 font-black text-[10px] uppercase hover:bg-emerald-700 transition shadow-sm mb-2 cursor-pointer">
-                                  Guardar Diseño
+                                <button onClick={() => setIsToolboxOpen(!isToolboxOpen)} className="absolute right-0 top-0 text-slate-400 hover:text-emerald-600 p-1.5 bg-slate-50 hover:bg-emerald-50 rounded-xl transition-colors shrink-0 z-10">
+                                  {isToolboxOpen ? <X className="w-4 h-4" /> : <Settings className="w-4 h-4" />}
                                 </button>
-                                <p className="text-[9.5px] font-bold text-emerald-800 leading-relaxed text-center">
-                                  <span className="block mb-1">✓ Autorresguardo Activo</span>
-                                  Arrastra las banderas depositadas en la hoja visualmente. Todos los cambios se guardan en tu equipo al instante.
-                                </p>
                               </div>
 
-                              <button onClick={() => setIsToolboxOpen(false)} className="w-full bg-slate-100 text-slate-600 py-3 rounded-xl font-black text-[10px] uppercase hover:bg-slate-200 transition shadow-sm border border-slate-200">
-                                MINIMIZAR PANEL
-                              </button>
-                            </>
+                              {isToolboxOpen && (
+                                <>
+                                  <div className="space-y-3 max-h-[420px] overflow-y-auto custom-scrollbar pr-2 mb-4 mt-4 border-t border-slate-100 pt-4">
+                                    {processFlags.map((flag, idx) => (
+                                      <div key={idx} className="bg-slate-50 border border-slate-200 rounded-xl p-3 relative shadow-sm">
+                                        <div className="absolute top-2 right-2 flex gap-1">
+                                          <button onClick={() => setProcessFlags(p => p.filter((_, i) => i !== idx))} className="text-slate-400 hover:text-red-500 p-1"><Trash2 className="w-4 h-4" /></button>
+                                        </div>
+                                        <div className="flex items-center gap-2 mb-1 pr-8">
+                                          <input type="color" value={flag.hex} onChange={e => {
+                                            setProcessFlags(p => { const n = [...p]; n[idx].hex = e.target.value; return n; })
+                                          }} className="w-8 h-8 p-0 border-0 rounded-lg cursor-pointer flex-shrink-0 bg-transparent" />
+                                          <div className="flex flex-col w-full gap-1">
+                                            <input type="text" value={flag.title} onChange={e => {
+                                              setProcessFlags(p => { const n = [...p]; n[idx].title = e.target.value; return n; })
+                                            }} className="bg-white border border-slate-200 px-2 py-1 rounded-md text-[9px] font-black uppercase text-slate-700 w-full outline-none focus:border-emerald-500" placeholder="Título" />
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                    <div className="flex gap-2 mt-2">
+                                      <button onClick={() => setProcessFlags(p => {
+                                        const newLeft = 10 + (p.length % 5) * 15;
+                                        const newTop = 15 + Math.floor(p.length / 5) * 5;
+                                        return [...p, { num: String(p.length + 1).padStart(2, '0'), step: 'NUEVA', title: 'ETAPA DE PROCESO', sub: `ID_${p.length + 1}`, hex: '#10b981', top: `${newTop}%`, left: `${newLeft}%`, boxDx: 0, boxDy: 80 }];
+                                      })} className="w-full py-2 border-2 border-dashed border-slate-300 rounded-xl text-[10px] font-black text-slate-500 uppercase hover:border-emerald-500 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">
+                                        + Bandera
+                                      </button>
+                                      <button onClick={() => setProcessArrows(p => {
+                                        return [...p, { hex: '#ef4444', top: `50%`, left: `50%`, headDx: 60, headDy: 0 }];
+                                      })} className="w-full py-2 border-2 border-dashed border-slate-300 rounded-xl text-[10px] font-black text-slate-500 uppercase hover:border-orange-500 hover:bg-orange-50 hover:text-orange-600 transition-colors">
+                                        + Flecha
+                                      </button>
+                                    </div>
+
+                                    {processArrows.length > 0 && <div className="text-[9px] font-black uppercase text-slate-400 mt-4 mb-2">Flechas Direccionales</div>}
+                                    {processArrows.map((arrow, idx) => (
+                                      <div key={`arr-${idx}`} className="bg-slate-50 border border-slate-200 rounded-xl p-2 relative shadow-sm mb-2 flex items-center gap-2">
+                                        <input type="color" value={arrow.hex} onChange={e => {
+                                          setProcessArrows(p => { const n = [...p]; n[idx].hex = e.target.value; return n; })
+                                        }} className="w-6 h-6 p-0 border-0 rounded-lg cursor-pointer flex-shrink-0 bg-transparent" />
+                                        <span className="text-[9px] font-black text-slate-600 uppercase flex-1">Flecha #{idx + 1} (Flujo)</span>
+                                        <button onClick={() => setProcessArrows(p => p.filter((_, i) => i !== idx))} className="text-slate-400 hover:text-red-500 p-1"><Trash2 className="w-4 h-4" /></button>
+                                      </div>
+                                    ))}
+                                  </div>
+
+                                  <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 mb-4">
+                                    <button onClick={() => {
+                                      localStorage.setItem('sim_dhl_v2_process_flags', JSON.stringify(processFlags));
+                                      localStorage.setItem('sim_dhl_v2_process_arrows', JSON.stringify(processArrows));
+                                      localStorage.setItem('sim_dhl_v2_toolbox_pos', JSON.stringify(toolboxPos));
+                                      setToastMessage('¡Diseño Guardado Correctamente!');
+                                      setTimeout(() => setToastMessage(null), 3000);
+                                    }} className="w-full bg-emerald-600 text-white rounded-lg py-2 font-black text-[10px] uppercase hover:bg-emerald-700 transition shadow-sm mb-2 cursor-pointer">
+                                      Guardar Diseño
+                                    </button>
+                                    <p className="text-[9.5px] font-bold text-emerald-800 leading-relaxed text-center">
+                                      <span className="block mb-1">✓ Autorresguardo Activo</span>
+                                      Arrastra las banderas depositadas en la hoja visualmente. Todos los cambios se guardan en tu equipo al instante.
+                                    </p>
+                                  </div>
+
+                                  <button onClick={() => setIsToolboxOpen(false)} className="w-full bg-slate-100 text-slate-600 py-3 rounded-xl font-black text-[10px] uppercase hover:bg-slate-200 transition shadow-sm border border-slate-200">
+                                    MINIMIZAR PANEL
+                                  </button>
+                                </>
+                              )}
+                            </div>
                           )}
                         </div>
-                      )}
-                    </div>
-                  ));
-                })()}
+                      ));
+                    })()}
 
-                {/* PÁGINA SIGUIENTE: DATOS TÉCNICOS Y DICTAMEN AI */}
-                {pdfConfig.tabla && (
-                  <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
-                    <div style={{ ...S.inner, flex: 1, paddingTop: 30, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      {renderPageHeader(`${++currentSectionIndex}. Especificaciones Técnicas`, tf('Listado físico nominal con potencias individuales calculadas al factor de carga'))}
+                    {/* PÁGINA SIGUIENTE: DATOS TÉCNICOS Y DICTAMEN AI */}
+                    {pdfConfig.tabla && (
+                      <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
+                        <div style={{ ...S.inner, flex: 1, paddingTop: 30, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                          {renderPageHeader(`${++currentSectionIndex}. Especificaciones Técnicas`, tf('Listado físico nominal con potencias individuales calculadas al factor de carga'))}
 
-                      <div style={{ width: '100%' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10 }}>
-                          <thead>
-                            <tr>
-                              <th style={{ ...REPORT_STYLES.th, padding: '6px 12px', background: '#edfbfd' }}>{tf('Equipo')}</th>
-                              <th style={{ ...REPORT_STYLES.th, padding: '6px 12px', background: '#edfbfd', textAlign: 'center' }}>{tf('Capacidad')}</th>
-                              <th style={{ ...REPORT_STYLES.th, padding: '6px 12px', background: '#edfbfd', textAlign: 'center' }}>{tf('kW Instalados')}</th>
-                              <th style={{ ...REPORT_STYLES.th, padding: '6px 12px', background: '#edfbfd', textAlign: 'center' }}>{tf('Carga Activa')} ({inputs.loadFactor}%)</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr>
-                              <td style={REPORT_STYLES.td}>{tf('Motor Bomba de Agua (Lavado Principal 20 HP)')}</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{new Intl.NumberFormat().format(currentNominalCapacity)} {tf('cajas/h')}</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>14.91 kW</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(14.91 * (inputs.loadFactor / 100)).toFixed(2)} kW</td>
-                            </tr>
-                            <tr>
-                              <td style={REPORT_STYLES.td}>{tf('Motor Banda Transportadora (1 HP)')}</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>-</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>0.75 kW</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(0.75 * (inputs.loadFactor / 100)).toFixed(2)} kW</td>
-                            </tr>
-                            <tr>
-                              <td style={REPORT_STYLES.td}>{tf('Módulos de Secado por Aire (Blower 25 HP + Adicional)')}</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{new Intl.NumberFormat().format(currentNominalCapacity)} {tf('cajas/h')}</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>21.34 kW</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(21.34 * (inputs.loadFactor / 100)).toFixed(2)} kW</td>
-                            </tr>
-                            <tr>
-                              <td style={REPORT_STYLES.td}>{tf('Sistema Calentamiento Hídrico (Resistencias)')}</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>60-80°C</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>20.00 kW</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(20.00 * (inputs.loadFactor / 100)).toFixed(2)} kW</td>
-                            </tr>
-                          </tbody>
-                          <tfoot>
-                            <tr style={{ background: '#f8fafc', fontWeight: 800 }}>
-                              <td style={{ ...REPORT_STYLES.td, color: '#0d9488' }}>{tf('Total Sistema de Lavado PLD-120')}</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>-</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{(results.installedPowerKw || 57.00).toFixed(2)} kW</td>
-                              <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488' }}>{(results.averageHourlyConsumptionKw || 48.45).toFixed(2)} kW</td>
-                            </tr>
-                          </tfoot>
-                        </table>
-                      </div>
-
-                      <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: '8px 12px', fontSize: 10, color: '#475569', lineHeight: 1.4 }}>
-                        <strong>{tf('Nota del Ingeniero:')}</strong> {tf('Los componentes han sido calibrados mecánicamente para un voltaje nominal adaptado a los requerimientos eléctricos del sitio, con una carga activa basada en un OEE del')} {inputs.oee}%.
-                      </div>
-
-                      <div style={{ marginTop: 0, background: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 16, padding: '8px 20px' }}>
-                        <span style={{ fontSize: 9, fontWeight: 900, color: '#008299', textTransform: 'uppercase', letterSpacing: 1, display: 'block', marginBottom: 2 }}>{tf('DISTRIBUCIÓN DE POTENCIA INSTALADA POR EQUIPO (kW)')}</span>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', border: 'none', fontSize: 10, lineHeight: '1.2' }}>
-                          <tbody>
-                            {[
-                              { name: 'Bomba Principal (20 HP)', kw: 14.91 },
-                              { name: 'Banda Transp. (1 HP)', kw: 0.75 },
-                              { name: 'Sopladores (25 HP +)', kw: 21.34 },
-                              { name: 'Calentamiento (20 kW)', kw: 20.00 }
-                            ].map((eq, i) => {
-                              const percentage = (eq.kw / (results.installedPowerKw || 23.16)) * 100;
-                              return (
-                                <tr key={i} style={{ border: 'none' }}>
-                                  <td style={{ width: 160, color: '#475569', fontWeight: 650, padding: '2px 0 2px 10px', verticalAlign: 'middle', whiteSpace: 'nowrap', border: 'none' }}>
-                                    {tf(eq.name)}
-                                  </td>
-                                  <td style={{ padding: '2px 10px', verticalAlign: 'middle', border: 'none' }}>
-                                    <div style={{ height: 6, background: '#e2e8f0', borderRadius: 3, overflow: 'hidden', width: '100%' }}>
-                                      <div style={{ width: `${percentage}%`, height: '100%', background: 'linear-gradient(90deg, #008299, #00c2cb)', borderRadius: 3 }} />
-                                    </div>
-                                  </td>
-                                  <td style={{ width: 75, textAlign: 'right', fontWeight: 700, color: '#1e293b', padding: '2px 10px 2px 0', verticalAlign: 'middle', whiteSpace: 'nowrap', border: 'none' }}>
-                                    {eq.kw.toFixed(2)} kW
-                                  </td>
+                          <div style={{ width: '100%' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10 }}>
+                              <thead>
+                                <tr>
+                                  <th style={{ ...REPORT_STYLES.th, padding: '6px 12px', background: '#edfbfd' }}>{tf('Equipo')}</th>
+                                  <th style={{ ...REPORT_STYLES.th, padding: '6px 12px', background: '#edfbfd', textAlign: 'center' }}>{tf('Capacidad')}</th>
+                                  <th style={{ ...REPORT_STYLES.th, padding: '6px 12px', background: '#edfbfd', textAlign: 'center' }}>{tf('kW Instalados')}</th>
+                                  <th style={{ ...REPORT_STYLES.th, padding: '6px 12px', background: '#edfbfd', textAlign: 'center' }}>{tf('Carga Activa')} ({inputs.loadFactor}%)</th>
                                 </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-
-                      <div style={{ marginTop: 0 }}>
-                        <span style={{ fontSize: 9, fontWeight: 900, color: '#0f766e', letterSpacing: 1.5, textTransform: 'uppercase', display: 'block', marginBottom: 2 }}>{tf('DICTAMEN TÉCNICO AUTOMÁTICO')}</span>
-                        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 16, padding: '10px 20px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                          {conclusions.map((c, i) => (
-                            <div key={i} style={{ fontSize: 10, lineHeight: 1.35, fontWeight: 600, color: '#334155' }}>
-                              <span style={{ color: '#00c2cb', fontWeight: 900, marginRight: 6 }}>▪</span>{c.text}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div style={{ flex: 1 }} />
-                      {renderPageFooter(++pdfPageIndex, totalPdfPages)}
-                    </div>
-                  </div>
-                )}
-
-                {/* PÁGINA 3: FICHA TÉCNICA DE HOMOLOGACIÓN */}
-                {pdfConfig.tabla && (
-                  <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
-                    <div style={{ ...S.inner, flex: 1, paddingTop: 30, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      {renderPageHeader(`3. ${inputs.technicalSheetName === 'Ficha Técnica de Homologación BWD-250' ? 'Ficha Técnica de Máquina de Lavado BWD-250' : inputs.technicalSheetName}`, tf('Desglose detallado de especificaciones, capacidades y componentes de fabricación'))}
-
-                      <div style={{ width: '100%', flex: 1 }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
-                          <thead>
-                            <tr>
-                              <th style={{ ...REPORT_STYLES.th, padding: '5px 10px', background: '#edfbfd' }}>{tf('Componente / Característica')}</th>
-                              <th style={{ ...REPORT_STYLES.th, padding: '5px 10px', background: '#edfbfd', textAlign: 'center' }}>{tf('Especificación Original')}</th>
-                              <th style={{ ...REPORT_STYLES.th, padding: '5px 10px', background: '#edfbfd', textAlign: 'right' }}>{tf('Detalle Técnico')}</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {[
-                              { comp: 'Modelo del Equipo', spec: inputs.machineName || 'PLD-120', detail: inputs.machineNameDetalle !== undefined ? inputs.machineNameDetalle : 'Lavadora Industrial de Cajas (Agua y Aire)' },
-                              { comp: 'Aplicación Operativa', spec: inputs.aplicacionOperativa !== undefined ? inputs.aplicacionOperativa : 'Lavado, enjuague y secado de cajas plásticas', detail: inputs.aplicacionDetalle !== undefined ? inputs.aplicacionDetalle : 'Eficiencia de Lavado: 90-95% | Secado: 80-90%' },
-                              { comp: 'Capacidad Nominal (Dinámica)', spec: `${new Intl.NumberFormat().format(currentNominalCapacity)} cajas/h`, detail: `Calculada para: ${activeBox.nombre} (${activeBox.largoCm}cm)` },
-                              { comp: 'Motorización Principal (Bomba)', spec: `${inputs.motorBombaAguaHp || 15} hp ${inputs.motorMarca || 'Siemens'}`, detail: inputs.motorPrincipalDetalle !== undefined ? inputs.motorPrincipalDetalle : 'Motor de Bomba de Agua: 15 hp' },
-                              { comp: 'Motorización Auxiliar (Soplador)', spec: `${inputs.motorSopladorHp || 10} hp ${inputs.motorMarca || 'Siemens'}`, detail: inputs.motorAuxiliarDetalle !== undefined ? inputs.motorAuxiliarDetalle : 'Motor Soplador: 10 hp | Banda: 0.5 hp' },
-                              { comp: 'Potencia Instalada Total', spec: `${results.totalHp} hp`, detail: `${results.installedPowerKw.toFixed(2)} kW` },
-                              { comp: 'Temperaturas de Proceso', spec: inputs.dimensionesBandas !== undefined ? inputs.dimensionesBandas : 'Temperatura de Lavado: 60-80°C', detail: inputs.dimensionesBandasDetalle !== undefined ? inputs.dimensionesBandasDetalle : 'Calentamiento: 18 kW' },
-                              { comp: 'Presión de Aspersión', spec: inputs.bocaAlimentacion || '5.0 bar (Nominal)', detail: inputs.bocaAlimentacionDetalle !== undefined ? inputs.bocaAlimentacionDetalle : 'Presión de Agua: 5.0 bar' },
-                              { comp: 'Control de Tracción', spec: inputs.presionLavadoBar ? `${inputs.presionLavadoBar} m/min` : 'Velocidad Variable', detail: inputs.presionLavadoBarDetalle !== undefined ? inputs.presionLavadoBarDetalle : 'Inversor: Incluido (SIEMENS)' },
-                              { comp: 'Sistema de Control', spec: inputs.particulaFinal || 'Gabinete NEMA 4 (Estanco)', detail: inputs.particulaFinalDetalle !== undefined ? inputs.particulaFinalDetalle : 'Contactores y Relays: SCHNEIDER' },
-                              { comp: 'Alimentación Eléctrica', spec: inputs.separadorMagnetico || 'Trifásica 60Hz', detail: inputs.separadorMagneticoDetalle !== undefined ? inputs.separadorMagneticoDetalle : 'Voltaje: 220/440V' },
-                              { comp: 'Dimensiones Físicas', spec: `Largo: ${inputs.machineLength || 7.00} m | Ancho: ${inputs.machineWidth || 1.80} m | Alto: ${inputs.machineHeight || 1.70} m`, detail: `Footprint: ${((inputs.machineLength || 7.00) * (inputs.machineWidth || 1.80)).toFixed(2)} m²` },
-                              { comp: 'Peso Total Equipo', spec: `${(!inputs.pesoOperativoKg || inputs.pesoOperativoKg === 1000) ? 880 : inputs.pesoOperativoKg} kg`, detail: inputs.pesoOperativoKgDetalle !== undefined ? inputs.pesoOperativoKgDetalle : 'Estructura en Acero Inoxidable' },
-                              { comp: 'Componentes Eléctricos', spec: inputs.componentesElectricos || 'Schneider / Siemens', detail: inputs.componentesElectricosDetalle !== undefined ? inputs.componentesElectricosDetalle : 'Contactores SCHNEIDER, Inversor SIEMENS' },
-                              { comp: 'Nivel de Ruido', spec: `${inputs.ruidoDb || 60} dB`, detail: inputs.ruidoDbDetalle !== undefined ? inputs.ruidoDbDetalle : 'Nivel óptimo para piso de producción' },
-                            ].map((t, idx) => (
-                              <tr key={idx}>
-                                <td style={{ ...REPORT_STYLES.td, padding: '5px 10px' }}>{tf(t.comp)}</td>
-                                <td style={{ ...REPORT_STYLES.td, padding: '5px 10px', textAlign: 'center', color: '#008299' }}>{tf(t.spec)}</td>
-                                <td style={{ ...REPORT_STYLES.td, padding: '5px 10px', textAlign: 'right' }}>{tf(t.detail)}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                      {renderPageFooter(++pdfPageIndex, totalPdfPages)}
-                    </div>
-                  </div>
-                )}
-
-
-
-                {/* PÁGINA 4.5: MODELOS DE CONTENEDORES (DEMANDA 2028) */}
-                {pdfConfig.tabla && (
-                  <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
-                    <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 14 }}>
-                      {renderPageHeader(`${++currentSectionIndex}. ${tf('MODELOS DE CONTENEDORES EVALUADOS (DEMANDA 2028)')}`, 'Especificaciones técnicas, demanda proyectada al 2028 y capacidad requerida por modelo de caja.')}
-
-                      {/* TOP SUMMARY CARDS */}
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginTop: '4px' }}>
-                        <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '12px', padding: '10px 14px' }}>
-                          <span style={{ display: 'block', fontSize: '8px', fontWeight: 800, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.5px' }}>VOLUMEN MÁXIMO 2028</span>
-                          <div style={{ fontSize: '22px', fontWeight: 900, color: '#1e3a8a', marginTop: '2px' }}>
-                            {new Intl.NumberFormat().format(inputs.cajas.filter(c => c.includeInPdf !== false).reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) || inputs.meta_diaria_cajas || 2819)}
-                          </div>
-                          <span style={{ fontSize: '8px', fontWeight: 700, color: '#3b82f6' }}>cajas/día</span>
-                        </div>
-
-                        <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '10px 14px' }}>
-                          <span style={{ display: 'block', fontSize: '8px', fontWeight: 800, color: '#d97706', textTransform: 'uppercase', letterSpacing: '0.5px' }}>REQUERIDO PROMEDIO</span>
-                          <div style={{ fontSize: '22px', fontWeight: 900, color: '#78350f', marginTop: '2px' }}>
-                            {(((inputs.cajas.filter(c => c.includeInPdf !== false).reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) || inputs.meta_diaria_cajas || 2819) / (inputs.hoursPerDay || 9))).toFixed(1)}
-                          </div>
-                          <span style={{ fontSize: '8px', fontWeight: 700, color: '#f59e0b' }}>cajas/hora</span>
-                        </div>
-
-                        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '10px 14px' }}>
-                          <span style={{ display: 'block', fontSize: '8px', fontWeight: 800, color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>CAPACIDAD PROPUESTA</span>
-                          <div style={{ fontSize: '20px', fontWeight: 900, color: '#14532d', marginTop: '2px' }}>
-                            {currentNominalCapacity} <span style={{ fontSize: '10px', color: '#16a34a', fontWeight: 'bold' }}>nom</span> / {results.realProductionPerHourBoxes ? results.realProductionPerHourBoxes.toFixed(0) : (currentNominalCapacity * (inputs.oee / 100)).toFixed(0)} <span style={{ fontSize: '10px', color: '#16a34a', fontWeight: 'bold' }}>real</span>
-                          </div>
-                          <span style={{ fontSize: '8px', fontWeight: 700, color: '#22c55e' }}>{inputs.tipo_unidad === 'pallets' ? tf('pallets/h') : tf('cajas/h')} ({currentNominalCapacity} nominal / {results.realProductionPerHourBoxes ? results.realProductionPerHourBoxes.toFixed(0) : (currentNominalCapacity * (inputs.oee / 100)).toFixed(0)} @ {inputs.oee}% OEE)</span>
-                        </div>
-
-                        <div style={{ background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: '12px', padding: '10px 14px' }}>
-                          <span style={{ display: 'block', fontSize: '8px', fontWeight: 800, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.5px' }}>MARGEN DIARIO</span>
-                          <div style={{ fontSize: '18px', fontWeight: 900, color: '#134e4a', marginTop: '2px' }}>
-                            +331 <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#0d9488' }}>nom</span> / +174 <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#0d9488' }}>real</span>
-                          </div>
-                          <span style={{ fontSize: '8px', fontWeight: 700, color: '#14b8a6' }}>cajas/día (+331 nom / +174 real OEE 95%)</span>
-                        </div>
-                      </div>
-
-                      {/* BANNER INFORMATIVO DE HOLGURA */}
-                      <div style={{ background: '#1e293b', borderRadius: '8px', padding: '8px 14px', color: '#fff', fontSize: '9px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span>Capacidad nominal: 350 c/h (3,150 c/día) | Capacidad real (OEE 95%): 333 c/h (2,993 c/día). Meta: 2,819 c/día.</span>
-                        <span style={{ color: '#38bdf8' }}>Uso nominal: 89.5% | Uso real (OEE 95%): 94.2% | Margen nominal: +331 c/día | Margen real (OEE 95%): +174 c/día</span>
-                      </div>
-
-                      {/* TABLE */}
-                      <div style={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9px' }}>
-                          <thead>
-                            <tr style={{ background: '#0284c7', color: '#ffffff' }}>
-                              <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 'bold' }}>{tf('Referencia')}</th>
-                              <th style={{ padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>{tf('Tipo')}</th>
-                              <th style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 'bold' }}>{tf('Piezas/día 2028')}</th>
-                              <th style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 'bold' }}>{tf('Req. cajas/h')} ({inputs.hoursPerDay || 9}h)</th>
-                              <th style={{ padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>{tf('Capacidad objetivo')}</th>
-                              <th style={{ padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>{tf('Estatus')}</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {inputs.cajas.filter(c => c.includeInPdf !== false).map((caja, idx) => {
-                              const pDia = caja.piezasDia2028 !== undefined ? caja.piezasDia2028 : 0;
-                              const reqH = caja.reqCajasH !== undefined ? caja.reqCajasH : (pDia / (inputs.hoursPerDay || 9));
-                              const targetCap = inputs.capacidad_nominal_cajas_h || 350;
-                              const isOk = reqH <= targetCap;
-                              return (
-                                <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0', background: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
-                                  <td style={{ padding: '5px 8px', fontWeight: 'bold', color: '#1e293b' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                      <div style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: caja.color || '#0284c7' }} />
-                                      {caja.nombre}
-                                    </div>
-                                  </td>
-                                  <td style={{ padding: '5px 8px', textAlign: 'center', fontWeight: 700, color: '#475569' }}>{tf(caja.tipo || 'Caja')}</td>
-                                  <td style={{ padding: '5px 8px', textAlign: 'right', fontWeight: 900, color: '#0f172a' }}>{new Intl.NumberFormat().format(pDia)}</td>
-                                  <td style={{ padding: '5px 8px', textAlign: 'right', fontWeight: 700, color: '#0369a1' }}>{reqH.toFixed(1)}</td>
-                                  <td style={{ padding: '5px 8px', textAlign: 'center', color: '#475569' }}>{targetCap} cajas/h</td>
-                                  <td style={{ padding: '5px 8px', textAlign: 'center' }}>
-                                    <span style={{ fontSize: '8px', fontWeight: 900, padding: '2px 6px', borderRadius: '4px', backgroundColor: isOk ? '#dcfce7' : '#fee2e2', color: isOk ? '#15803d' : '#b91c1c' }}>
-                                      {isOk ? 'OK' : 'EXCEDE'}
-                                    </span>
-                                  </td>
+                              </thead>
+                              <tbody>
+                                <tr>
+                                  <td style={REPORT_STYLES.td}>{tf('Motor Bomba de Agua (Lavado Principal 20 HP)')}</td>
+                                  <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{new Intl.NumberFormat().format(currentNominalCapacity)} {tf('cajas/h')}</td>
+                                  <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>14.91 kW</td>
+                                  <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(14.91 * (inputs.loadFactor / 100)).toFixed(2)} kW</td>
                                 </tr>
-                              );
-                            })}
-                          </tbody>
-                          <tfoot>
-                            <tr style={{ background: '#e0f2fe', fontWeight: 900, borderTop: '2px solid #0284c7' }}>
-                              <td colSpan="2" style={{ padding: '6px 8px', color: '#0369a1' }}>{tf('TOTAL GENERAL')}</td>
-                              <td style={{ padding: '6px 8px', textAlign: 'right', color: '#0f172a' }}>
-                                {new Intl.NumberFormat().format(inputs.cajas.filter(c => c.includeInPdf !== false).reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0))}
-                              </td>
-                              <td style={{ padding: '6px 8px', textAlign: 'right', color: '#0369a1' }}>
-                                {(inputs.cajas.filter(c => c.includeInPdf !== false).reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) / (inputs.hoursPerDay || 9)).toFixed(1)}
-                              </td>
-                              <td style={{ padding: '6px 8px', textAlign: 'center', color: '#0f172a' }}>{inputs.capacidad_nominal_cajas_h || 350} cajas/h</td>
-                              <td style={{ padding: '6px 8px', textAlign: 'center', color: '#15803d' }}>{tf('APROBADO')}</td>
-                            </tr>
-                          </tfoot>
-                        </table>
-                      </div>
-                      {renderPageFooter(++pdfPageIndex, totalPdfPages)}
-                    </div>
-                  </div>
-                )}
-
-                {/* PÁGINA 4.6: ANÁLISIS DE LA LÍNEA */}
-                {pdfConfig.analisis && (
-                  <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
-                    <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 20 }}>
-                      {renderPageHeader(`${++currentSectionIndex}. CAPACIDAD VS REQUERIMIENTO`, 'Contraste gráfico de la capacidad real frente a la demanda por modelo de caja.')}
-
-                      <div style={{ width: '100%', flex: 1, display: 'flex', gap: '20px' }}>
-                        {/* Left: Capacidad vs Requerimiento (Graphic) */}
-                        <div style={{ flex: '1', display: 'flex', flexDirection: 'column', background: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-                          <h4 style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e293b', marginBottom: '20px' }}>Capacidad vs Requerimiento por Modelo</h4>
-                          <div style={{ flex: 1, minHeight: '300px' }}>
-                            <ResponsiveContainer width="100%" height="100%">
-                              <BarChart
-                                data={[{
-                                  name: activeBox.nombre,
-                                  CapDia: ((((inputs.conveyorSpeedMH !== undefined ? inputs.conveyorSpeedMH : 160) / 60) * 100) / (activeBox.largoCm + (inputs.boxGapCm || 15))) * 60 * ((inputs.oee || 85) / 100) * (inputs.hoursPerDay || 20),
-                                  ReqDia: inputs.meta_diaria_cajas || 3000
-                                }]}
-                                margin={{ top: 10, right: 10, left: 0, bottom: 20 }}
-                              >
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                                <YAxis tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                                <Bar dataKey="CapDia" name="Cap/Día" fill="#14b8a6" radius={[4, 4, 0, 0]} barSize={60} />
-                                <Bar dataKey="ReqDia" name="Req/Día" fill="#0f172a" radius={[4, 4, 0, 0]} barSize={60} />
-                              </BarChart>
-                            </ResponsiveContainer>
-                          </div>
-                          <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '16px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '12px', height: '12px', background: '#14b8a6' }} /> <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#475569' }}>Cap/Día</span></div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '12px', height: '12px', background: '#0f172a' }} /> <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#475569' }}>Req/Día</span></div>
-                          </div>
-                        </div>
-
-                        {/* Right: Table */}
-                        <div style={{ flex: '1.2', display: 'flex', flexDirection: 'column', background: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-                          <h4 style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e293b', marginBottom: '8px' }}>Lavado y Secado — Parámetros Y1-Y5</h4>
-                          <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 'bold', marginBottom: '24px' }}>Ref: {activeBox.nombre} · Rate base: {new Intl.NumberFormat().format(inputs.meta_diaria_cajas || 2819)} cajas/día</span>
-
-                          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                            <thead>
-                              <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-                                <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'left' }}>AÑO</th>
-                                <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'center' }}>HRS B</th>
-                                <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'center' }}>EF/T</th>
-                                <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'center' }}>TURN</th>
-                                <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'center' }}>T.DISP</th>
-                                <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'right' }}>REQ/H</th>
-                                <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'right' }}>CAP/H</th>
-                                <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'right' }}>BAL.</th>
-                                <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'right' }}>COB.</th>
-                                <th style={{ padding: '8px 4px', fontSize: '9px', fontWeight: 'bold', color: '#64748b', textAlign: 'center' }}>LÍNEAS</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {Array.from({ length: 5 }).map((_, i) => {
-                                const reqDia = inputs.meta_diaria_cajas || 2128;
-                                const baseHoursPerDay = inputs.hoursPerDay || 9;
-                                const daysPerWeek = inputs.daysPerWeek || 6;
-
-                                const capHNominal = currentNominalCapacity || 240;
-                                const yearOEE = Math.min(0.99, ((inputs.oee || 95) / 100) + (i * 0.005));
-                                const turn = inputs.shiftsPerDay || 1;
-
-                                const produccion_h = capHNominal * yearOEE;
-                                const produccion_dia = produccion_h * baseHoursPerDay * turn;
-
-                                const reqH = reqDia / (baseHoursPerDay * turn);
-                                const bal_dia = produccion_dia - reqDia;
-                                const cob = reqDia > 0 ? (produccion_dia / reqDia) * 100 : 0;
-
-                                const hrsB = baseHoursPerDay * daysPerWeek * turn;
-                                let efT = baseHoursPerDay * yearOEE;
-
-                                return (
-                                  <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                    <td style={{ padding: '12px 4px', fontSize: '10px', fontWeight: 'bold', color: '#0284c7' }}>Y{i + 1}</td>
-                                    <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'center' }}>{hrsB}</td>
-                                    <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'center' }}>{efT.toFixed(2)}</td>
-                                    <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'center' }}>{turn}</td>
-                                    <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'center' }}>{(efT * turn).toFixed(2)}</td>
-                                    <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'right', fontWeight: 'bold' }}>{reqH.toFixed(2)}</td>
-                                    <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'right', fontWeight: 'bold', color: '#0f766e' }}>{produccion_h.toFixed(2)}</td>
-                                    <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'right', fontWeight: 'bold', color: bal_dia < 0 ? '#ef4444' : '#10b981' }}>{bal_dia > 0 ? '+' : ''}{bal_dia.toFixed(0)}</td>
-                                    <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'right', fontWeight: 'bold', color: cob >= 100 ? '#16a34a' : '#f97316' }}>{cob.toFixed(1)}%</td>
-                                    <td style={{ padding: '12px 4px', fontSize: '10px', textAlign: 'center', color: '#64748b' }}>1 maq.</td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-
-                      {/* --- ANÁLISIS HÍDRICO (REPORTE) --- */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginTop: 'auto' }}>
-                        <div style={{ background: '#f0f9ff', border: '1px solid #e0f2fe', borderRadius: '16px', padding: '16px' }}>
-                          <span style={{ fontSize: '10px', fontWeight: 900, color: '#0369a1', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                            <Droplet size={14} /> Consumo Hídrico Mensual
-                          </span>
-                          <div style={{ fontSize: '20px', fontWeight: 900, color: '#0c4a6e', marginTop: '4px' }}>{new Intl.NumberFormat().format(results.totalWaterMonthlyLiters || 0)} L</div>
-                        </div>
-                        <div style={{ background: '#f0f9ff', border: '1px solid #e0f2fe', borderRadius: '16px', padding: '16px' }}>
-                          <span style={{ fontSize: '10px', fontWeight: 900, color: '#0369a1', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                            <AlertCircle size={14} /> Recambios + Evaporación
-                          </span>
-                          <div style={{ fontSize: '14px', fontWeight: 700, color: '#075985', marginTop: '4px' }}>Tanque: {inputs.waterTankLiters}L / {inputs.waterDragOutPercent}% Arrastre</div>
-                        </div>
-                        <div style={{ background: '#ecfdf5', border: '1px solid #d1fae5', borderRadius: '16px', padding: '16px' }}>
-                          <span style={{ fontSize: '10px', fontWeight: 900, color: '#047857', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                            <Activity size={14} /> Impacto OPEX Hídrico
-                          </span>
-                          <div style={{ fontSize: '20px', fontWeight: 900, color: '#064e3b', marginTop: '4px' }}>${new Intl.NumberFormat().format(results.waterCostMonthlyMxn || 0)} MXN</div>
-                        </div>
-                        {renderPageFooter(++pdfPageIndex, totalPdfPages)}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* PÁGINA 5: ENERGÍA Y CAPACIDAD */}
-                {pdfConfig.energia && (
-                  <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
-                    <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 20 }}>
-                      {renderPageHeader(`${++currentSectionIndex}. ${inputs.energySectionTitle || 'Energía & Capacidad'}`, 'Desglose energético operativo y comparativa de producción real vs consumo en kWh')}
-
-                      <div style={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', gap: 24 }}>
-
-                        {/* KPIs de Energía */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-                          {[
-                            { title: 'Potencia Instalada Total', val: `${results.installedPowerKw.toFixed(2)} kW`, sub: `${results.totalHp} hp equivalentes` },
-                            { title: 'Consumo Promedio Hora', val: `${results.averageHourlyConsumptionKw.toFixed(2)} kWh`, sub: `Factor de Carga: ${inputs.loadFactor}%` },
-                            { title: 'Costo Eléctrico Hora', val: `$${results.hourlyElectricityCostMxn.toFixed(2)} MXN`, sub: `Tarifa: $${inputs.electricityRate}/kWh` },
-                            { title: 'Consumo Específico', val: `${results.kwhPer1000Boxes.toFixed(1)} kWh/kCajas`, sub: 'Relación energía-producción' },
-                            { title: 'Costo por 1000 Cajas', val: `$${results.electricityCostPer1000BoxesMxn.toFixed(2)} MXN`, sub: 'Costo operativo directo' },
-                            { title: 'Costo Eléctrico Mensual', val: `$${new Intl.NumberFormat().format(results.monthlyElectricityCostMxn.toFixed(0))} MXN`, sub: 'Proyección mensual base' },
-                          ].map((k, i) => (
-                            <div key={i} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 16 }}>
-                              <div style={{ fontSize: 10, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: 6 }}>{k.title}</div>
-                              <div style={{ fontSize: 22, fontWeight: 900, color: '#0f2038' }}>{k.val}</div>
-                              <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 4, fontFamily: 'monospace' }}>{k.sub}</div>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Charts Area */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, flex: 1, minHeight: 0 }}>
-                          <div style={{ border: '1px solid #e2e8f0', borderRadius: 16, padding: 16, display: 'flex', flexDirection: 'column' }}>
-                            <div style={{ fontSize: 10, fontWeight: 900, color: '#0f766e', textTransform: 'uppercase', marginBottom: 4 }}>Capacidad Diaria vs Requerimiento Diario</div>
-                            <div style={{ flex: 1, minHeight: 0 }}>
-                              <ResponsiveContainer width="100%" height="100%">
-                                <BarChart
-                                  data={[
-                                    { name: 'Requerimiento', valor: inputs.meta_diaria_cajas, fill: '#64748b' },
-                                    { name: 'Capacidad', valor: results.dailyProductionBoxes, fill: '#06b6d4' }
-                                  ]}
-                                  margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-                                >
-                                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                  <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} tickLine={false} />
-                                  <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} width={40} />
-                                  <Tooltip formatter={(value) => [`${new Intl.NumberFormat().format(value)} kg`, 'Valor']} />
-                                  <Bar dataKey="valor" radius={[4, 4, 0, 0]} maxBarSize={40}>
-                                    {[{ fill: '#64748b' }, { fill: '#06b6d4' }].map((e, i) => <Cell key={i} fill={e.fill} />)}
-                                  </Bar>
-                                </BarChart>
-                              </ResponsiveContainer>
-                            </div>
-                            <div style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, color: '#64748b', marginTop: 8 }}>
-                              Margen operativo disponible: <span style={{ color: '#008299' }}>{new Intl.NumberFormat().format(Math.max(0, results.dailyProductionBoxes - inputs.meta_diaria_cajas).toFixed(0))} cajas/día</span>
-                            </div>
-                          </div>
-
-                          <div style={{ border: '1px solid #e2e8f0', borderRadius: 16, padding: 16, display: 'flex', flexDirection: 'column' }}>
-                            <div style={{ fontSize: 10, fontWeight: 900, color: '#4f46e5', textTransform: 'uppercase', marginBottom: 4 }}>Producción vs Consumo Energético</div>
-                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10 }}>
-                                <thead>
+                                <tr>
+                                  <td style={REPORT_STYLES.td}>{tf('Motor Banda Transportadora (1 HP)')}</td>
+                                  <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>-</td>
+                                  <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>0.75 kW</td>
+                                  <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(0.75 * (inputs.loadFactor / 100)).toFixed(2)} kW</td>
+                                </tr>
+                                <tr>
+                                  <td style={REPORT_STYLES.td}>{tf('Módulos de Secado por Aire (Blower 25 HP + Adicional)')}</td>
+                                  <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{new Intl.NumberFormat().format(currentNominalCapacity)} {tf('cajas/h')}</td>
+                                  <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>21.34 kW</td>
+                                  <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(21.34 * (inputs.loadFactor / 100)).toFixed(2)} kW</td>
+                                </tr>
+                                <tr>
+                                  <td style={REPORT_STYLES.td}>{tf('Sistema Calentamiento Hídrico (Resistencias)')}</td>
+                                  <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>60-80°C</td>
+                                  <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>20.00 kW</td>
+                                  <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(20.00 * (inputs.loadFactor / 100)).toFixed(2)} kW</td>
+                                </tr>
+                                {inputs.suavizadorKw > 0 && (
                                   <tr>
-                                    <th style={{ ...REPORT_STYLES.th, background: '#f8fafc', textAlign: 'left' }}>Período</th>
-                                    <th style={{ ...REPORT_STYLES.th, background: '#ecfeff', textAlign: 'right', color: '#0e7490' }}>Producción (Cajas)</th>
-                                    <th style={{ ...REPORT_STYLES.th, background: '#eef2ff', textAlign: 'right', color: '#4338ca' }}>Consumo (kWh)</th>
-                                    <th style={{ ...REPORT_STYLES.th, background: '#ecfdf5', textAlign: 'right', color: '#047857' }}>Ratio (kWh/kCajas)</th>
+                                    <td style={REPORT_STYLES.td}>{tf('Tratamiento de Agua SWM-1000 (Ósmosis Inversa)')}</td>
+                                    <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>1000 L/h</td>
+                                    <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{inputs.suavizadorKw.toFixed(2)} kW</td>
+                                    <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488', fontWeight: 700 }}>{(inputs.suavizadorKw * (inputs.loadFactor / 100)).toFixed(2)} kW</td>
                                   </tr>
-                                </thead>
-                                <tbody>
-                                  {[
-                                    { period: 'Por Hora', prod: results.realProductionPerHourBoxes || 0, cons: results.averageHourlyConsumptionKw || 0 },
-                                    { period: 'Por Día', prod: results.dailyProductionBoxes || 0, cons: (results.averageHourlyConsumptionKw || 0) * ((inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1)) },
-                                    { period: 'Por Semana', prod: (results.dailyProductionBoxes || 0) * 7, cons: (results.averageHourlyConsumptionKw || 0) * ((inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1)) * 7 },
-                                    { period: 'Por Mes', prod: (results.dailyProductionBoxes || 0) * (inputs.daysPerMonth || 24), cons: (results.averageHourlyConsumptionKw || 0) * ((inputs.hoursPerDay || 8) * (inputs.shiftsPerDay || 1)) * (inputs.daysPerMonth || 24) }
-                                  ].map((row, idx) => (
-                                    <tr key={idx}>
-                                      <td style={{ ...REPORT_STYLES.td, fontWeight: 'bold' }}>{row.period}</td>
-                                      <td style={{ ...REPORT_STYLES.td, textAlign: 'right', fontWeight: 'bold', color: '#0891b2' }}>{new Intl.NumberFormat().format(Math.round(row.prod))}</td>
-                                      <td style={{ ...REPORT_STYLES.td, textAlign: 'right', fontWeight: 'bold', color: '#4f46e5' }}>{new Intl.NumberFormat().format((row.cons).toFixed(1))}</td>
-                                      <td style={{ ...REPORT_STYLES.td, textAlign: 'right', fontWeight: 'bold', color: '#059669' }}>{new Intl.NumberFormat().format((row.prod > 0 ? (row.cons / (row.prod / 1000)) : 0).toFixed(2))}</td>
+                                )}
+                              </tbody>
+                              <tfoot>
+                                <tr style={{ background: '#f8fafc', fontWeight: 800 }}>
+                                  <td style={{ ...REPORT_STYLES.td, color: '#0d9488' }}>{tf('Total Sistema de Lavado PLD-120')}</td>
+                                  <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>-</td>
+                                  <td style={{ ...REPORT_STYLES.td, textAlign: 'center' }}>{(results.installedPowerKw || 57.00).toFixed(2)} kW</td>
+                                  <td style={{ ...REPORT_STYLES.td, textAlign: 'center', color: '#0d9488' }}>{(results.averageHourlyConsumptionKw || 48.45).toFixed(2)} kW</td>
+                                </tr>
+                              </tfoot>
+                            </table>
+                          </div>
+
+                          <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: '8px 12px', fontSize: 10, color: '#475569', lineHeight: 1.4 }}>
+                            <strong>{tf('Nota del Ingeniero:')}</strong> {tf('Los componentes han sido calibrados mecánicamente para un voltaje nominal adaptado a los requerimientos eléctricos del sitio, con una carga activa basada en un OEE del')} {inputs.oee}%.
+                          </div>
+
+                          <div style={{ marginTop: 0, background: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 16, padding: '8px 20px' }}>
+                            <span style={{ fontSize: 9, fontWeight: 900, color: '#008299', textTransform: 'uppercase', letterSpacing: 1, display: 'block', marginBottom: 2 }}>{tf('DISTRIBUCIÓN DE POTENCIA INSTALADA POR EQUIPO (kW)')}</span>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', border: 'none', fontSize: 10, lineHeight: '1.2' }}>
+                              <tbody>
+                                {[
+                                  { name: 'Bomba Principal (20 HP)', kw: 14.91 },
+                                  { name: 'Banda Transp. (1 HP)', kw: 0.75 },
+                                  { name: 'Sopladores (25 HP +)', kw: 21.34 },
+                                  { name: 'Calentamiento (20 kW)', kw: 20.00 },
+                                  ...(inputs.suavizadorKw > 0 ? [{ name: 'Suavizador SWM-1000', kw: inputs.suavizadorKw }] : [])
+                                ].map((eq, i) => {
+                                  const percentage = (eq.kw / (results.installedPowerKw || 23.16)) * 100;
+                                  return (
+                                    <tr key={i} style={{ border: 'none' }}>
+                                      <td style={{ width: 160, color: '#475569', fontWeight: 650, padding: '2px 0 2px 10px', verticalAlign: 'middle', whiteSpace: 'nowrap', border: 'none' }}>
+                                        {tf(eq.name)}
+                                      </td>
+                                      <td style={{ padding: '2px 10px', verticalAlign: 'middle', border: 'none' }}>
+                                        <div style={{ height: 6, background: '#e2e8f0', borderRadius: 3, overflow: 'hidden', width: '100%' }}>
+                                          <div style={{ width: `${percentage}%`, height: '100%', background: 'linear-gradient(90deg, #008299, #00c2cb)', borderRadius: 3 }} />
+                                        </div>
+                                      </td>
+                                      <td style={{ width: 75, textAlign: 'right', fontWeight: 700, color: '#1e293b', padding: '2px 10px 2px 0', verticalAlign: 'middle', whiteSpace: 'nowrap', border: 'none' }}>
+                                        {eq.kw.toFixed(2)} kW
+                                      </td>
                                     </tr>
-                                  ))}
-                                </tbody>
-                              </table>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+
+                          <div style={{ marginTop: 0 }}>
+                            <span style={{ fontSize: 9, fontWeight: 900, color: '#0f766e', letterSpacing: 1.5, textTransform: 'uppercase', display: 'block', marginBottom: 2 }}>{tf('DICTAMEN TÉCNICO AUTOMÁTICO')}</span>
+                            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 16, padding: '10px 20px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                              {conclusions.map((c, i) => (
+                                <div key={i} style={{ fontSize: 10, lineHeight: 1.35, fontWeight: 600, color: '#334155' }}>
+                                  <span style={{ color: '#00c2cb', fontWeight: 900, marginRight: 6 }}>▪</span>{c.text}
+                                </div>
+                              ))}
                             </div>
                           </div>
-                        </div>
-                        {renderPageFooter(++pdfPageIndex, totalPdfPages)}
-                      </div>
-                    </div>
-                  </div>
-                )}
 
-
-                {/* PÁGINA 5: ESCENARIOS OPERATIVOS */}
-                {pdfConfig.escenarios && (
-                  <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
-                    <div style={{ ...S.inner, flex: 1, paddingTop: 20, display: 'flex', flexDirection: 'column', gap: 15 }}>
-                      {renderPageHeader(`${++currentSectionIndex}. Simulación de Escenarios`, 'Comparativa de rendimiento bajo diferentes métricas de eficiencia (OEE)')}
-
-                      <div style={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-                          <thead>
-                            <tr>
-                              <th style={{ backgroundColor: '#159b9a', padding: '8px 12px', color: 'white', textAlign: 'left', width: '31%', borderRight: '1px solid rgba(255,255,255,0.2)', fontSize: '11.5px' }}>MÉTRICA DE EVALUACIÓN</th>
-                              <th style={{ backgroundColor: '#059ca0', padding: '8px', color: 'white', textAlign: 'center', width: '23%', borderRight: '1px solid rgba(255,255,255,0.2)' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><Shield size={16} /> <div style={{ textAlign: 'left', lineHeight: '1.2' }}><span style={{ fontWeight: 'bold', fontSize: '11.5px' }}>CONSERVADOR</span><br /><span style={{ fontSize: '9.5px', fontWeight: 'normal' }}>(70% OEE)</span></div></div>
-                              </th>
-                              <th style={{ backgroundColor: '#1b71b8', padding: '8px', color: 'white', textAlign: 'center', width: '23%', borderRight: '1px solid rgba(255,255,255,0.2)' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><TrendingUp size={16} /> <div style={{ textAlign: 'left', lineHeight: '1.2' }}><span style={{ fontWeight: 'bold', fontSize: '11.5px' }}>NORMAL</span><br /><span style={{ fontSize: '9.5px', fontWeight: 'normal' }}>(85% OEE)</span></div></div>
-                              </th>
-                              <th style={{ backgroundColor: '#3bb565', padding: '8px', color: 'white', textAlign: 'center', width: '23%' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><Trophy size={16} /> <div style={{ textAlign: 'left', lineHeight: '1.2' }}><span style={{ fontWeight: 'bold', fontSize: '11.5px' }}>ALTO RENDIMIENTO</span><br /><span style={{ fontSize: '9.5px', fontWeight: 'normal' }}>(95% OEE)</span></div></div>
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr>
-                              <td style={{ padding: '8px 12px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', backgroundColor: '#fff' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                  <Package size={18} color="#159b9a" />
-                                  <div>
-                                    <div style={{ fontWeight: 'bold', fontSize: '11.5px', color: '#334155' }}>Producción Diaria Proyectada</div>
-                                    <div style={{ fontSize: '9.5px', color: '#64748b' }}>{inputs.tipo_unidad === 'pallets' ? '(pallets/día)' : '(cajas/día)'}</div>
-                                  </div>
-                                </div>
-                              </td>
-                              <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
-                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#059ca0' }}>{new Intl.NumberFormat().format(scenarioResults.conservador.dailyProd.toFixed(0))}</div>
-                                <div style={{ fontSize: '9.5px', color: '#64748b' }}>{inputs.tipo_unidad === 'pallets' ? 'p/día' : 'c/día'}</div>
-                              </td>
-                              <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
-                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1b71b8' }}>{new Intl.NumberFormat().format(scenarioResults.normal.dailyProd.toFixed(0))}</div>
-                                <div style={{ fontSize: '9.5px', color: '#64748b' }}>{inputs.tipo_unidad === 'pallets' ? 'p/día' : 'c/día'}</div>
-                              </td>
-                              <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
-                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#3bb565' }}>{new Intl.NumberFormat().format(scenarioResults.alto.dailyProd.toFixed(0))}</div>
-                                <div style={{ fontSize: '9.5px', color: '#64748b' }}>{inputs.tipo_unidad === 'pallets' ? 'p/día' : 'c/día'}</div>
-                              </td>
-                            </tr>
-                            <tr>
-                              <td style={{ padding: '8px 12px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', backgroundColor: '#fff' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                  <Zap size={18} color="#159b9a" />
-                                  <div>
-                                    <div style={{ fontWeight: 'bold', fontSize: '11.5px', color: '#334155' }}>CostOp (Electricidad/Agua)</div>
-                                    <div style={{ fontSize: '9.5px', color: '#64748b' }}>por 1000 un.</div>
-                                  </div>
-                                </div>
-                              </td>
-                              <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
-                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#059ca0' }}>${new Intl.NumberFormat().format(scenarioResults.conservador.costPer1000.toFixed(2))}</div>
-                                <div style={{ fontSize: '9.5px', color: '#64748b' }}>MXN</div>
-                              </td>
-                              <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
-                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1b71b8' }}>${new Intl.NumberFormat().format(scenarioResults.normal.costPer1000.toFixed(2))}</div>
-                                <div style={{ fontSize: '9.5px', color: '#64748b' }}>MXN</div>
-                              </td>
-                              <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
-                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#3bb565' }}>${new Intl.NumberFormat().format(scenarioResults.alto.costPer1000.toFixed(2))}</div>
-                                <div style={{ fontSize: '9.5px', color: '#64748b' }}>MXN</div>
-                              </td>
-                            </tr>
-                            <tr>
-                              <td style={{ padding: '8px 12px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', backgroundColor: '#fff' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                  <Target size={18} color="#159b9a" />
-                                  <div>
-                                    <div style={{ fontWeight: 'bold', fontSize: '11.5px', color: '#334155' }}>Cobertura de la Meta</div>
-                                    <div style={{ fontSize: '9.5px', color: '#64748b' }}>Diaria Objetivo</div>
-                                  </div>
-                                </div>
-                              </td>
-                              <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
-                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#059ca0' }}>{scenarioResults.conservador.coverage.toFixed(1)}%</div>
-                              </td>
-                              <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
-                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1b71b8' }}>{scenarioResults.normal.coverage.toFixed(1)}%</div>
-                              </td>
-                              <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
-                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#3bb565' }}>{scenarioResults.alto.coverage.toFixed(1)}%</div>
-                              </td>
-                            </tr>
-                            <tr>
-                              <td style={{ padding: '8px 12px', borderRight: '1px solid #e2e8f0', backgroundColor: '#fff' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                  <Gauge size={18} color="#159b9a" />
-                                  <div>
-                                    <div style={{ fontWeight: 'bold', fontSize: '11.5px', color: '#334155' }}>Utilización de la Capacidad</div>
-                                    <div style={{ fontSize: '9.5px', color: '#64748b' }}>de Planta</div>
-                                  </div>
-                                </div>
-                              </td>
-                              <td style={{ padding: '8px', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
-                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#059ca0' }}>{scenarioResults.conservador.utilization.toFixed(1)}%</div>
-                              </td>
-                              <td style={{ padding: '8px', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
-                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1b71b8' }}>{scenarioResults.normal.utilization.toFixed(1)}%</div>
-                              </td>
-                              <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#fff' }}>
-                                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#3bb565' }}>{scenarioResults.alto.utilization.toFixed(1)}%</div>
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-
-                        <div style={{ padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#fff', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                          <div style={{ textAlign: 'center', marginBottom: '10px' }}>
-                            <h4 style={{ fontSize: '11.5px', fontWeight: '900', color: '#1e293b', textTransform: 'uppercase' }}>PRODUCCIÓN DIARIA Y COSTO OPERATIVO POR ESCENARIO</h4>
-                          </div>
-                          <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginBottom: '5px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <div style={{ width: '16px', height: '8px', backgroundColor: '#059ca0', borderRadius: '2px' }} />
-                              <span style={{ fontSize: '9.5px', color: '#334155', fontWeight: 'bold' }}>Producción Diaria (cajas/día)</span>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <div style={{ width: '8px', height: '8px', borderRadius: '50%', border: '2px solid #1b71b8', position: 'relative' }}>
-                                <div style={{ position: 'absolute', top: '50%', left: '-8px', right: '-8px', height: '2px', backgroundColor: '#1b71b8', transform: 'translateY(-50%)', zIndex: -1 }} />
-                              </div>
-                              <span style={{ fontSize: '9.5px', color: '#334155', fontWeight: 'bold' }}>Costo Operativo Eléctrico (MXN por caja)</span>
-                            </div>
-                          </div>
-                          <div style={{ width: '100%', flex: 1, minHeight: '160px' }}>
-                            <ResponsiveContainer width="100%" height="100%">
-                              <ComposedChart
-                                data={[
-                                  { name: 'Conservador\n(70% OEE)', prod: scenarioResults.conservador.dailyProd, costo: scenarioResults.conservador.costPer1000 },
-                                  { name: 'Normal\n(85% OEE)', prod: scenarioResults.normal.dailyProd, costo: scenarioResults.normal.costPer1000 },
-                                  { name: 'Alto Rendimiento\n(95% OEE)', prod: scenarioResults.alto.dailyProd, costo: scenarioResults.alto.costPer1000 }
-                                ]}
-                                margin={{ top: 20, right: 10, bottom: 0, left: 10 }}
-                              >
-                                <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" vertical={false} />
-                                <XAxis dataKey="name" tick={{ fontSize: 10.5, fill: '#1e293b', fontWeight: 'bold' }} axisLine={false} tickLine={false} dy={10} />
-                                <YAxis yAxisId="left" tick={{ fontSize: 10.5, fill: '#059ca0', fontWeight: 'bold' }} axisLine={false} tickLine={false} dx={-5} />
-                                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10.5, fill: '#1b71b8', fontWeight: 'bold' }} axisLine={false} tickLine={false} dx={5} />
-                                <Tooltip cursor={{ fill: '#f8fafc' }} />
-                                <Bar yAxisId="left" dataKey="prod" fill="#059ca0" barSize={60} radius={[4, 4, 0, 0]} label={{ position: 'top', fill: '#059ca0', fontSize: 11.5, fontWeight: 'bold', formatter: (v) => new Intl.NumberFormat().format(v.toFixed(0)) }} />
-                                <Line yAxisId="right" type="monotone" dataKey="costo" stroke="#1b71b8" strokeWidth={2} dot={{ r: 4, stroke: '#1b71b8', strokeWidth: 2, fill: '#fff' }} label={{ position: 'bottom', fill: '#1b71b8', fontSize: 11.5, fontWeight: 'bold', formatter: (v) => '$' + v.toFixed(2) }} />
-                              </ComposedChart>
-                            </ResponsiveContainer>
-                          </div>
-                        </div>
-
-                        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: 12, fontSize: 11.5, color: '#64748b', lineHeight: 1.4 }}>
-                          <strong style={{ color: '#334155' }}>Nota del Analista:</strong> Las proyecciones mostradas asumen un flujo constante de material de alimentación y no consideran variaciones drásticas en la humedad o densidad del sustrato.
+                          <div style={{ flex: 1 }} />
+                          {renderPageFooter(++pdfPageIndex, totalPdfPages)}
                         </div>
                       </div>
+                    )}
 
-                      <div style={{ flex: 1 }} />
-                      {renderPageFooter(++pdfPageIndex, totalPdfPages)}
-                    </div>
-                  </div>
-                )}
+                    {/* PÁGINA 3: FICHA TÉCNICA DE HOMOLOGACIÓN */}
+                    {pdfConfig.tabla && (
+                      <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
+                        <div style={{ ...S.inner, flex: 1, paddingTop: 30, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                          {renderPageHeader(`3. ${inputs.technicalSheetName === 'Ficha Técnica de Homologación BWD-250' ? 'Ficha Técnica de Máquina de Lavado BWD-250' : inputs.technicalSheetName}`, tf('Desglose detallado de especificaciones, capacidades y componentes de fabricación'))}
 
-                {/* PÁGINA: ANÁLISIS HÍDRICO Y SUSTENTABILIDAD */}
-                {pdfConfig.hidrico && (() => {
-                  const baseCapH = inputs.capacidad_nominal_cajas_h || 350;
-                  const realCapH = baseCapH * ((inputs.oee || 95) / 100);
-                  const hrsDay = inputs.hoursPerDay || 9;
-                  const realWaterPerHr = (results.totalWaterMonthlyLiters || 0) / 24 / hrsDay;
-
-                  return (
-                    <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
-                      <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 20 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #e2e8f0', paddingBottom: '16px' }}>
-                          <div style={{ display: 'flex', gap: '16px' }}>
-                            <div style={{ width: '8px', height: '60px', background: '#06b6d4', borderRadius: '4px' }} />
-                            <div>
-                              <div style={{ fontSize: '26px', fontWeight: 900, color: '#1e293b', lineHeight: 1.1, letterSpacing: '-0.5px' }}>CONSUMO HÍDRICO</div>
-                              <div style={{ fontSize: '26px', fontWeight: 900, color: '#06b6d4', lineHeight: 1.1, letterSpacing: '-0.5px' }}>Y SUSTENTABILIDAD</div>
-                            </div>
-                          </div>
-                          <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
-                            {inputs.customClientLogo ? (
-                              <img src={inputs.customClientLogo} alt="Logo Cliente" style={{ maxHeight: '38px', maxWidth: '160px', objectFit: 'contain' }} />
-                            ) : (
-                              <div style={{ fontSize: '10px', fontWeight: 800, color: '#0ea5e9', letterSpacing: '1px', textTransform: 'uppercase' }}>{inputs.clientName || 'PANDORA'} - {activeBox.nombre}</div>
-                            )}
-                            <div style={{ fontSize: '10px', color: '#64748b' }}>Análisis del balance hídrico, tasa de recirculación de agua y huella ecológica.</div>
-                          </div>
-                        </div>
-
-                        {/* TOP ROW: 4 CARDS */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
-                          <div style={{ border: '1px solid #e2e8f0', borderRadius: '16px', padding: '16px', background: '#fff', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)' }}>
-                            <div style={{ fontSize: '22px', fontWeight: 900, color: '#0891b2', marginBottom: '4px' }}>{new Intl.NumberFormat().format(Math.round(realWaterPerHr / (1 - (inputs.recirculacion_agua !== undefined ? inputs.recirculacion_agua : 85) / 100)))} L/h</div>
-                            <div style={{ fontSize: '11px', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>Caudal de Lavado Interno</div>
-                            <div style={{ fontSize: '9px', color: '#64748b' }}>Volumen interno calculado operando</div>
-                          </div>
-                          <div style={{ border: '1px solid #e2e8f0', borderRadius: '16px', padding: '16px', background: '#fff', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)' }}>
-                            <div style={{ fontSize: '22px', fontWeight: 900, color: '#0891b2', marginBottom: '4px' }}>{new Intl.NumberFormat().format(Math.round(realWaterPerHr))} L/h</div>
-                            <div style={{ fontSize: '11px', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>Reposición Real de Agua</div>
-                            <div style={{ fontSize: '9px', color: '#64748b' }}>Consumo real de red de agua limpia</div>
-                          </div>
-                          <div style={{ border: '1px solid #e2e8f0', borderRadius: '16px', padding: '16px', background: '#fff', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)' }}>
-                            <div style={{ fontSize: '22px', fontWeight: 900, color: '#0891b2', marginBottom: '4px', display: 'flex', alignItems: 'flex-start' }}>{((Math.round(realWaterPerHr) * hrsDay) / 1000).toFixed(2)} m<span style={{ fontSize: '12px' }}>³</span></div>
-                            <div style={{ fontSize: '11px', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>Consumo Diario Y1 ({hrsDay.toFixed(1)}h)</div>
-                            <div style={{ fontSize: '9px', color: '#64748b' }}>Equivalente a {new Intl.NumberFormat().format(Math.round(realWaterPerHr) * hrsDay)} Litros</div>
-                          </div>
-                          <div style={{ border: '1px solid #e2e8f0', borderRadius: '16px', padding: '16px', background: '#fff', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)' }}>
-                            <div style={{ fontSize: '22px', fontWeight: 900, color: '#0891b2', marginBottom: '4px', display: 'flex', alignItems: 'flex-start' }}>{(((Math.round(realWaterPerHr) * hrsDay) / 1000) * (inputs.daysPerWeek || 6)).toFixed(1)} m<span style={{ fontSize: '12px' }}>³</span></div>
-                            <div style={{ fontSize: '11px', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>Consumo Semanal</div>
-                            <div style={{ fontSize: '9px', color: '#64748b' }}>Basado en {inputs.daysPerWeek || 6} días laborables</div>
-                          </div>
-                        </div>
-
-                        {/* BOTTOM ROW: 2 CARDS */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', flex: 1 }}>
-                          {/* Configuración y Eficiencia Hídrica */}
-                          <div style={{ border: '1px solid #e2e8f0', borderRadius: '16px', padding: '24px', background: '#fff', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column' }}>
-                            <div style={{ fontSize: '14px', fontWeight: 900, color: '#0f2038', marginBottom: '24px' }}>Configuración y Eficiencia Hídrica</div>
-
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
-                                <div>
-                                  <div style={{ fontSize: '11px', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>Tasa de Recirculación de Agua</div>
-                                  <div style={{ fontSize: '9px', color: '#64748b' }}>Ahorro neto de agua limpia por recirculación y filtrado</div>
-                                </div>
-                                <div style={{ fontSize: '16px', fontWeight: 900, color: '#0891b2' }}>85.0%</div>
-                              </div>
-
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
-                                <div>
-                                  <div style={{ fontSize: '11px', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>Capacidad Nominal del Tanque</div>
-                                  <div style={{ fontSize: '9px', color: '#64748b' }}>Capacidad del tanque de lavado principal</div>
-                                </div>
-                                <div style={{ fontSize: '16px', fontWeight: 900, color: '#0891b2' }}>{new Intl.NumberFormat().format(inputs.waterTankLiters || 1200)} Litros</div>
-                              </div>
-
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
-                                <div>
-                                  <div style={{ fontSize: '11px', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>Frecuencia de Cambio de Agua</div>
-                                  <div style={{ fontSize: '9px', color: '#64748b' }}>Frecuencia de purga e higienización total</div>
-                                </div>
-                                <div style={{ fontSize: '16px', fontWeight: 900, color: '#0891b2' }}>Cada {Math.round(6 / (inputs.waterChangesPerWeek || 1))} días</div>
-                              </div>
-
-                              <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '12px', borderBottom: '1px solid #f1f5f9', alignItems: 'center' }}>
-                                <div>
-                                  <div style={{ fontSize: '11px', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>Consumo Específico Hídrico (caja)</div>
-                                  <div style={{ fontSize: '9px', color: '#64748b' }}>Volumen por unidad lavada</div>
-                                </div>
-                                <div style={{ fontSize: '16px', fontWeight: 900, color: '#0891b2' }}>{(realWaterPerHr / realCapH).toFixed(2)} L/caja</div>
-                              </div>
-
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div>
-                                  <div style={{ fontSize: '11px', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>Modelo de Referencia Activo</div>
-                                  <div style={{ fontSize: '9px', color: '#64748b' }}>Modelo de caja base para el análisis unitario</div>
-                                </div>
-                                <div style={{ fontSize: '16px', fontWeight: 900, color: '#0891b2', textTransform: 'uppercase' }}>{activeBox.nombre}</div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Análisis de Huella Hídrica */}
-                          <div style={{ border: '1px solid #e2e8f0', borderRadius: '16px', padding: '24px', background: '#fff', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column' }}>
-                            <div style={{ fontSize: '14px', fontWeight: 900, color: '#0f2038', marginBottom: '24px' }}>Análisis de Huella Hídrica por Contenedor</div>
-
-                            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                              <div>
-                                <div style={{ fontSize: '12px', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>Consumo Específico por Caja</div>
-                                <div style={{ fontSize: '9px', color: '#64748b' }}>Basado en {Math.round(realCapH)} cajas/h real (350 cajas/h nominal)</div>
-                              </div>
-                              <div style={{ fontSize: '24px', fontWeight: 900, color: '#0891b2' }}>{(realWaterPerHr / Math.round(realCapH)).toFixed(2)} L / caja</div>
-                            </div>
-
-                            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '20px' }}>
-                              <div style={{ fontSize: '11px', fontWeight: 800, color: '#1e293b', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <Target size={12} color="#0891b2" /> Evaluación de Impacto Ambiental (ESG)
-                              </div>
-                              <div style={{ fontSize: '10px', color: '#475569', lineHeight: 1.6, textAlign: 'justify' }}>
-                                El sistema de recirculación del simulador Wash & Dry reduce en un <strong style={{ color: '#0f172a' }}>85%</strong> la demanda de agua de reposición respecto a sistemas tradicionales de lavado una vez-pasados (once-through). Esto representa una disminución crítica de la huella hídrica y minimiza la generación de efluentes, facilitando el cumplimiento de normativas de sustentabilidad y optimizando el costo operativo por caja.
-                              </div>
-                            </div>
+                          <div style={{ width: '100%', flex: 1 }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+                              <thead>
+                                <tr>
+                                  <th style={{ ...REPORT_STYLES.th, padding: '5px 10px', background: '#edfbfd' }}>{tf('Componente / Característica')}</th>
+                                  <th style={{ ...REPORT_STYLES.th, padding: '5px 10px', background: '#edfbfd', textAlign: 'center' }}>{tf('Especificación Original')}</th>
+                                  <th style={{ ...REPORT_STYLES.th, padding: '5px 10px', background: '#edfbfd', textAlign: 'right' }}>{tf('Detalle Técnico')}</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {[
+                                  { comp: 'Modelo del Equipo', spec: inputs.machineName || 'BWD-350 + BA', detail: inputs.machineNameDetalle !== undefined ? inputs.machineNameDetalle : 'Lavadora Industrial de Cajas (Agua y Aire)' },
+                                  { comp: 'Aplicación Operativa', spec: inputs.aplicacionOperativa !== undefined ? inputs.aplicacionOperativa : 'Lavado, enjuague y secado de cajas plásticas', detail: inputs.aplicacionDetalle !== undefined ? inputs.aplicacionDetalle : 'Eficiencia de Lavado: 90-95% | Secado: 80-90%' },
+                                  { comp: 'Tratamiento de Agua (SWM-1000)', spec: 'Ósmosis Inversa Automática', detail: 'Producción: 1000 L/h | Potencia Adicional: 7 kW' },
+                                  { comp: 'Capacidad Nominal (Dinámica)', spec: `${new Intl.NumberFormat().format(currentNominalCapacity)} cajas/h`, detail: `Calculada para: ${activeBox.nombre} (${activeBox.largoCm}cm)` },
+                                  { comp: 'Motorización Principal (Bomba)', spec: `${inputs.motorBombaAguaHp || 20} hp`, detail: inputs.motorPrincipalDetalle !== undefined ? inputs.motorPrincipalDetalle : `Marca: ${inputs.motorMarca || 'Siemens / SEW'}` },
+                                  { comp: 'Motorización Auxiliar (BA)', spec: `${inputs.motorSopladorHp || 25} hp`, detail: inputs.motorAuxiliarDetalle !== undefined ? inputs.motorAuxiliarDetalle : 'Módulos de Alta Presión' },
+                                  { comp: 'Potencia documentada (parcial)', spec: '61.25 kW (Calculada)', detail: 'Bomba 14.9kW | BA 18.6kW | Cinta 0.75kW | Cal 20kW | SWM 7kW' },
+                                  { comp: 'Temperaturas de Proceso', spec: 'T. Lavado: 60-80°C', detail: inputs.dimensionesBandasDetalle !== undefined ? inputs.dimensionesBandasDetalle : `Calentamiento: ${inputs.calentamientoElectricoKw || 20} kW` },
+                                  { comp: 'Presión de Aspersión', spec: `${inputs.presionLavadoBar || 5.0} bar (Nominal)`, detail: 'Sistema volumétrico de alto flujo' },
+                                  { comp: 'Control de Tracción', spec: 'Velocidad Variable', detail: inputs.presionLavadoBarDetalle !== undefined ? inputs.presionLavadoBarDetalle : 'Inversor: Incluido (SIEMENS)' },
+                                  { comp: 'Sistema de Control', spec: inputs.particulaFinal || 'Gabinete NEMA 4X / IP65', detail: inputs.particulaFinalDetalle !== undefined ? inputs.particulaFinalDetalle : 'Automatización SCHNEIDER' },
+                                  { comp: 'Alimentación Eléctrica', spec: 'Trifásica 60Hz', detail: '480 VAC / 3 fases / 60 Hz' },
+                                  { comp: 'Dimensiones Físicas', spec: `Largo: ${inputs.machineLength || 12.50} m | Ancho: ${inputs.machineWidth || 1.80} m | Alto: ${inputs.machineHeight || 1.75} m`, detail: '* Auxiliar SWM-1000 requiere layout independiente' },
+                                  { comp: 'Masa del Sistema', spec: `Seca: ${inputs.pesoSecoKg || 1800} kg | Operativa: ${inputs.pesoOperativoKg || 3000} kg`, detail: inputs.pesoOperativoKgDetalle !== undefined ? inputs.pesoOperativoKgDetalle : 'Dinámica incluye 1200L en tanque' },
+                                  { comp: 'Componentes Eléctricos', spec: inputs.componentesElectricos || 'Schneider / Siemens', detail: inputs.componentesElectricosDetalle !== undefined ? inputs.componentesElectricosDetalle : 'Contactores SCHNEIDER, Inversor SIEMENS' },
+                                  { comp: 'Nivel de Ruido Acústico', spec: `< ${inputs.ruidoDb || 65} dB(A) (Objetivo)`, detail: inputs.ruidoDbDetalle !== undefined ? inputs.ruidoDbDetalle : 'Solución acústica en BA; Verificación técnica pendiente' },
+                                ].map((t, idx) => (
+                                  <tr key={idx}>
+                                    <td style={{ ...REPORT_STYLES.td, padding: '5px 10px' }}>{tf(t.comp)}</td>
+                                    <td style={{ ...REPORT_STYLES.td, padding: '5px 10px', textAlign: 'center', color: '#008299' }}>{tf(t.spec)}</td>
+                                    <td style={{ ...REPORT_STYLES.td, padding: '5px 10px', textAlign: 'right' }}>{tf(t.detail)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
                           </div>
                           {renderPageFooter(++pdfPageIndex, totalPdfPages)}
                         </div>
                       </div>
-                    </div>
-                  );
-                })()}
+                    )}
 
-                {/* PÁGINA 7: DICTAMEN FINANCIERO (VERSIÓN SIN RENTABILIDAD) */}
-                {pdfConfig.financiero && (
-                  <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
-                    <div style={{ ...S.inner, flex: 1, paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {renderPageHeader(`${++currentSectionIndex}. Análisis Financiero de Inversión`, tf('Resumen Ejecutivo de CAPEX y Gasto Operativo Mensual'))}
 
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                        {/* CAPEX Card */}
-                        <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', background: '#fff' }}>
-                          <div style={{ background: '#1d70b8', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Building2 size={20} color="#fff" />
-                            <div style={{ fontSize: '11px', fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{tf('Estructura CAPEX (Inversión Inicial)')}</div>
-                          </div>
-                          <div style={{ padding: '10px 14px' }}>
-                            <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, marginBottom: '2px' }}>{tf('Inversión Total Estimada')}</div>
-                            <div style={{ fontSize: '22px', fontWeight: 900, color: '#0f2038', marginBottom: '8px' }}>${new Intl.NumberFormat().format(results.capexInstaladoMxn.toFixed(0))} MXN</div>
 
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '11px', color: '#334155', fontWeight: 600 }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#e0f2fe', padding: '6px', borderRadius: '6px', display: 'flex' }}><Factory size={14} color="#0284c7" /></div> {tf('Equipo Base')}</div>
-                                <span style={{ fontWeight: 800, color: '#0284c7' }}>${new Intl.NumberFormat().format((results.precioEquipoUsd * (inputs.tipoCambio || 1)).toFixed(0))}</span>
+                    {/* PÁGINA 4.5: MODELOS DE CONTENEDORES (DEMANDA 2028) */}
+                    {pdfConfig.tabla && (
+                      <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
+                        <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 14 }}>
+                          {renderPageHeader(`${++currentSectionIndex}. ${tf('MODELOS DE CONTENEDORES EVALUADOS (DEMANDA 2028)')}`, 'Especificaciones técnicas, demanda proyectada al 2028 y capacidad requerida por modelo de caja.')}
+
+                          {/* TOP SUMMARY CARDS */}
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginTop: '4px' }}>
+                            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '12px', padding: '12px 14px' }}>
+                              <span style={{ display: 'block', fontSize: '10pt', fontWeight: 800, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.5px' }}>VOLUMEN MÁXIMO 2028</span>
+                              <div style={{ fontSize: '24px', fontWeight: 900, color: '#1e3a8a', marginTop: '4px' }}>
+                                {new Intl.NumberFormat().format(inputs.cajas.filter(c => c.includeInPdf !== false).reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) || inputs.meta_diaria_cajas || 2819)}
                               </div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#e0f2fe', padding: '6px', borderRadius: '6px', display: 'flex' }}><Wrench size={14} color="#0284c7" /></div> {tf('Montaje y Maniobras')}</div>
-                                <span style={{ fontWeight: 800, color: '#0284c7' }}>${new Intl.NumberFormat().format(((results.maniobrasUsd + results.montajeMecanicoUsd) * (inputs.tipoCambio || 1)).toFixed(0))}</span>
-                              </div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#e0f2fe', padding: '6px', borderRadius: '6px', display: 'flex' }}><Zap size={14} color="#0284c7" /></div> {tf('Instalación Eléctrica')}</div>
-                                <span style={{ fontWeight: 800, color: '#0284c7' }}>${new Intl.NumberFormat().format(((results.electricoPrincipalUsd + results.canalizacionProteccionesUsd) * (inputs.tipoCambio || 1)).toFixed(0))}</span>
-                              </div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#e0f2fe', padding: '6px', borderRadius: '6px', display: 'flex' }}><Droplet size={14} color="#0284c7" /></div> {tf('Sistemas Hídricos / Drenaje')}</div>
-                                <span style={{ fontWeight: 800, color: '#0284c7' }}>${new Intl.NumberFormat().format(((results.extraccionPolvoUsd + results.seguridadIndustrialUsd) * (inputs.tipoCambio || 1)).toFixed(0))}</span>
-                              </div>
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><div style={{ background: "#e0f2fe", padding: "6px", borderRadius: "6px", display: "flex" }}><Building2 size={14} color="#0284c7" /></div> {tf('Obra Civil e Ingeniería')}</div>
-                                <span style={{ fontWeight: 800, color: "#0284c7" }}>${new Intl.NumberFormat().format(((results.obraCivilUsd + results.ingenieriaSupervisionUsd) * (inputs.tipoCambio || 1)).toFixed(0))}</span>
-                              </div>
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><div style={{ background: "#e0f2fe", padding: "6px", borderRadius: "6px", display: "flex" }}><ShieldAlert size={14} color="#0284c7" /></div> {tf('Contingencia y Otros')}</div>
-                                <span style={{ fontWeight: 800, color: "#0284c7" }}>${new Intl.NumberFormat().format(((results.contingenciaUsd + results.otrosCapexUsd) * (inputs.tipoCambio || 1)).toFixed(0))}</span>
-                              </div>
+                              <span style={{ fontSize: '10pt', fontWeight: 700, color: '#3b82f6' }}>cajas/día</span>
                             </div>
-                            <div style={{ marginTop: '12px', padding: '10px', background: '#f0f9ff', borderLeft: '3px solid #38bdf8', fontSize: '10px', fontWeight: 500, color: '#0369a1', lineHeight: '1.4' }}>
-                              {tf('* Las partidas de Obra Civil, Ingeniería y Contingencia son estimaciones sujetas a evaluación en sitio y diseño de layout final.')}
+
+                            <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '12px 14px' }}>
+                              <span style={{ display: 'block', fontSize: '10pt', fontWeight: 800, color: '#d97706', textTransform: 'uppercase', letterSpacing: '0.5px' }}>REQUERIDO PROMEDIO</span>
+                              <div style={{ fontSize: '24px', fontWeight: 900, color: '#78350f', marginTop: '4px' }}>
+                                {(((inputs.cajas.filter(c => c.includeInPdf !== false).reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) || inputs.meta_diaria_cajas || 2819) / (inputs.hoursPerDay || 8.5))).toFixed(1)}
+                              </div>
+                              <span style={{ fontSize: '10pt', fontWeight: 700, color: '#f59e0b' }}>cajas/hora</span>
+                            </div>
+
+                            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '12px 14px' }}>
+                              <span style={{ display: 'block', fontSize: '10pt', fontWeight: 800, color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>CAPACIDAD PROPUESTA</span>
+                              <div style={{ fontSize: '22px', fontWeight: 900, color: '#14532d', marginTop: '4px' }}>
+                                {currentNominalCapacity} <span style={{ fontSize: '10pt', color: '#16a34a', fontWeight: 'bold' }}>nom</span> / {results.realProductionPerHourBoxes ? results.realProductionPerHourBoxes.toFixed(0) : (currentNominalCapacity * (inputs.oee / 100)).toFixed(0)} <span style={{ fontSize: '10pt', color: '#16a34a', fontWeight: 'bold' }}>real</span>
+                              </div>
+                              <span style={{ fontSize: '10pt', fontWeight: 700, color: '#22c55e' }}>{inputs.tipo_unidad === 'pallets' ? tf('pallets/h') : tf('cajas/h')} ({currentNominalCapacity} nom / {results.realProductionPerHourBoxes ? results.realProductionPerHourBoxes.toFixed(0) : (currentNominalCapacity * (inputs.oee / 100)).toFixed(0)} @ {inputs.oee}% OEE)</span>
+                            </div>
+
+                            <div style={{ background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: '12px', padding: '12px 14px' }}>
+                              <span style={{ display: 'block', fontSize: '10pt', fontWeight: 800, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.5px' }}>MARGEN DIARIO</span>
+                              <div style={{ fontSize: '20px', fontWeight: 900, color: '#134e4a', marginTop: '4px' }}>
+                                +{((currentNominalCapacity * (inputs.hoursPerDay || 8.5)) - (inputs.cajas.filter(c => c.includeInPdf !== false).reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) || inputs.meta_diaria_cajas)).toFixed(0)} <span style={{ fontSize: '10pt', fontWeight: 'bold', color: '#0d9488' }}>nom</span> / +{((results.realProductionPerHourBoxes || (currentNominalCapacity * inputs.oee / 100)) * (inputs.hoursPerDay || 8.5) - (inputs.cajas.filter(c => c.includeInPdf !== false).reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) || inputs.meta_diaria_cajas)).toFixed(0)} <span style={{ fontSize: '10pt', fontWeight: 'bold', color: '#0d9488' }}>real</span>
+                              </div>
+                              <span style={{ fontSize: '10pt', fontWeight: 700, color: '#14b8a6' }}>cajas/día margen sobre requerimiento</span>
                             </div>
                           </div>
-                          <div style={{ background: '#f8fafc', padding: '10px 14px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '11px', fontWeight: 800, color: '#1d70b8' }}>{tf('INVERSIÓN INICIAL TOTAL')}</span>
-                            <span style={{ background: '#1d70b8', color: '#fff', fontSize: '12px', fontWeight: 900, padding: '4px 12px', borderRadius: '16px' }}>${new Intl.NumberFormat().format(results.capexInstaladoMxn.toFixed(0))} MXN</span>
-                          </div>
-                        </div>
 
-                        {/* OPEX Card */}
-                        <div style={{ border: '1px solid #fecdd3', borderRadius: '8px', overflow: 'hidden', background: '#fff' }}>
-                          <div style={{ background: '#e11d48', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Settings size={20} color="#fff" />
-                            <div style={{ fontSize: '11px', fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{tf('Estructura OPEX (Gasto Mensual)')}</div>
+                          {/* BANNER INFORMATIVO DE HOLGURA */}
+                          <div style={{ background: '#1e293b', borderRadius: '8px', padding: '12px 16px', color: '#fff', fontSize: '10pt', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span>Capacidad nominal: {currentNominalCapacity} c/h | Capacidad real ({inputs.oee}% OEE): {results.realProductionPerHourBoxes ? results.realProductionPerHourBoxes.toFixed(0) : (currentNominalCapacity * inputs.oee / 100).toFixed(0)} c/h. Meta: 2,819 c/día.</span>
+                            <span style={{ color: '#38bdf8' }}>Periodo de operación evaluado: {(inputs.hoursPerDay || 8.5).toFixed(1)} hrs/día.</span>
                           </div>
-                          <div style={{ padding: '10px 14px' }}>
-                            <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, marginBottom: '2px' }}>{tf('Gasto Operativo Mensual Estimado')}</div>
-                            <div style={{ fontSize: '22px', fontWeight: 900, color: '#0f2038', marginBottom: '8px' }}>${new Intl.NumberFormat().format(results.opexMensualMxn.toFixed(0))} MXN</div>
 
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '11px', color: '#334155', fontWeight: 600 }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#ffe4e6', padding: '6px', borderRadius: '6px', display: 'flex' }}><Zap size={14} color="#e11d48" /></div> {tf('Energía Eléctrica')}</div>
-                                <span style={{ fontWeight: 800, color: '#e11d48' }}>${new Intl.NumberFormat().format(results.monthlyElectricityCostMxn.toFixed(0))}</span>
-                              </div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#ffe4e6', padding: '6px', borderRadius: '6px', display: 'flex' }}><Droplet size={14} color="#e11d48" /></div> {tf('Impacto Hídrico (Agua)')}</div>
-                                <span style={{ fontWeight: 800, color: '#e11d48' }}>${new Intl.NumberFormat().format(results.waterCostMonthlyMxn || 0)}</span>
-                              </div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#ffe4e6', padding: '6px', borderRadius: '6px', display: 'flex' }}><Users size={14} color="#e11d48" /></div> {tf('Mano de Obra')}</div>
-                                <span style={{ fontWeight: 800, color: '#e11d48' }}>${new Intl.NumberFormat().format(results.manoObraMensualMxn.toFixed(0))}</span>
-                              </div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#ffe4e6', padding: '6px', borderRadius: '6px', display: 'flex' }}><Shield size={14} color="#e11d48" /></div> {tf('Mantenimiento Preventivo')}</div>
-                                <span style={{ fontWeight: 800, color: '#e11d48' }}>${new Intl.NumberFormat().format(results.mantenimientoMensualMxn.toFixed(0))}</span>
-                              </div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#ffe4e6', padding: '6px', borderRadius: '6px', display: 'flex' }}><Wrench size={14} color="#e11d48" /></div> {tf('Refacciones / Consumibles')}</div>
-                                <span style={{ fontWeight: 800, color: '#e11d48' }}>${new Intl.NumberFormat().format((inputs.filtrosMensualMxn + inputs.refaccionesMensualMxn + inputs.lubricacionMensualMxn).toFixed(0))}</span>
-                              </div>
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><div style={{ background: "#ffe4e6", padding: "6px", borderRadius: "6px", display: "flex" }}><FlaskConical size={14} color="#e11d48" /></div> {tf('Químicos Tratamiento')}</div>
-                                <span style={{ fontWeight: 800, color: "#e11d48" }}>${new Intl.NumberFormat().format(7000.20)}</span>
-                              </div>
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><div style={{ background: "#ffe4e6", padding: "6px", borderRadius: "6px", display: "flex" }}><Sliders size={14} color="#e11d48" /></div> {tf('Consumibles, Disposición & Otros')}</div>
-                                <span style={{ fontWeight: 800, color: "#e11d48" }}>${new Intl.NumberFormat().format(((inputs.supervisionMensualMxn || 0) + (inputs.consumiblesMensualMxn || 0) + (inputs.tratamientoEfluentesMensualMxn || 0) + (inputs.disposicionResiduosMensualMxn || 0) + (inputs.otrosOpexMensualMxn || 0) || 6999.60).toFixed(0))}</span>
-                              </div>
-                            </div>
+                          {/* TABLE */}
+                          <div style={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10pt' }}>
+                              <thead>
+                                <tr style={{ background: '#0284c7', color: '#ffffff' }}>
+                                  <th style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 'bold' }}>{tf('Referencia')}</th>
+                                  <th style={{ padding: '8px 10px', textAlign: 'center', fontWeight: 'bold' }}>{tf('Tipo')}</th>
+                                  <th style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 'bold' }}>{tf('Piezas/día 2028')}</th>
+                                  <th style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 'bold' }}>{tf('Req. cajas/h')} ({(inputs.hoursPerDay || 8.5).toFixed(1)}h)</th>
+                                  <th style={{ padding: '8px 10px', textAlign: 'center', fontWeight: 'bold' }}>{tf('Capacidad objetivo')}</th>
+                                  <th style={{ padding: '8px 10px', textAlign: 'center', fontWeight: 'bold' }}>{tf('Estatus')}</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {inputs.cajas.filter(c => c.includeInPdf !== false).map((caja, idx) => {
+                                  const pDia = caja.piezasDia2028 !== undefined ? caja.piezasDia2028 : 0;
+                                  const reqH = pDia / (inputs.hoursPerDay || 8.5);
+                                  const targetCap = currentNominalCapacity || 350;
+                                  const isOk = false; // Receta pendiente de FAT/SAT. // Usar OEE para evaluar estatus
+                                  return (
+                                    <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0', background: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
+                                      <td style={{ padding: '7px 10px', fontWeight: 'bold', color: '#1e293b' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                          <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: caja.color || '#0284c7' }} />
+                                          {caja.nombre}
+                                        </div>
+                                      </td>
+                                      <td style={{ padding: '7px 10px', textAlign: 'center', fontWeight: 700, color: '#475569' }}>{tf(caja.tipo || 'Caja')}</td>
+                                      <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 900, color: '#0f172a' }}>{new Intl.NumberFormat().format(pDia)}</td>
+                                      <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 700, color: '#0369a1' }}>{reqH.toFixed(1)}</td>
+                                      <td style={{ padding: '7px 10px', textAlign: 'center', color: '#475569' }}>{targetCap} cajas/h</td>
+                                      <td style={{ padding: '7px 10px', textAlign: 'center' }}>
+                                        <span style={{ fontSize: '10pt', fontWeight: 900, padding: '3px 8px', borderRadius: '6px', backgroundColor: isOk ? '#dcfce7' : '#fee2e2', color: isOk ? '#15803d' : '#b91c1c' }}>
+                                          {'PENDIENTE'}
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                              <tfoot>
+                                <tr style={{ background: '#e0f2fe', fontWeight: 900, borderTop: '2px solid #0284c7' }}>
+                                  <td colSpan="2" style={{ padding: '8px 10px', color: '#0369a1' }}>{tf('TOTAL GENERAL')}</td>
+                                  <td style={{ padding: '8px 10px', textAlign: 'right', color: '#0f172a' }}>
+                                    {new Intl.NumberFormat().format(inputs.cajas.filter(c => c.includeInPdf !== false).reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0))}
+                                  </td>
+                                  <td style={{ padding: '8px 10px', textAlign: 'right', color: '#0369a1' }}>
+                                    {(inputs.cajas.filter(c => c.includeInPdf !== false).reduce((acc, c) => acc + (c.piezasDia2028 || 0), 0) / (inputs.hoursPerDay || 8.5)).toFixed(1)}
+                                  </td>
+                                  <td style={{ padding: '8px 10px', textAlign: 'center', color: '#0f172a' }}>{currentNominalCapacity || 350} cajas/h</td>
+                                  <td style={{ padding: '8px 10px', textAlign: 'center', color: '#15803d' }}>{tf('APROBADO')}</td>
+                                </tr>
+                              </tfoot>
+                            </table>
                           </div>
-                          <div style={{ background: '#fff1f2', padding: '10px 14px', borderTop: '1px solid #fecdd3', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '11px', fontWeight: 800, color: '#e11d48' }}>{tf('GASTO OPERATIVO MENSUAL TOTAL')}</span>
-                            <span style={{ background: '#e11d48', color: '#fff', fontSize: '12px', fontWeight: 900, padding: '4px 12px', borderRadius: '16px' }}>${new Intl.NumberFormat().format(results.opexMensualMxn.toFixed(0))} MXN</span>
-                          </div>
+                          {renderPageFooter(++pdfPageIndex, totalPdfPages)}
                         </div>
                       </div>
+                    )}
 
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: 10, marginTop: '0px' }}>
-                        <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px', background: '#f8fafc', display: 'flex', flexDirection: 'column' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                            <div style={{ background: '#ea580c', borderRadius: '50%', padding: '4px', display: 'flex' }}><Shield size={14} color="#fff" /></div>
-                            <div>
-                              <div style={{ fontSize: '11px', fontWeight: 900, color: '#ea580c', textTransform: 'uppercase' }}>{tf('Matriz de Riesgo y Operación')}</div>
-                              <div style={{ fontSize: '9px', color: '#64748b' }}>{tf('Evaluación cualitativa de los principales riesgos operativos')}</div>
-                            </div>
-                          </div>
+                    {/* PÁGINA 4.6: ANÁLISIS DE LA LÍNEA */}
+                    {pdfConfig.analisis && (
+                      <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
+                        <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                          {renderPageHeader(`${++currentSectionIndex}. CAPACIDAD VS REQUERIMIENTO`, 'Contraste gráfico de la capacidad real frente a la demanda por modelo de caja.')}
 
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '10px', color: '#334155', fontWeight: 600 }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', border: '1px solid #f1f5f9', padding: '6px', borderRadius: '6px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><FlaskConical size={12} color="#ea580c" /> Manejo de Químicos</div>
-                                <span style={{ background: '#dcfce7', color: '#166534', padding: '2px 6px', borderRadius: '4px', fontSize: '9px', fontWeight: 800 }}>{inputs.riesgoPolvo || 'BAJO'}</span>
-                              </div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', border: '1px solid #f1f5f9', padding: '6px', borderRadius: '6px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Zap size={12} color="#ea580c" /> Riesgo Eléctrico</div>
-                                <span style={{ background: '#dcfce7', color: '#166534', padding: '2px 6px', borderRadius: '4px', fontSize: '9px', fontWeight: 800 }}>{inputs.riesgoMetal || 'BAJO'}</span>
-                              </div>
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', border: '1px solid #f1f5f9', padding: '6px', borderRadius: '6px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Droplet size={12} color="#ea580c" /> Drenaje y Fugas</div>
-                                <span style={{ background: '#dcfce7', color: '#166534', padding: '2px 6px', borderRadius: '4px', fontSize: '9px', fontWeight: 800 }}>{inputs.riesgoIncendio || 'BAJO'}</span>
-                              </div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', border: '1px solid #f1f5f9', padding: '6px', borderRadius: '6px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Volume2 size={12} color="#ea580c" /> Contam. Acústica</div>
-                                <span style={{ background: '#fef08a', color: '#854d0e', padding: '2px 6px', borderRadius: '4px', fontSize: '9px', fontWeight: 800 }}>{inputs.riesgoRuido || 'MEDIO'}</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div style={{ marginTop: 'auto', background: '#fff', border: '1px solid #f1f5f9', padding: '4px', borderRadius: '6px', display: 'flex', gap: '8px' }}>
-                            <div style={{ background: '#ea580c', width: '16px', height: '16px', borderRadius: '50%', color: '#fff', fontSize: '10px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>i</div>
-                            <div style={{ fontSize: '9px', color: '#64748b', lineHeight: 1.2 }}><strong style={{ color: '#ea580c' }}>Nota:</strong> Los niveles de riesgo se evaluaron considerando controles y protocolos.</div>
-                          </div>
-                        </div>
-
-                        <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px', background: '#f8fafc', display: 'flex', flexDirection: 'column' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                            <div style={{ background: '#7c3aed', borderRadius: '50%', padding: '4px', display: 'flex' }}><PieChartLucide size={14} color="#fff" /></div>
-                            <div>
-                              <div style={{ fontSize: '11px', fontWeight: 900, color: '#6d28d9', textTransform: 'uppercase' }}>Distribución OPEX</div>
-                              <div style={{ fontSize: '9px', color: '#64748b' }}>Proporción de gastos operativos mensuales</div>
-                            </div>
-                          </div>
-
-                          <div style={{ display: 'flex', gap: '8px', flex: 1 }}>
-                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                              <div style={{ fontSize: '9px', color: '#475569', lineHeight: 1.2 }}>El gráfico circular muestra la distribución porcentual de los componentes del gasto operativo (OPEX).</div>
-                              <div style={{ background: '#f5f3ff', border: '1px solid #ede9fe', padding: '6px', borderRadius: '6px', marginTop: '6px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}><Star size={10} color="#7c3aed" fill="#7c3aed" /> <span style={{ fontSize: '10px', fontWeight: 800, color: '#6d28d9' }}>Recomendación:</span></div>
-                                <div style={{ fontSize: '9px', color: '#5b21b6', lineHeight: 1.2 }}>Optimizar consumo de energía y agua maximiza el rendimiento.</div>
-                              </div>
-                            </div>
-                            <div style={{ width: 95, height: 95, position: 'relative', marginTop: '-10px' }}>
-                              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: 10 }}>
-                                <span style={{ fontSize: '8px', fontWeight: 800, color: '#334155' }}>TOTAL</span>
-                                <span style={{ fontSize: '10px', fontWeight: 900, color: '#0f172a' }}>${new Intl.NumberFormat().format(results.opexMensualMxn.toFixed(0))}</span>
-                                <span style={{ fontSize: '8px', fontWeight: 800, color: '#334155' }}>MXN</span>
-                              </div>
-                              <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                  <Pie
-                                    data={[
-                                      { name: 'Energía Eléctrica', value: results.energiaMensualMxn || 0, fill: '#1d4ed8' },
-                                      { name: 'Mano de Obra', value: results.manoObraMensualMxn || 0, fill: '#8b5cf6' },
-                                      { name: 'Agua', value: results.aguaMensualMxn || 0, fill: '#0ea5e9' },
-                                      { name: 'Mantenimiento', value: results.mantenimientoMensualMxn || 0, fill: '#ea580c' },
-                                      { name: 'Refacciones', value: results.refaccionesMensualMxn || 0, fill: '#65a30d' },
-                                      { name: 'Químicos', value: results.quimicosMensualMxn || 0, fill: '#059ca0' },
-                                      { name: 'Consumibles / Otros', value: results.consumiblesMensualMxn || 0, fill: '#f59e0b' }
-                                    ].filter(d => d.value > 0)}
-                                    cx="50%" cy="50%" innerRadius={25} outerRadius={42} paddingAngle={2} dataKey="value"
-                                    labelLine={false}
-                                    label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
-                                      const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-                                      const x = cx + radius * Math.cos(-midAngle * Math.PI / 180);
-                                      const y = cy + radius * Math.sin(-midAngle * Math.PI / 180);
-                                      return percent > 0.05 ? <text x={x} y={y} fill="white" fontSize="7" fontWeight="bold" textAnchor="middle" dominantBaseline="central">{`${(percent * 100).toFixed(0)}%`}</text> : null;
-                                    }}
+                          <div style={{ width: '100%', flex: 1, display: 'flex', gap: '20px' }}>
+                            {/* Left: Capacidad vs Requerimiento (Graphic) */}
+                            <div style={{ flex: '1', display: 'flex', flexDirection: 'column', background: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                              <h4 style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e293b', marginBottom: '20px' }}>Demanda 2028 vs. Mezcla de Productos</h4>
+                              <div style={{ flex: 1, minHeight: '300px' }}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <BarChart
+                                    data={inputs.cajas.filter(c => c.includeInPdf !== false).map(c => ({
+                                      name: c.nombre,
+                                      ReqDia: c.piezasDia2028 !== undefined ? c.piezasDia2028 : 0
+                                    }))}
+                                    margin={{ top: 10, right: 10, left: 0, bottom: 20 }}
                                   >
-                                    {[{ fill: '#1d4ed8' }, { fill: '#8b5cf6' }, { fill: '#0ea5e9' }, { fill: '#ea580c' }, { fill: '#65a30d' }, { fill: '#059ca0' }, { fill: '#f59e0b' }].map((e, i) => <Cell key={i} fill={e.fill} />)}
-                                  </Pie>
-                                </PieChart>
-                              </ResponsiveContainer>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                    <XAxis dataKey="name" tick={{ fontSize: 9, fontWeight: 700, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                                    <YAxis tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                                    <Tooltip
+                                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                      itemStyle={{ fontSize: '11px', fontWeight: 700 }}
+                                      formatter={(value) => new Intl.NumberFormat().format(value)}
+                                    />
+                                    <Legend wrapperStyle={{ fontSize: '10px', fontWeight: 700, paddingTop: '20px' }} />
+                                    <Bar dataKey="ReqDia" name="Cajas Requeridas por Día (2028)" fill="#0284c7" radius={[4, 4, 0, 0]} barSize={40} />
+                                  </BarChart>
+                                </ResponsiveContainer>
+                              </div>
                             </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', justifyContent: 'center' }}>
+                          </div>
+
+                          {/* --- ANÁLISIS HÍDRICO (REPORTE) --- */}
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginTop: 'auto' }}>
+                            <div style={{ background: '#f0f9ff', border: '1px solid #e0f2fe', borderRadius: '16px', padding: '16px' }}>
+                              <span style={{ fontSize: '10px', fontWeight: 900, color: '#0369a1', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                                <Droplet size={14} /> Caudal Interno Estimado
+                              </span>
+                              <div style={{ fontSize: '20px', fontWeight: 900, color: '#0c4a6e', marginTop: '4px' }}>{new Intl.NumberFormat().format(1230)} L/h</div>
+                              <div style={{ fontSize: '9px', fontWeight: 700, color: '#075985', marginTop: '4px' }}>*Sin validación física de tanques o inventarios</div>
+                            </div>
+                            <div style={{ background: '#f0f9ff', border: '1px solid #e0f2fe', borderRadius: '16px', padding: '16px' }}>
+                              <span style={{ fontSize: '10px', fontWeight: 900, color: '#0369a1', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                                <AlertCircle size={14} /> Reposición Operativa (Anexo)
+                              </span>
+                              <div style={{ fontSize: '14px', fontWeight: 700, color: '#075985', marginTop: '4px' }}>{new Intl.NumberFormat().format(inputs.waterReplenishmentLH || 164)} L/h (~{(((1230 - (inputs.waterReplenishmentLH || 164)) / 1230) * 100).toFixed(1)}%)</div>
+                              <div style={{ fontSize: '9px', fontWeight: 700, color: '#075985', marginTop: '4px' }}>*La estimación de reposición no equivale a factor de recuperación demostrada (80%).</div>
+                            </div>
+                            <div style={{ background: '#ecfdf5', border: '1px solid #d1fae5', borderRadius: '16px', padding: '16px' }}>
+                              <span style={{ fontSize: '10px', fontWeight: 900, color: '#047857', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                                <Activity size={14} /> Impacto OPEX Hídrico
+                              </span>
+                              <div style={{ fontSize: '20px', fontWeight: 900, color: '#064e3b', marginTop: '4px' }}>${new Intl.NumberFormat().format(results.waterCostMonthlyMxn || 0)} MXN</div>
+                            </div>
+                            {renderPageFooter(++pdfPageIndex, totalPdfPages)}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* PÁGINA 5: ENERGÍA Y CAPACIDAD */}
+                    {pdfConfig.energia && (
+                      <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
+                        <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                          {renderPageHeader(`${++currentSectionIndex}. ${inputs.energySectionTitle || 'Energía & Capacidad'}`, 'Desglose energético operativo y comparativa de producción real vs consumo en kWh')}
+
+                          <div style={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', gap: 24 }}>
+
+                            {/* KPIs de Energía */}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
                               {[
-                                { name: 'Energía Eléctrica', value: results.monthlyElectricityCostMxn, fill: '#1d4ed8' },
-                                { name: 'Mano de Obra', value: results.manoObraMensualMxn, fill: '#8b5cf6' },
-                                { name: 'Impacto Hídrico', value: results.waterCostMonthlyMxn || 0, fill: '#0ea5e9' },
-                                { name: 'Mantenimiento', value: results.mantenimientoMensualMxn, fill: '#ea580c' },
-                                { name: 'Refacciones', value: inputs.filtrosMensualMxn + inputs.refaccionesMensualMxn + inputs.lubricacionMensualMxn, fill: '#65a30d' }
-                              ].filter(d => d.value > 0).map((d, i, arr) => {
-                                const total = arr.reduce((sum, item) => sum + item.value, 0);
-                                const pct = ((d.value / total) * 100).toFixed(1);
-                                return (
-                                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '4px' }}>
-                                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: d.fill, marginTop: '3px', flexShrink: 0 }} />
-                                    <div>
-                                      <div style={{ fontSize: '8px', fontWeight: 700, color: '#334155', lineHeight: 1.1 }}>{d.name}</div>
-                                      <div style={{ fontSize: '7px', color: '#64748b' }}>({pct}%)</div>
+                                { title: 'Potencia documentada (parcial)', val: `${results.installedPowerKw.toFixed(2)} kW`, sub: `${results.totalHp} hp equivalentes` },
+                                { title: 'Potencia media estimada', val: `${results.averageHourlyConsumptionKw.toFixed(2)} kW`, sub: `Factor de Carga: ${inputs.loadFactor}%` },
+                                { title: 'Costo Eléctrico Hora', val: `$${results.hourlyElectricityCostMxn.toFixed(2)} MXN`, sub: `Tarifa: $${inputs.electricityRate}/kWh` },
+                                { title: 'Consumo Específico', val: `${results.kwhPer1000Boxes.toFixed(1)} kWh/kCajas`, sub: 'Relación energía-producción' },
+                                { title: 'Costo por 1000 Cajas', val: `$${results.electricityCostPer1000BoxesMxn.toFixed(2)} MXN`, sub: 'Costo operativo directo' },
+                                { title: 'Costo Eléctrico Mensual', val: `$${new Intl.NumberFormat().format(results.monthlyElectricityCostMxn.toFixed(0))} MXN`, sub: 'Proyección mensual base' },
+                              ].map((k, i) => (
+                                <div key={i} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 16 }}>
+                                  <div style={{ fontSize: 10, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: 6 }}>{k.title}</div>
+                                  <div style={{ fontSize: 22, fontWeight: 900, color: '#0f2038' }}>{k.val}</div>
+                                  <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 4, fontFamily: 'monospace' }}>{k.sub}</div>
+                                </div>
+                              ))}
+                            </div>
+
+                            {/* Charts Area */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, flex: 1, minHeight: 0 }}>
+                              <div style={{ border: '1px solid #e2e8f0', borderRadius: 16, padding: 16, display: 'flex', flexDirection: 'column' }}>
+                                <div style={{ fontSize: 10, fontWeight: 900, color: '#0f766e', textTransform: 'uppercase', marginBottom: 4 }}>Capacidad Diaria vs Requerimiento Diario</div>
+                                <div style={{ flex: 1, minHeight: 0 }}>
+                                  <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart
+                                      data={[
+                                        { name: 'Requerimiento', valor: inputs.meta_diaria_cajas, fill: '#64748b' },
+                                        { name: 'Capacidad', valor: results.dailyProductionBoxes, fill: '#06b6d4' }
+                                      ]}
+                                      margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                                    >
+                                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                      <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} tickLine={false} />
+                                      <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} width={40} />
+                                      <Tooltip formatter={(value) => [`${new Intl.NumberFormat().format(value)} kg`, 'Valor']} />
+                                      <Bar dataKey="valor" radius={[4, 4, 0, 0]} maxBarSize={40}>
+                                        {[{ fill: '#64748b' }, { fill: '#06b6d4' }].map((e, i) => <Cell key={i} fill={e.fill} />)}
+                                      </Bar>
+                                    </BarChart>
+                                  </ResponsiveContainer>
+                                </div>
+                                <div style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, color: '#64748b', marginTop: 8 }}>
+                                  Margen operativo disponible: <span style={{ color: '#008299' }}>{new Intl.NumberFormat().format(Math.max(0, results.dailyProductionBoxes - inputs.meta_diaria_cajas).toFixed(0))} cajas/día</span>
+                                </div>
+                              </div>
+
+                              <div style={{ border: '1px solid #e2e8f0', borderRadius: 16, padding: 16, display: 'flex', flexDirection: 'column' }}>
+                                <div style={{ fontSize: 10, fontWeight: 900, color: '#4f46e5', textTransform: 'uppercase', marginBottom: 4 }}>Producción vs Consumo Energético</div>
+                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10 }}>
+                                    <thead>
+                                      <tr>
+                                        <th style={{ ...REPORT_STYLES.th, background: '#f8fafc', textAlign: 'left' }}>Período</th>
+                                        <th style={{ ...REPORT_STYLES.th, background: '#ecfeff', textAlign: 'right', color: '#0e7490' }}>Producción (Cajas)</th>
+                                        <th style={{ ...REPORT_STYLES.th, background: '#eef2ff', textAlign: 'right', color: '#4338ca' }}>Consumo (kWh)</th>
+                                        <th style={{ ...REPORT_STYLES.th, background: '#ecfdf5', textAlign: 'right', color: '#047857' }}>Ratio (kWh/kCajas)</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {[
+                                        { period: 'Por Hora', prod: results.realProductionPerHourBoxes || 0, cons: results.averageHourlyConsumptionKw || 0 },
+                                        { period: 'Por Día', prod: results.dailyProductionBoxes || 0, cons: (results.averageHourlyConsumptionKw || 0) * ((inputs.hoursPerDay ?? 8.5) * (inputs.shiftsPerDay || 1)) },
+                                        { period: 'Por Semana', prod: (results.dailyProductionBoxes || 0) * 7, cons: (results.averageHourlyConsumptionKw || 0) * ((inputs.hoursPerDay ?? 8.5) * (inputs.shiftsPerDay || 1)) * 7 },
+                                        { period: 'Por Mes', prod: (results.dailyProductionBoxes || 0) * (inputs.daysPerMonth ?? (248 / 12)), cons: (results.averageHourlyConsumptionKw || 0) * ((inputs.hoursPerDay ?? 8.5) * (inputs.shiftsPerDay || 1)) * (inputs.daysPerMonth ?? (248 / 12)) }
+                                      ].map((row, idx) => (
+                                        <tr key={idx}>
+                                          <td style={{ ...REPORT_STYLES.td, fontWeight: 'bold' }}>{row.period}</td>
+                                          <td style={{ ...REPORT_STYLES.td, textAlign: 'right', fontWeight: 'bold', color: '#0891b2' }}>{new Intl.NumberFormat().format(Math.round(row.prod))}</td>
+                                          <td style={{ ...REPORT_STYLES.td, textAlign: 'right', fontWeight: 'bold', color: '#4f46e5' }}>{new Intl.NumberFormat().format((row.cons).toFixed(1))}</td>
+                                          <td style={{ ...REPORT_STYLES.td, textAlign: 'right', fontWeight: 'bold', color: '#059669' }}>{new Intl.NumberFormat().format((row.prod > 0 ? (row.cons / (row.prod / 1000)) : 0).toFixed(2))}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            </div>
+                            {renderPageFooter(++pdfPageIndex, totalPdfPages)}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+
+                    {/* PÁGINA 5: ESCENARIOS OPERATIVOS */}
+                    {pdfConfig.escenarios && (
+                      <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
+                        <div style={{ ...S.inner, flex: 1, paddingTop: 20, display: 'flex', flexDirection: 'column', gap: 15 }}>
+                          {renderPageHeader(`${++currentSectionIndex}. Simulación de Escenarios`, 'Comparativa de rendimiento bajo diferentes métricas de eficiencia (OEE)')}
+
+                          <div style={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                              <thead>
+                                <tr>
+                                  <th style={{ backgroundColor: '#159b9a', padding: '8px 12px', color: 'white', textAlign: 'left', width: '31%', borderRight: '1px solid rgba(255,255,255,0.2)', fontSize: '11.5px' }}>MÉTRICA DE EVALUACIÓN</th>
+                                  <th style={{ backgroundColor: '#059ca0', padding: '8px', color: 'white', textAlign: 'center', width: '23%', borderRight: '1px solid rgba(255,255,255,0.2)' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><Shield size={16} /> <div style={{ textAlign: 'left', lineHeight: '1.2' }}><span style={{ fontWeight: 'bold', fontSize: '11.5px' }}>CONSERVADOR</span><br /><span style={{ fontSize: '9.5px', fontWeight: 'normal' }}>(70% OEE)</span></div></div>
+                                  </th>
+                                  <th style={{ backgroundColor: '#1b71b8', padding: '8px', color: 'white', textAlign: 'center', width: '23%', borderRight: '1px solid rgba(255,255,255,0.2)' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><TrendingUp size={16} /> <div style={{ textAlign: 'left', lineHeight: '1.2' }}><span style={{ fontWeight: 'bold', fontSize: '11.5px' }}>NORMAL</span><br /><span style={{ fontSize: '9.5px', fontWeight: 'normal' }}>(85% OEE)</span></div></div>
+                                  </th>
+                                  <th style={{ backgroundColor: '#3bb565', padding: '8px', color: 'white', textAlign: 'center', width: '23%' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><Trophy size={16} /> <div style={{ textAlign: 'left', lineHeight: '1.2' }}><span style={{ fontWeight: 'bold', fontSize: '11.5px' }}>ALTO RENDIMIENTO</span><br /><span style={{ fontSize: '9.5px', fontWeight: 'normal' }}>(95% OEE)</span></div></div>
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr>
+                                  <td style={{ padding: '8px 12px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', backgroundColor: '#fff' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                      <Package size={18} color="#159b9a" />
+                                      <div>
+                                        <div style={{ fontWeight: 'bold', fontSize: '11.5px', color: '#334155' }}>Producción Diaria Proyectada</div>
+                                        <div style={{ fontSize: '9.5px', color: '#64748b' }}>{inputs.tipo_unidad === 'pallets' ? '(pallets/día)' : '(cajas/día)'}</div>
+                                      </div>
                                     </div>
+                                  </td>
+                                  <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
+                                    <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#059ca0' }}>{new Intl.NumberFormat().format(scenarioResults.conservador.dailyProd.toFixed(0))}</div>
+                                    <div style={{ fontSize: '9.5px', color: '#64748b' }}>{inputs.tipo_unidad === 'pallets' ? 'p/día' : 'c/día'}</div>
+                                  </td>
+                                  <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
+                                    <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1b71b8' }}>{new Intl.NumberFormat().format(scenarioResults.normal.dailyProd.toFixed(0))}</div>
+                                    <div style={{ fontSize: '9.5px', color: '#64748b' }}>{inputs.tipo_unidad === 'pallets' ? 'p/día' : 'c/día'}</div>
+                                  </td>
+                                  <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
+                                    <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#3bb565' }}>{new Intl.NumberFormat().format(scenarioResults.alto.dailyProd.toFixed(0))}</div>
+                                    <div style={{ fontSize: '9.5px', color: '#64748b' }}>{inputs.tipo_unidad === 'pallets' ? 'p/día' : 'c/día'}</div>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td style={{ padding: '8px 12px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', backgroundColor: '#fff' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                      <Zap size={18} color="#159b9a" />
+                                      <div>
+                                        <div style={{ fontWeight: 'bold', fontSize: '11.5px', color: '#334155' }}>CostOp (Electricidad/Agua)</div>
+                                        <div style={{ fontSize: '9.5px', color: '#64748b' }}>por 1000 un.</div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
+                                    <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#059ca0' }}>${new Intl.NumberFormat().format(scenarioResults.conservador.costPer1000.toFixed(2))}</div>
+                                    <div style={{ fontSize: '9.5px', color: '#64748b' }}>MXN</div>
+                                  </td>
+                                  <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
+                                    <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1b71b8' }}>${new Intl.NumberFormat().format(scenarioResults.normal.costPer1000.toFixed(2))}</div>
+                                    <div style={{ fontSize: '9.5px', color: '#64748b' }}>MXN</div>
+                                  </td>
+                                  <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
+                                    <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#3bb565' }}>${new Intl.NumberFormat().format(scenarioResults.alto.costPer1000.toFixed(2))}</div>
+                                    <div style={{ fontSize: '9.5px', color: '#64748b' }}>MXN</div>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td style={{ padding: '8px 12px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', backgroundColor: '#fff' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                      <Target size={18} color="#159b9a" />
+                                      <div>
+                                        <div style={{ fontWeight: 'bold', fontSize: '11.5px', color: '#334155' }}>Cobertura de la Meta</div>
+                                        <div style={{ fontSize: '9.5px', color: '#64748b' }}>Diaria Objetivo</div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
+                                    <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#059ca0' }}>{scenarioResults.conservador.coverage.toFixed(1)}%</div>
+                                  </td>
+                                  <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
+                                    <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1b71b8' }}>{scenarioResults.normal.coverage.toFixed(1)}%</div>
+                                  </td>
+                                  <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
+                                    <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#3bb565' }}>{scenarioResults.alto.coverage.toFixed(1)}%</div>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td style={{ padding: '8px 12px', borderRight: '1px solid #e2e8f0', backgroundColor: '#fff' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                      <Gauge size={18} color="#159b9a" />
+                                      <div>
+                                        <div style={{ fontWeight: 'bold', fontSize: '11.5px', color: '#334155' }}>Utilización de la Capacidad</div>
+                                        <div style={{ fontSize: '9.5px', color: '#64748b' }}>de Planta</div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: '8px', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
+                                    <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#059ca0' }}>{scenarioResults.conservador.utilization.toFixed(1)}%</div>
+                                  </td>
+                                  <td style={{ padding: '8px', borderRight: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fff' }}>
+                                    <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1b71b8' }}>{scenarioResults.normal.utilization.toFixed(1)}%</div>
+                                  </td>
+                                  <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#fff' }}>
+                                    <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#3bb565' }}>{scenarioResults.alto.utilization.toFixed(1)}%</div>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+
+                            <div style={{ padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#fff', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                              <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+                                <h4 style={{ fontSize: '11.5px', fontWeight: '900', color: '#1e293b', textTransform: 'uppercase' }}>PRODUCCIÓN DIARIA Y COSTO OPERATIVO POR ESCENARIO</h4>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginBottom: '5px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <div style={{ width: '16px', height: '8px', backgroundColor: '#059ca0', borderRadius: '2px' }} />
+                                  <span style={{ fontSize: '9.5px', color: '#334155', fontWeight: 'bold' }}>Producción Diaria (cajas/día)</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', border: '2px solid #1b71b8', position: 'relative' }}>
+                                    <div style={{ position: 'absolute', top: '50%', left: '-8px', right: '-8px', height: '2px', backgroundColor: '#1b71b8', transform: 'translateY(-50%)', zIndex: -1 }} />
                                   </div>
-                                )
-                              })}
+                                  <span style={{ fontSize: '9.5px', color: '#334155', fontWeight: 'bold' }}>Costo Operativo Eléctrico (MXN por caja)</span>
+                                </div>
+                              </div>
+                              <div style={{ width: '100%', flex: 1, minHeight: '160px' }}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <ComposedChart
+                                    data={[
+                                      { name: 'Conservador\n(70% OEE)', prod: scenarioResults.conservador.dailyProd, costo: scenarioResults.conservador.costPer1000 },
+                                      { name: 'Normal\n(85% OEE)', prod: scenarioResults.normal.dailyProd, costo: scenarioResults.normal.costPer1000 },
+                                      { name: 'Alto Rendimiento\n(95% OEE)', prod: scenarioResults.alto.dailyProd, costo: scenarioResults.alto.costPer1000 }
+                                    ]}
+                                    margin={{ top: 20, right: 10, bottom: 0, left: 10 }}
+                                  >
+                                    <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" vertical={false} />
+                                    <XAxis dataKey="name" tick={{ fontSize: 10.5, fill: '#1e293b', fontWeight: 'bold' }} axisLine={false} tickLine={false} dy={10} />
+                                    <YAxis yAxisId="left" tick={{ fontSize: 10.5, fill: '#059ca0', fontWeight: 'bold' }} axisLine={false} tickLine={false} dx={-5} />
+                                    <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10.5, fill: '#1b71b8', fontWeight: 'bold' }} axisLine={false} tickLine={false} dx={5} />
+                                    <Tooltip cursor={{ fill: '#f8fafc' }} />
+                                    <Bar yAxisId="left" dataKey="prod" fill="#059ca0" barSize={60} radius={[4, 4, 0, 0]} label={{ position: 'top', fill: '#059ca0', fontSize: 11.5, fontWeight: 'bold', formatter: (v) => new Intl.NumberFormat().format(v.toFixed(0)) }} />
+                                    <Line yAxisId="right" type="monotone" dataKey="costo" stroke="#1b71b8" strokeWidth={2} dot={{ r: 4, stroke: '#1b71b8', strokeWidth: 2, fill: '#fff' }} label={{ position: 'bottom', fill: '#1b71b8', fontSize: 11.5, fontWeight: 'bold', formatter: (v) => '$' + v.toFixed(2) }} />
+                                  </ComposedChart>
+                                </ResponsiveContainer>
+                              </div>
                             </div>
-                          </div>
-                        </div>
-                        {renderPageFooter(++pdfPageIndex, totalPdfPages)}
-                      </div>
-                    </div>
-                  </div>
-                )}
 
-                {/* PÁGINA: REQUERIMIENTOS DE OBRA CIVIL Y PISO */}
-                {pdfConfig.civil && (
-                  <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
-                    <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 20 }}>
-                      {renderPageHeader('Obra Civil y Cimentación', 'Dictamen y Especificaciones Estructurales de Piso y Bodega')}
-
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-
-                        {/* Panel izquierdo: Especificaciones y Ficha */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                          <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 16, background: '#fffbeb' }}>
-                            <div style={{ fontSize: 10, fontWeight: 900, color: '#d97706', textTransform: 'uppercase', marginBottom: 6 }}>Especificación de Losa y Concreto</div>
-                            <div style={{ fontSize: 22, fontWeight: 900, color: '#1e293b', marginBottom: 4 }}>Concreto f'c {inputs.civilConcretoFc || 250} kg/cm²</div>
-                            <div style={{ fontSize: 11, color: '#475569', fontWeight: 650 }}>Espesor mínimo de losa: <strong>{inputs.civilEspesorPisoCm || 20} cm</strong></div>
-                          </div>
-
-                          <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 12, background: '#f8fafc' }}>
-                            <div style={{ fontSize: 10, fontWeight: 900, color: '#1e293b', textTransform: 'uppercase', marginBottom: 8, borderBottom: '1px solid #e2e8f0', paddingBottom: 4 }}>Ficha de Estructura de Bodega</div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 10.5, color: '#475569', fontWeight: 600 }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Acabado Superficial:</span><strong style={{ color: '#1e293b' }}>{inputs.civilAcabadoPiso || 'PULIDO ESPEJO CON ENDURECEDOR'}</strong></div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Refuerzo Estructural:</span><strong style={{ color: '#1e293b' }}>{inputs.civilRefuerzoPiso || 'DOBLE PARRILLA DE VARILLA 3/8"'}</strong></div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Tratamiento de Juntas:</span><strong style={{ color: '#1e293b' }}>{inputs.civilJuntasDilatacion || 'SELLO DE POLIURETANO'}</strong></div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Área Mínima Bodega:</span><strong style={{ color: '#1e293b' }}>{inputs.civilAreaRequeridaM2 || 75} m²</strong></div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Panel derecho: Instalación y Anclaje */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                          <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 12, background: '#f8fafc' }}>
-                            <div style={{ fontSize: 10, fontWeight: 900, color: '#1e293b', textTransform: 'uppercase', marginBottom: 8, borderBottom: '1px solid #e2e8f0', paddingBottom: 4 }}>Instalación y Anclaje Mecánico</div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 10.5, color: '#475569', fontWeight: 600 }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Sistema de Anclaje:</span><strong style={{ color: '#1e293b' }}>{inputs.civilAnclajeTornillos || 'HILTI HAS-E CON RESINA'}</strong></div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Canalizaciones Subterráneas:</span><strong style={{ color: '#1e293b' }}>{inputs.civilCanalizacionesSubterraneas || '2 TUBOS PVC 4" + 1 TUBO 2"'}</strong></div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Mitigación de Vibraciones:</span><strong style={{ color: '#1e293b' }}>{inputs.civilSistemaVibracion || 'NEOPRENO DE ALTA DENSIDAD'}</strong></div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Carga Dinámica Portante:</span><strong style={{ color: '#1e293b' }}>{inputs.civilCargaSoportada || 8.0} Ton/m²</strong></div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Volumen Excavación Base:</span><strong style={{ color: '#1e293b' }}>{inputs.civilExcavacionM3 || 4.5} m³</strong></div>
+                            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: 12, fontSize: 11.5, color: '#64748b', lineHeight: 1.4 }}>
+                              <strong style={{ color: '#334155' }}>Nota del Analista:</strong> Las proyecciones mostradas asumen un flujo constante de material de alimentación y no consideran variaciones drásticas en la humedad o densidad del sustrato.
                             </div>
                           </div>
 
-                          <div style={{ border: '1px solid #d97706', borderRadius: 12, padding: 12, background: '#fffbeb', fontSize: 10, color: '#78350f', lineHeight: 1.4, fontWeight: 600 }}>
-                            <span style={{ fontWeight: 900, textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>⚠️ Nota de Cumplimiento Técnico:</span>
-                            La obra civil debe ser supervisada por un ingeniero estructural certificado. La resistencia del terreno debe ser validada mediante un estudio de mecánica de suelos previo a la colada del concreto estructural para soportar las fuerzas hidrodinámicas del sistema de lavado.
+                          <div style={{ flex: 1 }} />
+                          {renderPageFooter(++pdfPageIndex, totalPdfPages)}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* PÁGINA: ANÁLISIS HÍDRICO Y SUSTENTABILIDAD */}
+                    {pdfConfig.hidrico && (() => {
+                      const baseCapH = inputs.capacidad_nominal_cajas_h || 350;
+                      const realCapH = baseCapH * ((inputs.oee || 95) / 100);
+                      const hrsDay = inputs.hoursPerDay ?? 8.5;
+                      const realWaterPerHr = (results.totalWaterMonthlyLiters || 0) / 24 / hrsDay;
+
+                      return (
+                        <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
+                          <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #e2e8f0', paddingBottom: '16px' }}>
+                              <div style={{ display: 'flex', gap: '16px' }}>
+                                <div style={{ width: '8px', height: '60px', background: '#06b6d4', borderRadius: '4px' }} />
+                                <div>
+                                  <div style={{ fontSize: '26px', fontWeight: 900, color: '#1e293b', lineHeight: 1.1, letterSpacing: '-0.5px' }}>CONSUMO HÍDRICO</div>
+                                  <div style={{ fontSize: '26px', fontWeight: 900, color: '#06b6d4', lineHeight: 1.1, letterSpacing: '-0.5px' }}>Y SUSTENTABILIDAD</div>
+                                </div>
+                              </div>
+                              <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                                {inputs.customClientLogo ? (
+                                  <img src={inputs.customClientLogo} alt="Logo Cliente" style={{ maxHeight: '38px', maxWidth: '160px', objectFit: 'contain' }} />
+                                ) : (
+                                  <div style={{ fontSize: '10px', fontWeight: 800, color: '#0ea5e9', letterSpacing: '1px', textTransform: 'uppercase' }}>{inputs.clientName || 'PANDORA'} - {activeBox.nombre}</div>
+                                )}
+                                <div style={{ fontSize: '10px', color: '#64748b' }}>Análisis del balance hídrico, tasa de recirculación de agua y huella ecológica.</div>
+                              </div>
+                            </div>
+
+                            {/* TOP ROW: 4 CARDS */}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+                              <div style={{ border: '1px solid #e2e8f0', borderRadius: '16px', padding: '16px', background: '#fff', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)' }}>
+                                <div style={{ fontSize: '22px', fontWeight: 900, color: '#0891b2', marginBottom: '4px' }}>{new Intl.NumberFormat().format(Math.round(realWaterPerHr / (1 - (inputs.recirculacion_agua !== undefined ? inputs.recirculacion_agua : 85) / 100)))} L/h</div>
+                                <div style={{ fontSize: '11px', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>Caudal de Lavado Interno</div>
+                                <div style={{ fontSize: '9px', color: '#64748b' }}>Volumen interno calculado operando</div>
+                              </div>
+                              <div style={{ border: '1px solid #e2e8f0', borderRadius: '16px', padding: '16px', background: '#fff', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)' }}>
+                                <div style={{ fontSize: '22px', fontWeight: 900, color: '#0891b2', marginBottom: '4px' }}>{new Intl.NumberFormat().format(Math.round(realWaterPerHr))} L/h</div>
+                                <div style={{ fontSize: '11px', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>Reposición Real de Agua</div>
+                                <div style={{ fontSize: '9px', color: '#64748b' }}>Consumo real de red de agua limpia</div>
+                              </div>
+                              <div style={{ border: '1px solid #e2e8f0', borderRadius: '16px', padding: '16px', background: '#fff', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)' }}>
+                                <div style={{ fontSize: '22px', fontWeight: 900, color: '#0891b2', marginBottom: '4px', display: 'flex', alignItems: 'flex-start' }}>{((Math.round(realWaterPerHr) * hrsDay) / 1000).toFixed(2)} m<span style={{ fontSize: '12px' }}>³</span></div>
+                                <div style={{ fontSize: '11px', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>Consumo Diario Y1 ({hrsDay.toFixed(1)}h)</div>
+                                <div style={{ fontSize: '9px', color: '#64748b' }}>Equivalente a {new Intl.NumberFormat().format(Math.round(realWaterPerHr) * hrsDay)} Litros</div>
+                              </div>
+                              <div style={{ border: '1px solid #e2e8f0', borderRadius: '16px', padding: '16px', background: '#fff', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)' }}>
+                                <div style={{ fontSize: '22px', fontWeight: 900, color: '#0891b2', marginBottom: '4px', display: 'flex', alignItems: 'flex-start' }}>{(((Math.round(realWaterPerHr) * hrsDay) / 1000) * (inputs.daysPerWeek ?? 5)).toFixed(1)} m<span style={{ fontSize: '12px' }}>³</span></div>
+                                <div style={{ fontSize: '11px', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>Consumo Semanal</div>
+                                <div style={{ fontSize: '9px', color: '#64748b' }}>Basado en {inputs.daysPerWeek ?? 5} días laborables</div>
+                              </div>
+                            </div>
+
+                            {/* BOTTOM ROW: 2 CARDS */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', flex: 1 }}>
+                              {/* Configuración y Eficiencia Hídrica */}
+                              <div style={{ border: '1px solid #e2e8f0', borderRadius: '16px', padding: '24px', background: '#fff', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column' }}>
+                                <div style={{ fontSize: '14px', fontWeight: 900, color: '#0f2038', marginBottom: '24px' }}>Configuración y Eficiencia Hídrica</div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
+                                    <div>
+                                      <div style={{ fontSize: '11px', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>Tasa de Recirculación de Agua</div>
+                                      <div style={{ fontSize: '9px', color: '#64748b' }}>Ahorro neto de agua limpia por recirculación y filtrado</div>
+                                    </div>
+                                    <div style={{ fontSize: '16px', fontWeight: 900, color: '#0891b2' }}>85.0%</div>
+                                  </div>
+
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
+                                    <div>
+                                      <div style={{ fontSize: '11px', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>Capacidad Nominal del Tanque</div>
+                                      <div style={{ fontSize: '9px', color: '#64748b' }}>Capacidad del tanque de lavado principal</div>
+                                    </div>
+                                    <div style={{ fontSize: '16px', fontWeight: 900, color: '#0891b2' }}>{new Intl.NumberFormat().format(inputs.waterTankLiters || 1200)} Litros</div>
+                                  </div>
+
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
+                                    <div>
+                                      <div style={{ fontSize: '11px', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>Frecuencia de Cambio de Agua</div>
+                                      <div style={{ fontSize: '9px', color: '#64748b' }}>Frecuencia de purga e higienización total</div>
+                                    </div>
+                                    <div style={{ fontSize: '16px', fontWeight: 900, color: '#0891b2' }}>Cada {Math.round(6 / (inputs.waterChangesPerWeek || 1))} días</div>
+                                  </div>
+
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '12px', borderBottom: '1px solid #f1f5f9', alignItems: 'center' }}>
+                                    <div>
+                                      <div style={{ fontSize: '11px', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>Consumo Específico Hídrico (caja)</div>
+                                      <div style={{ fontSize: '9px', color: '#64748b' }}>Volumen por unidad lavada</div>
+                                    </div>
+                                    <div style={{ fontSize: '16px', fontWeight: 900, color: '#0891b2' }}>{(realWaterPerHr / realCapH).toFixed(2)} L/caja</div>
+                                  </div>
+
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div>
+                                      <div style={{ fontSize: '11px', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>Modelo de Referencia Activo</div>
+                                      <div style={{ fontSize: '9px', color: '#64748b' }}>Modelo de caja base para el análisis unitario</div>
+                                    </div>
+                                    <div style={{ fontSize: '16px', fontWeight: 900, color: '#0891b2', textTransform: 'uppercase' }}>{activeBox.nombre}</div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Análisis de Huella Hídrica */}
+                              <div style={{ border: '1px solid #e2e8f0', borderRadius: '16px', padding: '24px', background: '#fff', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column' }}>
+                                <div style={{ fontSize: '14px', fontWeight: 900, color: '#0f2038', marginBottom: '24px' }}>Análisis de Huella Hídrica por Contenedor</div>
+
+                                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                  <div>
+                                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>Consumo Específico por Caja</div>
+                                    <div style={{ fontSize: '9px', color: '#64748b' }}>Basado en {Math.round(realCapH)} cajas/h real (350 cajas/h nominal)</div>
+                                  </div>
+                                  <div style={{ fontSize: '24px', fontWeight: 900, color: '#0891b2' }}>{(realWaterPerHr / Math.round(realCapH)).toFixed(2)} L / caja</div>
+                                </div>
+
+                                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '20px' }}>
+                                  <div style={{ fontSize: '11px', fontWeight: 800, color: '#1e293b', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <Target size={12} color="#0891b2" /> Evaluación de Impacto Ambiental (ESG)
+                                  </div>
+                                  <div style={{ fontSize: '10px', color: '#475569', lineHeight: 1.6, textAlign: 'justify' }}>
+                                    El sistema de recirculación del simulador Wash & Dry reduce en un <strong style={{ color: '#0f172a' }}>85%</strong> la demanda de agua de reposición respecto a sistemas tradicionales de lavado una vez-pasados (once-through). Esto representa una disminución crítica de la huella hídrica y minimiza la generación de efluentes, facilitando el cumplimiento de normativas de sustentabilidad y optimizando el costo operativo por caja.
+                                  </div>
+                                </div>
+                              </div>
+                              {renderPageFooter(++pdfPageIndex, totalPdfPages)}
+                            </div>
                           </div>
                         </div>
+                      );
+                    })()}
 
-                      </div>
+                    {/* PÁGINA 7: DICTAMEN FINANCIERO (VERSIÓN SIN RENTABILIDAD) */}
+                    {pdfConfig.financiero && (
+                      <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
+                        <div style={{ ...S.inner, flex: 1, paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {renderPageHeader(`${++currentSectionIndex}. Análisis Financiero de Inversión`, tf('Resumen Ejecutivo de CAPEX y Gasto Operativo Mensual'))}
 
-                      {/* Dimensiones y Diagrama conceptual */}
-                      <div style={{ border: '1px solid #cbd5e1', borderRadius: 12, padding: 12, background: '#f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <div style={{ fontSize: 9, fontWeight: 900, color: '#475569', textTransform: 'uppercase' }}>Dimensiones de Planta y Peso del Equipo</div>
-                          <div style={{ fontSize: 13, fontWeight: 900, color: '#1e293b', marginTop: 2 }}>{inputs.machineLength || 14.5}m Largo x {inputs.machineWidth || 1.75}m Ancho x {inputs.machineHeight || 1.9}m Alto | Peso: {inputs.pesoOperativoKg && inputs.pesoOperativoKg !== 1000 ? new Intl.NumberFormat().format(inputs.pesoOperativoKg) : '1,800'} kg</div>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                            {/* CAPEX Card */}
+                            <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', background: '#fff' }}>
+                              <div style={{ background: '#1d70b8', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Building2 size={20} color="#fff" />
+                                <div style={{ fontSize: '11px', fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{tf('Estructura CAPEX (Inversión Inicial)')}</div>
+                              </div>
+                              <div style={{ padding: '10px 14px' }}>
+                                <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, marginBottom: '2px' }}>{tf('Inversión Total Estimada')}</div>
+                                <div style={{ fontSize: '22px', fontWeight: 900, color: '#0f2038', marginBottom: '8px' }}>${new Intl.NumberFormat().format(results.capexInstaladoMxn.toFixed(0))} MXN</div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '11px', color: '#334155', fontWeight: 600 }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#e0f2fe', padding: '6px', borderRadius: '6px', display: 'flex' }}><Factory size={14} color="#0284c7" /></div> {tf('Equipo Base')}</div>
+                                    <span style={{ fontWeight: 800, color: '#0284c7' }}>${new Intl.NumberFormat().format((results.precioEquipoUsd * (inputs.tipoCambio || 1)).toFixed(0))}</span>
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#e0f2fe', padding: '6px', borderRadius: '6px', display: 'flex' }}><Wrench size={14} color="#0284c7" /></div> {tf('Montaje y Maniobras')}</div>
+                                    <span style={{ fontWeight: 800, color: '#0284c7' }}>${new Intl.NumberFormat().format(((results.maniobrasUsd + results.montajeMecanicoUsd) * (inputs.tipoCambio || 1)).toFixed(0))}</span>
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#e0f2fe', padding: '6px', borderRadius: '6px', display: 'flex' }}><Zap size={14} color="#0284c7" /></div> {tf('Instalación Eléctrica')}</div>
+                                    <span style={{ fontWeight: 800, color: '#0284c7' }}>${new Intl.NumberFormat().format(((results.electricoPrincipalUsd + results.canalizacionProteccionesUsd) * (inputs.tipoCambio || 1)).toFixed(0))}</span>
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#e0f2fe', padding: '6px', borderRadius: '6px', display: 'flex' }}><Droplet size={14} color="#0284c7" /></div> {tf('Sistemas Hídricos / Drenaje')}</div>
+                                    <span style={{ fontWeight: 800, color: '#0284c7' }}>${new Intl.NumberFormat().format(((results.extraccionPolvoUsd + results.seguridadIndustrialUsd) * (inputs.tipoCambio || 1)).toFixed(0))}</span>
+                                  </div>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><div style={{ background: "#e0f2fe", padding: "6px", borderRadius: "6px", display: "flex" }}><Building2 size={14} color="#0284c7" /></div> {tf('Obra Civil e Ingeniería')}</div>
+                                    <span style={{ fontWeight: 800, color: "#0284c7" }}>${new Intl.NumberFormat().format(((results.obraCivilUsd + results.ingenieriaSupervisionUsd) * (inputs.tipoCambio || 1)).toFixed(0))}</span>
+                                  </div>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><div style={{ background: "#e0f2fe", padding: "6px", borderRadius: "6px", display: "flex" }}><ShieldAlert size={14} color="#0284c7" /></div> {tf('Contingencia y Otros')}</div>
+                                    <span style={{ fontWeight: 800, color: "#0284c7" }}>${new Intl.NumberFormat().format(((results.contingenciaUsd + results.otrosCapexUsd) * (inputs.tipoCambio || 1)).toFixed(0))}</span>
+                                  </div>
+                                </div>
+                                <div style={{ marginTop: '12px', padding: '10px', background: '#f0f9ff', borderLeft: '3px solid #38bdf8', fontSize: '10px', fontWeight: 500, color: '#0369a1', lineHeight: '1.4' }}>
+                                  {tf('* Las partidas de Obra Civil, Ingeniería y Contingencia son estimaciones sujetas a evaluación en sitio y diseño de layout final.')}
+                                </div>
+                              </div>
+                              <div style={{ background: '#f8fafc', padding: '10px 14px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '11px', fontWeight: 800, color: '#1d70b8' }}>{tf('INVERSIÓN INICIAL TOTAL')}</span>
+                                <span style={{ background: '#1d70b8', color: '#fff', fontSize: '12px', fontWeight: 900, padding: '4px 12px', borderRadius: '16px' }}>${new Intl.NumberFormat().format(results.capexInstaladoMxn.toFixed(0))} MXN</span>
+                              </div>
+                            </div>
+
+                            {/* OPEX Card */}
+                            <div style={{ border: '1px solid #fecdd3', borderRadius: '8px', overflow: 'hidden', background: '#fff' }}>
+                              <div style={{ background: '#e11d48', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Settings size={20} color="#fff" />
+                                <div style={{ fontSize: '11px', fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{tf('Estructura OPEX (Gasto Mensual)')}</div>
+                              </div>
+                              <div style={{ padding: '10px 14px' }}>
+                                <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, marginBottom: '2px' }}>{tf('Gasto Operativo Mensual Estimado')}</div>
+                                <div style={{ fontSize: '22px', fontWeight: 900, color: '#0f2038', marginBottom: '8px' }}>${new Intl.NumberFormat().format(results.opexMensualMxn.toFixed(0))} MXN</div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '11px', color: '#334155', fontWeight: 600 }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#ffe4e6', padding: '6px', borderRadius: '6px', display: 'flex' }}><Zap size={14} color="#e11d48" /></div> {tf('Energía Eléctrica')}</div>
+                                    <span style={{ fontWeight: 800, color: '#e11d48' }}>${new Intl.NumberFormat().format(results.monthlyElectricityCostMxn.toFixed(0))}</span>
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#ffe4e6', padding: '6px', borderRadius: '6px', display: 'flex' }}><Droplet size={14} color="#e11d48" /></div> {tf('Impacto Hídrico (Agua)')}</div>
+                                    <span style={{ fontWeight: 800, color: '#e11d48' }}>${new Intl.NumberFormat().format(results.waterCostMonthlyMxn || 0)}</span>
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#ffe4e6', padding: '6px', borderRadius: '6px', display: 'flex' }}><Users size={14} color="#e11d48" /></div> {tf('Mano de Obra')}</div>
+                                    <span style={{ fontWeight: 800, color: '#e11d48' }}>${new Intl.NumberFormat().format(results.manoObraMensualMxn.toFixed(0))}</span>
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#ffe4e6', padding: '6px', borderRadius: '6px', display: 'flex' }}><Shield size={14} color="#e11d48" /></div> {tf('Mantenimiento Preventivo')}</div>
+                                    <span style={{ fontWeight: 800, color: '#e11d48' }}>${new Intl.NumberFormat().format(results.mantenimientoMensualMxn.toFixed(0))}</span>
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ background: '#ffe4e6', padding: '6px', borderRadius: '6px', display: 'flex' }}><Wrench size={14} color="#e11d48" /></div> {tf('Refacciones / Consumibles')}</div>
+                                    <span style={{ fontWeight: 800, color: '#e11d48' }}>${new Intl.NumberFormat().format((inputs.filtrosMensualMxn + inputs.refaccionesMensualMxn + inputs.lubricacionMensualMxn).toFixed(0))}</span>
+                                  </div>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><div style={{ background: "#ffe4e6", padding: "6px", borderRadius: "6px", display: "flex" }}><FlaskConical size={14} color="#e11d48" /></div> {tf('Químicos Tratamiento')}</div>
+                                    <span style={{ fontWeight: 800, color: "#e11d48" }}>${new Intl.NumberFormat().format(7000.20)}</span>
+                                  </div>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><div style={{ background: "#ffe4e6", padding: "6px", borderRadius: "6px", display: "flex" }}><Sliders size={14} color="#e11d48" /></div> {tf('Consumibles, Disposición & Otros')}</div>
+                                    <span style={{ fontWeight: 800, color: "#e11d48" }}>${new Intl.NumberFormat().format(((inputs.supervisionMensualMxn || 0) + (inputs.consumiblesMensualMxn || 0) + (inputs.tratamientoEfluentesMensualMxn || 0) + (inputs.disposicionResiduosMensualMxn || 0) + (inputs.otrosOpexMensualMxn || 0) || 6999.60).toFixed(0))}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              <div style={{ background: '#fff1f2', padding: '10px 14px', borderTop: '1px solid #fecdd3', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '11px', fontWeight: 800, color: '#e11d48' }}>{tf('GASTO OPERATIVO MENSUAL TOTAL')}</span>
+                                <span style={{ background: '#e11d48', color: '#fff', fontSize: '12px', fontWeight: 900, padding: '4px 12px', borderRadius: '16px' }}>${new Intl.NumberFormat().format(results.opexMensualMxn.toFixed(0))} MXN</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: 10, marginTop: '0px' }}>
+                            <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px', background: '#f8fafc', display: 'flex', flexDirection: 'column' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                <div style={{ background: '#ea580c', borderRadius: '50%', padding: '4px', display: 'flex' }}><Shield size={14} color="#fff" /></div>
+                                <div>
+                                  <div style={{ fontSize: '11px', fontWeight: 900, color: '#ea580c', textTransform: 'uppercase' }}>{tf('Matriz de Riesgo y Operación')}</div>
+                                  <div style={{ fontSize: '9px', color: '#64748b' }}>{tf('Evaluación cualitativa de los principales riesgos operativos')}</div>
+                                </div>
+                              </div>
+
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '10px', color: '#334155', fontWeight: 600 }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', border: '1px solid #f1f5f9', padding: '6px', borderRadius: '6px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><FlaskConical size={12} color="#ea580c" /> Manejo de Químicos</div>
+                                    <span style={{ background: '#dcfce7', color: '#166534', padding: '2px 6px', borderRadius: '4px', fontSize: '9px', fontWeight: 800 }}>{inputs.riesgoPolvo || 'BAJO'}</span>
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', border: '1px solid #f1f5f9', padding: '6px', borderRadius: '6px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Zap size={12} color="#ea580c" /> Riesgo Eléctrico</div>
+                                    <span style={{ background: '#dcfce7', color: '#166534', padding: '2px 6px', borderRadius: '4px', fontSize: '9px', fontWeight: 800 }}>{inputs.riesgoMetal || 'BAJO'}</span>
+                                  </div>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', border: '1px solid #f1f5f9', padding: '6px', borderRadius: '6px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Droplet size={12} color="#ea580c" /> Drenaje y Fugas</div>
+                                    <span style={{ background: '#dcfce7', color: '#166534', padding: '2px 6px', borderRadius: '4px', fontSize: '9px', fontWeight: 800 }}>{inputs.riesgoIncendio || 'BAJO'}</span>
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', border: '1px solid #f1f5f9', padding: '6px', borderRadius: '6px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Volume2 size={12} color="#ea580c" /> Contam. Acústica</div>
+                                    <span style={{ background: '#fef08a', color: '#854d0e', padding: '2px 6px', borderRadius: '4px', fontSize: '9px', fontWeight: 800 }}>{inputs.riesgoRuido || 'MEDIO'}</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div style={{ marginTop: 'auto', background: '#fff', border: '1px solid #f1f5f9', padding: '4px', borderRadius: '6px', display: 'flex', gap: '8px' }}>
+                                <div style={{ background: '#ea580c', width: '16px', height: '16px', borderRadius: '50%', color: '#fff', fontSize: '10px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>i</div>
+                                <div style={{ fontSize: '9px', color: '#64748b', lineHeight: 1.2 }}><strong style={{ color: '#ea580c' }}>Nota:</strong> Los niveles de riesgo se evaluaron considerando controles y protocolos.</div>
+                              </div>
+                            </div>
+
+                            <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px', background: '#f8fafc', display: 'flex', flexDirection: 'column' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                <div style={{ background: '#7c3aed', borderRadius: '50%', padding: '4px', display: 'flex' }}><PieChartLucide size={14} color="#fff" /></div>
+                                <div>
+                                  <div style={{ fontSize: '11px', fontWeight: 900, color: '#6d28d9', textTransform: 'uppercase' }}>Distribución OPEX</div>
+                                  <div style={{ fontSize: '9px', color: '#64748b' }}>Proporción de gastos operativos mensuales</div>
+                                </div>
+                              </div>
+
+                              <div style={{ display: 'flex', gap: '8px', flex: 1 }}>
+                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                                  <div style={{ fontSize: '9px', color: '#475569', lineHeight: 1.2 }}>El gráfico circular muestra la distribución porcentual de los componentes del gasto operativo (OPEX).</div>
+                                  <div style={{ background: '#f5f3ff', border: '1px solid #ede9fe', padding: '6px', borderRadius: '6px', marginTop: '6px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}><Star size={10} color="#7c3aed" fill="#7c3aed" /> <span style={{ fontSize: '10px', fontWeight: 800, color: '#6d28d9' }}>Recomendación:</span></div>
+                                    <div style={{ fontSize: '9px', color: '#5b21b6', lineHeight: 1.2 }}>Optimizar consumo de energía y agua maximiza el rendimiento.</div>
+                                  </div>
+                                </div>
+                                <div style={{ width: 95, height: 95, position: 'relative', marginTop: '-10px' }}>
+                                  <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: 10 }}>
+                                    <span style={{ fontSize: '8px', fontWeight: 800, color: '#334155' }}>TOTAL</span>
+                                    <span style={{ fontSize: '10px', fontWeight: 900, color: '#0f172a' }}>${new Intl.NumberFormat().format(results.opexMensualMxn.toFixed(0))}</span>
+                                    <span style={{ fontSize: '8px', fontWeight: 800, color: '#334155' }}>MXN</span>
+                                  </div>
+                                  <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                      <Pie
+                                        data={[
+                                          { name: 'Energía Eléctrica', value: results.energiaMensualMxn || 0, fill: '#1d4ed8' },
+                                          { name: 'Mano de Obra', value: results.manoObraMensualMxn || 0, fill: '#8b5cf6' },
+                                          { name: 'Agua', value: results.aguaMensualMxn || 0, fill: '#0ea5e9' },
+                                          { name: 'Mantenimiento', value: results.mantenimientoMensualMxn || 0, fill: '#ea580c' },
+                                          { name: 'Refacciones', value: results.refaccionesMensualMxn || 0, fill: '#65a30d' },
+                                          { name: 'Químicos', value: results.quimicosMensualMxn || 0, fill: '#059ca0' },
+                                          { name: 'Consumibles / Otros', value: results.consumiblesMensualMxn || 0, fill: '#f59e0b' }
+                                        ].filter(d => d.value > 0)}
+                                        cx="50%" cy="50%" innerRadius={25} outerRadius={42} paddingAngle={2} dataKey="value"
+                                        labelLine={false}
+                                        label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+                                          const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+                                          const x = cx + radius * Math.cos(-midAngle * Math.PI / 180);
+                                          const y = cy + radius * Math.sin(-midAngle * Math.PI / 180);
+                                          return percent > 0.05 ? <text x={x} y={y} fill="white" fontSize="7" fontWeight="bold" textAnchor="middle" dominantBaseline="central">{`${(percent * 100).toFixed(0)}%`}</text> : null;
+                                        }}
+                                      >
+                                        {[{ fill: '#1d4ed8' }, { fill: '#8b5cf6' }, { fill: '#0ea5e9' }, { fill: '#ea580c' }, { fill: '#65a30d' }, { fill: '#059ca0' }, { fill: '#f59e0b' }].map((e, i) => <Cell key={i} fill={e.fill} />)}
+                                      </Pie>
+                                    </PieChart>
+                                  </ResponsiveContainer>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', justifyContent: 'center' }}>
+                                  {[
+                                    { name: 'Energía Eléctrica', value: results.monthlyElectricityCostMxn, fill: '#1d4ed8' },
+                                    { name: 'Mano de Obra', value: results.manoObraMensualMxn, fill: '#8b5cf6' },
+                                    { name: 'Impacto Hídrico', value: results.waterCostMonthlyMxn || 0, fill: '#0ea5e9' },
+                                    { name: 'Mantenimiento', value: results.mantenimientoMensualMxn, fill: '#ea580c' },
+                                    { name: 'Refacciones', value: inputs.filtrosMensualMxn + inputs.refaccionesMensualMxn + inputs.lubricacionMensualMxn, fill: '#65a30d' }
+                                  ].filter(d => d.value > 0).map((d, i, arr) => {
+                                    const total = arr.reduce((sum, item) => sum + item.value, 0);
+                                    const pct = ((d.value / total) * 100).toFixed(1);
+                                    return (
+                                      <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '4px' }}>
+                                        <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: d.fill, marginTop: '3px', flexShrink: 0 }} />
+                                        <div>
+                                          <div style={{ fontSize: '8px', fontWeight: 700, color: '#334155', lineHeight: 1.1 }}>{d.name}</div>
+                                          <div style={{ fontSize: '7px', color: '#64748b' }}>({pct}%)</div>
+                                        </div>
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              </div>
+                            </div>
+                            {renderPageFooter(++pdfPageIndex, totalPdfPages)}
+                          </div>
                         </div>
-                        <div style={{ fontSize: 10, color: '#475569', fontWeight: 600 }}>
-                          Estándar de Obra Civil de PANDORA v3.0
+                      </div>
+                    )}
+
+                    {/* PÁGINA: REQUERIMIENTOS DE OBRA CIVIL Y PISO */}
+                    {pdfConfig.civil && (
+                      <div className="pdf-page bg-white relative flex flex-col" style={S.page}>
+                        <div style={{ ...S.inner, flex: 1, paddingTop: 40, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                          {renderPageHeader('Obra Civil y Cimentación', 'Dictamen y Especificaciones Estructurales de Piso y Bodega')}
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+
+                            {/* Panel izquierdo: Especificaciones y Ficha */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                              <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 16, background: '#fffbeb' }}>
+                                <div style={{ fontSize: 10, fontWeight: 900, color: '#d97706', textTransform: 'uppercase', marginBottom: 6 }}>Especificación de Losa y Concreto</div>
+                                <div style={{ fontSize: 22, fontWeight: 900, color: '#1e293b', marginBottom: 4 }}>Concreto f'c {inputs.civilConcretoFc || 250} kg/cm²</div>
+                                <div style={{ fontSize: 11, color: '#475569', fontWeight: 650 }}>Espesor mínimo de losa: <strong>{inputs.civilEspesorPisoCm || 20} cm</strong></div>
+                              </div>
+
+                              <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 12, background: '#f8fafc' }}>
+                                <div style={{ fontSize: 10, fontWeight: 900, color: '#1e293b', textTransform: 'uppercase', marginBottom: 8, borderBottom: '1px solid #e2e8f0', paddingBottom: 4 }}>Ficha de Estructura de Bodega</div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 10.5, color: '#475569', fontWeight: 600 }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Acabado Superficial:</span><strong style={{ color: '#1e293b' }}>{inputs.civilAcabadoPiso || 'PULIDO ESPEJO CON ENDURECEDOR'}</strong></div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Refuerzo Estructural:</span><strong style={{ color: '#1e293b' }}>{inputs.civilRefuerzoPiso || 'DOBLE PARRILLA DE VARILLA 3/8"'}</strong></div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Tratamiento de Juntas:</span><strong style={{ color: '#1e293b' }}>{inputs.civilJuntasDilatacion || 'SELLO DE POLIURETANO'}</strong></div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Área Mínima Bodega:</span><strong style={{ color: '#1e293b' }}>{inputs.civilAreaRequeridaM2 || 75} m²</strong></div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Panel derecho: Instalación y Anclaje */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                              <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 12, background: '#f8fafc' }}>
+                                <div style={{ fontSize: 10, fontWeight: 900, color: '#1e293b', textTransform: 'uppercase', marginBottom: 8, borderBottom: '1px solid #e2e8f0', paddingBottom: 4 }}>Instalación y Anclaje Mecánico</div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 10.5, color: '#475569', fontWeight: 600 }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Sistema de Anclaje:</span><strong style={{ color: '#1e293b' }}>{inputs.civilAnclajeTornillos || 'HILTI HAS-E CON RESINA'}</strong></div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Canalizaciones Subterráneas:</span><strong style={{ color: '#1e293b' }}>{inputs.civilCanalizacionesSubterraneas || '2 TUBOS PVC 4" + 1 TUBO 2"'}</strong></div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Mitigación de Vibraciones:</span><strong style={{ color: '#1e293b' }}>{inputs.civilSistemaVibracion || 'NEOPRENO DE ALTA DENSIDAD'}</strong></div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Carga Dinámica Portante:</span><strong style={{ color: '#1e293b' }}>{inputs.civilCargaSoportada || 8.0} Ton/m²</strong></div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Volumen Excavación Base:</span><strong style={{ color: '#1e293b' }}>{inputs.civilExcavacionM3 || 4.5} m³</strong></div>
+                                </div>
+                              </div>
+
+                              <div style={{ border: '1px solid #d97706', borderRadius: 12, padding: 12, background: '#fffbeb', fontSize: 10, color: '#78350f', lineHeight: 1.4, fontWeight: 600 }}>
+                                <span style={{ fontWeight: 900, textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>⚠️ Nota de Cumplimiento Técnico:</span>
+                                La obra civil debe ser supervisada por un ingeniero estructural certificado. La resistencia del terreno debe ser validada mediante un estudio de mecánica de suelos previo a la colada del concreto estructural para soportar las fuerzas hidrodinámicas del sistema de lavado.
+                              </div>
+                            </div>
+
+                          </div>
+
+                          {/* Dimensiones y Diagrama conceptual */}
+                          <div style={{ border: '1px solid #cbd5e1', borderRadius: 12, padding: 12, background: '#f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                              <div style={{ fontSize: 9, fontWeight: 900, color: '#475569', textTransform: 'uppercase' }}>Dimensiones de Planta y Peso del Equipo</div>
+                              <div style={{ fontSize: 13, fontWeight: 900, color: '#1e293b', marginTop: 2 }}>{inputs.machineLength || 14.5}m Largo x {inputs.machineWidth || 1.75}m Ancho x {inputs.machineHeight || 1.9}m Alto | Peso: {inputs.pesoOperativoKg && inputs.pesoOperativoKg !== 1000 ? new Intl.NumberFormat().format(inputs.pesoOperativoKg) : '1,800'} kg</div>
+                            </div>
+                            <div style={{ fontSize: 10, color: '#475569', fontWeight: 600 }}>
+                              Estándar de Obra Civil de PANDORA v3.0
+                            </div>
+                          </div>
+
+                          {renderPageFooter(++pdfPageIndex, totalPdfPages)}
                         </div>
                       </div>
+                    )}
 
-                      {renderPageFooter(++pdfPageIndex, totalPdfPages)}
-                    </div>
-                  </div>
-                )}
-
+                  </>)}
+                </div>
               </div>
-            </div>
 
+            </div>
           </div>
-        </div>
-      )
+        )
       }
 
       {/* MODAL: LIBRERÍA DE DISEÑOS 3D */}
